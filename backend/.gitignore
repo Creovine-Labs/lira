@@ -1,0 +1,6 @@
+cmd/*/bootstrap
+bin/
+.aws-sam/
+coverage.out
+coverage.html
+deployments/template-local.yaml

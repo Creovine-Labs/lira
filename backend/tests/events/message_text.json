@@ -1,0 +1,10 @@
+{
+  "requestContext": {
+    "routeKey": "$default",
+    "connectionId": "test-conn-001",
+    "eventType": "MESSAGE",
+    "stage": "dev",
+    "domainName": "localhost"
+  },
+  "body": "{\"action\": \"text\", \"payload\": {\"text\": \"hey lira can you summarize what we discussed so far?\"}}"
+}

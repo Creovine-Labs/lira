@@ -1,0 +1,9 @@
+{
+  "requestContext": {
+    "routeKey": "$disconnect",
+    "connectionId": "test-conn-001",
+    "eventType": "DISCONNECT",
+    "stage": "dev",
+    "domainName": "localhost"
+  }
+}

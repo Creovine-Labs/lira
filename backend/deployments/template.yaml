@@ -1,0 +1,405 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Lira AI Backend - Intelligent Meeting Participant
+  Amazon Nova AI Hackathon
+
+Globals:
+  Function:
+    Runtime: provided.al2023
+    Architectures: [arm64]
+    Timeout: 30
+    MemorySize: 512
+    Environment:
+      Variables:
+        ENVIRONMENT: !Ref Environment
+        LOG_LEVEL: !Ref LogLevel
+        CONNECTIONS_TABLE: !Ref ConnectionsTable
+        MEETINGS_TABLE: !Ref MeetingsTable
+        AUDIO_BUCKET: !Ref AudioBucket
+        NOVA_LITE_MODEL_ID: !Ref NovaLiteModelID
+        NOVA_SONIC_MODEL_ID: !Ref NovaSonicModelID
+        MOCK_AI: !Ref MockAI
+        TTS_ENABLED: !Ref TTSEnabled
+        POLLY_VOICE_ID: !Ref PollyVoiceID
+
+Parameters:
+  Environment:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, staging, prod]
+
+  LogLevel:
+    Type: String
+    Default: debug
+    AllowedValues: [debug, info, warn, error]
+
+  NovaLiteModelID:
+    Type: String
+    Default: amazon.nova-lite-v1:0
+
+  NovaSonicModelID:
+    Type: String
+    Default: amazon.nova-sonic-v1:0
+
+  MockAI:
+    Type: String
+    Default: "true"
+    AllowedValues: ["true", "false"]
+    Description: When true, returns mock AI responses without calling Bedrock
+
+  TTSEnabled:
+    Type: String
+    Default: "false"
+    AllowedValues: ["true", "false"]
+    Description: Enable Nova Sonic + Polly TTS for audio responses
+
+  PollyVoiceID:
+    Type: String
+    Default: Joanna
+    Description: Amazon Polly voice ID used as TTS fallback
+
+Resources:
+
+  # ════════════════════════════════════════════
+  # DynamoDB Tables
+  # ════════════════════════════════════════════
+
+  ConnectionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub lira-connections-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: connection_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: connection_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: lira-ai
+        - Key: Environment
+          Value: !Ref Environment
+
+  MeetingsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub lira-meetings-${Environment}
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: session_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: session_id
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      Tags:
+        - Key: Project
+          Value: lira-ai
+        - Key: Environment
+          Value: !Ref Environment
+
+  # ════════════════════════════════════════════
+  # S3 Bucket
+  # ════════════════════════════════════════════
+
+  AudioBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub lira-audio-${Environment}-${AWS::AccountId}
+      LifecycleConfiguration:
+        Rules:
+          - Id: ExpireOldAudio
+            Status: Enabled
+            ExpirationInDays: 30
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      Tags:
+        - Key: Project
+          Value: lira-ai
+
+  # ════════════════════════════════════════════
+  # WebSocket API
+  # ════════════════════════════════════════════
+
+  WebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub lira-ws-${Environment}
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+
+  ConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $connect
+      AuthorizationType: NONE
+      Target: !Sub integrations/${GatewayIntegration}
+
+  DisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub integrations/${GatewayIntegration}
+
+  DefaultRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketApi
+      RouteKey: $default
+      Target: !Sub integrations/${GatewayIntegration}
+
+  GatewayIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GatewayFunction.Arn}/invocations
+
+  WebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketApi
+      StageName: !Ref Environment
+      AutoDeploy: true
+
+  WebSocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - ConnectRoute
+      - DisconnectRoute
+      - DefaultRoute
+    Properties:
+      ApiId: !Ref WebSocketApi
+
+  # ════════════════════════════════════════════
+  # Lambda: Gateway (WebSocket handler)
+  # ════════════════════════════════════════════
+
+  GatewayFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub lira-gateway-${Environment}
+      CodeUri: ../cmd/gateway/
+      Handler: bootstrap
+      MemorySize: 1024
+      Timeout: 30
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MeetingsTable
+        - S3CrudPolicy:
+            BucketName: !Ref AudioBucket
+        - Statement:
+            - Effect: Allow
+              Action: execute-api:ManageConnections
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+                - bedrock:InvokeModelWithResponseStream
+                - bedrock:InvokeModelWithBidirectionalStream
+              Resource:
+                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/${NovaLiteModelID}
+                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/${NovaSonicModelID}
+
+  GatewayPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref GatewayFunction
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+
+  # ════════════════════════════════════════════
+  # HTTP API (REST endpoints)
+  # ════════════════════════════════════════════
+
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref Environment
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"
+        AllowHeaders:
+          - Content-Type
+          - Authorization
+        AllowMethods:
+          - GET
+          - POST
+          - PUT
+          - DELETE
+          - OPTIONS
+
+  MeetingsFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub lira-meetings-${Environment}
+      CodeUri: ../cmd/meetings/
+      Handler: bootstrap
+      MemorySize: 512
+      Timeout: 10
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MeetingsTable
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:InvokeModel
+              Resource:
+                - !Sub arn:aws:bedrock:${AWS::Region}::foundation-model/${NovaLiteModelID}
+      Events:
+        CreateMeeting:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /meetings
+            Method: POST
+        GetMeeting:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /meetings/{id}
+            Method: GET
+        UpdateMeetingSettings:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /meetings/{id}/settings
+            Method: PUT
+        GetMeetingSummary:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /meetings/{id}/summary
+            Method: GET
+
+  # ════════════════════════════════════════════
+  # Lambda: Audio Processor (S3 trigger)
+  # ════════════════════════════════════════════
+
+  AudioProcessorFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: go1.x
+    Properties:
+      FunctionName: !Sub lira-audio-processor-${Environment}
+      CodeUri: ../cmd/audio/
+      Handler: bootstrap
+      MemorySize: 512
+      Timeout: 120
+      Policies:
+        - S3ReadPolicy:
+            BucketName: !Ref AudioBucket
+        - DynamoDBCrudPolicy:
+            TableName: !Ref MeetingsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ConnectionsTable
+        - Statement:
+            - Effect: Allow
+              Action: execute-api:ManageConnections
+              Resource: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketApi}/*
+        - Statement:
+            - Effect: Allow
+              Action:
+                - transcribe:StartTranscriptionJob
+                - transcribe:GetTranscriptionJob
+              Resource: "*"
+      Environment:
+        Variables:
+          WEBSOCKET_ENDPOINT: !Sub https://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+      Events:
+        AudioUpload:
+          Type: S3
+          Properties:
+            Bucket: !Ref AudioBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: "audio/"
+
+  AudioProcessorPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AudioProcessorFunction
+      Action: lambda:InvokeFunction
+      Principal: s3.amazonaws.com
+      SourceArn: !Sub arn:aws:s3:::lira-audio-${Environment}-${AWS::AccountId}
+
+  # ════════════════════════════════════════════
+  # CloudWatch Alarms
+  # ════════════════════════════════════════════
+
+  GatewayErrorAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub lira-gateway-errors-${Environment}
+      AlarmDescription: Gateway Lambda error rate too high
+      MetricName: Errors
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref GatewayFunction
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 5
+      ComparisonOperator: GreaterThanThreshold
+
+  GatewayLatencyAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub lira-gateway-latency-${Environment}
+      AlarmDescription: Gateway Lambda p99 latency too high
+      MetricName: Duration
+      Namespace: AWS/Lambda
+      Dimensions:
+        - Name: FunctionName
+          Value: !Ref GatewayFunction
+      ExtendedStatistic: p99
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 15000
+      ComparisonOperator: GreaterThanThreshold
+
+Outputs:
+  WebSocketURL:
+    Description: WebSocket endpoint for frontend
+    Value: !Sub wss://${WebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub lira-ws-url-${Environment}
+
+  HttpApiURL:
+    Description: HTTP API endpoint
+    Value: !Sub https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${Environment}
+    Export:
+      Name: !Sub lira-http-url-${Environment}
+
+  ConnectionsTableName:
+    Value: !Ref ConnectionsTable
+
+  MeetingsTableName:
+    Value: !Ref MeetingsTable
+
+  AudioBucketName:
+    Value: !Ref AudioBucket

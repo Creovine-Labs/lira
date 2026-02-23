@@ -1,0 +1,10 @@
+{
+  "requestContext": {
+    "routeKey": "$default",
+    "connectionId": "test-conn-001",
+    "eventType": "MESSAGE",
+    "stage": "dev",
+    "domainName": "localhost"
+  },
+  "body": "{\"action\": \"join\", \"session_id\": \"test-meeting-001\", \"payload\": {\"user_id\": \"alice\", \"user_name\": \"Alice\"}}"
+}

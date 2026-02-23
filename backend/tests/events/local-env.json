@@ -1,0 +1,26 @@
+{
+  "GatewayFunction": {
+    "ENVIRONMENT": "dev",
+    "LOG_LEVEL": "debug",
+    "MOCK_AI": "true",
+    "CONNECTIONS_TABLE": "lira-connections-dev",
+    "MEETINGS_TABLE": "lira-meetings-dev",
+    "AUDIO_BUCKET": "lira-audio-dev",
+    "NOVA_LITE_MODEL_ID": "amazon.nova-lite-v1:0",
+    "NOVA_SONIC_MODEL_ID": "amazon.nova-sonic-v1:0"
+  },
+  "MeetingsFunction": {
+    "ENVIRONMENT": "dev",
+    "LOG_LEVEL": "debug",
+    "MOCK_AI": "true",
+    "MEETINGS_TABLE": "lira-meetings-dev"
+  },
+  "AudioProcessorFunction": {
+    "ENVIRONMENT": "dev",
+    "LOG_LEVEL": "debug",
+    "MOCK_AI": "true",
+    "CONNECTIONS_TABLE": "lira-connections-dev",
+    "MEETINGS_TABLE": "lira-meetings-dev",
+    "AUDIO_BUCKET": "lira-audio-dev"
+  }
+}
