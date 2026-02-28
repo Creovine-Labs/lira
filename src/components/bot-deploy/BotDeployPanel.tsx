@@ -116,9 +116,9 @@ function BotDeployPanel() {
 
     try {
       const res = await deployBot(url)
-      setBotDeployed(res.botId, url, res.platform, res.state)
+      setBotDeployed(res.bot_id, url, res.platform, res.state)
       setMeetingLink('')
-      startPolling(res.botId)
+      startPolling(res.bot_id)
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to deploy bot')
     } finally {

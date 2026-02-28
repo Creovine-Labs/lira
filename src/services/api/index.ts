@@ -188,21 +188,23 @@ export type BotState =
   | 'error'
 
 export interface BotStatusResponse {
-  botId: string
-  meetingUrl: string
+  bot_id: string
   platform: 'google_meet' | 'zoom'
   state: BotState
-  displayName: string
-  sessionId: string | null
-  startedAt: string
+  display_name: string
+  session_id: string | null
+  created_at: string
+  joined_at?: string
+  terminated_at?: string
   error?: string
 }
 
 export interface DeployBotResponse {
-  botId: string
-  meetingUrl: string
+  bot_id: string
   platform: 'google_meet' | 'zoom'
   state: BotState
+  session_id: string
+  display_name: string
 }
 
 /** Deploy a bot to a Google Meet / Zoom meeting */
