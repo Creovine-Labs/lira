@@ -7,7 +7,7 @@ import { env } from '@/env'
 import { login as apiLogin, googleLogin as apiGoogleLogin, credentials } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 import { Button } from '@/components/common'
-import { BotDeployPanel, AuthStatusCard } from '@/components/bot-deploy'
+import { BotDeployPanel } from '@/components/bot-deploy'
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
@@ -198,9 +198,6 @@ function AuthenticatedHome() {
 
       {/* ── Bot Deploy – paste link + join ─────────────────────────────────── */}
       <BotDeployPanel />
-
-      {/* ── Auth status – shows days remaining + refresh button ──────────── */}
-      <AuthStatusCard />
 
       {/* ── Old demo flow (commented out — keep for reference) ─────────────
       <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground leading-relaxed">

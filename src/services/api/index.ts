@@ -212,7 +212,7 @@ export async function deployBot(
 ): Promise<DeployBotResponse> {
   return apiFetch<DeployBotResponse>('/lira/v1/bot/deploy', {
     method: 'POST',
-    body: JSON.stringify({ meetingUrl, displayName }),
+    body: JSON.stringify({ meeting_url: meetingUrl, display_name: displayName }),
   })
 }
 
