@@ -25,6 +25,9 @@ dist-ssr
 playwright-report
 test-results
 *.png
+!public/lira_logo.png
+!public/favicon.png
+!public/apple-touch-icon.png
 .env
 .env.local
 .env.*.local

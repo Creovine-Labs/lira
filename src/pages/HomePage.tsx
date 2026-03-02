@@ -164,26 +164,21 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
 
 // ── Authenticated home ────────────────────────────────────────────────────────
 
-function AuthenticatedHome() {
+function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate()
   const { userEmail, clearCredentials } = useAuthStore()
 
   function handleSignOut() {
     clearCredentials()
     credentials.clear()
+    onSignOut()
   }
 
   return (
     <div className="space-y-6">
       <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-purple-500 shadow-lg shadow-violet-200 dark:shadow-violet-900/40">
-          <svg viewBox="0 0 32 32" fill="none" className="h-9 w-9" aria-hidden="true">
-            <rect x="5" y="13" width="2.5" height="6" rx="1.25" fill="white" opacity="0.65" />
-            <rect x="9" y="10" width="2.5" height="12" rx="1.25" fill="white" />
-            <rect x="13" y="7" width="2.5" height="18" rx="1.25" fill="white" />
-            <rect x="17" y="10" width="2.5" height="12" rx="1.25" fill="white" />
-            <rect x="21" y="13" width="2.5" height="6" rx="1.25" fill="white" opacity="0.65" />
-          </svg>
+        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
+          <img src="/lira_logo.png" alt="Lira AI" className="h-16 w-16 object-contain" />
         </div>
         <h2 className="text-xl font-semibold">Ready to meet</h2>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -236,12 +231,14 @@ function AuthenticatedHome() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-type Stage = 'login' | 'home'
-
 function HomePage() {
   const { token } = useAuthStore()
 
-  const [stage, setStage] = useState<Stage>(() => (token ? 'home' : 'login'))
+  const [stage, setStage] = useState<'login' | 'home'>(() => (token ? 'home' : 'login'))
+
+  // Keep stage in sync with token (handles sign-out from any location)
+  const derivedStage = token ? 'home' : 'login'
+  if (stage !== derivedStage) setStage(derivedStage)
 
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background via-background to-violet-50/30 p-4 dark:to-violet-950/20">
@@ -260,7 +257,7 @@ function HomePage() {
           {/* Body */}
           <div className="px-8 py-6">
             {stage === 'login' && <LoginForm onLogin={() => setStage('home')} />}
-            {stage === 'home' && <AuthenticatedHome />}
+            {stage === 'home' && <AuthenticatedHome onSignOut={() => setStage('login')} />}
           </div>
         </div>
 

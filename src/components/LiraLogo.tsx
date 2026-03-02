@@ -20,28 +20,13 @@ export function LiraLogo({ mark = false, size = 'md', className }: LiraLogoProps
   return (
     <div className={`flex items-center gap-2 ${className ?? ''}`}>
       {/* Icon mark */}
-      <svg
+      <img
+        src="/lira_logo.png"
+        alt="Lira AI"
         width={s.icon}
         height={s.icon}
-        viewBox="0 0 32 32"
-        fill="none"
-        aria-hidden="true"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <defs>
-          <linearGradient id="lira-g" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#7c3aed" />
-            <stop offset="100%" stopColor="#a855f7" />
-          </linearGradient>
-        </defs>
-        <rect width="32" height="32" rx="8" fill="url(#lira-g)" />
-        <rect x="5" y="13" width="2.5" height="6" rx="1.25" fill="white" opacity="0.65" />
-        <rect x="9" y="10" width="2.5" height="12" rx="1.25" fill="white" />
-        <rect x="13" y="7" width="2.5" height="18" rx="1.25" fill="white" />
-        <rect x="17" y="10" width="2.5" height="12" rx="1.25" fill="white" />
-        <rect x="21" y="13" width="2.5" height="6" rx="1.25" fill="white" opacity="0.65" />
-        <rect x="25" y="15" width="2.5" height="2" rx="1.25" fill="white" opacity="0.35" />
-      </svg>
+        style={{ width: s.icon, height: s.icon, objectFit: 'contain' }}
+      />
 
       {/* Wordmark */}
       {!mark && (
