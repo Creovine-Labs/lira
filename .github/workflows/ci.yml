@@ -39,56 +39,18 @@ jobs:
         env:
           VITE_GOOGLE_CLIENT_ID: 467839759761-2bt983aq289icqes85np0pi28t91uitj.apps.googleusercontent.com
 
-      - name: Upload dist
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
   deploy:
-    name: Deploy to S3 + CloudFront
+    name: Deploy to Vercel
     runs-on: ubuntu-latest
     needs: quality
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
 
     steps:
-      - name: Download dist
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-
-      - name: Sync assets to S3 (long cache)
-        run: |
-          aws s3 sync dist/ s3://lira-creovine-frontend \
-            --delete \
-            --exclude "*.html" \
-            --cache-control "public,max-age=31536000,immutable"
-          aws s3 sync dist/ s3://lira.creovine.com \
-            --delete \
-            --exclude "*.html" \
-            --cache-control "public,max-age=31536000,immutable"
-
-      - name: Sync index.html (no cache)
-        run: |
-          aws s3 cp dist/index.html s3://lira-creovine-frontend/index.html \
-            --cache-control "no-cache,no-store,must-revalidate" \
-            --content-type "text/html"
-          aws s3 cp dist/index.html s3://lira.creovine.com/index.html \
-            --cache-control "no-cache,no-store,must-revalidate" \
-            --content-type "text/html"
-
-      - name: Invalidate CloudFront cache
-        run: |
-          aws cloudfront create-invalidation \
-            --distribution-id E1BHO016NYJN0Y \
-            --paths "/*" || true
+      - name: Deploy to Vercel
+        run: npx vercel deploy --prod --yes --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: team_ptuGMrJrTwgAUtCbwWYzW5aY
+          VERCEL_PROJECT_ID: prj_0EIAtArRgW5sLBVK0c60D9Stim0b
