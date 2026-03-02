@@ -1,5 +1,5 @@
 import { useState } from 'react'
-// import { useNavigate } from 'react-router-dom' // kept for when we restore demo meeting flow
+import { useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 
 import { useAuthStore } from '@/app/store'
@@ -165,6 +165,7 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
 // ── Authenticated home ────────────────────────────────────────────────────────
 
 function AuthenticatedHome() {
+  const navigate = useNavigate()
   const { userEmail, clearCredentials } = useAuthStore()
 
   function handleSignOut() {
@@ -199,22 +200,26 @@ function AuthenticatedHome() {
       {/* ── Bot Deploy – paste link + join ─────────────────────────────────── */}
       <BotDeployPanel />
 
-      {/* ── Old demo flow (commented out — keep for reference) ─────────────
+      <div className="relative flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs text-muted-foreground">or</span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
       <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground leading-relaxed">
-        Lira joins your meeting as an active participant — transcribing, surfacing insights, and
-        responding in real-time, powered by{' '}
-        <span className="font-medium text-foreground">Amazon Nova Sonic</span>.
+        Try the browser-based demo — Lira joins a local audio session, transcribing and responding
+        in real-time via <span className="font-medium text-foreground">Amazon Nova Sonic</span>.
       </div>
 
       <div className="flex flex-col gap-2">
         <Button
+          variant="outline"
           onClick={() => navigate('/meeting')}
           className="w-full rounded-xl py-2.5 font-medium"
         >
-          Start a Meeting
+          Demo Meeting
         </Button>
       </div>
-      ───────────────────────────────────────────────────────────────────── */}
 
       <div className="flex flex-col gap-2">
         <Button
