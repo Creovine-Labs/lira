@@ -81,6 +81,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     },
   })
 
+  // Handle expired JWT — clear token and redirect to login
+  if (res.status === 401) {
+    credentials.clear()
+    // Dispatch a custom event so the app shell can react (show login, toast, etc.)
+    window.dispatchEvent(new CustomEvent('lira:auth-expired'))
+    throw new Error('Session expired — please sign in again.')
+  }
+
   if (!res.ok) {
     let errBody: Record<string, string> = {}
     try {

@@ -75,7 +75,16 @@ function BotDeployPanel() {
             if (pollRef.current) clearInterval(pollRef.current)
             pollRef.current = null
           }
-        } catch {
+        } catch (err) {
+          // If JWT expired, apiFetch clears the token and throws.
+          // Stop polling — the auth-expired event handler in App will redirect.
+          const msg = err instanceof Error ? err.message : ''
+          if (msg.includes('Session expired') || msg.includes('401')) {
+            if (pollRef.current) clearInterval(pollRef.current)
+            pollRef.current = null
+            setBotError('Session expired — please sign in again.')
+            return
+          }
           // If bot no longer found, stop polling
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
