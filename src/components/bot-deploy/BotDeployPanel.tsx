@@ -2,7 +2,13 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { ExternalLink, Loader2, Radio, Square, Video, CheckCircle2 } from 'lucide-react'
 
 import { useBotStore } from '@/app/store'
-import { deployBot, getBotStatus, terminateBot, type BotState } from '@/services/api'
+import {
+  deployBot,
+  getBotStatus,
+  listActiveBots,
+  terminateBot,
+  type BotState,
+} from '@/services/api'
 import { cn } from '@/lib'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -105,10 +111,37 @@ function BotDeployPanel() {
     }
   }, [])
 
-  // Resume polling if page reloads with an active bot
+  // On mount: check backend for active bots (survives page refresh)
   useEffect(() => {
+    // If the store already knows about a bot, just resume polling
     if (botId && botState && botState !== 'terminated' && botState !== 'error') {
       startPolling(botId)
+      return
+    }
+
+    // Otherwise, ask the server if this user has any active bots
+    let cancelled = false
+    async function restoreActiveBot() {
+      try {
+        const bots = await listActiveBots()
+        if (cancelled) return
+
+        // Find the first bot that's still running
+        const active = bots.find((b) => b.state !== 'terminated' && b.state !== 'error')
+        if (!active) return
+
+        // Restore the store state and start polling
+        const plat = active.platform as 'google_meet' | 'zoom'
+        setBotDeployed(active.bot_id, '', plat, active.state)
+        startPolling(active.bot_id)
+      } catch {
+        // Silently ignore — user will just see the deploy form
+      }
+    }
+
+    restoreActiveBot()
+    return () => {
+      cancelled = true
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
