@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ExternalLink, Loader2, Radio, Square, Video } from 'lucide-react'
+import { ExternalLink, Loader2, Radio, Square, Video, CheckCircle2 } from 'lucide-react'
 
 import { useBotStore } from '@/app/store'
 import { deployBot, getBotStatus, terminateBot, type BotState } from '@/services/api'
@@ -57,6 +57,10 @@ function BotDeployPanel() {
   } = useBotStore()
 
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  // Auto-reset timer — fires after botState reaches 'terminated'
+  const autoResetRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Progress value (0–100) driving the shrinking bar during auto-reset countdown
+  const [resetProgress, setResetProgress] = useState(100)
 
   // ── Status polling ──────────────────────────────────────────────────────
 
@@ -107,6 +111,30 @@ function BotDeployPanel() {
       startPolling(botId)
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-reset to deploy form when bot terminates (not on error — user should see that)
+  useEffect(() => {
+    if (botState !== 'terminated') return
+
+    const RESET_DELAY_MS = 5_000
+    const TICK_MS = 50
+    setResetProgress(100)
+
+    // Shrink the progress bar over RESET_DELAY_MS
+    const tickInterval = setInterval(() => {
+      setResetProgress((p) => Math.max(0, p - (TICK_MS / RESET_DELAY_MS) * 100))
+    }, TICK_MS)
+
+    autoResetRef.current = setTimeout(() => {
+      clearInterval(tickInterval)
+      handleReset()
+    }, RESET_DELAY_MS)
+
+    return () => {
+      clearInterval(tickInterval)
+      if (autoResetRef.current) clearTimeout(autoResetRef.current)
+    }
+  }, [botState]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Deploy handler ──────────────────────────────────────────────────────
 
@@ -171,7 +199,44 @@ function BotDeployPanel() {
 
   const error = localError ?? storeError
 
-  // ── Active bot view ─────────────────────────────────────────────────────
+  // ── Terminated: "Lira has left" auto-reset card ────────────────────────
+
+  if (botId && botState === 'terminated') {
+    return (
+      <div className="space-y-4">
+        <div className="overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20">
+              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold text-emerald-400">Lira has left the meeting</p>
+              <p className="mt-0.5 text-xs text-slate-400">Returning to deploy screen…</p>
+            </div>
+            <button
+              onClick={() => {
+                if (autoResetRef.current) clearTimeout(autoResetRef.current)
+                handleReset()
+              }}
+              className="shrink-0 rounded-lg bg-white/5 px-3 py-1.5 text-xs font-medium text-slate-300 transition hover:bg-white/10"
+            >
+              Deploy Now
+            </button>
+          </div>
+
+          {/* Countdown progress bar */}
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-white/10">
+            <div
+              className="h-full rounded-full bg-emerald-500/60 transition-all"
+              style={{ width: `${resetProgress}%`, transitionDuration: '50ms' }}
+            />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Active bot view (launching / active / leaving / error) ──────────────
 
   if (botId && botState) {
     return (
