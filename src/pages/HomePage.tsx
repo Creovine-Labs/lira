@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
+import { Clock, CreditCard, FileText, LogOut, Mic, Settings, Shield, Sparkles } from 'lucide-react'
 
 import { useAuthStore } from '@/app/store'
 import { env } from '@/env'
@@ -162,11 +163,57 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
   )
 }
 
-// ── Authenticated home ────────────────────────────────────────────────────────
+// ── Dashboard card ────────────────────────────────────────────────────────────
+
+function DashCard({
+  icon: Icon,
+  title,
+  description,
+  onClick,
+  badge,
+  disabled,
+}: {
+  icon: React.ElementType
+  title: string
+  description: string
+  onClick?: () => void
+  badge?: string
+  disabled?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={`group flex w-full items-start gap-4 rounded-xl border bg-card p-5 text-left shadow-sm transition ${
+        disabled
+          ? 'cursor-default opacity-60'
+          : 'hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700'
+      }`}
+    >
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
+        <Icon className="h-5 w-5" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {badge && (
+            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
+              {badge}
+            </span>
+          )}
+        </div>
+        <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
+      </div>
+    </button>
+  )
+}
+
+// ── Authenticated dashboard ──────────────────────────────────────────────────
 
 function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate()
-  const { userEmail, clearCredentials } = useAuthStore()
+  const { userEmail, userName, userPicture, clearCredentials } = useAuthStore()
 
   function handleSignOut() {
     clearCredentials()
@@ -174,64 +221,148 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
     onSignOut()
   }
 
+  const displayName = userName || userEmail || 'User'
+
   return (
-    <div className="space-y-6">
-      <div className="text-center">
-        <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center">
-          <img src="/lira_logo.png" alt="Lira AI" className="h-16 w-16 object-contain" />
+    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background via-background to-violet-50/30 dark:to-violet-950/20">
+      {/* ── Top navigation bar ──────────────────────────────────────────── */}
+      <header className="border-b bg-card/80 backdrop-blur-sm">
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
+          <LiraLogo size="md" />
+          <div className="flex items-center gap-3">
+            <div className="hidden items-center gap-2 sm:flex">
+              {userPicture ? (
+                <img
+                  src={userPicture}
+                  alt=""
+                  className="h-8 w-8 rounded-full border object-cover"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
+                  {displayName[0]?.toUpperCase()}
+                </div>
+              )}
+              <span className="max-w-[180px] truncate text-sm font-medium text-foreground">
+                {displayName}
+              </span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSignOut}
+              className="gap-1.5 text-muted-foreground"
+            >
+              <LogOut className="h-4 w-4" />
+              <span className="hidden sm:inline">Sign out</span>
+            </Button>
+          </div>
         </div>
-        <h2 className="text-xl font-semibold">Ready to meet</h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {userEmail ? (
-            <>
-              Signed in as <span className="font-medium text-foreground">{userEmail}</span>
-            </>
-          ) : (
-            'Lira AI is ready to join your meeting.'
-          )}
+      </header>
+
+      {/* ── Main content ────────────────────────────────────────────────── */}
+      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
+        {/* Welcome + Deploy section */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+            Welcome back{userName ? `, ${userName.split(' ')[0]}` : ''}
+          </h1>
+          <p className="mt-1 text-muted-foreground">
+            Deploy Lira to your meetings or review past sessions.
+          </p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-5">
+          {/* Left column — Deploy Lira */}
+          <div className="lg:col-span-3">
+            <div className="rounded-xl border bg-card p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Mic className="h-5 w-5 text-violet-500" />
+                <h2 className="text-lg font-semibold">Deploy Lira</h2>
+              </div>
+              <BotDeployPanel />
+            </div>
+
+            {/* Demo meeting — secondary */}
+            <div className="mt-4 rounded-xl border border-dashed bg-muted/30 p-4">
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Browser Demo</p>
+                  <p className="text-xs text-muted-foreground">
+                    Try Lira in a local audio session — no meeting link needed.
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate('/meeting')}
+                  className="shrink-0"
+                >
+                  Launch
+                </Button>
+              </div>
+            </div>
+          </div>
+
+          {/* Right column — Quick links */}
+          <div className="flex flex-col gap-3 lg:col-span-2">
+            <DashCard
+              icon={Clock}
+              title="Meeting History"
+              description="Review past meetings, transcripts, and AI-generated summaries."
+              onClick={() => navigate('/meetings')}
+            />
+            <DashCard
+              icon={Sparkles}
+              title="AI Summaries"
+              description="Automatic meeting summaries powered by Amazon Nova."
+              onClick={() => navigate('/meetings')}
+            />
+            <DashCard
+              icon={Shield}
+              title="Subscription"
+              description="Manage your plan and usage limits."
+              badge="Coming soon"
+              disabled
+            />
+            <DashCard
+              icon={CreditCard}
+              title="Billing"
+              description="View invoices and payment methods."
+              badge="Coming soon"
+              disabled
+            />
+            <DashCard
+              icon={FileText}
+              title="License"
+              description="Enterprise licensing and seat management."
+              badge="Coming soon"
+              disabled
+            />
+            <DashCard
+              icon={Settings}
+              title="Settings"
+              description="Account preferences and integrations."
+              badge="Coming soon"
+              disabled
+            />
+          </div>
+        </div>
+      </main>
+
+      {/* ── Footer ──────────────────────────────────────────────────────── */}
+      <footer className="border-t py-4">
+        <p className="text-center text-xs text-muted-foreground">
+          Powered by{' '}
+          <a
+            href="https://creovine.com"
+            target="_blank"
+            rel="noreferrer"
+            className="font-medium underline-offset-2 hover:underline"
+          >
+            Creovine
+          </a>
         </p>
-      </div>
-
-      {/* ── Bot Deploy – paste link + join ─────────────────────────────────── */}
-      <BotDeployPanel />
-
-      <div className="relative flex items-center gap-3">
-        <div className="h-px flex-1 bg-border" />
-        <span className="text-xs text-muted-foreground">or</span>
-        <div className="h-px flex-1 bg-border" />
-      </div>
-
-      <div className="rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground leading-relaxed">
-        Try the browser-based demo — Lira joins a local audio session, transcribing and responding
-        in real-time via <span className="font-medium text-foreground">Amazon Nova Sonic</span>.
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="outline"
-          onClick={() => navigate('/meetings')}
-          className="w-full rounded-xl py-2.5 font-medium"
-        >
-          Meeting History
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => navigate('/meeting')}
-          className="w-full rounded-xl py-2.5 font-medium text-muted-foreground"
-        >
-          Demo Meeting
-        </Button>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <Button
-          variant="ghost"
-          onClick={handleSignOut}
-          className="w-full rounded-xl py-2.5 text-muted-foreground"
-        >
-          Sign out
-        </Button>
-      </div>
+      </footer>
     </div>
   )
 }
@@ -247,6 +378,12 @@ function HomePage() {
   const derivedStage = token ? 'home' : 'login'
   if (stage !== derivedStage) setStage(derivedStage)
 
+  // Authenticated — full-screen dashboard
+  if (stage === 'home') {
+    return <AuthenticatedHome onSignOut={() => setStage('login')} />
+  }
+
+  // Unauthenticated — centered login card
   return (
     <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background via-background to-violet-50/30 p-4 dark:to-violet-950/20">
       <div className="w-full max-w-sm">
@@ -255,16 +392,13 @@ function HomePage() {
           <div className="flex flex-col items-center gap-3 border-b px-8 py-8">
             <LiraLogo size="lg" />
             <p className="text-center text-sm text-muted-foreground">
-              {stage === 'login'
-                ? 'Sign in with your Creovine account'
-                : 'AI-powered meeting participant'}
+              Sign in with your Creovine account
             </p>
           </div>
 
           {/* Body */}
           <div className="px-8 py-6">
-            {stage === 'login' && <LoginForm onLogin={() => setStage('home')} />}
-            {stage === 'home' && <AuthenticatedHome onSignOut={() => setStage('login')} />}
+            <LoginForm onLogin={() => setStage('home')} />
           </div>
         </div>
 
