@@ -158,13 +158,13 @@ function MeetingsPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <MessageSquare className="h-3 w-3" />
-                          {m.messages.length} messages
+                          {(m.messages ?? []).length} messages
                         </span>
                       </div>
                     </div>
 
                     {/* Status pill */}
-                    {m.messages.length > 0 && (
+                    {(m.messages ?? []).length > 0 && (
                       <span className="shrink-0 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
                         Transcript
                       </span>
