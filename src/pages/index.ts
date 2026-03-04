@@ -1,3 +1,5 @@
 export * from './HomePage'
 export * from './MeetingPage'
+export * from './MeetingsPage'
+export * from './MeetingDetailPage'
 export * from './UiLabPage'

@@ -209,8 +209,15 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
       <div className="flex flex-col gap-2">
         <Button
           variant="outline"
-          onClick={() => navigate('/meeting')}
+          onClick={() => navigate('/meetings')}
           className="w-full rounded-xl py-2.5 font-medium"
+        >
+          Meeting History
+        </Button>
+        <Button
+          variant="outline"
+          onClick={() => navigate('/meeting')}
+          className="w-full rounded-xl py-2.5 font-medium text-muted-foreground"
         >
           Demo Meeting
         </Button>

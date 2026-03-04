@@ -1,6 +1,8 @@
 export const ROUTES = {
   home: '/',
   meeting: '/meeting',
+  meetings: '/meetings',
+  meetingDetail: '/meetings/:id',
   uiLab: '/ui-lab',
 } as const
 
