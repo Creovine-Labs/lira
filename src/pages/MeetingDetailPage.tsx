@@ -135,12 +135,16 @@ function MeetingDetailPage() {
     try {
       const data = await getMeetingSummary(id)
       setSummary(data.summary)
+      // Update the displayed title if the backend auto-generated one
+      if (data.title && meeting) {
+        setMeeting({ ...meeting, title: data.title })
+      }
     } catch (err) {
       setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary')
     } finally {
       setSummaryLoading(false)
     }
-  }, [id, summaryLoading])
+  }, [id, summaryLoading, meeting])
 
   // ── Loading / error states ──────────────────────────────────────────────
 

@@ -37,6 +37,7 @@ export interface Meeting {
 export interface MeetingSummary {
   session_id: string
   summary: string
+  title?: string
   key_points?: string[]
   action_items?: string[]
   generated_at: string
@@ -162,7 +163,9 @@ export async function listMeetings(): Promise<Meeting[]> {
 }
 
 export async function getMeeting(id: string): Promise<Meeting> {
-  return apiFetch<Meeting>(`/lira/v1/meetings/${id}`)
+  type Resp = { meeting: Meeting } | Meeting
+  const data = await apiFetch<Resp>(`/lira/v1/meetings/${id}`)
+  return 'meeting' in data ? data.meeting : data
 }
 
 export async function getMeetingSummary(id: string): Promise<MeetingSummary> {
