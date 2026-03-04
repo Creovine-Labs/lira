@@ -28,9 +28,9 @@ export interface Meeting {
   created_at: string
   updated_at: string
   status?: string
-  settings: MeetingSettings
-  messages: Message[]
-  participants: string[]
+  settings?: MeetingSettings
+  messages?: Message[]
+  participants?: string[]
   audio_url?: string
 }
 

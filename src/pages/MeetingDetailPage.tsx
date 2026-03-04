@@ -171,8 +171,9 @@ function MeetingDetailPage() {
     )
   }
 
-  const msgCount = meeting.messages.length
-  const aiMsgCount = meeting.messages.filter((m) => m.is_ai).length
+  const messages = meeting.messages ?? []
+  const msgCount = messages.length
+  const aiMsgCount = messages.filter((m) => m.is_ai).length
   const participantMsgCount = msgCount - aiMsgCount
 
   // ── Render ──────────────────────────────────────────────────────────────
@@ -301,7 +302,7 @@ function MeetingDetailPage() {
 
             {showTranscript && (
               <div className="border-t px-5 py-4 space-y-2.5 max-h-[600px] overflow-y-auto">
-                {meeting.messages.map((msg) => (
+                {messages.map((msg) => (
                   <TranscriptBubble key={msg.id} msg={msg} />
                 ))}
               </div>
