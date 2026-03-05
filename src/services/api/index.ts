@@ -253,6 +253,11 @@ export async function listActiveBots(): Promise<BotStatusResponse[]> {
   return data.bots
 }
 
+/** Terminate all active bots for the current user */
+export async function terminateAllBots(): Promise<{ message: string; terminated_count: number }> {
+  return apiFetch('/lira/v1/bot/terminate-all', { method: 'POST' })
+}
+
 // ── Bot Auth Status API ───────────────────────────────────────────────────────
 
 export interface PlatformAuthStatus {

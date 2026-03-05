@@ -1,5 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ExternalLink, Loader2, Radio, Square, Video, CheckCircle2 } from 'lucide-react'
+import {
+  AlertTriangle,
+  ExternalLink,
+  Loader2,
+  Radio,
+  Square,
+  Video,
+  CheckCircle2,
+} from 'lucide-react'
 
 import { useBotStore, useUserPrefsStore } from '@/app/store'
 import {
@@ -7,6 +15,7 @@ import {
   getBotStatus,
   listActiveBots,
   terminateBot,
+  terminateAllBots,
   type BotState,
 } from '@/services/api'
 import { cn } from '@/lib'
@@ -50,6 +59,7 @@ function BotDeployPanel() {
   const [meetingLink, setMeetingLink] = useState('')
   const [deploying, setDeploying] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
+  const [terminatingAll, setTerminatingAll] = useState(false)
 
   const { aiName, voiceId, personality } = useUserPrefsStore()
 
@@ -417,7 +427,43 @@ function BotDeployPanel() {
         </p>
       </div>
 
-      {error && <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">{error}</p>}
+      {error && (
+        <div className="rounded-lg bg-red-500/10 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+            <div className="min-w-0 flex-1">
+              <p className="text-sm text-red-400">{error}</p>
+              {error.includes('active bot') && (
+                <button
+                  type="button"
+                  className="mt-2 rounded-lg bg-red-500/20 px-3 py-1.5 text-xs font-medium text-red-300 transition hover:bg-red-500/30 disabled:opacity-50"
+                  disabled={terminatingAll}
+                  onClick={async () => {
+                    setTerminatingAll(true)
+                    try {
+                      await terminateAllBots()
+                      setLocalError(null)
+                      clearBot()
+                    } catch {
+                      setLocalError('Failed to terminate bots. Please try again.')
+                    } finally {
+                      setTerminatingAll(false)
+                    }
+                  }}
+                >
+                  {terminatingAll ? (
+                    <span className="flex items-center gap-1.5">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Terminating…
+                    </span>
+                  ) : (
+                    'Terminate All Active Bots'
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <button
         className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
