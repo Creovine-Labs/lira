@@ -108,6 +108,8 @@ function MeetingDetailPage() {
   const [summaryMode, setSummaryMode] = useState<'short' | 'long'>('short')
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [summaryCached, setSummaryCached] = useState(false)
+  const [summaryGeneratedAt, setSummaryGeneratedAt] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
   const [shareOpen, setShareOpen] = useState(false)
   const shareRef = useRef<HTMLDivElement>(null)
@@ -130,6 +132,14 @@ function MeetingDetailPage() {
     try {
       const data = await getMeeting(id!)
       setMeeting(data)
+      // Preload a saved summary if one was previously generated
+      const saved = data.summary_short ?? data.summary_long ?? null
+      if (saved) {
+        setSummary(saved)
+        setSummaryMode(data.summary_short ? 'short' : 'long')
+        setSummaryCached(true)
+        setSummaryGeneratedAt(data.summary_generated_at ?? null)
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load meeting')
     } finally {
@@ -138,19 +148,41 @@ function MeetingDetailPage() {
   }
 
   const handleGenerateSummary = useCallback(
-    async (mode?: 'short' | 'long') => {
+    async (mode?: 'short' | 'long', regenerate = false) => {
       if (!id || summaryLoading) return
       const targetMode = mode ?? summaryMode
       setSummaryMode(targetMode)
+
+      // If switching modes and we have a locally-cached version, display it instantly
+      if (!regenerate && meeting) {
+        const cachedText = targetMode === 'short' ? meeting.summary_short : meeting.summary_long
+        if (cachedText) {
+          setSummary(cachedText)
+          setSummaryCached(true)
+          setSummaryGeneratedAt(meeting.summary_generated_at ?? null)
+          return
+        }
+      }
+
       setSummaryLoading(true)
       setSummaryError(null)
       try {
-        const data = await getMeetingSummary(id, targetMode)
+        const data = await getMeetingSummary(id, targetMode, regenerate)
         setSummary(data.summary)
-        // Update the displayed title if the backend auto-generated one
-        if (data.title && meeting) {
-          setMeeting({ ...meeting, title: data.title })
-        }
+        setSummaryCached(data.cached ?? false)
+        setSummaryGeneratedAt(data.generated_at)
+        // Update local meeting state so switching modes is instant and title refreshes
+        const field = targetMode === 'short' ? 'summary_short' : 'summary_long'
+        setMeeting((prev) =>
+          prev
+            ? {
+                ...prev,
+                [field]: data.summary,
+                summary_generated_at: data.generated_at,
+                ...(data.title ? { title: data.title } : {}),
+              }
+            : prev
+        )
       } catch (err) {
         setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary')
       } finally {
@@ -294,6 +326,16 @@ function MeetingDetailPage() {
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-violet-500" />
               <h3 className="font-semibold text-foreground">Meeting Summary</h3>
+              {summary && summaryGeneratedAt && (
+                <span className="text-[10px] text-muted-foreground">
+                  {summaryCached ? 'Saved' : 'Generated'} ·{' '}
+                  {summaryMode === 'short' ? 'Short' : 'Detailed'} ·{' '}
+                  {new Date(summaryGeneratedAt).toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                  })}
+                </span>
+              )}
             </div>
             {!summary && !summaryLoading && (
               <button
@@ -384,7 +426,7 @@ function MeetingDetailPage() {
                 <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
                   {/* Regenerate */}
                   <button
-                    onClick={() => handleGenerateSummary(summaryMode)}
+                    onClick={() => handleGenerateSummary(summaryMode, true)}
                     disabled={summaryLoading}
                     className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md disabled:opacity-50"
                   >

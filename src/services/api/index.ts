@@ -32,6 +32,9 @@ export interface Meeting {
   messages?: Message[]
   participants?: string[]
   audio_url?: string
+  summary_short?: string
+  summary_long?: string
+  summary_generated_at?: string
 }
 
 export interface MeetingSummary {
@@ -41,6 +44,7 @@ export interface MeetingSummary {
   key_points?: string[]
   action_items?: string[]
   generated_at: string
+  cached?: boolean
 }
 
 export interface LoginResponse {
@@ -172,9 +176,12 @@ export async function getMeeting(id: string): Promise<Meeting> {
 
 export async function getMeetingSummary(
   id: string,
-  mode: 'short' | 'long' = 'short'
+  mode: 'short' | 'long' = 'short',
+  regenerate = false
 ): Promise<MeetingSummary> {
-  return apiFetch<MeetingSummary>(`/lira/v1/meetings/${id}/summary?mode=${mode}`)
+  const params = new URLSearchParams({ mode })
+  if (regenerate) params.set('regenerate', 'true')
+  return apiFetch<MeetingSummary>(`/lira/v1/meetings/${id}/summary?${params}`)
 }
 
 export async function updateMeetingSettings(
