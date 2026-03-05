@@ -150,10 +150,12 @@ export async function login(email: string, password: string): Promise<LoginRespo
 // ── Meetings ──────────────────────────────────────────────────────────────────
 
 export async function createMeeting(title: string, settings?: MeetingSettings): Promise<Meeting> {
-  return apiFetch<Meeting>('/lira/v1/meetings', {
+  type Resp = { meeting: Meeting } | Meeting
+  const data = await apiFetch<Resp>('/lira/v1/meetings', {
     method: 'POST',
     body: JSON.stringify({ title, settings }),
   })
+  return 'meeting' in data ? data.meeting : data
 }
 
 export async function listMeetings(): Promise<Meeting[]> {

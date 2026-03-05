@@ -286,7 +286,7 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
             <div className="mt-4 rounded-xl border border-dashed bg-muted/30 p-4">
               <div className="flex items-center justify-between gap-4">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Browser Demo</p>
+                  <p className="text-sm font-medium text-foreground">Browser Meeting</p>
                   <p className="text-xs text-muted-foreground">
                     Try Lira in a local audio session — no meeting link needed.
                   </p>
@@ -297,7 +297,7 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
                   onClick={() => navigate('/meeting')}
                   className="shrink-0"
                 >
-                  Launch
+                  Open
                 </Button>
               </div>
             </div>
