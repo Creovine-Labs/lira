@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -11,7 +11,12 @@ import {
   Bot,
   ChevronDown,
   ChevronUp,
+  Copy,
+  Check,
+  Share2,
+  RefreshCw,
 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown'
 
 import { useAuthStore } from '@/app/store'
 import { getMeeting, getMeetingSummary, type Meeting, type Message } from '@/services/api'
@@ -100,8 +105,12 @@ function MeetingDetailPage() {
 
   // Summary
   const [summary, setSummary] = useState<string | null>(null)
+  const [summaryMode, setSummaryMode] = useState<'short' | 'long'>('short')
   const [summaryLoading, setSummaryLoading] = useState(false)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [shareOpen, setShareOpen] = useState(false)
+  const shareRef = useRef<HTMLDivElement>(null)
 
   // Transcript expand/collapse
   const [showTranscript, setShowTranscript] = useState(false)
@@ -128,23 +137,81 @@ function MeetingDetailPage() {
     }
   }
 
-  const handleGenerateSummary = useCallback(async () => {
-    if (!id || summaryLoading) return
-    setSummaryLoading(true)
-    setSummaryError(null)
-    try {
-      const data = await getMeetingSummary(id)
-      setSummary(data.summary)
-      // Update the displayed title if the backend auto-generated one
-      if (data.title && meeting) {
-        setMeeting({ ...meeting, title: data.title })
+  const handleGenerateSummary = useCallback(
+    async (mode?: 'short' | 'long') => {
+      if (!id || summaryLoading) return
+      const targetMode = mode ?? summaryMode
+      setSummaryMode(targetMode)
+      setSummaryLoading(true)
+      setSummaryError(null)
+      try {
+        const data = await getMeetingSummary(id, targetMode)
+        setSummary(data.summary)
+        // Update the displayed title if the backend auto-generated one
+        if (data.title && meeting) {
+          setMeeting({ ...meeting, title: data.title })
+        }
+      } catch (err) {
+        setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary')
+      } finally {
+        setSummaryLoading(false)
       }
-    } catch (err) {
-      setSummaryError(err instanceof Error ? err.message : 'Failed to generate summary')
-    } finally {
-      setSummaryLoading(false)
+    },
+    [id, summaryLoading, summaryMode, meeting]
+  )
+
+  // Copy summary to clipboard
+  const handleCopy = useCallback(() => {
+    if (!summary) return
+    // Strip markdown formatting for clean clipboard text
+    const plainText = summary.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+    navigator.clipboard.writeText(plainText).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }, [summary])
+
+  // Share helpers
+  const shareText = summary
+    ? summary.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1')
+    : ''
+  const meetingTitle = meeting?.title || 'Meeting Summary'
+
+  const handleShare = useCallback(
+    (platform: string) => {
+      setShareOpen(false)
+      const text = encodeURIComponent(`${meetingTitle}\n\n${shareText}`)
+      const subject = encodeURIComponent(meetingTitle)
+      switch (platform) {
+        case 'whatsapp':
+          window.open(`https://wa.me/?text=${text}`, '_blank')
+          break
+        case 'email':
+          window.open(`mailto:?subject=${subject}&body=${text}`, '_blank')
+          break
+        case 'twitter':
+          window.open(`https://twitter.com/intent/tweet?text=${text}`, '_blank')
+          break
+        case 'clipboard':
+          navigator.clipboard.writeText(`${meetingTitle}\n\n${shareText}`)
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+          break
+      }
+    },
+    [meetingTitle, shareText]
+  )
+
+  // Close share dropdown when clicking outside
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (shareRef.current && !shareRef.current.contains(e.target as Node)) {
+        setShareOpen(false)
+      }
     }
-  }, [id, summaryLoading, meeting])
+    if (shareOpen) document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [shareOpen])
 
   // ── Loading / error states ──────────────────────────────────────────────
 
@@ -230,11 +297,14 @@ function MeetingDetailPage() {
             </div>
             {!summary && !summaryLoading && (
               <button
-                onClick={handleGenerateSummary}
+                onClick={() => handleGenerateSummary('short')}
                 disabled={msgCount === 0}
-                className="rounded-lg bg-violet-600 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
+                className="rounded-full border border-violet-500/30 bg-violet-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-500 hover:shadow-md disabled:opacity-50 disabled:hover:shadow-sm"
               >
-                Generate Summary
+                <span className="flex items-center gap-1.5">
+                  <Sparkles className="h-3.5 w-3.5" />
+                  Generate Summary
+                </span>
               </button>
             )}
           </div>
@@ -252,7 +322,7 @@ function MeetingDetailPage() {
               <div className="flex items-center gap-3 py-4">
                 <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
                 <p className="text-sm text-muted-foreground">
-                  Analyzing {msgCount} messages… this may take a few seconds.
+                  Generating {summaryMode} summary from {msgCount} messages…
                 </p>
               </div>
             )}
@@ -261,7 +331,7 @@ function MeetingDetailPage() {
               <div className="space-y-2">
                 <p className="text-sm text-destructive">{summaryError}</p>
                 <button
-                  onClick={handleGenerateSummary}
+                  onClick={() => handleGenerateSummary()}
                   className="text-sm font-medium text-violet-500 underline-offset-2 hover:underline"
                 >
                   Try again
@@ -270,16 +340,125 @@ function MeetingDetailPage() {
             )}
 
             {summary && (
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <div className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                  {summary}
+              <div className="space-y-4">
+                {/* Rendered markdown summary */}
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-li:leading-relaxed prose-strong:text-foreground prose-em:text-muted-foreground">
+                  <ReactMarkdown
+                    components={{
+                      // Suppress h1-h6 — render as bold paragraphs instead
+                      h1: ({ children }) => (
+                        <p className="text-base font-bold mt-4 mb-1">{children}</p>
+                      ),
+                      h2: ({ children }) => (
+                        <p className="text-base font-bold mt-4 mb-1">{children}</p>
+                      ),
+                      h3: ({ children }) => (
+                        <p className="text-sm font-bold mt-3 mb-1">{children}</p>
+                      ),
+                      h4: ({ children }) => (
+                        <p className="text-sm font-semibold mt-2 mb-0.5">{children}</p>
+                      ),
+                      h5: ({ children }) => (
+                        <p className="text-sm font-semibold mt-2 mb-0.5">{children}</p>
+                      ),
+                      h6: ({ children }) => (
+                        <p className="text-sm font-semibold mt-2 mb-0.5">{children}</p>
+                      ),
+                      p: ({ children }) => (
+                        <p className="text-sm leading-relaxed mb-2">{children}</p>
+                      ),
+                      ul: ({ children }) => (
+                        <ul className="list-disc pl-4 space-y-1 mb-2">{children}</ul>
+                      ),
+                      ol: ({ children }) => (
+                        <ol className="list-decimal pl-4 space-y-1 mb-2">{children}</ol>
+                      ),
+                      li: ({ children }) => <li className="text-sm leading-relaxed">{children}</li>,
+                    }}
+                  >
+                    {summary}
+                  </ReactMarkdown>
                 </div>
-                <button
-                  onClick={handleGenerateSummary}
-                  className="mt-4 text-xs font-medium text-violet-500 underline-offset-2 hover:underline"
-                >
-                  Regenerate summary
-                </button>
+
+                {/* Action bar: buttons row */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-border/50">
+                  {/* Regenerate */}
+                  <button
+                    onClick={() => handleGenerateSummary(summaryMode)}
+                    disabled={summaryLoading}
+                    className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md disabled:opacity-50"
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Regenerate
+                  </button>
+
+                  {/* Toggle short/long */}
+                  <button
+                    onClick={() =>
+                      handleGenerateSummary(summaryMode === 'short' ? 'long' : 'short')
+                    }
+                    disabled={summaryLoading}
+                    className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-50 px-4 py-2 text-xs font-medium text-violet-700 shadow-sm transition hover:bg-violet-100 hover:shadow-md dark:bg-violet-500/10 dark:text-violet-400 dark:hover:bg-violet-500/20 disabled:opacity-50"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    {summaryMode === 'short' ? 'Detailed Summary' : 'Shorter Summary'}
+                  </button>
+
+                  {/* Copy */}
+                  <button
+                    onClick={handleCopy}
+                    className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md"
+                  >
+                    {copied ? (
+                      <Check className="h-3.5 w-3.5 text-green-500" />
+                    ) : (
+                      <Copy className="h-3.5 w-3.5" />
+                    )}
+                    {copied ? 'Copied!' : 'Copy'}
+                  </button>
+
+                  {/* Share dropdown */}
+                  <div className="relative" ref={shareRef}>
+                    <button
+                      onClick={() => setShareOpen((v) => !v)}
+                      className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md"
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
+                      Share
+                    </button>
+                    {shareOpen && (
+                      <div className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border bg-card shadow-lg animate-in fade-in slide-in-from-top-1">
+                        <div className="p-1">
+                          <button
+                            onClick={() => handleShare('whatsapp')}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                          >
+                            <span className="text-base">💬</span> WhatsApp
+                          </button>
+                          <button
+                            onClick={() => handleShare('email')}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                          >
+                            <span className="text-base">📧</span> Email
+                          </button>
+                          <button
+                            onClick={() => handleShare('twitter')}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                          >
+                            <span className="text-base">🐦</span> Twitter / X
+                          </button>
+                          <div className="my-1 border-t border-border/50" />
+                          <button
+                            onClick={() => handleShare('clipboard')}
+                            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
+                          >
+                            <Copy className="h-4 w-4" /> Copy to clipboard
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
           </div>

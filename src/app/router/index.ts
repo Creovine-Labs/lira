@@ -3,6 +3,7 @@ export const ROUTES = {
   meeting: '/meeting',
   meetings: '/meetings',
   meetingDetail: '/meetings/:id',
+  settings: '/settings',
   uiLab: '/ui-lab',
 } as const
 

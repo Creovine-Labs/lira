@@ -3,7 +3,7 @@ import { env } from '@/env'
 // ── Types (mirror backend lira.models.ts) ────────────────────────────────────
 
 export interface MeetingSettings {
-  personality?: 'supportive' | 'challenger' | 'facilitator' | 'technical' | 'business'
+  personality?: 'supportive' | 'challenger' | 'facilitator' | 'analyst'
   participation_level?: number // 0.0 – 1.0
   wake_word_enabled?: boolean
   proactive_suggest?: boolean
@@ -168,8 +168,11 @@ export async function getMeeting(id: string): Promise<Meeting> {
   return 'meeting' in data ? data.meeting : data
 }
 
-export async function getMeetingSummary(id: string): Promise<MeetingSummary> {
-  return apiFetch<MeetingSummary>(`/lira/v1/meetings/${id}/summary`)
+export async function getMeetingSummary(
+  id: string,
+  mode: 'short' | 'long' = 'short'
+): Promise<MeetingSummary> {
+  return apiFetch<MeetingSummary>(`/lira/v1/meetings/${id}/summary?mode=${mode}`)
 }
 
 export async function updateMeetingSettings(
@@ -221,11 +224,12 @@ export interface DeployBotResponse {
 /** Deploy a bot to a Google Meet / Zoom meeting */
 export async function deployBot(
   meetingUrl: string,
-  displayName?: string
+  displayName?: string,
+  settings?: Partial<MeetingSettings>
 ): Promise<DeployBotResponse> {
   return apiFetch<DeployBotResponse>('/lira/v1/bot/deploy', {
     method: 'POST',
-    body: JSON.stringify({ meeting_url: meetingUrl, display_name: displayName }),
+    body: JSON.stringify({ meeting_url: meetingUrl, display_name: displayName, settings }),
   })
 }
 

@@ -2,7 +2,14 @@ import { useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 
-import { HomePage, MeetingPage, MeetingsPage, MeetingDetailPage, UiLabPage } from '@/pages'
+import {
+  HomePage,
+  MeetingPage,
+  MeetingsPage,
+  MeetingDetailPage,
+  UiLabPage,
+  SettingsPage,
+} from '@/pages'
 import { useAuthStore } from '@/app/store'
 import { credentials } from '@/services/api'
 import { env } from '@/env'
@@ -33,6 +40,7 @@ function App() {
         <Route path="/meeting" element={<MeetingPage />} />
         <Route path="/meetings" element={<MeetingsPage />} />
         <Route path="/meetings/:id" element={<MeetingDetailPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

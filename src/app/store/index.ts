@@ -111,6 +111,34 @@ interface BotSlice {
   clearBot: () => void
 }
 
+// ── User Preferences Store ──────────────────────────────────────────────────
+
+export type VoiceId = 'tiffany' | 'ruth' | 'matthew' | 'stephen'
+export type Personality = 'supportive' | 'challenger' | 'facilitator' | 'analyst'
+
+interface UserPrefsSlice {
+  aiName: string
+  voiceId: VoiceId
+  personality: Personality
+  setAiName: (name: string) => void
+  setVoiceId: (voiceId: VoiceId) => void
+  setPersonality: (personality: Personality) => void
+}
+
+export const useUserPrefsStore = create<UserPrefsSlice>()(
+  persist(
+    (set) => ({
+      aiName: 'Lira',
+      voiceId: 'tiffany',
+      personality: 'supportive',
+      setAiName: (aiName) => set({ aiName }),
+      setVoiceId: (voiceId) => set({ voiceId }),
+      setPersonality: (personality) => set({ personality }),
+    }),
+    { name: 'lira-user-prefs' }
+  )
+)
+
 export const useBotStore = create<BotSlice>()((set) => ({
   botId: null,
   meetingUrl: null,

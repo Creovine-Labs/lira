@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { ExternalLink, Loader2, Radio, Square, Video, CheckCircle2 } from 'lucide-react'
 
-import { useBotStore } from '@/app/store'
+import { useBotStore, useUserPrefsStore } from '@/app/store'
 import {
   deployBot,
   getBotStatus,
@@ -50,6 +50,8 @@ function BotDeployPanel() {
   const [meetingLink, setMeetingLink] = useState('')
   const [deploying, setDeploying] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
+
+  const { aiName, voiceId, personality } = useUserPrefsStore()
 
   const {
     botId,
@@ -185,7 +187,7 @@ function BotDeployPanel() {
     setDeploying(true)
 
     try {
-      const res = await deployBot(url)
+      const res = await deployBot(url, aiName, { ai_name: aiName, voice_id: voiceId, personality })
       setBotDeployed(res.bot_id, url, res.platform, res.state)
       setMeetingLink('')
       startPolling(res.bot_id)

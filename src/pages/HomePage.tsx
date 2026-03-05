@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
-import { Clock, CreditCard, FileText, LogOut, Mic, Settings, Shield, Sparkles } from 'lucide-react'
+import { Clock, LogOut, Mic, Settings } from 'lucide-react'
 
 import { useAuthStore } from '@/app/store'
 import { env } from '@/env'
@@ -308,42 +308,14 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
             <DashCard
               icon={Clock}
               title="Meeting History"
-              description="Review past meetings, transcripts, and AI-generated summaries."
+              description="Review past meetings and transcripts."
               onClick={() => navigate('/meetings')}
-            />
-            <DashCard
-              icon={Sparkles}
-              title="AI Summaries"
-              description="Automatic meeting summaries powered by Amazon Nova."
-              onClick={() => navigate('/meetings')}
-            />
-            <DashCard
-              icon={Shield}
-              title="Subscription"
-              description="Manage your plan and usage limits."
-              badge="Coming soon"
-              disabled
-            />
-            <DashCard
-              icon={CreditCard}
-              title="Billing"
-              description="View invoices and payment methods."
-              badge="Coming soon"
-              disabled
-            />
-            <DashCard
-              icon={FileText}
-              title="License"
-              description="Enterprise licensing and seat management."
-              badge="Coming soon"
-              disabled
             />
             <DashCard
               icon={Settings}
               title="Settings"
-              description="Account preferences and integrations."
-              badge="Coming soon"
-              disabled
+              description="Configure your AI assistant, voice, and preferences."
+              onClick={() => navigate('/settings')}
             />
           </div>
         </div>
