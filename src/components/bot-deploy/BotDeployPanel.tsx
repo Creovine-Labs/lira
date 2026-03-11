@@ -9,7 +9,7 @@ import {
   CheckCircle2,
 } from 'lucide-react'
 
-import { useBotStore, useUserPrefsStore } from '@/app/store'
+import { useBotStore, useUserPrefsStore, useOrgStore } from '@/app/store'
 import {
   deployBot,
   getBotStatus,
@@ -57,11 +57,23 @@ const STATE_COLORS: Record<BotState, string> = {
 
 function BotDeployPanel() {
   const [meetingLink, setMeetingLink] = useState('')
+  const [meetingTopic, setMeetingTopic] = useState('')
   const [deploying, setDeploying] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [terminatingAll, setTerminatingAll] = useState(false)
 
   const { aiName, voiceId, personality } = useUserPrefsStore()
+  const { currentOrgId, organizations } = useOrgStore()
+  const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+
+  // Auto-select org
+  useEffect(() => {
+    if (organizations.length === 1) {
+      setSelectedOrgId(organizations[0].org_id)
+    } else if (currentOrgId) {
+      setSelectedOrgId(currentOrgId)
+    }
+  }, [organizations, currentOrgId])
 
   const {
     botId,
@@ -197,9 +209,16 @@ function BotDeployPanel() {
     setDeploying(true)
 
     try {
-      const res = await deployBot(url, aiName, { ai_name: aiName, voice_id: voiceId, personality })
+      const res = await deployBot(
+        url,
+        aiName,
+        { ai_name: aiName, voice_id: voiceId, personality },
+        selectedOrgId ?? undefined,
+        meetingTopic.trim() || undefined
+      )
       setBotDeployed(res.bot_id, url, res.platform, res.state)
       setMeetingLink('')
+      setMeetingTopic('')
       startPolling(res.bot_id)
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to deploy bot')
@@ -351,6 +370,12 @@ function BotDeployPanel() {
             <span className="font-medium text-white">Lira is in the meeting.</span> Open your
             meeting — you'll see Lira as a participant. Say{' '}
             <span className="font-medium text-violet-400">"Lira"</span> to get her attention.
+            {selectedOrgId && (
+              <span className="mt-1 block text-xs text-slate-400">
+                Using context from:{' '}
+                {organizations.find((o) => o.org_id === selectedOrgId)?.name ?? 'organization'}
+              </span>
+            )}
           </div>
         )}
 
@@ -425,6 +450,55 @@ function BotDeployPanel() {
         <p className="mt-1.5 text-xs text-muted-foreground">
           Lira will join as a participant and respond in real-time.
         </p>
+      </div>
+
+      {/* Organization context */}
+      {organizations.length > 0 && (
+        <div>
+          <label
+            htmlFor="bot-deploy-org-select"
+            className="mb-1.5 block text-sm font-medium text-foreground"
+          >
+            Organization context
+          </label>
+          <select
+            id="bot-deploy-org-select"
+            className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+            value={selectedOrgId ?? ''}
+            onChange={(e) => setSelectedOrgId(e.target.value || null)}
+            disabled={deploying}
+          >
+            <option value="">None — no org context</option>
+            {organizations.map((org) => (
+              <option key={org.org_id} value={org.org_id}>
+                {org.name}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Lira will use this organization's knowledge in the meeting.
+          </p>
+        </div>
+      )}
+
+      {/* Meeting topic */}
+      <div>
+        <label
+          htmlFor="bot-deploy-topic-input"
+          className="mb-1.5 block text-sm font-medium text-foreground"
+        >
+          Meeting topic <span className="text-xs text-muted-foreground">(optional)</span>
+        </label>
+        <input
+          id="bot-deploy-topic-input"
+          type="text"
+          className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+          placeholder="e.g. Q4 Planning, Product Review"
+          value={meetingTopic}
+          onChange={(e) => setMeetingTopic(e.target.value)}
+          disabled={deploying}
+          maxLength={500}
+        />
       </div>
 
       {error && (

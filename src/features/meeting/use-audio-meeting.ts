@@ -37,6 +37,11 @@ export function useAudioMeeting() {
   const [micOn, setMicOn] = useState(false)
   const [micLevel, setMicLevel] = useState(0)
   const [error, setError] = useState<string | null>(null)
+  const [lastTaskCreated, setLastTaskCreated] = useState<{
+    task_id: string
+    title: string
+    org_id: string
+  } | null>(null)
 
   // Mic level polling
   const levelIntervalRef = useRef<number | undefined>(undefined)
@@ -75,7 +80,7 @@ export function useAudioMeeting() {
   // ── Start Meeting ──────────────────────────────────────────────────────────
 
   const startMeeting = useCallback(
-    async (title: string, settings?: MeetingSettings) => {
+    async (title: string, settings?: MeetingSettings, orgId?: string) => {
       if (!token) throw new Error('Not signed in')
       setPhase('connecting')
       setError(null)
@@ -101,6 +106,7 @@ export function useAudioMeeting() {
           user_name: userName ?? userEmail ?? 'User',
           session_id: meeting.session_id,
           settings: settings ?? {},
+          ...(orgId ? { org_id: orgId } : {}),
         })
       }
 
@@ -224,6 +230,18 @@ export function useAudioMeeting() {
         break
       }
 
+      case 'task_created': {
+        const p = (msg.payload as Record<string, unknown>) ?? {}
+        const task = {
+          task_id: (p.task_id as string) ?? '',
+          title: (p.title as string) ?? 'New task',
+          org_id: (p.org_id as string) ?? '',
+        }
+        setLastTaskCreated(task)
+        setTimeout(() => setLastTaskCreated(null), 4000)
+        break
+      }
+
       case 'error': {
         const p = (msg.payload as Record<string, unknown>) ?? {}
         const errMsg = (p.message as string) ?? 'Unknown server error'
@@ -322,6 +340,7 @@ export function useAudioMeeting() {
     micOn,
     micLevel,
     error,
+    lastTaskCreated,
     // Meeting store
     meetingId: store.meetingId,
     meetingTitle: store.meetingTitle,

@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, Mic, MicOff, PhoneOff, Send, AudioLines } from 'lucide-react'
+import { Bot, Mic, MicOff, PhoneOff, Send, AudioLines, CheckSquare, Building2 } from 'lucide-react'
 
 import { useAuthStore } from '@/app/store'
+import { useOrgStore } from '@/app/store'
 import type { AiStatus, TranscriptLine } from '@/app/store'
 import { useAudioMeeting } from '@/features/meeting/use-audio-meeting'
 import { LiraLogo } from '@/components/LiraLogo'
@@ -13,14 +14,20 @@ import { cn } from '@/lib'
 function MeetingPage() {
   const navigate = useNavigate()
   const { token } = useAuthStore()
+  const { organizations, currentOrgId } = useOrgStore()
   const meeting = useAudioMeeting()
   const [title, setTitle] = useState('')
   const [aiName, setAiName] = useState('Lira')
+  const [selectedOrgId, setSelectedOrgId] = useState<string>(currentOrgId ?? '')
   const [startError, setStartError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!token) navigate('/', { replace: true })
   }, [token, navigate])
+
+  const taskToast = meeting.lastTaskCreated
+    ? `✓ Task added: ${meeting.lastTaskCreated.title}`
+    : null
 
   const isInMeeting = meeting.phase !== 'idle' && meeting.phase !== 'error'
 
@@ -28,10 +35,11 @@ function MeetingPage() {
     if (!title.trim()) return
     setStartError(null)
     try {
-      await meeting.startMeeting(title.trim(), {
-        ai_name: aiName.trim() || 'Lira',
-        wake_word_enabled: true,
-      })
+      await meeting.startMeeting(
+        title.trim(),
+        { ai_name: aiName.trim() || 'Lira', wake_word_enabled: true },
+        selectedOrgId || undefined
+      )
     } catch (e) {
       setStartError(e instanceof Error ? e.message : 'Failed to start meeting')
     }
@@ -93,7 +101,37 @@ function MeetingPage() {
                   Say this name during the meeting to get the AI’s attention
                 </p>
               </div>
-
+              {/* Link to organization */}
+              {organizations.length > 0 && (
+                <div>
+                  <label
+                    htmlFor="org-select"
+                    className="mb-1.5 block text-sm font-medium text-slate-200"
+                  >
+                    <Building2 className="inline h-3.5 w-3.5 mr-1 opacity-70" />
+                    Link to organization{' '}
+                    <span className="text-slate-500 font-normal">(optional)</span>
+                  </label>
+                  <select
+                    id="org-select"
+                    className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+                    value={selectedOrgId}
+                    onChange={(e) => setSelectedOrgId(e.target.value)}
+                  >
+                    <option value="">— No organization —</option>
+                    {organizations.map((org) => (
+                      <option key={org.org_id} value={org.org_id}>
+                        {org.name}
+                      </option>
+                    ))}
+                  </select>
+                  {selectedOrgId && (
+                    <p className="mt-1 text-xs text-violet-400">
+                      Lira will add tasks to this org when you ask during the meeting
+                    </p>
+                  )}
+                </div>
+              )}
               {(startError || meeting.error) && (
                 <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-400">
                   {startError || meeting.error}
@@ -153,6 +191,14 @@ function MeetingPage() {
         aiName={aiName}
         onLeave={handleLeave}
       />
+
+      {/* Task created toast */}
+      {taskToast && (
+        <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-xl border border-violet-500/40 bg-slate-900/95 px-5 py-3 shadow-2xl backdrop-blur-sm">
+          <CheckSquare className="h-4 w-4 text-violet-400 shrink-0" />
+          <p className="text-sm text-white">{taskToast}</p>
+        </div>
+      )}
 
       {/* Body */}
       <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">

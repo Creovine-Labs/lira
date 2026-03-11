@@ -1,6 +1,13 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { BotState } from '@/services/api'
+import type {
+  BotState,
+  Organization,
+  TaskRecord,
+  KBEntry,
+  DocumentRecord,
+  CrawlStatus,
+} from '@/services/api'
 
 interface AuthSlice {
   token: string | null
@@ -166,4 +173,139 @@ export const useBotStore = create<BotSlice>()((set) => ({
       error: null,
       deployedAt: null,
     }),
+}))
+
+// ── Organization Store ────────────────────────────────────────────────────────
+
+interface OrgSlice {
+  currentOrgId: string | null
+  organizations: Organization[]
+  setCurrentOrg: (orgId: string | null) => void
+  setOrganizations: (orgs: Organization[]) => void
+  addOrganization: (org: Organization) => void
+  removeOrganization: (orgId: string) => void
+  updateOrganization: (orgId: string, updates: Partial<Organization>) => void
+  clear: () => void
+}
+
+export const useOrgStore = create<OrgSlice>()(
+  persist(
+    (set) => ({
+      currentOrgId: null,
+      organizations: [],
+      setCurrentOrg: (orgId) => set({ currentOrgId: orgId }),
+      setOrganizations: (organizations) =>
+        set((s) => ({
+          organizations,
+          currentOrgId:
+            s.currentOrgId && organizations.some((o) => o.org_id === s.currentOrgId)
+              ? s.currentOrgId
+              : (organizations[0]?.org_id ?? null),
+        })),
+      addOrganization: (org) =>
+        set((s) => ({
+          organizations: [...s.organizations, org],
+          currentOrgId: s.currentOrgId ?? org.org_id,
+        })),
+      removeOrganization: (orgId) =>
+        set((s) => {
+          const filtered = s.organizations.filter((o) => o.org_id !== orgId)
+          return {
+            organizations: filtered,
+            currentOrgId: s.currentOrgId === orgId ? (filtered[0]?.org_id ?? null) : s.currentOrgId,
+          }
+        }),
+      updateOrganization: (orgId, updates) =>
+        set((s) => ({
+          organizations: s.organizations.map((o) =>
+            o.org_id === orgId ? { ...o, ...updates } : o
+          ),
+        })),
+      clear: () => set({ currentOrgId: null, organizations: [] }),
+    }),
+    { name: 'lira-org' }
+  )
+)
+
+// ── Knowledge Base Store ──────────────────────────────────────────────────────
+
+interface KBSlice {
+  entries: KBEntry[]
+  crawlStatus: CrawlStatus | null
+  loading: boolean
+  setEntries: (entries: KBEntry[]) => void
+  setCrawlStatus: (status: CrawlStatus | null) => void
+  setLoading: (v: boolean) => void
+  removeEntry: (id: string) => void
+  clear: () => void
+}
+
+export const useKBStore = create<KBSlice>()((set) => ({
+  entries: [],
+  crawlStatus: null,
+  loading: false,
+  setEntries: (entries) => set({ entries }),
+  setCrawlStatus: (crawlStatus) => set({ crawlStatus }),
+  setLoading: (loading) => set({ loading }),
+  removeEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+  clear: () => set({ entries: [], crawlStatus: null }),
+}))
+
+// ── Document Store ────────────────────────────────────────────────────────────
+
+interface DocumentSlice {
+  documents: DocumentRecord[]
+  loading: boolean
+  setDocuments: (docs: DocumentRecord[]) => void
+  addDocument: (doc: DocumentRecord) => void
+  removeDocument: (docId: string) => void
+  updateDocument: (docId: string, updates: Partial<DocumentRecord>) => void
+  setLoading: (v: boolean) => void
+  clear: () => void
+}
+
+export const useDocumentStore = create<DocumentSlice>()((set) => ({
+  documents: [],
+  loading: false,
+  setDocuments: (documents) => set({ documents }),
+  addDocument: (doc) => set((s) => ({ documents: [doc, ...s.documents] })),
+  removeDocument: (docId) =>
+    set((s) => ({ documents: s.documents.filter((d) => d.doc_id !== docId) })),
+  updateDocument: (docId, updates) =>
+    set((s) => ({
+      documents: s.documents.map((d) => (d.doc_id === docId ? { ...d, ...updates } : d)),
+    })),
+  setLoading: (loading) => set({ loading }),
+  clear: () => set({ documents: [] }),
+}))
+
+// ── Task Store ────────────────────────────────────────────────────────────────
+
+interface TaskSlice {
+  tasks: TaskRecord[]
+  loading: boolean
+  statusFilter: string | null
+  setTasks: (tasks: TaskRecord[]) => void
+  addTask: (task: TaskRecord) => void
+  removeTask: (taskId: string) => void
+  updateTask: (taskId: string, updates: Partial<TaskRecord>) => void
+  setLoading: (v: boolean) => void
+  setStatusFilter: (status: string | null) => void
+  clear: () => void
+}
+
+export const useTaskStore = create<TaskSlice>()((set) => ({
+  tasks: [],
+  loading: false,
+  statusFilter: null,
+  setTasks: (tasks) => set({ tasks }),
+  addTask: (task) => set((s) => ({ tasks: [task, ...s.tasks] })),
+  removeTask: (taskId) => set((s) => ({ tasks: s.tasks.filter((t) => t.task_id !== taskId) })),
+  updateTask: (taskId, updates) =>
+    set((s) => ({
+      tasks: s.tasks.map((t) => (t.task_id === taskId ? { ...t, ...updates } : t)),
+    })),
+  setLoading: (loading) => set({ loading }),
+  setStatusFilter: (statusFilter) => set({ statusFilter }),
+  clear: () => set({ tasks: [], statusFilter: null }),
 }))
