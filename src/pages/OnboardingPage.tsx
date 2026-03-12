@@ -82,7 +82,7 @@ function OnboardingPage() {
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       toast.success(`${organization.name} created!`)
-      navigate('/org/settings')
+      navigate('/')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create organization')
     } finally {
@@ -179,7 +179,7 @@ function OnboardingPage() {
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       toast.success(`Joined ${organization.name}!`)
-      navigate('/org/settings')
+      navigate('/')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to join organization')
     } finally {
@@ -233,14 +233,6 @@ function OnboardingPage() {
                       Join a team that's already set up their context
                     </p>
                   </div>
-                </button>
-
-                <button
-                  onClick={() => navigate(-1)}
-                  className="flex w-full items-center justify-center gap-1.5 pt-2 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
                 </button>
               </div>
             )}

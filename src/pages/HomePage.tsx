@@ -233,6 +233,12 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
       .catch(() => setOrgsFetched(true))
   }, [setOrganizations])
 
+  useEffect(() => {
+    if (orgsFetched && organizations.length === 0) {
+      navigate('/onboarding')
+    }
+  }, [orgsFetched, organizations.length, navigate])
+
   function handleSignOut() {
     clearCredentials()
     credentials.clear()
@@ -288,38 +294,6 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
             Deploy Lira to your meetings or review past sessions.
           </p>
         </div>
-
-        {/* Onboarding prompt — show once orgs are known to be empty */}
-        {orgsFetched && organizations.length === 0 && (
-          <div className="mb-6 flex items-start gap-4 rounded-xl border border-violet-500/30 bg-violet-50/60 px-5 py-4 dark:bg-violet-950/20">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/40">
-              <Building2 className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold text-foreground">
-                Set up an organization so Lira can understand your team
-              </p>
-              <p className="mt-0.5 text-sm text-muted-foreground">
-                The details you add — your company profile, knowledge base, and documents — help
-                Lira give smarter, more relevant responses in every meeting.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <button
-                  onClick={() => navigate('/onboarding')}
-                  className="rounded-lg bg-violet-600 px-4 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-500"
-                >
-                  Create Organization
-                </button>
-                <button
-                  onClick={() => navigate('/onboarding')}
-                  className="rounded-lg border border-violet-500/40 px-4 py-1.5 text-xs font-semibold text-violet-600 transition hover:bg-violet-100 dark:text-violet-400 dark:hover:bg-violet-900/30"
-                >
-                  Join with Invite Code
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
 
         <div className="grid gap-6 lg:grid-cols-5">
           {/* Left column — Deploy Lira */}
