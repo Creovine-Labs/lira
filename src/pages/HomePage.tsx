@@ -17,7 +17,7 @@ import { BotDeployPanel } from '@/components/bot-deploy'
 
 // ── Login form ────────────────────────────────────────────────────────────────
 
-function LoginForm({ onLogin }: { onLogin: () => void }) {
+function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
   const { setCredentials } = useAuthStore()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -46,7 +46,8 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
       const res = await apiGoogleLogin(response.credential)
       setCredentials(res.token, res.user.email, gName, gPicture)
       credentials.set(res.token)
-      onLogin()
+      const orgs = await listOrganizations().catch(() => [])
+      onLogin(orgs.length === 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.')
     } finally {
@@ -66,7 +67,8 @@ function LoginForm({ onLogin }: { onLogin: () => void }) {
       const res = await apiLogin(email.trim(), password.trim())
       setCredentials(res.token, res.user.email)
       credentials.set(res.token)
-      onLogin()
+      const orgs = await listOrganizations().catch(() => [])
+      onLogin(orgs.length === 0)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
     } finally {
@@ -398,12 +400,21 @@ function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
 
 function HomePage() {
   const { token } = useAuthStore()
+  const navigate = useNavigate()
 
   const [stage, setStage] = useState<'login' | 'home'>(() => (token ? 'home' : 'login'))
 
   // Keep stage in sync with token (handles sign-out from any location)
   const derivedStage = token ? 'home' : 'login'
   if (stage !== derivedStage) setStage(derivedStage)
+
+  function handleLogin(isNew: boolean) {
+    if (isNew) {
+      navigate('/onboarding')
+    } else {
+      setStage('home')
+    }
+  }
 
   // Authenticated — full-screen dashboard
   if (stage === 'home') {
@@ -425,7 +436,7 @@ function HomePage() {
 
           {/* Body */}
           <div className="px-8 py-6">
-            <LoginForm onLogin={() => setStage('home')} />
+            <LoginForm onLogin={handleLogin} />
           </div>
         </div>
 
