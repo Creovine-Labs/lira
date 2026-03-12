@@ -112,7 +112,9 @@ function OrgMembersPage() {
       await transferOwnership(currentOrgId, transferTarget.user_id)
       await loadData()
       setTransferTarget(null)
-      toast.success(`Ownership transferred to ${transferTarget.user_id}`)
+      toast.success(
+        `Ownership transferred to ${transferTarget.name ?? transferTarget.email ?? transferTarget.user_id}`
+      )
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to transfer ownership'
       toast.error(msg)
@@ -201,7 +203,7 @@ function OrgMembersPage() {
           {members.map((m) => (
             <div key={m.user_id} className="flex items-center gap-4 px-6 py-4">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
-                {m.user_id.slice(0, 2).toUpperCase()}
+                {(m.name ?? m.email ?? m.user_id).slice(0, 2).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium text-foreground">
@@ -211,8 +213,7 @@ function OrgMembersPage() {
                   )}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  {m.name && m.email ? m.email : m.name ? m.user_id : null}
-                  {(m.name ?? m.email) ? ' · ' : null}
+                  {m.email && m.name ? `${m.email} · ` : ''}
                   Joined {new Date(m.joined_at).toLocaleDateString()}
                 </p>
               </div>
