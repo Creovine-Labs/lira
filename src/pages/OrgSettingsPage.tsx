@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Plus, Save, Trash2, X } from 'lucide-react'
+import { Loader2, Lock, Plus, Save, Trash2, X } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { useOrgStore } from '@/app/store'
+import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   getOrganization,
+  listOrgMembers,
   updateOrganization,
   type OrganizationProfile,
   type OrgProduct,
@@ -34,9 +35,20 @@ const INDUSTRIES = [
 
 function OrgSettingsPage() {
   const { currentOrgId, updateOrganization: updateOrgInStore } = useOrgStore()
+  const userId = useAuthStore((s) => {
+    const token = s.token
+    if (!token) return null
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]))
+      return payload.id ?? payload.sub ?? null
+    } catch {
+      return null
+    }
+  })
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [currentRole, setCurrentRole] = useState<string | null>(null)
 
   // Profile fields
   const [name, setName] = useState('')
@@ -64,7 +76,13 @@ function OrgSettingsPage() {
     if (!currentOrgId) return
     setLoading(true)
     try {
-      const org = await getOrganization(currentOrgId)
+      const [org, memberList] = await Promise.all([
+        getOrganization(currentOrgId),
+        listOrgMembers(currentOrgId),
+      ])
+      // Determine current user's role
+      const me = memberList.find((m) => m.user_id === userId)
+      setCurrentRole(me?.role ?? null)
       setName(org.name)
       const p = org.profile || {}
       setCompanyName(p.company_name ?? '')
@@ -135,6 +153,8 @@ function OrgSettingsPage() {
     )
   }
 
+  const canEdit = currentRole === 'owner' || currentRole === 'admin'
+
   return (
     <div className="space-y-8 pb-8">
       <div>
@@ -147,6 +167,18 @@ function OrgSettingsPage() {
           responses during meetings.
         </p>
       </div>
+
+      {/* Read-only notice for plain members */}
+      {!canEdit && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
+          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <p className="text-sm text-amber-700 dark:text-amber-300">
+            You're viewing these settings as a <strong>member</strong>. Only admins and the owner
+            can make changes. Ask your organization owner to promote you to admin if you need
+            editing access.
+          </p>
+        </div>
+      )}
 
       {/* Basic Info */}
       <section className="rounded-xl border bg-card p-6">
@@ -283,7 +315,8 @@ function OrgSettingsPage() {
                     setNewValue('')
                   }
                 }}
-                className="rounded-lg border px-3 py-2 text-sm hover:bg-muted"
+                disabled={!canEdit}
+                className="rounded-lg border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -300,7 +333,8 @@ function OrgSettingsPage() {
             onClick={() =>
               setProducts([...products, { name: '', description: '', status: 'active' }])
             }
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            disabled={!canEdit}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" />
             Add
@@ -356,7 +390,8 @@ function OrgSettingsPage() {
           <h2 className="text-base font-semibold text-foreground">Terminology</h2>
           <button
             onClick={() => setTerminology([...terminology, { term: '', definition: '' }])}
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            disabled={!canEdit}
+            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
             <Plus className="h-3.5 w-3.5" />
             Add
@@ -425,7 +460,7 @@ function OrgSettingsPage() {
       <div className="flex justify-end">
         <button
           onClick={handleSave}
-          disabled={saving || !name.trim()}
+          disabled={saving || !name.trim() || !canEdit}
           className="flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
         >
           {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}

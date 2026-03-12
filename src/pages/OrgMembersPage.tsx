@@ -241,16 +241,20 @@ function OrgMembersPage() {
               {/* Actions (only for owner/admin, not on self or other owners) */}
               {isOwnerOrAdmin && m.user_id !== userId && m.role !== 'owner' && (
                 <div className="flex items-center gap-1">
-                  <select
-                    value={m.role}
-                    onChange={(e) =>
-                      handleRoleChange(m.user_id, e.target.value as 'admin' | 'member')
-                    }
-                    className="rounded-lg border bg-background px-2 py-1 text-xs"
-                  >
-                    <option value="member">Member</option>
-                    <option value="admin">Admin</option>
-                  </select>
+                  {/* Only the owner can promote/demote — backend enforces this */}
+                  {currentMember?.role === 'owner' && (
+                    <select
+                      value={m.role}
+                      onChange={(e) =>
+                        handleRoleChange(m.user_id, e.target.value as 'admin' | 'member')
+                      }
+                      className="rounded-lg border bg-background px-2 py-1 text-xs"
+                      title="Change role"
+                    >
+                      <option value="member">Member</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  )}
                   <button
                     onClick={() => handleRemove(m.user_id)}
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"

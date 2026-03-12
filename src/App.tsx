@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
+import { Toaster } from 'sonner'
 
 import {
   HomePage,
@@ -68,6 +69,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <AuthExpiryGuard />
+      <Toaster position="top-right" richColors closeButton />
     </GoogleOAuthProvider>
   )
 }
