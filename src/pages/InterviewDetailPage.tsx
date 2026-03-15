@@ -1394,7 +1394,7 @@ function InterviewDetailPage() {
                 htmlFor="followup-date"
                 className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
               >
-                Interview Date &amp; Time
+                Schedule For
               </label>
               <input
                 id="followup-date"
@@ -1404,6 +1404,11 @@ function InterviewDetailPage() {
                 min={new Date().toISOString().slice(0, 16)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {followUpDate
+                  ? 'Lira will automatically join the meeting at this time.'
+                  : 'Leave empty to start the interview right away.'}
+              </p>
             </div>
 
             {/* Actions */}
@@ -1426,7 +1431,6 @@ function InterviewDetailPage() {
                 disabled={
                   followUpCreating ||
                   !followUpLink.trim() ||
-                  !followUpDate ||
                   (followUpPurpose === 'custom' && !followUpCustomPurpose.trim())
                 }
                 className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
