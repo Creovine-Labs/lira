@@ -827,6 +827,17 @@ export type QuestionCategory =
 export type InterviewPersonality = 'supportive' | 'challenger' | 'facilitator' | 'analyst'
 export type QuestionGenMethod = 'manual' | 'ai_generated' | 'hybrid'
 export type DecisionOutcome = 'hire' | 'no_hire' | 'next_round' | 'undecided'
+export type InterviewPurpose =
+  | 'introduction'
+  | 'technical'
+  | 'cultural_fit'
+  | 'system_design'
+  | 'behavioral'
+  | 'panel'
+  | 'final'
+  | 'onboarding'
+  | 'alignment'
+  | 'custom'
 
 export interface InterviewQuestion {
   id: string
@@ -926,6 +937,10 @@ export interface Interview {
   interview_id: string
   org_id: string
   created_by: string
+  parent_interview_id?: string
+  round: number
+  interview_purpose?: InterviewPurpose
+  custom_purpose?: string
   title: string
   department?: string
   job_description: string
@@ -980,6 +995,9 @@ export interface CreateInterviewInput {
   personality: InterviewPersonality
   ai_name_override?: string
   no_show_timeout_seconds?: number
+  parent_interview_id?: string
+  interview_purpose?: InterviewPurpose
+  custom_purpose?: string
   questions?: Omit<InterviewQuestion, 'id' | 'ai_generated' | 'asked'>[]
   question_generation: QuestionGenMethod
   evaluation_criteria?: Omit<EvaluationCriterion, 'id'>[]
@@ -1041,6 +1059,16 @@ export async function getInterviewRecord(orgId: string, interviewId: string): Pr
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}`
   )
   return data.interview
+}
+
+export async function getRelatedInterviews(
+  orgId: string,
+  interviewId: string
+): Promise<Interview[]> {
+  const data = await apiFetch<{ interviews: Interview[] }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/related`
+  )
+  return data.interviews ?? []
 }
 
 export async function updateInterviewRecord(
