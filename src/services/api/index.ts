@@ -102,7 +102,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
       // ignore
     }
     const msg = errBody['message'] ?? errBody['error'] ?? res.statusText
-    throw new Error(`${res.status}: ${msg}`)
+    const details = errBody['details']
+    const fullMsg = details
+      ? `${msg} — ${(details as unknown as Array<{ path: string[]; message: string }>)
+          .map((d) => `${d.path.join('.')}: ${d.message}`)
+          .join(', ')}`
+      : msg
+    throw new Error(`${res.status}: ${fullMsg}`)
   }
 
   if (res.status === 204) return undefined as T

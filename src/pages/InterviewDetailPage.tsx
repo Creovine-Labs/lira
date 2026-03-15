@@ -418,13 +418,15 @@ function InterviewDetailPage() {
         title: interview.title,
         department: interview.department || undefined,
         job_description: interview.job_description,
-        required_skills: interview.required_skills,
+        required_skills: interview.required_skills?.length
+          ? interview.required_skills
+          : ['General'],
         experience_level: interview.experience_level,
         salary_currency: interview.salary_currency || undefined,
         salary_min: interview.salary_min ?? undefined,
         salary_max: interview.salary_max ?? undefined,
-        candidate_name: interview.candidate_name,
-        candidate_email: interview.candidate_email,
+        candidate_name: interview.candidate_name || undefined,
+        candidate_email: interview.candidate_email || undefined,
         mode: followUpMode,
         meeting_link: followUpLink.trim(),
         scheduled_at: followUpDate ? new Date(followUpDate).toISOString() : undefined,
