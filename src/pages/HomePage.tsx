@@ -7,6 +7,7 @@ import { useAuthStore, useOrgStore } from '@/app/store'
 import { env } from '@/env'
 import {
   login as apiLogin,
+  signup as apiSignup,
   googleLogin as apiGoogleLogin,
   credentials,
   listOrganizations,
@@ -19,10 +20,20 @@ import { BotDeployPanel } from '@/components/bot-deploy'
 
 function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
   const { setCredentials } = useAuthStore()
+  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  function switchMode(next: 'login' | 'signup') {
+    setMode(next)
+    setError(null)
+    setName('')
+    setEmail('')
+    setPassword('')
+  }
 
   async function handleGoogleSuccess(response: CredentialResponse) {
     if (!response.credential) return
@@ -76,6 +87,29 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
     }
   }
 
+  async function handleSignup(e: React.FormEvent) {
+    e.preventDefault()
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in your name, email, and password.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await apiSignup(name.trim(), email.trim(), password.trim())
+      setCredentials(res.token, res.user.email)
+      credentials.set(res.token)
+      onLogin(true)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const inputClass =
+    'w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50'
+
   return (
     <div className="space-y-4">
       {/* Google Sign-In */}
@@ -100,72 +134,183 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
         </>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-4" noValidate>
-        <div className="space-y-1.5">
-          <label htmlFor="email" className="block text-sm font-medium text-foreground">
-            Email
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50"
-            placeholder="you@creovine.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            disabled={loading}
-          />
-        </div>
+      {mode === 'login' ? (
+        <form onSubmit={handleLogin} className="space-y-4" noValidate>
+          <div className="space-y-1.5">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground">
+              Email
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              className={inputClass}
+              placeholder="you@creovine.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+            />
+          </div>
 
-        <div className="space-y-1.5">
-          <label htmlFor="password" className="block text-sm font-medium text-foreground">
-            Password
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="current-password"
-            className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            disabled={loading}
-          />
-        </div>
+          <div className="space-y-1.5">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground">
+              Password
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              className={inputClass}
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+          </div>
 
-        {error && (
-          <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
-        )}
-
-        <Button
-          type="submit"
-          disabled={loading || !email.trim() || !password.trim()}
-          className="w-full rounded-xl py-2.5"
-        >
-          {loading ? (
-            <span className="flex items-center justify-center gap-2">
-              <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                />
-                <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                />
-              </svg>
-              Signing in…
-            </span>
-          ) : (
-            'Sign in'
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
           )}
-        </Button>
-      </form>
+
+          <Button
+            type="submit"
+            disabled={loading || !email.trim() || !password.trim()}
+            className="w-full rounded-xl py-2.5"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Signing in…
+              </span>
+            ) : (
+              'Sign in'
+            )}
+          </Button>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Don't have an account?{' '}
+            <button
+              type="button"
+              onClick={() => switchMode('signup')}
+              className="font-medium text-violet-600 hover:underline dark:text-violet-400"
+            >
+              Sign up
+            </button>
+          </p>
+        </form>
+      ) : (
+        <form onSubmit={handleSignup} className="space-y-4" noValidate>
+          <div className="space-y-1.5">
+            <label htmlFor="name" className="block text-sm font-medium text-foreground">
+              Full name
+            </label>
+            <input
+              id="name"
+              type="text"
+              autoComplete="name"
+              className={inputClass}
+              placeholder="Jane Smith"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="signup-email" className="block text-sm font-medium text-foreground">
+              Email
+            </label>
+            <input
+              id="signup-email"
+              type="email"
+              autoComplete="email"
+              className={inputClass}
+              placeholder="you@creovine.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <label htmlFor="signup-password" className="block text-sm font-medium text-foreground">
+              Password
+            </label>
+            <input
+              id="signup-password"
+              type="password"
+              autoComplete="new-password"
+              className={inputClass}
+              placeholder="••••••••  (min 8 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              disabled={loading}
+            />
+          </div>
+
+          {error && (
+            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {error}
+            </p>
+          )}
+
+          <Button
+            type="submit"
+            disabled={loading || !name.trim() || !email.trim() || !password.trim()}
+            className="w-full rounded-xl py-2.5"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                Creating account…
+              </span>
+            ) : (
+              'Create account'
+            )}
+          </Button>
+
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{' '}
+            <button
+              type="button"
+              onClick={() => switchMode('login')}
+              className="font-medium text-violet-600 hover:underline dark:text-violet-400"
+            >
+              Sign in
+            </button>
+          </p>
+        </form>
+      )}
     </div>
   )
 }
@@ -403,9 +548,7 @@ function HomePage() {
           {/* Header */}
           <div className="flex flex-col items-center gap-3 border-b px-8 py-8">
             <LiraLogo size="lg" />
-            <p className="text-center text-sm text-muted-foreground">
-              Sign in with your Creovine account
-            </p>
+            <p className="text-center text-sm text-muted-foreground">Your Creovine account</p>
           </div>
 
           {/* Body */}

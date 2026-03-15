@@ -513,7 +513,6 @@ function InterviewCreatePage() {
     if (!review.title.trim()) errs.title = 'Required'
     if (!review.job_description.trim()) errs.job_description = 'Required'
     if (review.required_skills.length === 0) errs.required_skills = 'Add at least one skill'
-    if (!resumeFile && !hasExistingResume) errs.resume = 'Upload the candidate resume'
     setErrors(errs)
     return Object.keys(errs).length === 0
   }
@@ -859,44 +858,30 @@ function InterviewCreatePage() {
           <div style={{ order: 0 }}>
             <SectionCard title="New Interview Round" variant="primary">
               <p className="text-sm text-slate-500 dark:text-slate-400 -mt-1 mb-3">
-                Set the purpose and meeting link for this round.
+                Select the purpose for this interview round.
               </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label required>Purpose</Label>
-                  <select
-                    value={review.interview_purpose}
-                    onChange={(e) => setR('interview_purpose', e.target.value as InterviewPurpose)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                  >
-                    {INTERVIEW_PURPOSES.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
-                  {review.interview_purpose === 'custom' && (
-                    <Input
-                      className="mt-2"
-                      placeholder="Describe the interview purpose…"
-                      value={review.custom_purpose}
-                      onChange={(e) => setR('custom_purpose', e.target.value)}
-                      maxLength={200}
-                    />
-                  )}
-                </div>
-                <div>
-                  <Label required>Meeting Link</Label>
+              <div>
+                <Label required>Purpose</Label>
+                <select
+                  value={review.interview_purpose}
+                  onChange={(e) => setR('interview_purpose', e.target.value as InterviewPurpose)}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                >
+                  {INTERVIEW_PURPOSES.map((o) => (
+                    <option key={o.value} value={o.value}>
+                      {o.label}
+                    </option>
+                  ))}
+                </select>
+                {review.interview_purpose === 'custom' && (
                   <Input
-                    type="url"
-                    placeholder="https://meet.google.com/abc-defg-hij"
-                    value={review.meeting_link}
-                    onChange={(e) => setR('meeting_link', e.target.value)}
+                    className="mt-2"
+                    placeholder="Describe the interview purpose…"
+                    value={review.custom_purpose}
+                    onChange={(e) => setR('custom_purpose', e.target.value)}
+                    maxLength={200}
                   />
-                  {errors.meeting_link && (
-                    <p className="mt-1 text-xs text-red-500">{errors.meeting_link}</p>
-                  )}
-                </div>
+                )}
               </div>
             </SectionCard>
           </div>
@@ -1133,39 +1118,6 @@ function InterviewCreatePage() {
                 resume.
               </p>
             )}
-          </SectionCard>
-        </div>
-
-        {/* ── Meeting ─────────────────────────────────────────────────────── */}
-        <div style={{ order: templateMode ? 3 : 4 }}>
-          <SectionCard
-            title="Meeting"
-            collapsible
-            defaultOpen={templateMode || Boolean(review.parent_interview_id)}
-          >
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Scheduled At</Label>
-                <Input
-                  type="datetime-local"
-                  value={review.scheduled_at}
-                  onChange={(e) => setR('scheduled_at', e.target.value)}
-                />
-              </div>
-              <div>
-                <Label>Meeting Link</Label>
-                <Input
-                  type="url"
-                  placeholder="https://meet.google.com/abc-defg-hij"
-                  value={review.meeting_link}
-                  onChange={(e) => setR('meeting_link', e.target.value)}
-                />
-                {errors.meeting_link && (
-                  <p className="mt-1 text-xs text-red-500">{errors.meeting_link}</p>
-                )}
-                <p className="mt-1 text-xs text-slate-400">Leave empty to add later</p>
-              </div>
-            </div>
           </SectionCard>
         </div>
 

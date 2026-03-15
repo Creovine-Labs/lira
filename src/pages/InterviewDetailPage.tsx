@@ -299,13 +299,8 @@ function InterviewDetailPage() {
   const needsCandidateName = !interview?.candidate_name?.trim()
 
   const handleStartClick = () => {
-    if (!interview?.meeting_link && !immediateLink.trim()) {
-      setShowLinkModal(true)
-    } else if (needsCandidateName) {
-      setShowLinkModal(true)
-    } else {
-      handleStart()
-    }
+    // Always prompt for meeting link — it may differ each time
+    setShowLinkModal(true)
   }
 
   const handleDelete = () => {
@@ -1140,14 +1135,11 @@ function InterviewDetailPage() {
                 placeholder="https://meet.google.com/abc-defg-hij"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
-                    const link = modalLink.trim() || interview?.meeting_link
+                    const link = modalLink.trim()
                     const nameOk = !needsCandidateName || modalCandidateName.trim()
                     if (link && nameOk) {
                       setShowLinkModal(false)
-                      handleStart(
-                        modalLink.trim() || undefined,
-                        modalCandidateName.trim() || undefined
-                      )
+                      handleStart(link, modalCandidateName.trim() || undefined)
                     }
                   }
                 }}
@@ -1174,14 +1166,14 @@ function InterviewDetailPage() {
               </button>
               <button
                 onClick={() => {
-                  const link = modalLink.trim() || interview?.meeting_link
+                  const link = modalLink.trim()
                   if (!link) return
                   if (needsCandidateName && !modalCandidateName.trim()) return
                   setShowLinkModal(false)
-                  handleStart(modalLink.trim() || undefined, modalCandidateName.trim() || undefined)
+                  handleStart(link, modalCandidateName.trim() || undefined)
                 }}
                 disabled={
-                  !(modalLink.trim() || interview?.meeting_link) ||
+                  !modalLink.trim() ||
                   (needsCandidateName && !modalCandidateName.trim()) ||
                   actionLoading
                 }

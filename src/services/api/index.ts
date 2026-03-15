@@ -137,6 +137,31 @@ export async function googleLogin(credential: string): Promise<LoginResponse> {
   return { token: data.accessToken, user: data.user }
 }
 
+/** Platform sign-up — creates a new account. No API key required. Returns { accessToken, user }. */
+export async function signup(
+  name: string,
+  email: string,
+  password: string,
+  company?: string
+): Promise<LoginResponse> {
+  const res = await fetch(`${env.VITE_API_URL}/v1/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, email, password, ...(company ? { company } : {}) }),
+  })
+  if (!res.ok) {
+    let body: Record<string, string> = {}
+    try {
+      body = await res.json()
+    } catch {
+      /* ignore */
+    }
+    throw new Error(body['error'] ?? body['message'] ?? 'Sign-up failed')
+  }
+  const data = (await res.json()) as { accessToken: string; user: LoginResponse['user'] }
+  return { token: data.accessToken, user: data.user }
+}
+
 /** Platform login — does not require X-API-Key header. Returns { accessToken, user }. */
 export async function login(email: string, password: string): Promise<LoginResponse> {
   const res = await fetch(`${env.VITE_API_URL}/v1/auth/login`, {
