@@ -1,7 +1,18 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
-import { Building2, Clock, LogOut, Mic, Settings } from 'lucide-react'
+import {
+  Building2,
+  Clock,
+  Eye,
+  EyeOff,
+  Lock,
+  LogOut,
+  Mail,
+  Mic,
+  Settings,
+  User,
+} from 'lucide-react'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { env } from '@/env'
@@ -24,6 +35,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -33,6 +45,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
     setName('')
     setEmail('')
     setPassword('')
+    setShowPassword(false)
   }
 
   async function handleGoogleSuccess(response: CredentialResponse) {
@@ -107,11 +120,21 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
     }
   }
 
-  const inputClass =
-    'w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50'
+  const pillInput =
+    'w-full rounded-full bg-[#f0f0f0] dark:bg-[#2a2a2a] py-4 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-violet-400/40 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 transition'
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Mode-aware title */}
+      <div className="mb-1 text-center">
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
+          {mode === 'login' ? 'Welcome back' : 'Create account'}
+        </h1>
+        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
+          {mode === 'login' ? 'Sign in to your Lira account' : 'Get started with Lira AI'}
+        </p>
+      </div>
+
       {/* Google Sign-In */}
       {env.VITE_GOOGLE_CLIENT_ID && (
         <>
@@ -127,57 +150,63 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
             />
           </div>
           <div className="relative flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <span className="text-xs text-muted-foreground">or continue with email</span>
-            <div className="h-px flex-1 bg-border" />
+            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
+            <span className="text-xs text-gray-400">or continue with email</span>
+            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
           </div>
         </>
       )}
 
       {mode === 'login' ? (
-        <form onSubmit={handleLogin} className="space-y-4" noValidate>
-          <div className="space-y-1.5">
-            <label htmlFor="email" className="block text-sm font-medium text-foreground">
-              Email
-            </label>
+        <form onSubmit={handleLogin} className="space-y-3" noValidate>
+          {/* Email */}
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               id="email"
               type="email"
               autoComplete="email"
-              className={inputClass}
-              placeholder="you@creovine.com"
+              className={`${pillInput} pl-11 pr-5`}
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="password" className="block text-sm font-medium text-foreground">
-              Password
-            </label>
+          {/* Password */}
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               id="password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
-              className={inputClass}
-              placeholder="••••••••"
+              className={`${pillInput} pl-11 pr-12`}
+              placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((p) => !p)}
+              tabIndex={-1}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
 
           {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500 dark:bg-red-950/30">
               {error}
             </p>
           )}
 
-          <Button
+          <button
             type="submit"
             disabled={loading || !email.trim() || !password.trim()}
-            className="w-full rounded-xl py-2.5"
+            className="mt-2 w-full cursor-pointer rounded-full bg-[#1c1c1e] py-4 text-sm font-semibold text-white transition hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#1c1c1e] dark:hover:bg-white/80"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -201,79 +230,84 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
             ) : (
               'Sign in'
             )}
-          </Button>
+          </button>
 
-          <p className="text-center text-sm text-muted-foreground">
-            Don't have an account?{' '}
+          <p className="text-center text-sm text-gray-400">
+            Don&apos;t have an account?{' '}
             <button
               type="button"
               onClick={() => switchMode('signup')}
-              className="font-medium text-violet-600 hover:underline dark:text-violet-400"
+              className="font-semibold text-violet-600 transition hover:text-violet-700 dark:text-violet-400"
             >
               Sign up
             </button>
           </p>
         </form>
       ) : (
-        <form onSubmit={handleSignup} className="space-y-4" noValidate>
-          <div className="space-y-1.5">
-            <label htmlFor="name" className="block text-sm font-medium text-foreground">
-              Full name
-            </label>
+        <form onSubmit={handleSignup} className="space-y-3" noValidate>
+          {/* Full name */}
+          <div className="relative">
+            <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               id="name"
               type="text"
               autoComplete="name"
-              className={inputClass}
-              placeholder="Jane Smith"
+              className={`${pillInput} pl-11 pr-5`}
+              placeholder="Full name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               disabled={loading}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="signup-email" className="block text-sm font-medium text-foreground">
-              Email
-            </label>
+          {/* Email */}
+          <div className="relative">
+            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               id="signup-email"
               type="email"
               autoComplete="email"
-              className={inputClass}
-              placeholder="you@creovine.com"
+              className={`${pillInput} pl-11 pr-5`}
+              placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={loading}
             />
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="signup-password" className="block text-sm font-medium text-foreground">
-              Password
-            </label>
+          {/* Password */}
+          <div className="relative">
+            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
             <input
               id="signup-password"
-              type="password"
+              type={showPassword ? 'text' : 'password'}
               autoComplete="new-password"
-              className={inputClass}
-              placeholder="••••••••  (min 8 characters)"
+              className={`${pillInput} pl-11 pr-12`}
+              placeholder="Password (min 8 characters)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
             />
+            <button
+              type="button"
+              onClick={() => setShowPassword((p) => !p)}
+              tabIndex={-1}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-300"
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
 
           {error && (
-            <p className="rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500 dark:bg-red-950/30">
               {error}
             </p>
           )}
 
-          <Button
+          <button
             type="submit"
             disabled={loading || !name.trim() || !email.trim() || !password.trim()}
-            className="w-full rounded-xl py-2.5"
+            className="mt-2 w-full cursor-pointer rounded-full bg-[#1c1c1e] py-4 text-sm font-semibold text-white transition hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#1c1c1e] dark:hover:bg-white/80"
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">
@@ -297,14 +331,14 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
             ) : (
               'Create account'
             )}
-          </Button>
+          </button>
 
-          <p className="text-center text-sm text-muted-foreground">
+          <p className="text-center text-sm text-gray-400">
             Already have an account?{' '}
             <button
               type="button"
               onClick={() => switchMode('login')}
-              className="font-medium text-violet-600 hover:underline dark:text-violet-400"
+              className="font-semibold text-violet-600 transition hover:text-violet-700 dark:text-violet-400"
             >
               Sign in
             </button>
@@ -540,30 +574,35 @@ function HomePage() {
     return <AuthenticatedHome onSignOut={() => setStage('login')} />
   }
 
-  // Unauthenticated — centered login card
+  // Unauthenticated — full-screen auth page
   return (
-    <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background via-background to-violet-50/30 p-4 dark:to-violet-950/20">
-      <div className="w-full max-w-sm">
-        <div className="rounded-2xl border bg-card shadow-xl shadow-black/5">
-          {/* Header */}
-          <div className="flex flex-col items-center gap-3 border-b px-8 py-8">
+    <main
+      className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4"
+      style={{ background: 'linear-gradient(135deg, #ede8ff 0%, #f5f2ff 50%, #e4dcff 100%)' }}
+    >
+      {/* Decorative blurred orbs */}
+      <div className="pointer-events-none absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full bg-violet-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute -bottom-40 -left-40 h-[520px] w-[520px] rounded-full bg-purple-400/20 blur-3xl" />
+      <div className="pointer-events-none absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-300/10 blur-2xl" />
+
+      <div className="relative w-full max-w-sm">
+        {/* Card */}
+        <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-violet-900/10 dark:bg-[#1c1c1e]">
+          {/* Logo */}
+          <div className="mb-7 flex justify-center">
             <LiraLogo size="lg" />
-            <p className="text-center text-sm text-muted-foreground">Your Creovine account</p>
           </div>
 
-          {/* Body */}
-          <div className="px-8 py-6">
-            <LoginForm onLogin={handleLogin} />
-          </div>
+          <LoginForm onLogin={handleLogin} />
         </div>
 
-        <p className="mt-4 text-center text-xs text-muted-foreground">
+        <p className="mt-5 text-center text-xs text-gray-400">
           Powered by{' '}
           <a
             href="https://creovine.com"
             target="_blank"
             rel="noreferrer"
-            className="font-medium underline-offset-2 hover:underline"
+            className="font-medium text-violet-600 hover:underline"
           >
             Creovine
           </a>
