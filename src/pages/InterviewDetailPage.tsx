@@ -28,6 +28,8 @@ import {
   getInterviewRecord,
   getRelatedInterviews,
   createInterviewRecord,
+  updateInterviewRecord,
+  generateInterviewQuestions,
   getMeeting,
   startInterviewSession,
   cancelInterviewSession,
@@ -210,6 +212,7 @@ function InterviewDetailPage() {
   const [followUpCustomPurpose, setFollowUpCustomPurpose] = useState('')
   const [followUpMode, setFollowUpMode] = useState<'solo' | 'copilot' | 'shadow'>('solo')
   const [followUpLink, setFollowUpLink] = useState('')
+  const [followUpDate, setFollowUpDate] = useState('')
   const [followUpCreating, setFollowUpCreating] = useState(false)
   const [relatedInterviews, setRelatedInterviews] = useState<Interview[]>([])
 
@@ -413,27 +416,46 @@ function InterviewDetailPage() {
 
       const created = await createInterviewRecord(currentOrgId, {
         title: interview.title,
-        department: interview.department,
+        department: interview.department || undefined,
         job_description: interview.job_description,
         required_skills: interview.required_skills,
         experience_level: interview.experience_level,
-        salary_currency: interview.salary_currency,
-        salary_min: interview.salary_min,
-        salary_max: interview.salary_max,
+        salary_currency: interview.salary_currency || undefined,
+        salary_min: interview.salary_min ?? undefined,
+        salary_max: interview.salary_max ?? undefined,
         candidate_name: interview.candidate_name,
         candidate_email: interview.candidate_email,
         mode: followUpMode,
-        meeting_link: followUpLink.trim() || undefined,
+        meeting_link: followUpLink.trim(),
+        scheduled_at: followUpDate ? new Date(followUpDate).toISOString() : undefined,
         time_limit_minutes: interview.time_limit_minutes,
         personality: interview.personality,
-        ai_name_override: interview.ai_name_override,
+        ai_name_override: interview.ai_name_override || undefined,
         parent_interview_id: parentId,
         interview_purpose: purpose,
         custom_purpose: purpose === 'custom' ? followUpCustomPurpose.trim() : undefined,
         question_generation: 'ai_generated',
       })
+
+      // Auto-generate questions based on role + purpose
+      try {
+        const questions = await generateInterviewQuestions(currentOrgId, {
+          title: interview.title,
+          job_description: interview.job_description,
+          required_skills: interview.required_skills,
+          experience_level: interview.experience_level,
+          question_count: 8,
+          categories: ['warm_up', 'behavioral', 'technical', 'situational'],
+        })
+        if (questions.length > 0) {
+          await updateInterviewRecord(currentOrgId, created.interview_id, { questions })
+        }
+      } catch {
+        // Questions will need to be generated from the edit page
+      }
+
       setShowFollowUp(false)
-      toast.success(`${purposeLabel} round created for ${interview.candidate_name}`)
+      toast.success(`${purposeLabel} round created — review questions before scheduling`)
       navigate(`/org/interviews/${created.interview_id}/edit`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create follow-up')
@@ -551,7 +573,7 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
             >
               <CalendarPlus className="w-4 h-4" />
-              Follow-up
+              New Interview Round
             </button>
           )}
           {interview.status === 'draft' && (
@@ -1260,7 +1282,7 @@ function InterviewDetailPage() {
           <div className="w-full max-w-md mx-4 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-5">
             <div>
               <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                Schedule Follow-up Interview
+                Schedule Another Interview
               </h2>
               <p className="text-sm text-slate-500 mt-1">
                 with{' '}
@@ -1350,16 +1372,37 @@ function InterviewDetailPage() {
 
             {/* Meeting link */}
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                Meeting Link{' '}
-                <span className="text-slate-400 font-normal normal-case">(optional)</span>
+              <label
+                htmlFor="followup-link"
+                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
+              >
+                Meeting Link
               </label>
               <input
+                id="followup-link"
                 type="url"
                 value={followUpLink}
                 onChange={(e) => setFollowUpLink(e.target.value)}
                 placeholder="https://meet.google.com/..."
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              />
+            </div>
+
+            {/* Scheduled date */}
+            <div className="space-y-1.5">
+              <label
+                htmlFor="followup-date"
+                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
+              >
+                Interview Date &amp; Time
+              </label>
+              <input
+                id="followup-date"
+                type="datetime-local"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+                min={new Date().toISOString().slice(0, 16)}
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
               />
             </div>
 
@@ -1372,6 +1415,7 @@ function InterviewDetailPage() {
                   setFollowUpCustomPurpose('')
                   setFollowUpMode('solo')
                   setFollowUpLink('')
+                  setFollowUpDate('')
                 }}
                 className="flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
@@ -1381,6 +1425,8 @@ function InterviewDetailPage() {
                 onClick={handleCreateFollowUp}
                 disabled={
                   followUpCreating ||
+                  !followUpLink.trim() ||
+                  !followUpDate ||
                   (followUpPurpose === 'custom' && !followUpCustomPurpose.trim())
                 }
                 className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
@@ -1388,7 +1434,7 @@ function InterviewDetailPage() {
                 {followUpCreating ? (
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  'Create Follow-up'
+                  'Create & Review Questions'
                 )}
               </button>
             </div>
