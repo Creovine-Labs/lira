@@ -14,6 +14,11 @@ export const ROUTES = {
   orgTaskDetail: '/org/tasks/:taskId',
   orgMembers: '/org/members',
   orgWebhooks: '/org/webhooks',
+  orgInterviews: '/org/roles',
+  orgInterviewRole: '/org/roles/:roleSlug',
+  orgInterviewCreate: '/org/roles/new',
+  orgInterviewEdit: '/org/interviews/:interviewId/edit',
+  orgInterviewDetail: '/org/interviews/:interviewId',
 } as const
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES]

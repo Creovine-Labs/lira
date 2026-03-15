@@ -803,3 +803,370 @@ export function buildWsUrl(overrides?: { token?: string }): string {
   url.searchParams.set('token', token)
   return url.toString()
 }
+// ── Interview Types ───────────────────────────────────────────────────────────
+
+export type InterviewStatus =
+  | 'draft'
+  | 'scheduled'
+  | 'bot_deployed'
+  | 'in_progress'
+  | 'evaluating'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show'
+
+export type InterviewMode = 'solo' | 'copilot' | 'shadow'
+export type ExperienceLevel = 'junior' | 'mid' | 'senior' | 'lead' | 'principal'
+export type QuestionCategory =
+  | 'technical'
+  | 'behavioral'
+  | 'situational'
+  | 'cultural'
+  | 'warm_up'
+  | 'custom'
+export type InterviewPersonality = 'supportive' | 'challenger' | 'facilitator' | 'analyst'
+export type QuestionGenMethod = 'manual' | 'ai_generated' | 'hybrid'
+export type DecisionOutcome = 'hire' | 'no_hire' | 'next_round' | 'undecided'
+
+export interface InterviewQuestion {
+  id: string
+  text: string
+  category: QuestionCategory
+  skill_target?: string
+  expected_depth: 'brief' | 'moderate' | 'detailed'
+  follow_up_enabled: boolean
+  order?: number
+  ai_generated?: boolean
+  asked?: boolean
+}
+
+export interface EvaluationCriterion {
+  id: string
+  name: string
+  description: string
+  weight: number
+}
+
+export interface CriterionScore {
+  criterion_id: string
+  criterion_name: string
+  score: number
+  rationale: string
+  evidence_quotes: string[]
+}
+
+export interface QASummary {
+  question: string
+  answer_summary: string
+  score: number
+  analysis: string
+  key_points: string[]
+  answer_quality: 'excellent' | 'good' | 'adequate' | 'poor'
+  follow_ups?: { question: string; answer_summary: string }[]
+}
+
+export interface InterviewEvaluation {
+  // Phase 1: Always populated (auto after interview)
+  qa_summary: QASummary[]
+  interview_summary: string
+  interview_duration_minutes: number
+  questions_asked: number
+  questions_answered: number
+  questions_skipped: number
+  generated_at: string
+  re_evaluation_count?: number
+
+  // Phase 2: Populated on demand (Generate Score button)
+  overall_score: number | null
+  recommendation: 'strongly_recommend' | 'recommend' | 'neutral' | 'not_recommended' | null
+  recommendation_reasoning: string | null
+  strengths: string[] | null
+  concerns: string[] | null
+  notable_quotes:
+    | { quote: string; context: string; sentiment: 'positive' | 'neutral' | 'negative' }[]
+    | null
+  candidate_engagement: 'high' | 'moderate' | 'low' | null
+  score_generated_at: string | null
+
+  // Legacy fields (backward compat)
+  criterion_scores?: CriterionScore[]
+  ai_summary?: string
+  ai_detailed_report?: string
+}
+
+export interface ResumeExperience {
+  role: string
+  company: string
+  duration_months?: number
+  highlights: string[]
+}
+
+export interface ResumeEducation {
+  degree: string
+  institution: string
+  year?: number
+}
+
+export interface ResumeData {
+  raw_text: string
+  parsed?: {
+    skills: string[]
+    experience: ResumeExperience[]
+    education: ResumeEducation[]
+    summary?: string
+  }
+  s3_key: string
+  filename: string
+  uploaded_at: string
+  parse_method: 'pdf_extract' | 'ai_extraction' | 'raw_text_only'
+  parse_failed?: boolean
+}
+
+export interface Interview {
+  interview_id: string
+  org_id: string
+  created_by: string
+  title: string
+  department?: string
+  job_description: string
+  required_skills: string[]
+  experience_level: ExperienceLevel
+  salary_range?: string
+  salary_currency?: string
+  salary_min?: number
+  salary_max?: number
+  candidate_name: string
+  candidate_email: string
+  mode: InterviewMode
+  meeting_link: string
+  session_id?: string
+  scheduled_at?: string
+  started_at?: string
+  ended_at?: string
+  time_limit_minutes: number
+  personality: InterviewPersonality
+  ai_name_override?: string
+  no_show_timeout_seconds?: number
+  status: InterviewStatus
+  questions: InterviewQuestion[]
+  question_generation: QuestionGenMethod
+  evaluation_criteria: EvaluationCriterion[]
+  evaluation?: InterviewEvaluation
+  resume?: ResumeData
+  decision?: DecisionOutcome
+  decision_notes?: string
+  decision_made_by?: string
+  decision_made_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface CreateInterviewInput {
+  title: string
+  department?: string
+  job_description: string
+  required_skills: string[]
+  experience_level: ExperienceLevel
+  salary_range?: string
+  salary_currency?: string
+  salary_min?: number
+  salary_max?: number
+  candidate_name?: string
+  candidate_email?: string
+  mode: InterviewMode
+  meeting_link?: string
+  scheduled_at?: string
+  time_limit_minutes: number
+  personality: InterviewPersonality
+  ai_name_override?: string
+  no_show_timeout_seconds?: number
+  questions?: Omit<InterviewQuestion, 'id' | 'ai_generated' | 'asked'>[]
+  question_generation: QuestionGenMethod
+  evaluation_criteria?: Omit<EvaluationCriterion, 'id'>[]
+}
+
+export type UpdateInterviewInput = Partial<Omit<CreateInterviewInput, 'candidate_email'>>
+
+export interface InterviewDraft {
+  title: string
+  department: string
+  job_description: string
+  required_skills: string[]
+  experience_level: ExperienceLevel
+  salary_range: string
+  time_limit_minutes: number
+  personality: InterviewPersonality
+  mode: InterviewMode
+  questions: Omit<InterviewQuestion, 'id' | 'ai_generated' | 'asked'>[]
+  meeting_link: ''
+  scheduled_at: ''
+}
+
+export interface GenerateQuestionsInput {
+  title: string
+  job_description: string
+  required_skills: string[]
+  experience_level: ExperienceLevel
+  resume_text?: string
+  question_count?: number
+  categories: QuestionCategory[]
+}
+
+// ── Interview API ─────────────────────────────────────────────────────────────
+
+export async function listInterviews(
+  orgId: string,
+  status?: InterviewStatus
+): Promise<Interview[]> {
+  const params = status ? `?status=${encodeURIComponent(status)}` : ''
+  const data = await apiFetch<{ interviews: Interview[]; count: number }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews${params}`
+  )
+  return data.interviews ?? []
+}
+
+export async function createInterviewRecord(
+  orgId: string,
+  input: CreateInterviewInput
+): Promise<Interview> {
+  const data = await apiFetch<{ interview: Interview }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews`,
+    { method: 'POST', body: JSON.stringify(input) }
+  )
+  return data.interview
+}
+
+export async function getInterviewRecord(orgId: string, interviewId: string): Promise<Interview> {
+  const data = await apiFetch<{ interview: Interview }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}`
+  )
+  return data.interview
+}
+
+export async function updateInterviewRecord(
+  orgId: string,
+  interviewId: string,
+  input: UpdateInterviewInput
+): Promise<Interview> {
+  const data = await apiFetch<{ interview: Interview }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}`,
+    { method: 'PUT', body: JSON.stringify(input) }
+  )
+  return data.interview
+}
+
+export async function deleteInterviewRecord(orgId: string, interviewId: string): Promise<void> {
+  await apiFetch<void>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}`,
+    { method: 'DELETE' }
+  )
+}
+
+export async function startInterviewSession(
+  orgId: string,
+  interviewId: string,
+  options?: { meeting_link?: string; candidate_name?: string }
+): Promise<{ bot_id: string; session_id: string; interview: Interview }> {
+  const body: Record<string, string> = {}
+  if (options?.meeting_link) body.meeting_link = options.meeting_link
+  if (options?.candidate_name) body.candidate_name = options.candidate_name
+  return apiFetch(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/start`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }
+  )
+}
+
+export async function cancelInterviewSession(orgId: string, interviewId: string): Promise<void> {
+  await apiFetch<void>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/cancel`,
+    { method: 'POST' }
+  )
+}
+
+export async function uploadInterviewResume(
+  orgId: string,
+  interviewId: string,
+  file: File
+): Promise<{ resume: ResumeData | null; parse_failed: boolean; message: string }> {
+  const token = credentials.getToken()
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const res = await fetch(
+    `${env.VITE_API_URL}/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/resume`,
+    {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    }
+  )
+  if (res.status === 401) {
+    credentials.clear()
+    window.dispatchEvent(new CustomEvent('lira:auth-expired'))
+    throw new Error('Session expired — please sign in again.')
+  }
+  if (!res.ok) {
+    let errBody: Record<string, string> = {}
+    try {
+      errBody = await res.json()
+    } catch {
+      /* ignore */
+    }
+    throw new Error(errBody['error'] ?? res.statusText)
+  }
+  return res.json()
+}
+
+export async function runInterviewEvaluation(
+  orgId: string,
+  interviewId: string
+): Promise<{ evaluation: InterviewEvaluation }> {
+  return apiFetch(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/evaluate`,
+    { method: 'POST', body: JSON.stringify({}) }
+  )
+}
+
+export async function generateInterviewScore(
+  orgId: string,
+  interviewId: string
+): Promise<{ evaluation: InterviewEvaluation }> {
+  return apiFetch(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/generate-score`,
+    { method: 'POST', body: JSON.stringify({}) }
+  )
+}
+
+export async function recordInterviewDecision(
+  orgId: string,
+  interviewId: string,
+  decision: DecisionOutcome,
+  notes?: string
+): Promise<void> {
+  await apiFetch<void>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/decision`,
+    { method: 'PUT', body: JSON.stringify({ decision, notes }) }
+  )
+}
+
+export async function draftInterviewRecord(orgId: string, prompt: string): Promise<InterviewDraft> {
+  const data = await apiFetch<{ draft: InterviewDraft }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/draft`,
+    { method: 'POST', body: JSON.stringify({ prompt }) }
+  )
+  return data.draft
+}
+
+export async function generateInterviewQuestions(
+  orgId: string,
+  input: GenerateQuestionsInput
+): Promise<InterviewQuestion[]> {
+  const data = await apiFetch<{ questions: InterviewQuestion[] }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/generate-questions`,
+    { method: 'POST', body: JSON.stringify(input) }
+  )
+  return data.questions ?? []
+}

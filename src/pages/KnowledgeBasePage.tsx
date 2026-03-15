@@ -20,6 +20,7 @@ import {
   clearKnowledgeBase,
   getOrganization,
 } from '@/services/api'
+import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { cn } from '@/lib'
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -41,6 +42,12 @@ function KnowledgeBasePage() {
   const [crawlError, setCrawlError] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
   const [pollInterval, setPollInterval] = useState<ReturnType<typeof setInterval> | null>(null)
+  const [confirm, setConfirm] = useState<{
+    title: string
+    description: string
+    confirmLabel: string
+    onConfirm: () => Promise<void>
+  } | null>(null)
 
   const loadData = useCallback(async () => {
     if (!currentOrgId) return
@@ -116,30 +123,43 @@ function KnowledgeBasePage() {
     }
   }
 
-  async function handleDelete(entryId: string) {
-    if (!currentOrgId) return
-    try {
-      await deleteKBEntry(currentOrgId, entryId)
-      removeEntry(entryId)
-      toast.success('Entry deleted')
-    } catch {
-      toast.error('Failed to delete entry')
-    }
+  async function handleDelete(entryId: string, entryTitle: string) {
+    setConfirm({
+      title: 'Delete Page',
+      description: `Are you sure you want to delete "${entryTitle}"? This cannot be undone.`,
+      confirmLabel: 'Delete',
+      onConfirm: async () => {
+        if (!currentOrgId) return
+        try {
+          await deleteKBEntry(currentOrgId, entryId)
+          removeEntry(entryId)
+          toast.success('Entry deleted')
+        } catch {
+          toast.error('Failed to delete entry')
+        }
+      },
+    })
   }
 
   async function handleClearAll() {
     if (!currentOrgId) return
-    if (!window.confirm('Delete all knowledge base entries? This cannot be undone.')) return
-    setClearing(true)
-    try {
-      await clearKnowledgeBase(currentOrgId)
-      setEntries([])
-      toast.success('Knowledge base cleared')
-    } catch {
-      toast.error('Failed to clear knowledge base')
-    } finally {
-      setClearing(false)
-    }
+    setConfirm({
+      title: 'Clear Knowledge Base',
+      description: `Are you sure you want to delete all ${entries.length} indexed page${entries.length !== 1 ? 's' : ''}? This cannot be undone.`,
+      confirmLabel: 'Clear All',
+      onConfirm: async () => {
+        setClearing(true)
+        try {
+          await clearKnowledgeBase(currentOrgId)
+          setEntries([])
+          toast.success('Knowledge base cleared')
+        } catch {
+          toast.error('Failed to clear knowledge base')
+        } finally {
+          setClearing(false)
+        }
+      },
+    })
   }
 
   const isCrawling = crawlStatus?.status === 'crawling'
@@ -154,6 +174,14 @@ function KnowledgeBasePage() {
 
   return (
     <div className="space-y-8 pb-8">
+      <ConfirmDialog
+        open={!!confirm}
+        title={confirm?.title ?? ''}
+        description={confirm?.description ?? ''}
+        confirmLabel={confirm?.confirmLabel ?? 'Delete'}
+        onConfirm={confirm?.onConfirm ?? (async () => {})}
+        onClose={() => setConfirm(null)}
+      />
       <div>
         <h1 className="text-xl font-bold text-foreground">Knowledge Base</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -349,7 +377,7 @@ function KnowledgeBasePage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => handleDelete(entry.id)}
+                  onClick={() => handleDelete(entry.id, entry.title || entry.source_url)}
                   className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
                   title="Delete entry"
                 >

@@ -13,6 +13,7 @@ import {
   Plus,
   X,
   ClipboardList,
+  BriefcaseIcon,
 } from 'lucide-react'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -25,6 +26,7 @@ const NAV_ITEMS = [
   { to: '/org/knowledge', icon: Globe, label: 'Knowledge Base' },
   { to: '/org/documents', icon: FileText, label: 'Documents' },
   { to: '/org/tasks', icon: CheckSquare, label: 'Tasks' },
+  { to: '/org/roles', icon: BriefcaseIcon, label: 'Interviews' },
   { to: '/org/members', icon: Users, label: 'Members' },
   { to: '/org/webhooks', icon: Bell, label: 'Webhooks' },
 ]

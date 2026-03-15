@@ -19,6 +19,10 @@ import {
   TasksPage,
   OrgTaskDetailPage,
   WebhooksPage,
+  InterviewsPage,
+  InterviewRolePage,
+  InterviewCreatePage,
+  InterviewDetailPage,
 } from '@/pages'
 import { OrgLayout } from '@/components/org'
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -65,6 +69,12 @@ function App() {
           <Route path="tasks/:taskId" element={<OrgTaskDetailPage />} />
           <Route path="members" element={<OrgMembersPage />} />
           <Route path="webhooks" element={<WebhooksPage />} />
+          <Route path="roles" element={<InterviewsPage />} />
+          <Route path="roles/new" element={<InterviewCreatePage />} />
+          <Route path="roles/:roleSlug" element={<InterviewRolePage />} />
+          <Route path="interviews" element={<Navigate to="/org/roles" replace />} />
+          <Route path="interviews/:interviewId/edit" element={<InterviewCreatePage />} />
+          <Route path="interviews/:interviewId" element={<InterviewDetailPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

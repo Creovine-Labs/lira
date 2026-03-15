@@ -7,6 +7,8 @@ import type {
   KBEntry,
   DocumentRecord,
   CrawlStatus,
+  Interview,
+  InterviewStatus,
 } from '@/services/api'
 
 interface AuthSlice {
@@ -308,4 +310,38 @@ export const useTaskStore = create<TaskSlice>()((set) => ({
   setLoading: (loading) => set({ loading }),
   setStatusFilter: (statusFilter) => set({ statusFilter }),
   clear: () => set({ tasks: [], statusFilter: null }),
+}))
+
+// ── Interview Store ───────────────────────────────────────────────────────────
+
+interface InterviewSlice {
+  interviews: Interview[]
+  loading: boolean
+  statusFilter: InterviewStatus | 'all' | null
+  setInterviews: (interviews: Interview[]) => void
+  addInterview: (interview: Interview) => void
+  removeInterview: (interviewId: string) => void
+  updateInterview: (interviewId: string, updates: Partial<Interview>) => void
+  setLoading: (v: boolean) => void
+  setStatusFilter: (status: InterviewStatus | 'all' | null) => void
+  clear: () => void
+}
+
+export const useInterviewStore = create<InterviewSlice>()((set) => ({
+  interviews: [],
+  loading: false,
+  statusFilter: null,
+  setInterviews: (interviews) => set({ interviews }),
+  addInterview: (interview) => set((s) => ({ interviews: [interview, ...s.interviews] })),
+  removeInterview: (interviewId) =>
+    set((s) => ({ interviews: s.interviews.filter((i) => i.interview_id !== interviewId) })),
+  updateInterview: (interviewId, updates) =>
+    set((s) => ({
+      interviews: s.interviews.map((i) =>
+        i.interview_id === interviewId ? { ...i, ...updates } : i
+      ),
+    })),
+  setLoading: (loading) => set({ loading }),
+  setStatusFilter: (statusFilter) => set({ statusFilter }),
+  clear: () => set({ interviews: [], statusFilter: null }),
 }))
