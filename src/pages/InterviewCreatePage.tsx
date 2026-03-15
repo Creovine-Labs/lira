@@ -395,6 +395,7 @@ function InterviewCreatePage() {
         }
         setReview(interviewToReview(interview))
         setHasExistingResume(Boolean(interview.resume))
+        if (interview.questions?.length > 0) setShowQuestions(true)
       })
       .catch(() => {
         toast.error('Interview not found')
