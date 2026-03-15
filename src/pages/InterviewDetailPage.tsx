@@ -38,7 +38,6 @@ import {
   recordInterviewDecision,
   type Interview,
   type InterviewStatus,
-  type InterviewPurpose,
   type DecisionOutcome,
   type QASummary,
   type Message,
@@ -207,12 +206,6 @@ function InterviewDetailPage() {
   const [activeTab, setActiveTab] = useState<'details' | 'evaluation'>('details')
 
   // Follow-up interview state
-  const [showFollowUp, setShowFollowUp] = useState(false)
-  const [followUpPurpose, setFollowUpPurpose] = useState<InterviewPurpose>('technical')
-  const [followUpCustomPurpose, setFollowUpCustomPurpose] = useState('')
-  const [followUpMode, setFollowUpMode] = useState<'solo' | 'copilot' | 'shadow'>('solo')
-  const [followUpLink, setFollowUpLink] = useState('')
-  const [followUpDate, setFollowUpDate] = useState('')
   const [followUpCreating, setFollowUpCreating] = useState(false)
   const [relatedInterviews, setRelatedInterviews] = useState<Interview[]>([])
 
@@ -407,11 +400,6 @@ function InterviewDetailPage() {
     if (!currentOrgId || !interview) return
     setFollowUpCreating(true)
     try {
-      const purpose = followUpPurpose
-      const purposeLabel =
-        purpose === 'custom'
-          ? followUpCustomPurpose.trim() || 'Follow-up Interview'
-          : purpose.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
       const parentId = interview.parent_interview_id ?? interview.interview_id
 
       const created = await createInterviewRecord(currentOrgId, {
@@ -427,19 +415,15 @@ function InterviewDetailPage() {
         salary_max: interview.salary_max ?? undefined,
         candidate_name: interview.candidate_name || undefined,
         candidate_email: interview.candidate_email || undefined,
-        mode: followUpMode,
-        meeting_link: followUpLink.trim(),
-        scheduled_at: followUpDate ? new Date(followUpDate).toISOString() : undefined,
+        mode: interview.mode,
         time_limit_minutes: interview.time_limit_minutes,
         personality: interview.personality,
         ai_name_override: interview.ai_name_override || undefined,
         parent_interview_id: parentId,
-        interview_purpose: purpose,
-        custom_purpose: purpose === 'custom' ? followUpCustomPurpose.trim() : undefined,
         question_generation: 'ai_generated',
       })
 
-      // Auto-generate questions based on role + purpose
+      // Auto-generate questions
       try {
         const questions = await generateInterviewQuestions(currentOrgId, {
           title: interview.title,
@@ -453,14 +437,13 @@ function InterviewDetailPage() {
           await updateInterviewRecord(currentOrgId, created.interview_id, { questions })
         }
       } catch {
-        // Questions will need to be generated from the edit page
+        // Questions can be generated from the edit page
       }
 
-      setShowFollowUp(false)
-      toast.success(`${purposeLabel} round created — review questions before scheduling`)
+      toast.success('New interview round created — review and add meeting link')
       navigate(`/org/interviews/${created.interview_id}/edit`)
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create follow-up')
+      toast.error(err instanceof Error ? err.message : 'Failed to create interview round')
     } finally {
       setFollowUpCreating(false)
     }
@@ -571,10 +554,15 @@ function InterviewDetailPage() {
           )}
           {['completed', 'cancelled'].includes(interview.status) && (
             <button
-              onClick={() => setShowFollowUp(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors"
+              onClick={handleCreateFollowUp}
+              disabled={followUpCreating}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
             >
-              <CalendarPlus className="w-4 h-4" />
+              {followUpCreating ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <CalendarPlus className="w-4 h-4" />
+              )}
               New Interview Round
             </button>
           )}
@@ -1271,176 +1259,6 @@ function InterviewDetailPage() {
                   <Loader2 className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
                   'Save Decision'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Follow-up Interview modal */}
-      {showFollowUp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-md mx-4 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-5">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-                Schedule Another Interview
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">
-                with{' '}
-                <span className="font-medium text-slate-700 dark:text-slate-300">
-                  {interview.candidate_name}
-                </span>{' '}
-                for{' '}
-                <span className="font-medium text-slate-700 dark:text-slate-300">
-                  {interview.title}
-                </span>
-              </p>
-            </div>
-
-            {/* Purpose */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="followup-purpose"
-                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-              >
-                Purpose
-              </label>
-              <select
-                id="followup-purpose"
-                value={followUpPurpose}
-                onChange={(e) => setFollowUpPurpose(e.target.value as InterviewPurpose)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              >
-                {[
-                  { value: 'introduction', label: 'Introduction' },
-                  { value: 'technical', label: 'Technical' },
-                  { value: 'cultural_fit', label: 'Cultural Fit' },
-                  { value: 'system_design', label: 'System Design' },
-                  { value: 'behavioral', label: 'Behavioral' },
-                  { value: 'panel', label: 'Panel' },
-                  { value: 'final', label: 'Final Round' },
-                  { value: 'onboarding', label: 'Onboarding' },
-                  { value: 'alignment', label: 'Alignment' },
-                  { value: 'custom', label: 'Custom…' },
-                ].map((o) => (
-                  <option key={o.value} value={o.value}>
-                    {o.label}
-                  </option>
-                ))}
-              </select>
-              {followUpPurpose === 'custom' && (
-                <input
-                  type="text"
-                  value={followUpCustomPurpose}
-                  onChange={(e) => setFollowUpCustomPurpose(e.target.value)}
-                  placeholder="Describe the interview purpose…"
-                  maxLength={200}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-                />
-              )}
-            </div>
-
-            {/* Mode */}
-            <div className="space-y-1.5">
-              <span className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                Interview Mode
-              </span>
-              <div className="grid grid-cols-3 gap-2">
-                {(
-                  [
-                    { value: 'solo', label: 'Solo', desc: 'AI interviews alone' },
-                    { value: 'copilot', label: 'Co-pilot', desc: 'AI assists you' },
-                    { value: 'shadow', label: 'Shadow', desc: 'AI observes only' },
-                  ] as const
-                ).map((m) => (
-                  <button
-                    key={m.value}
-                    type="button"
-                    onClick={() => setFollowUpMode(m.value)}
-                    className={cn(
-                      'py-2 px-2 rounded-lg border-2 text-center transition-colors',
-                      followUpMode === m.value
-                        ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300'
-                        : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
-                    )}
-                  >
-                    <p className="text-sm font-medium">{m.label}</p>
-                    <p className="text-xs mt-0.5 opacity-70">{m.desc}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Meeting link */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="followup-link"
-                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-              >
-                Meeting Link
-              </label>
-              <input
-                id="followup-link"
-                type="url"
-                value={followUpLink}
-                onChange={(e) => setFollowUpLink(e.target.value)}
-                placeholder="https://meet.google.com/..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-            </div>
-
-            {/* Scheduled date */}
-            <div className="space-y-1.5">
-              <label
-                htmlFor="followup-date"
-                className="text-xs font-semibold text-slate-500 uppercase tracking-wide"
-              >
-                Schedule For
-              </label>
-              <input
-                id="followup-date"
-                type="datetime-local"
-                value={followUpDate}
-                onChange={(e) => setFollowUpDate(e.target.value)}
-                min={new Date().toISOString().slice(0, 16)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
-              />
-              <p className="text-xs text-slate-400 dark:text-slate-500">
-                {followUpDate
-                  ? 'Lira will automatically join the meeting at this time.'
-                  : 'Leave empty to start the interview right away.'}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-2 pt-1">
-              <button
-                onClick={() => {
-                  setShowFollowUp(false)
-                  setFollowUpPurpose('technical')
-                  setFollowUpCustomPurpose('')
-                  setFollowUpMode('solo')
-                  setFollowUpLink('')
-                  setFollowUpDate('')
-                }}
-                className="flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreateFollowUp}
-                disabled={
-                  followUpCreating ||
-                  !followUpLink.trim() ||
-                  (followUpPurpose === 'custom' && !followUpCustomPurpose.trim())
-                }
-                className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
-              >
-                {followUpCreating ? (
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
-                ) : (
-                  'Create & Review Questions'
                 )}
               </button>
             </div>

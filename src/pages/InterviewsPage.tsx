@@ -59,26 +59,30 @@ function InterviewsPage() {
     loadInterviews()
   }, [loadInterviews])
 
-  // Group by role title, tracking newest created_at per role for sorting
-  const roleMap = new Map<string, { count: number; latestDate: string }>()
+  // Group by role title, tracking unique candidates and newest date per role
+  const roleMap = new Map<string, { candidates: Set<string>; latestDate: string }>()
   for (const iv of interviews) {
     if (search) {
       const q = search.toLowerCase()
       if (!iv.title.toLowerCase().includes(q) && !iv.candidate_name.toLowerCase().includes(q))
         continue
     }
+    const candidateKey =
+      iv.candidate_email?.trim().toLowerCase() ||
+      iv.candidate_name?.trim().toLowerCase() ||
+      iv.interview_id
     const existing = roleMap.get(iv.title)
     if (existing) {
-      existing.count++
+      existing.candidates.add(candidateKey)
       if (iv.created_at > existing.latestDate) existing.latestDate = iv.created_at
     } else {
-      roleMap.set(iv.title, { count: 1, latestDate: iv.created_at })
+      roleMap.set(iv.title, { candidates: new Set([candidateKey]), latestDate: iv.created_at })
     }
   }
   // Sort roles by newest first
   const sortedRoles = Array.from(roleMap.entries())
     .sort((a, b) => b[1].latestDate.localeCompare(a[1].latestDate))
-    .map(([role, { count }]) => [role, count] as const)
+    .map(([role, { candidates }]) => [role, candidates.size] as const)
 
   return (
     <div className="flex flex-col h-full">

@@ -29,6 +29,7 @@ import {
   type InterviewDraft,
   type InterviewMode,
   type InterviewPersonality,
+  type InterviewPurpose,
   type InterviewQuestion,
   type QuestionCategory,
 } from '@/services/api'
@@ -91,6 +92,19 @@ const CURRENCIES: { value: string; label: string; symbol: string }[] = [
   { value: 'EGP', label: 'EGP — Egyptian Pound', symbol: 'E£' },
   { value: 'AED', label: 'AED — UAE Dirham', symbol: 'AED' },
   { value: 'SGD', label: 'SGD — Singapore Dollar', symbol: 'S$' },
+]
+
+const INTERVIEW_PURPOSES: { value: InterviewPurpose; label: string }[] = [
+  { value: 'introduction', label: 'Introduction' },
+  { value: 'technical', label: 'Technical' },
+  { value: 'cultural_fit', label: 'Cultural Fit' },
+  { value: 'system_design', label: 'System Design' },
+  { value: 'behavioral', label: 'Behavioral' },
+  { value: 'panel', label: 'Panel' },
+  { value: 'final', label: 'Final Round' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'alignment', label: 'Alignment' },
+  { value: 'custom', label: 'Custom…' },
 ]
 
 // ── Shared form field components ─────────────────────────────────────────────
@@ -260,6 +274,10 @@ interface ReviewState {
   // Scheduling
   meeting_link: string
   scheduled_at: string
+  // Follow-up fields
+  parent_interview_id?: string
+  interview_purpose: InterviewPurpose
+  custom_purpose: string
 }
 
 function draftToReview(draft: InterviewDraft): ReviewState {
@@ -280,6 +298,8 @@ function draftToReview(draft: InterviewDraft): ReviewState {
     candidate_email: '',
     meeting_link: '',
     scheduled_at: '',
+    interview_purpose: 'introduction',
+    custom_purpose: '',
   }
 }
 
@@ -315,6 +335,9 @@ function interviewToReview(interview: Interview): ReviewState {
     candidate_email: interview.candidate_email ?? '',
     meeting_link: interview.meeting_link ?? '',
     scheduled_at: scheduledAt,
+    parent_interview_id: interview.parent_interview_id,
+    interview_purpose: interview.interview_purpose ?? 'introduction',
+    custom_purpose: interview.custom_purpose ?? '',
   }
 }
 
@@ -346,6 +369,8 @@ function interviewToTemplate(interview: Interview): ReviewState {
     candidate_email: '',
     meeting_link: '',
     scheduled_at: '',
+    interview_purpose: 'introduction',
+    custom_purpose: '',
   }
 }
 
@@ -527,6 +552,13 @@ function InterviewCreatePage() {
         no_show_timeout_seconds: 600,
         questions: showQuestions ? review.questions : undefined,
         question_generation: showQuestions ? 'ai_generated' : 'ai_generated',
+        parent_interview_id: review.parent_interview_id,
+        interview_purpose:
+          review.interview_purpose !== 'introduction' ? review.interview_purpose : undefined,
+        custom_purpose:
+          review.interview_purpose === 'custom'
+            ? review.custom_purpose.trim() || undefined
+            : undefined,
       }
 
       if (editMode && editId) {
@@ -746,6 +778,8 @@ function InterviewCreatePage() {
                       candidate_email: '',
                       meeting_link: '',
                       scheduled_at: '',
+                      interview_purpose: 'introduction',
+                      custom_purpose: '',
                     })
                     setDraftError(null)
                     setPhase('review')
@@ -809,15 +843,65 @@ function InterviewCreatePage() {
           <p className="text-sm text-slate-500">
             {templateMode
               ? 'New candidate interview'
-              : editMode
-                ? 'Edit your interview setup'
-                : 'Review and finalize your role details'}
+              : editMode && review.parent_interview_id
+                ? 'Set up the next interview round'
+                : editMode
+                  ? 'Edit your interview setup'
+                  : 'Review and finalize your role details'}
           </p>
         </div>
       </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-5 flex flex-col gap-4">
+        {/* ── Follow-up: Purpose & Meeting Link ────────────────────────── */}
+        {review.parent_interview_id && (
+          <div style={{ order: 0 }}>
+            <SectionCard title="New Interview Round" variant="primary">
+              <p className="text-sm text-slate-500 dark:text-slate-400 -mt-1 mb-3">
+                Set the purpose and meeting link for this round.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label required>Purpose</Label>
+                  <select
+                    value={review.interview_purpose}
+                    onChange={(e) => setR('interview_purpose', e.target.value as InterviewPurpose)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  >
+                    {INTERVIEW_PURPOSES.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                  {review.interview_purpose === 'custom' && (
+                    <Input
+                      className="mt-2"
+                      placeholder="Describe the interview purpose…"
+                      value={review.custom_purpose}
+                      onChange={(e) => setR('custom_purpose', e.target.value)}
+                      maxLength={200}
+                    />
+                  )}
+                </div>
+                <div>
+                  <Label required>Meeting Link</Label>
+                  <Input
+                    type="url"
+                    placeholder="https://meet.google.com/abc-defg-hij"
+                    value={review.meeting_link}
+                    onChange={(e) => setR('meeting_link', e.target.value)}
+                  />
+                  {errors.meeting_link && (
+                    <p className="mt-1 text-xs text-red-500">{errors.meeting_link}</p>
+                  )}
+                </div>
+              </div>
+            </SectionCard>
+          </div>
+        )}
+
         {/* ── Role Details ─────────────────────────────────────────────── */}
         <div style={{ order: templateMode ? 2 : 1 }}>
           <SectionCard
@@ -1054,7 +1138,11 @@ function InterviewCreatePage() {
 
         {/* ── Meeting ─────────────────────────────────────────────────────── */}
         <div style={{ order: templateMode ? 3 : 4 }}>
-          <SectionCard title="Meeting" collapsible defaultOpen={templateMode}>
+          <SectionCard
+            title="Meeting"
+            collapsible
+            defaultOpen={templateMode || Boolean(review.parent_interview_id)}
+          >
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Scheduled At</Label>

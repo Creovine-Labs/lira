@@ -31,17 +31,20 @@ const STATUS_LABELS: Record<string, string> = {
 }
 
 function CandidateRow({
-  interview,
+  interviews,
   onOpen,
   onDelete,
   deleting,
 }: {
-  interview: Interview
+  interviews: Interview[]
   onOpen: () => void
-  onDelete: () => void
-  deleting: boolean
+  onDelete: (iv: Interview) => void
+  deleting: string | null
 }) {
-  const initial = interview.candidate_name?.trim()?.charAt(0)?.toUpperCase()
+  const latest = interviews[0] // sorted newest first
+  const initial = latest.candidate_name?.trim()?.charAt(0)?.toUpperCase()
+  const totalRounds = interviews.length
+  const latestRound = Math.max(...interviews.map((iv) => iv.round ?? 1))
 
   return (
     <div className="flex items-center">
@@ -52,28 +55,40 @@ function CandidateRow({
         <div className="shrink-0 w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 flex items-center justify-center text-sm font-semibold mr-4">
           {initial ? initial : <User className="w-4 h-4" />}
         </div>
-        <span className="flex-1 font-medium text-slate-900 dark:text-slate-100 truncate">
-          {interview.candidate_name?.trim() || interview.candidate_email || 'Candidate'}
-        </span>
+        <div className="flex-1 min-w-0">
+          <span className="font-medium text-slate-900 dark:text-slate-100 truncate block">
+            {latest.candidate_name?.trim() || latest.candidate_email || 'Candidate'}
+          </span>
+          {totalRounds > 1 && (
+            <span className="text-xs text-slate-400 dark:text-slate-500">
+              Round {latestRound} of {totalRounds}
+            </span>
+          )}
+        </div>
         <span
           className={cn(
             'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ml-3',
-            STATUS_COLORS[interview.status] ?? 'text-slate-500 bg-slate-100'
+            STATUS_COLORS[latest.status] ?? 'text-slate-500 bg-slate-100'
           )}
         >
-          {STATUS_LABELS[interview.status] ?? interview.status}
+          {totalRounds > 1 ? `Round ${latestRound} — ` : ''}
+          {STATUS_LABELS[latest.status] ?? latest.status}
         </span>
       </button>
       <button
         onClick={(e) => {
           e.stopPropagation()
-          onDelete()
+          onDelete(latest)
         }}
-        disabled={deleting}
+        disabled={deleting === latest.interview_id}
         className="shrink-0 p-3 mr-2 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-40"
         title="Delete candidate"
       >
-        {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+        {deleting === latest.interview_id ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <Trash2 className="w-4 h-4" />
+        )}
       </button>
     </div>
   )
@@ -112,11 +127,29 @@ function InterviewRolePage() {
     loadIfNeeded()
   }, [loadIfNeeded])
 
-  const candidates = interviews
+  const allForRole = interviews
     .filter((iv) => iv.title === role)
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
-  const templateId = candidates[0]?.interview_id
+  // Group by candidate (email preferred, fallback to name)
+  const candidateGroups = (() => {
+    const groups = new Map<string, Interview[]>()
+    for (const iv of allForRole) {
+      const key =
+        iv.candidate_email?.trim().toLowerCase() ||
+        iv.candidate_name?.trim().toLowerCase() ||
+        iv.interview_id
+      const existing = groups.get(key)
+      if (existing) {
+        existing.push(iv)
+      } else {
+        groups.set(key, [iv])
+      }
+    }
+    return Array.from(groups.values())
+  })()
+
+  const templateId = allForRole[0]?.interview_id
 
   const handleDeleteCandidate = (interview: Interview) => {
     const name = interview.candidate_name?.trim() || 'this candidate'
@@ -140,7 +173,7 @@ function InterviewRolePage() {
   }
 
   const handleDeleteRole = () => {
-    const count = candidates.length
+    const count = candidateGroups.length
     setConfirm({
       title: 'Delete Role',
       description: `Are you sure you want to delete the "${role}" role and all ${count} candidate${count !== 1 ? 's' : ''}? This cannot be undone.`,
@@ -149,9 +182,9 @@ function InterviewRolePage() {
         setDeletingRole(true)
         try {
           await Promise.all(
-            candidates.map((iv) => deleteInterviewRecord(currentOrgId, iv.interview_id))
+            allForRole.map((iv) => deleteInterviewRecord(currentOrgId, iv.interview_id))
           )
-          candidates.forEach((iv) => removeInterview(iv.interview_id))
+          allForRole.forEach((iv) => removeInterview(iv.interview_id))
           toast.success(`"${role}" deleted`)
           navigate('/org/roles')
         } catch {
@@ -187,7 +220,7 @@ function InterviewRolePage() {
         </div>
         <button
           onClick={handleDeleteRole}
-          disabled={deletingRole || candidates.length === 0}
+          disabled={deletingRole || allForRole.length === 0}
           className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 transition-colors disabled:opacity-40"
         >
           {deletingRole ? (
@@ -207,15 +240,18 @@ function InterviewRolePage() {
           </div>
         ) : (
           <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-            {candidates.map((iv) => (
-              <CandidateRow
-                key={iv.interview_id}
-                interview={iv}
-                onOpen={() => navigate(`/org/interviews/${iv.interview_id}`)}
-                onDelete={() => handleDeleteCandidate(iv)}
-                deleting={deletingId === iv.interview_id}
-              />
-            ))}
+            {candidateGroups.map((group) => {
+              const latest = group[0] // newest first
+              return (
+                <CandidateRow
+                  key={latest.interview_id}
+                  interviews={group}
+                  onOpen={() => navigate(`/org/interviews/${latest.interview_id}`)}
+                  onDelete={(iv) => handleDeleteCandidate(iv)}
+                  deleting={deletingId}
+                />
+              )
+            })}
 
             {/* Interview Another Person — same row height as a candidate */}
             {templateId && (
@@ -232,7 +268,7 @@ function InterviewRolePage() {
               </button>
             )}
 
-            {candidates.length === 0 && !loading && (
+            {candidateGroups.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center py-16 text-center px-6">
                 <p className="text-slate-500 dark:text-slate-400 font-medium">No candidates yet</p>
               </div>
