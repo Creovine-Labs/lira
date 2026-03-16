@@ -577,7 +577,18 @@ export async function validateInviteCode(
   return apiFetch(`/lira/v1/orgs/invite/${encodeURIComponent(code)}/validate`)
 }
 
-// ── Knowledge Base API ────────────────────────────────────────────────────────
+export interface DashboardStats {
+  meetings_total: number
+  tasks_pending: number
+  interviews_total: number
+  last_activity_at: string | null
+}
+
+export async function getDashboardStats(orgId: string): Promise<DashboardStats> {
+  return apiFetch<DashboardStats>(`/lira/v1/orgs/${encodeURIComponent(orgId)}/stats`)
+}
+
+// ── Knowledge Base API ─────────────────────────────────────────────────────────
 
 export async function triggerCrawl(
   orgId: string,

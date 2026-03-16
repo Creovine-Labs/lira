@@ -17,9 +17,11 @@ import {
   listMeetings,
   listTasks,
   listInterviews,
+  getDashboardStats,
   type Meeting,
   type TaskRecord,
   type Interview,
+  type DashboardStats,
 } from '@/services/api'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -45,27 +47,65 @@ function StatCard({
   label,
   value,
   icon: Icon,
-  bg,
-  iconColor,
+  accent,
   onClick,
 }: {
   label: string
   value: number | string
   icon: React.ElementType
-  bg: string
-  iconColor: string
+  accent: string // e.g. "violet" | "orange" | "amber" | "teal"
   onClick?: () => void
 }) {
+  /* Tailwind can't interpolate dynamic class names, so we map accent → classes */
+  const palette: Record<string, { ring: string; iconBg: string; iconText: string; glow: string }> =
+    {
+      orange: {
+        ring: 'ring-orange-200/60',
+        iconBg: 'bg-orange-100',
+        iconText: 'text-orange-500',
+        glow: 'shadow-orange-200/40',
+      },
+      amber: {
+        ring: 'ring-amber-200/60',
+        iconBg: 'bg-amber-100',
+        iconText: 'text-amber-600',
+        glow: 'shadow-amber-200/40',
+      },
+      violet: {
+        ring: 'ring-violet-200/60',
+        iconBg: 'bg-violet-100',
+        iconText: 'text-violet-600',
+        glow: 'shadow-violet-200/40',
+      },
+      teal: {
+        ring: 'ring-teal-200/60',
+        iconBg: 'bg-teal-100',
+        iconText: 'text-teal-600',
+        glow: 'shadow-teal-200/40',
+      },
+    }
+  const c = palette[accent] ?? palette.violet
+
   return (
     <button
       onClick={onClick}
-      className={`group flex w-full flex-col gap-4 rounded-2xl p-5 text-left transition hover:opacity-90 ${bg}`}
+      className={[
+        'group relative flex w-full flex-col gap-4 rounded-2xl p-5 text-left',
+        'bg-white/70 backdrop-blur-lg',
+        'border border-white/50',
+        'ring-1',
+        c.ring,
+        'shadow-md',
+        c.glow,
+        'transition-all duration-200 ease-out',
+        'hover:-translate-y-0.5 hover:shadow-lg',
+      ].join(' ')}
     >
       <div className="flex items-start justify-between">
         <div
-          className={`flex h-9 w-9 items-center justify-center rounded-xl bg-white/60 ${iconColor}`}
+          className={`flex h-9 w-9 items-center justify-center rounded-xl ${c.iconBg} ${c.iconText}`}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="h-[18px] w-[18px]" />
         </div>
         <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900 text-white opacity-0 transition group-hover:opacity-100">
           <ArrowRight className="h-3.5 w-3.5" />
@@ -73,7 +113,9 @@ function StatCard({
       </div>
       <div>
         <p className="text-2xl font-bold tracking-tight text-gray-900">{value}</p>
-        <p className="mt-0.5 text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+        <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+          {label}
+        </p>
       </div>
     </button>
   )
@@ -205,6 +247,7 @@ function DashboardPage() {
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [interviews, setInterviews] = useState<Interview[]>([])
+  const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -223,6 +266,13 @@ function DashboardPage() {
     }
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true)
+
+    // Stats card numbers come from the dedicated stats endpoint (single call)
+    const statsP = currentOrgId
+      ? getDashboardStats(currentOrgId).catch(() => null)
+      : Promise.resolve(null)
+
+    // Full lists are still needed to render the activity panels below the cards
     const meetingP = listMeetings().catch(() => [] as Meeting[])
     const taskP = currentOrgId
       ? listTasks(currentOrgId, { status: 'pending' })
@@ -233,9 +283,10 @@ function DashboardPage() {
       ? listInterviews(currentOrgId).catch(() => [] as Interview[])
       : Promise.resolve([] as Interview[])
 
-    Promise.all([meetingP, taskP, interviewP]).then(([m, t, iv]) => {
+    Promise.all([statsP, meetingP, taskP, interviewP]).then(([s, m, t, iv]) => {
       m.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       t.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setStats(s)
       setMeetings(m)
       setTasks(t)
       setInterviews(iv)
@@ -300,46 +351,46 @@ function DashboardPage() {
       <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
           label="Total meetings"
-          value={meetings.length}
+          value={stats?.meetings_total ?? meetings.length}
           icon={Mic}
-          bg="bg-orange-100"
-          iconColor="text-orange-500"
+          accent="orange"
           onClick={() => navigate('/meetings')}
         />
         <StatCard
           label="Pending tasks"
-          value={tasks.length}
+          value={stats?.tasks_pending ?? tasks.length}
           icon={CheckSquare}
-          bg="bg-yellow-100"
-          iconColor="text-yellow-600"
+          accent="amber"
           onClick={() => navigate('/org/tasks')}
         />
         <StatCard
           label="Interviews"
-          value={interviews.length}
+          value={stats?.interviews_total ?? interviews.length}
           icon={BriefcaseIcon}
-          bg="bg-violet-100"
-          iconColor="text-violet-600"
+          accent="violet"
           onClick={() => navigate('/org/roles')}
         />
         <StatCard
           label="Recent activity"
           value={
-            meetings.length + tasks.length > 0
-              ? timeAgo(
-                  [...meetings, ...tasks].sort(
-                    (a, b) =>
-                      new Date(
-                        (b as Meeting).created_at ?? (b as TaskRecord).created_at
-                      ).getTime() -
-                      new Date((a as Meeting).created_at ?? (a as TaskRecord).created_at).getTime()
-                  )[0]?.created_at
-                )
-              : '—'
+            stats?.last_activity_at
+              ? timeAgo(stats.last_activity_at)
+              : meetings.length + tasks.length > 0
+                ? timeAgo(
+                    [...meetings, ...tasks].sort(
+                      (a, b) =>
+                        new Date(
+                          (b as Meeting).created_at ?? (b as TaskRecord).created_at
+                        ).getTime() -
+                        new Date(
+                          (a as Meeting).created_at ?? (a as TaskRecord).created_at
+                        ).getTime()
+                    )[0]?.created_at
+                  )
+                : '—'
           }
           icon={Clock}
-          bg="bg-teal-100"
-          iconColor="text-teal-600"
+          accent="teal"
         />
       </div>
 
