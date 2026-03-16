@@ -7,7 +7,6 @@ import {
   CheckSquare,
   Mic,
   Plus,
-  Sparkles,
   BookOpen,
   Clock,
 } from 'lucide-react'
@@ -353,12 +352,6 @@ function DashboardPage() {
             </p>
           )}
         </div>
-
-        {/* AI activity badge */}
-        <div className="hidden items-center gap-2 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-sm font-medium text-violet-700 sm:flex">
-          <Sparkles className="h-4 w-4" />
-          Lira is ready
-        </div>
       </div>
 
       {/* ── Stat cards ── */}
@@ -472,24 +465,6 @@ function DashboardPage() {
               </button>
             </div>
             <RecentTasks tasks={tasks.slice(0, 4)} />
-          </div>
-
-          {/* AI Settings CTA */}
-          <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-5">
-            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100">
-              <Sparkles className="h-4 w-4 text-violet-600" />
-            </div>
-            <p className="text-sm font-semibold text-gray-900">Configure Lira AI</p>
-            <p className="mt-1 text-xs leading-relaxed text-gray-500">
-              Set voice, context sources, and speaking style to match your team's workflow.
-            </p>
-            <button
-              onClick={() => navigate('/org/settings')}
-              className="mt-4 flex items-center gap-1.5 rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-700"
-            >
-              Open Settings
-              <ArrowRight className="h-3 w-3" />
-            </button>
           </div>
         </div>
       </div>
