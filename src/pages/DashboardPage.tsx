@@ -474,23 +474,21 @@ function DashboardPage() {
             <RecentTasks tasks={tasks.slice(0, 4)} />
           </div>
 
-          {/* Upgrade / AI CTA */}
-          <div className="rounded-2xl bg-gradient-to-br from-indigo-950 to-indigo-800 p-5 text-white">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">
-              AI Platform
-            </span>
-            <p className="mt-2 text-base font-bold leading-snug">
-              Configure Lira's AI behavior for your team
-            </p>
-            <p className="mt-1.5 text-sm text-indigo-200">
-              Set voice, context sources, and speaking mode in Settings.
+          {/* AI Settings CTA */}
+          <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-indigo-50 p-5">
+            <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl bg-violet-100">
+              <Sparkles className="h-4 w-4 text-violet-600" />
+            </div>
+            <p className="text-sm font-semibold text-gray-900">Configure Lira AI</p>
+            <p className="mt-1 text-xs leading-relaxed text-gray-500">
+              Set voice, context sources, and speaking style to match your team's workflow.
             </p>
             <button
               onClick={() => navigate('/org/settings')}
-              className="mt-4 flex items-center gap-1.5 rounded-full bg-white px-4 py-2 text-sm font-semibold text-indigo-900 transition hover:bg-indigo-50"
+              className="mt-4 flex items-center gap-1.5 rounded-full bg-violet-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-violet-700"
             >
-              <Sparkles className="h-3.5 w-3.5" />
               Open Settings
+              <ArrowRight className="h-3 w-3" />
             </button>
           </div>
         </div>
