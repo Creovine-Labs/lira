@@ -107,7 +107,7 @@ function WebhooksPage() {
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="space-y-8 pb-8 px-4 sm:px-6">
       <div>
         <h1 className="text-xl font-bold text-foreground">Webhooks & Notifications</h1>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -175,7 +175,7 @@ function WebhooksPage() {
       </section>
 
       {/* Save */}
-      <div className="flex justify-end gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button
           onClick={handleTest}
           disabled={testing || !slackUrl.trim()}

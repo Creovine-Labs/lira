@@ -688,22 +688,36 @@ function InterviewCreatePage() {
     return (
       <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-700/60">
+        <div className="flex items-center gap-4 px-6 py-5 border-b border-gray-200">
           <button
             onClick={() => navigate('/org/roles')}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100">New Role</h1>
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-violet-100">
+              <BriefcaseIcon className="w-4 h-4 text-violet-600" />
+            </div>
+            <h1 className="text-xl font-bold text-gray-900">Create Role</h1>
+          </div>
         </div>
 
         {/* Prompt area */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-8 max-w-2xl mx-auto w-full">
-          <div className="w-full space-y-4">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
-              What role are you hiring for?
-            </h2>
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-10">
+          <div className="w-full max-w-xl space-y-5">
+            {/* Icon + headline */}
+            <div className="text-center space-y-2">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-2 shadow-lg">
+                <Sparkles className="w-7 h-7 text-white" />
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+                What role are you hiring for?
+              </h2>
+              <p className="text-sm text-gray-500">
+                Describe the role and Lira AI will build your interview setup.
+              </p>
+            </div>
 
             {/* Prompt input */}
             <div className="relative">
@@ -718,9 +732,9 @@ function InterviewCreatePage() {
                   }
                 }}
                 placeholder="e.g. Senior Backend Engineer with Node.js and AWS experience for our platform team"
-                className="w-full px-4 py-3.5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-violet-500 resize-none"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 resize-none transition-all"
               />
-              <p className="absolute bottom-3 right-3 text-[11px] text-slate-400 pointer-events-none select-none">
+              <p className="absolute bottom-3 right-3 text-[11px] text-gray-400 pointer-events-none select-none">
                 ⌘↵
               </p>
             </div>
@@ -728,10 +742,10 @@ function InterviewCreatePage() {
               <p
                 className={cn(
                   'text-xs',
-                  prompt.length >= 30 ? 'text-emerald-500' : 'text-slate-400'
+                  prompt.length >= 30 ? 'text-emerald-500' : 'text-gray-400'
                 )}
               >
-                {prompt.length >= 30 ? 'Looks good' : 'Add more detail for a better result'}
+                {prompt.length >= 30 ? '✓ Looks good' : 'Add more detail for a better result'}
               </p>
             )}
 
@@ -739,25 +753,26 @@ function InterviewCreatePage() {
             <button
               onClick={handleGenerate}
               disabled={!prompt.trim() || drafting}
-              className="w-full py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40"
+              className="w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 shadow-sm"
             >
               {drafting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  Setting up your role...
+                  Setting up your role…
                 </>
               ) : (
-                'Create Role'
+                <>
+                  <Sparkles className="w-4 h-4" />
+                  Generate Role Setup
+                </>
               )}
             </button>
 
             {/* Fallback on error */}
             {draftError && (
-              <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 space-y-1.5">
-                <p className="text-sm font-medium text-red-700 dark:text-red-400">
-                  Something went wrong
-                </p>
-                <p className="text-xs text-red-500 dark:text-red-400/80">{draftError}</p>
+              <div className="p-4 rounded-xl bg-red-50 border border-red-200 space-y-1.5">
+                <p className="text-sm font-medium text-red-700">Something went wrong</p>
+                <p className="text-xs text-red-500">{draftError}</p>
                 <button
                   onClick={() => {
                     setReview({
@@ -783,23 +798,23 @@ function InterviewCreatePage() {
                     setDraftError(null)
                     setPhase('review')
                   }}
-                  className="text-xs text-violet-600 dark:text-violet-400 hover:underline mt-0.5"
+                  className="text-xs text-violet-600 hover:underline mt-0.5"
                 >
-                  Set up manually instead
+                  Set up manually instead →
                 </button>
               </div>
             )}
 
-            {/* Examples, hidden once the user starts typing */}
+            {/* Examples */}
             {prompt.length === 0 && (
               <div className="pt-1">
-                <p className="text-xs text-slate-400 mb-2">Examples:</p>
-                <div className="flex flex-wrap gap-2">
+                <p className="text-xs text-gray-400 mb-2.5 text-center">Try an example:</p>
+                <div className="flex flex-wrap gap-2 justify-center">
                   {EXAMPLE_PROMPTS.map((ex) => (
                     <button
                       key={ex}
                       onClick={() => setPrompt(ex)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:border-violet-400 hover:text-violet-600 dark:hover:text-violet-400 transition-colors"
+                      className="text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
                     >
                       {ex}
                     </button>

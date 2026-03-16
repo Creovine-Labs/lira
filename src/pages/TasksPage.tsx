@@ -94,81 +94,99 @@ function TasksPage() {
   }
 
   return (
-    <div className="space-y-6 pb-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Tasks</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Track action items extracted from meetings or created manually.
-          </p>
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-violet-100">
+            <CheckSquare className="w-5 h-5 text-violet-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Tasks</h1>
+            <p className="text-sm text-gray-500">
+              Track action items extracted from meetings or created by you.
+            </p>
+          </div>
         </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors"
         >
-          <Plus className="h-4 w-4" />
+          <Plus className="w-4 h-4" />
           New Task
         </button>
       </div>
 
-      {/* Create task form */}
-      {showCreate && (
-        <CreateTaskForm
-          orgId={currentOrgId!}
-          onCreated={(task) => {
-            addTask(task)
-            setShowCreate(false)
-          }}
-          onCancel={() => setShowCreate(false)}
-        />
-      )}
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-5">
+        {/* Create task form */}
+        {showCreate && (
+          <CreateTaskForm
+            orgId={currentOrgId!}
+            onCreated={(task) => {
+              addTask(task)
+              setShowCreate(false)
+            }}
+            onCancel={() => setShowCreate(false)}
+          />
+        )}
 
-      {/* Status tabs */}
-      <div className="flex gap-1 rounded-lg border bg-muted/50 p-1">
-        {STATUS_TABS.map(({ value, label, icon: Icon }) => (
-          <button
-            key={value}
-            onClick={() => setStatusFilter(value === 'all' ? null : value)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition',
-              (statusFilter ?? 'all') === value
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-            )}
-          >
-            <Icon className="h-3.5 w-3.5" />
-            {label}
-            <span className="ml-0.5 rounded-full bg-muted px-1.5 text-[10px]">{counts[value]}</span>
-          </button>
-        ))}
+        {/* Status tabs */}
+        <div className="overflow-x-auto pb-0.5">
+          <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 min-w-max">
+            {STATUS_TABS.map(({ value, label, icon: Icon }) => (
+              <button
+                key={value}
+                onClick={() => setStatusFilter(value === 'all' ? null : value)}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+                  (statusFilter ?? 'all') === value
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {label}
+                <span className="ml-0.5 rounded-full bg-gray-100 px-1.5 text-[10px]">
+                  {counts[value]}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Task list */}
+        {filteredTasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
+            <div className="p-3 rounded-xl bg-gray-100 mb-3">
+              <CheckSquare className="h-8 w-8 text-gray-400" />
+            </div>
+            <p className="text-sm font-medium text-gray-700">No tasks yet</p>
+            <p className="mt-1 text-xs text-gray-400">
+              Action items from meetings will appear here.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {filteredTasks.map((task) => (
+              <TaskCard
+                key={task.task_id}
+                task={task}
+                onClick={() => navigate(`/org/tasks/${task.task_id}`)}
+                onStatusChange={async (status) => {
+                  if (!currentOrgId) return
+                  try {
+                    await updateTask(currentOrgId, task.task_id, { status })
+                    useTaskStore.getState().updateTask(task.task_id, { status })
+                  } catch {
+                    toast.error('Failed to update status')
+                  }
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
-
-      {/* Task list */}
-      {filteredTasks.length === 0 ? (
-        <div className="rounded-xl border bg-card px-6 py-16 text-center">
-          <CheckSquare className="mx-auto h-10 w-10 text-muted-foreground/40" />
-          <p className="mt-3 text-sm text-muted-foreground">No tasks found.</p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {filteredTasks.map((task) => (
-            <TaskCard
-              key={task.task_id}
-              task={task}
-              onClick={() => navigate(`/org/tasks/${task.task_id}`)}
-              onStatusChange={async (status) => {
-                if (!currentOrgId) return
-                try {
-                  await updateTask(currentOrgId, task.task_id, { status })
-                  useTaskStore.getState().updateTask(task.task_id, { status })
-                } catch {
-                  toast.error('Failed to update status')
-                }
-              }}
-            />
-          ))}
-        </div>
-      )}
     </div>
   )
 }

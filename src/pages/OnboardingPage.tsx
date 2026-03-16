@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Building2,
   Loader2,
   UserPlus,
   Plus,
@@ -34,20 +33,232 @@ const INDUSTRIES = [
   'Marketing & Advertising',
   'Consulting',
   'Media & Entertainment',
-  'Transportation & Logistics',
+  'Transportation',
   'Food & Beverage',
   'Non-profit',
   'Government',
   'Energy',
   'Telecommunications',
-  'Other',
 ]
+
+type FlowStep = 'choose' | 'org-name' | 'industry' | 'details' | 'join-code' | 'success'
+
+const STEP_BACK: Partial<Record<FlowStep, FlowStep>> = {
+  'org-name': 'choose',
+  industry: 'org-name',
+  details: 'industry',
+  'join-code': 'choose',
+}
+
+const LEFT_HEADINGS: Partial<Record<FlowStep, string>> = {
+  'org-name': 'Create your\nworkspace',
+  industry: 'Tailor your\nexperience',
+  details: 'Almost\nthere',
+  'join-code': 'Join your\nteam',
+}
+
+function CelebrationGraphic() {
+  return (
+    <svg
+      width="160"
+      height="160"
+      viewBox="0 0 160 160"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      {/* Outer ring */}
+      <circle cx="80" cy="80" r="56" stroke="#DDD6FE" strokeWidth="3" />
+      {/* Inner fill circle */}
+      <circle cx="80" cy="80" r="44" fill="#EDE9FE" />
+      {/* Check circle */}
+      <circle cx="80" cy="80" r="32" fill="#7C3AED" />
+      {/* Checkmark */}
+      <polyline
+        points="64,80 75,91 97,68"
+        stroke="white"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      {/* Sparkle dots */}
+      <circle cx="80" cy="16" r="4" fill="#A78BFA" />
+      <circle cx="80" cy="144" r="4" fill="#7C3AED" />
+      <circle cx="16" cy="80" r="4" fill="#C4B5FD" />
+      <circle cx="144" cy="80" r="4" fill="#5B21B6" />
+      <circle cx="37" cy="37" r="3" fill="#DDD6FE" />
+      <circle cx="123" cy="37" r="3" fill="#8B5CF6" />
+      <circle cx="37" cy="123" r="3" fill="#6D28D9" />
+      <circle cx="123" cy="123" r="3" fill="#A78BFA" />
+    </svg>
+  )
+}
+
+function SparkleGraphic() {
+  return (
+    <svg
+      width="160"
+      height="160"
+      viewBox="0 0 160 160"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <circle cx="80" cy="80" r="8" fill="#7C3AED" />
+      <line
+        x1="80"
+        y1="80"
+        x2="80"
+        y2="18"
+        stroke="#7C3AED"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="80"
+        y2="142"
+        stroke="#A78BFA"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="18"
+        y2="80"
+        stroke="#DDD6FE"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="142"
+        y2="80"
+        stroke="#7C3AED"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="35"
+        y2="35"
+        stroke="#C4B5FD"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="125"
+        y2="35"
+        stroke="#5B21B6"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="35"
+        y2="125"
+        stroke="#4C1D95"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="125"
+        y2="125"
+        stroke="#8B5CF6"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="52"
+        y2="22"
+        stroke="#EDE9FE"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="108"
+        y2="22"
+        stroke="#DDD6FE"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="22"
+        y2="52"
+        stroke="#7C3AED"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="138"
+        y2="52"
+        stroke="#A78BFA"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="22"
+        y2="108"
+        stroke="#C4B5FD"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="138"
+        y2="108"
+        stroke="#6D28D9"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="52"
+        y2="138"
+        stroke="#8B5CF6"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="108"
+        y2="138"
+        stroke="#4C1D95"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
 
 function OnboardingPage() {
   const navigate = useNavigate()
   const { addOrganization, setCurrentOrg } = useOrgStore()
 
-  const [mode, setMode] = useState<'choose' | 'create' | 'join'>('choose')
+  const [step, setStep] = useState<FlowStep>('choose')
+  const [createdOrgName, setCreatedOrgName] = useState('')
 
   // Create org state
   const [orgName, setOrgName] = useState('')
@@ -68,6 +279,11 @@ function OnboardingPage() {
   const [validating, setValidating] = useState(false)
   const [validatedOrg, setValidatedOrg] = useState<{ name: string; org_id: string } | null>(null)
 
+  function goBack() {
+    const prev = STEP_BACK[step]
+    if (prev) setStep(prev)
+  }
+
   async function handleCreate() {
     const name = orgName.trim()
     if (!name) return
@@ -81,8 +297,8 @@ function OnboardingPage() {
       })
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
-      toast.success(`${organization.name} created!`)
-      navigate('/')
+      setCreatedOrgName(organization.name)
+      setStep('success')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create organization')
     } finally {
@@ -92,7 +308,6 @@ function OnboardingPage() {
 
   function looksLikeCompleteUrl(url: string): boolean {
     const u = url.trim()
-    // Match full URLs or bare domains with a TLD
     return (
       /^https?:\/\/.+\.[a-z]{2,}([/?#].*)?$/i.test(u) ||
       /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*\.[a-z]{2,}$/i.test(u)
@@ -179,7 +394,7 @@ function OnboardingPage() {
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       toast.success(`Joined ${organization.name}!`)
-      navigate('/')
+      navigate('/dashboard')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to join organization')
     } finally {
@@ -188,331 +403,452 @@ function OnboardingPage() {
   }
 
   return (
-    <main className="flex min-h-screen w-full items-center justify-center bg-gradient-to-br from-background via-background to-violet-50/30 p-4 dark:to-violet-950/20">
-      <div className="w-full max-w-md">
-        <div className="rounded-2xl border bg-card shadow-xl shadow-black/5">
-          {/* Header */}
-          <div className="flex flex-col items-center gap-3 border-b px-8 py-8">
-            <LiraLogo size="lg" />
-            <h1 className="text-lg font-semibold text-foreground">Give Lira Context</h1>
-            <p className="text-center text-sm text-muted-foreground">
-              Organizations let Lira understand your team. The details you add here — your company
-              profile, website, and description — help Lira give smarter, more relevant answers in
-              every meeting.
-            </p>
-          </div>
+    <div className="flex min-h-screen">
+      {/* ── Left panel ── */}
+      <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 px-10 py-10">
+        <LiraLogo size="md" />
+        <div className="flex flex-1 flex-col justify-center gap-6">
+          {step === 'choose' ? (
+            <>
+              <SparkleGraphic />
+              <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
+                One platform for every meeting, every decision, every team.
+              </p>
+            </>
+          ) : step === 'success' ? (
+            <>
+              <CelebrationGraphic />
+              <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
+                Your workspace is live and ready for your team.
+              </p>
+            </>
+          ) : (
+            <h2 className="whitespace-pre-line text-5xl font-bold leading-tight tracking-tight text-gray-900">
+              {LEFT_HEADINGS[step] ?? ''}
+            </h2>
+          )}
+        </div>
+      </aside>
 
-          <div className="px-8 py-6">
-            {mode === 'choose' && (
-              <div className="space-y-3">
-                <button
-                  onClick={() => setMode('create')}
-                  className="flex w-full items-center gap-3 rounded-xl border bg-background px-4 py-4 text-left transition hover:border-violet-500/50 hover:bg-violet-50/50 dark:hover:bg-violet-950/30"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 dark:bg-violet-900/40">
-                    <Plus className="h-5 w-5 text-violet-600 dark:text-violet-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Create Organization</p>
-                    <p className="text-xs text-muted-foreground">
-                      Set up your team's context so Lira knows your business
-                    </p>
-                  </div>
-                </button>
-
-                <button
-                  onClick={() => setMode('join')}
-                  className="flex w-full items-center gap-3 rounded-xl border bg-background px-4 py-4 text-left transition hover:border-violet-500/50 hover:bg-violet-50/50 dark:hover:bg-violet-950/30"
-                >
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/40">
-                    <UserPlus className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">Join Organization</p>
-                    <p className="text-xs text-muted-foreground">
-                      Join a team that's already set up their context
-                    </p>
-                  </div>
-                </button>
+      {/* ── Right panel ── */}
+      <main className="flex flex-1 flex-col bg-white">
+        {/* Scrollable content */}
+        <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
+          <div className="w-full max-w-[560px]">
+            {/* Step: success */}
+            {step === 'success' && (
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold uppercase tracking-widest text-violet-500">
+                    Workspace created
+                  </p>
+                  <h1 className="text-4xl font-bold tracking-tight text-gray-900">
+                    Congratulations!
+                    <br />
+                    You're all set.
+                  </h1>
+                  <p className="text-base text-gray-500">
+                    Your organization is ready. Invite your team, connect your meetings, and let
+                    Lira get to work.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-violet-200 bg-violet-50 px-6 py-5">
+                  <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
+                    Organization
+                  </p>
+                  <p className="mt-1 text-2xl font-bold text-violet-700">{createdOrgName}</p>
+                </div>
+                <ul className="space-y-3">
+                  {[
+                    'Schedule and join AI-powered meetings',
+                    'Get real-time transcripts and summaries',
+                    'Build a shared knowledge base for your team',
+                  ].map((feat) => (
+                    <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100">
+                        <Check className="h-3 w-3 text-violet-600" />
+                      </span>
+                      {feat}
+                    </li>
+                  ))}
+                </ul>
               </div>
             )}
 
-            {mode === 'create' && (
-              <div className="space-y-4">
+            {/* Step: choose */}
+            {step === 'choose' && (
+              <div className="space-y-8">
                 <div>
-                  <label
-                    htmlFor="onboard-org-name"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    How do you want to get started?
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Organizations let Lira understand your team's context.
+                  </p>
+                </div>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => setStep('org-name')}
+                    className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-violet-400 hover:bg-violet-50/50"
                   >
-                    Organization Name <span className="text-red-500">*</span>
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 transition group-hover:bg-violet-200">
+                      <Plus className="h-5 w-5 text-violet-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Create an organization</p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Set up your team's workspace from scratch
+                      </p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setStep('join-code')}
+                    className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50/50"
+                  >
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 transition group-hover:bg-emerald-200">
+                      <UserPlus className="h-5 w-5 text-emerald-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Join an organization</p>
+                      <p className="mt-0.5 text-xs text-gray-500">
+                        Join a team using an invite code
+                      </p>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: org-name */}
+            {step === 'org-name' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    What's your organization called?
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    This will be the name of your workspace in Lira.
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="ob-org-name" className="text-sm font-medium text-gray-700">
+                    Organization name <span className="text-red-500">*</span>
                   </label>
                   <input
-                    id="onboard-org-name"
+                    id="ob-org-name"
                     type="text"
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+                    className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
                     placeholder="Acme Corp"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
                     maxLength={100}
                   />
                 </div>
+              </div>
+            )}
 
+            {/* Step: industry */}
+            {step === 'industry' && (
+              <div className="space-y-6">
                 <div>
-                  <label
-                    htmlFor="onboard-industry"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    What industry are you in?
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    We'll focus Lira's experience based on your choice.
+                  </p>
+                </div>
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+                  {INDUSTRIES.map((ind) => (
+                    <button
+                      key={ind}
+                      onClick={() => setIndustry(ind === industry ? '' : ind)}
+                      className={`rounded-xl border px-3 py-4 text-center text-sm font-medium transition ${
+                        industry === ind
+                          ? 'border-violet-500 bg-violet-50 text-violet-700'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {ind}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-sm text-gray-500">
+                  Industry not listed?{' '}
+                  <button
+                    onClick={() => setIndustry('Other')}
+                    className="text-violet-600 underline underline-offset-2 hover:text-violet-500"
                   >
-                    Industry
-                  </label>
-                  <select
-                    id="onboard-industry"
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                  >
-                    <option value="">Select…</option>
-                    {INDUSTRIES.map((ind) => (
-                      <option key={ind} value={ind}>
-                        {ind}
-                      </option>
-                    ))}
-                  </select>
-                  {industry === 'Other' && (
+                    Enter custom
+                  </button>
+                </p>
+                {industry === 'Other' && (
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="ob-industry-custom"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Your industry
+                    </label>
                     <input
+                      id="ob-industry-custom"
                       type="text"
-                      className="mt-2 w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
+                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
                       placeholder="Describe your industry"
                       value={industryCustom}
                       onChange={(e) => setIndustryCustom(e.target.value)}
                       maxLength={100}
                     />
-                  )}
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="onboard-website"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
-                  >
-                    Website
-                  </label>
-                  <input
-                    id="onboard-website"
-                    type="url"
-                    className={`w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 ${
-                      looksLikePartialUrl(website)
-                        ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-400/30'
-                        : 'focus:border-violet-500 focus:ring-violet-500/30'
-                    }`}
-                    placeholder="https://example.com"
-                    value={website}
-                    onChange={(e) => handleWebsiteChange(e.target.value)}
-                    maxLength={500}
-                  />
-                  {looksLikePartialUrl(website) ? (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      Please enter a valid website, e.g.{' '}
-                      <span className="font-medium">creovine.com</span>
-                    </p>
-                  ) : describeError ? (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
-                      <AlertCircle className="h-3 w-3 shrink-0" />
-                      {describeError}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div>
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <label
-                      htmlFor="onboard-description"
-                      className="text-sm font-medium text-foreground"
-                    >
-                      Description
-                    </label>
-                    <button
-                      type="button"
-                      disabled={website.trim() !== '' && looksLikePartialUrl(website)}
-                      onClick={() => {
-                        const next = !autoDescribe
-                        setAutoDescribe(next)
-                        if (next && website.trim() && looksLikeCompleteUrl(website)) {
-                          triggerAutoDescribe(website)
-                        }
-                      }}
-                      className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
-                        autoDescribe
-                          ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                      } disabled:cursor-not-allowed disabled:opacity-40`}
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      {describingUrl ? 'Generating…' : 'Let Lira write it'}
-                    </button>
                   </div>
-                  {!autoDescribe && !description && (
-                    <p className="mb-2 text-xs text-muted-foreground">
-                      Have a website? Lira can read it to understand your business and write a
-                      description for you.
-                    </p>
-                  )}
-                  {describingUrl && (
-                    <div className="mb-2 flex items-center gap-2 text-xs text-violet-600 dark:text-violet-400">
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                      Lira is reading your website…
-                    </div>
-                  )}
-                  {editingDescription ? (
-                    <>
-                      <textarea
-                        id="onboard-description"
-                        className="w-full rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
-                        rows={3}
-                        placeholder="What does your organization do? This helps Lira understand your business."
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        maxLength={1000}
-                      />
-                      {description.trim() && (
-                        <button
-                          type="button"
-                          onClick={() => setEditingDescription(false)}
-                          className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500 dark:text-violet-400"
-                        >
-                          <Check className="h-3 w-3" />
-                          Done editing
-                        </button>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      <div className="rounded-lg border bg-muted/30 px-3 py-2.5 text-sm leading-relaxed text-foreground">
-                        {description}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setEditingDescription(true)}
-                        className="mt-1.5 flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500 dark:text-violet-400"
-                      >
-                        <Pencil className="h-3 w-3" />
-                        Edit description
-                      </button>
-                    </>
-                  )}
-                </div>
-
-                <button
-                  onClick={handleCreate}
-                  disabled={creating || !orgName.trim()}
-                  className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
-                >
-                  {creating ? (
-                    <span className="flex items-center justify-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Creating…
-                    </span>
-                  ) : (
-                    <span className="flex items-center justify-center gap-2">
-                      <Building2 className="h-4 w-4" />
-                      Create Organization
-                    </span>
-                  )}
-                </button>
-
-                <button
-                  onClick={() => setMode('choose')}
-                  className="flex w-full items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
-                </button>
+                )}
               </div>
             )}
 
-            {mode === 'join' && (
-              <div className="space-y-4">
+            {/* Step: details */}
+            {step === 'details' && (
+              <div className="space-y-6">
                 <div>
-                  <label
-                    htmlFor="onboard-invite-code"
-                    className="mb-1.5 block text-sm font-medium text-foreground"
-                  >
-                    Invite Code
-                  </label>
-                  <input
-                    id="onboard-invite-code"
-                    type="text"
-                    className="w-full rounded-lg border bg-background px-3 py-2 text-sm font-mono uppercase tracking-wider outline-none focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
-                    placeholder="LRA-XXXX"
-                    value={inviteCode}
-                    onChange={(e) => {
-                      setInviteCode(e.target.value)
-                      setValidatedOrg(null)
-                    }}
-                    maxLength={10}
-                  />
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    Tell us about {orgName || 'your organization'}
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    This helps Lira give smarter, more relevant answers in every meeting.
+                  </p>
                 </div>
-
-                {validatedOrg && (
-                  <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
-                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                      Organization found: {validatedOrg.name}
-                    </p>
+                <div className="space-y-4">
+                  {/* Website */}
+                  <div className="space-y-1.5">
+                    <label htmlFor="ob-website" className="text-sm font-medium text-gray-700">
+                      Website
+                    </label>
+                    <input
+                      id="ob-website"
+                      type="url"
+                      className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-2 transition ${
+                        looksLikePartialUrl(website)
+                          ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-400/20'
+                          : 'border-gray-300 focus:border-violet-500 focus:ring-violet-500/20'
+                      }`}
+                      placeholder="https://example.com"
+                      value={website}
+                      onChange={(e) => handleWebsiteChange(e.target.value)}
+                      maxLength={500}
+                    />
+                    {looksLikePartialUrl(website) ? (
+                      <p className="flex items-center gap-1.5 text-xs text-amber-600">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        Enter a valid URL, e.g. <span className="font-medium">acme.com</span>
+                      </p>
+                    ) : describeError ? (
+                      <p className="flex items-center gap-1.5 text-xs text-red-500">
+                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        {describeError}
+                      </p>
+                    ) : null}
                   </div>
-                )}
 
-                {!validatedOrg ? (
-                  <button
-                    onClick={handleValidate}
-                    disabled={validating || !inviteCode.trim()}
-                    className="w-full rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-600 transition hover:bg-violet-500/20 disabled:opacity-50 dark:text-violet-400"
-                  >
-                    {validating ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Validating…
-                      </span>
-                    ) : (
-                      'Validate Code'
+                  {/* Description */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label htmlFor="ob-description" className="text-sm font-medium text-gray-700">
+                        Description
+                      </label>
+                      <button
+                        type="button"
+                        disabled={website.trim() !== '' && looksLikePartialUrl(website)}
+                        onClick={() => {
+                          const next = !autoDescribe
+                          setAutoDescribe(next)
+                          if (next && website.trim() && looksLikeCompleteUrl(website)) {
+                            triggerAutoDescribe(website)
+                          }
+                        }}
+                        className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
+                          autoDescribe
+                            ? 'bg-violet-100 text-violet-700'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        } disabled:cursor-not-allowed disabled:opacity-40`}
+                      >
+                        <Sparkles className="h-3 w-3" />
+                        {describingUrl ? 'Generating…' : 'Let Lira write it'}
+                      </button>
+                    </div>
+                    {describingUrl && (
+                      <div className="flex items-center gap-2 text-xs text-violet-600">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Lira is reading your website…
+                      </div>
                     )}
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleJoin}
-                    disabled={joining}
-                    className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
-                  >
-                    {joining ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Joining…
-                      </span>
+                    {editingDescription ? (
+                      <>
+                        <textarea
+                          id="ob-description"
+                          className="w-full resize-none rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                          rows={4}
+                          placeholder="What does your organization do? This helps Lira understand your business."
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          maxLength={1000}
+                        />
+                        {description.trim() && (
+                          <button
+                            type="button"
+                            onClick={() => setEditingDescription(false)}
+                            className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500"
+                          >
+                            <Check className="h-3 w-3" />
+                            Done editing
+                          </button>
+                        )}
+                      </>
                     ) : (
-                      <span className="flex items-center justify-center gap-2">
-                        <UserPlus className="h-4 w-4" />
-                        Join {validatedOrg.name}
-                      </span>
+                      <>
+                        <div className="rounded-lg border border-gray-200 bg-gray-50 px-3.5 py-2.5 text-sm leading-relaxed text-gray-900">
+                          {description}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setEditingDescription(true)}
+                          className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500"
+                        >
+                          <Pencil className="h-3 w-3" />
+                          Edit description
+                        </button>
+                      </>
                     )}
-                  </button>
-                )}
+                  </div>
+                </div>
+              </div>
+            )}
 
-                <button
-                  onClick={() => {
-                    setMode('choose')
-                    setValidatedOrg(null)
-                    setInviteCode('')
-                  }}
-                  className="flex w-full items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-                >
-                  <ArrowLeft className="h-3.5 w-3.5" />
-                  Back
-                </button>
+            {/* Step: join-code */}
+            {step === 'join-code' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    Enter your invite code
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Ask your team admin for the invite code to join their workspace.
+                  </p>
+                </div>
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label htmlFor="ob-invite" className="text-sm font-medium text-gray-700">
+                      Invite code
+                    </label>
+                    <input
+                      id="ob-invite"
+                      type="text"
+                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 font-mono text-sm uppercase tracking-widest text-gray-900 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                      placeholder="LRA-XXXX"
+                      value={inviteCode}
+                      onChange={(e) => {
+                        setInviteCode(e.target.value)
+                        setValidatedOrg(null)
+                      }}
+                      maxLength={10}
+                    />
+                  </div>
+                  {validatedOrg && (
+                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3">
+                      <p className="text-sm font-medium text-emerald-700">
+                        Organization found: {validatedOrg.name}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         </div>
-      </div>
-    </main>
+
+        {/* ── Footer: Back + primary action ── */}
+        <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
+          <div className="flex w-full max-w-[560px] items-center justify-between">
+            {/* Back */}
+            {STEP_BACK[step] && step !== 'success' ? (
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Back
+              </button>
+            ) : (
+              <div />
+            )}
+
+            {/* Primary action */}
+            {step === 'choose' && <div />}
+            {step === 'org-name' && (
+              <button
+                disabled={!orgName.trim()}
+                onClick={() => setStep('industry')}
+                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+              >
+                Next
+              </button>
+            )}
+            {step === 'industry' && (
+              <button
+                onClick={() => setStep('details')}
+                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700"
+              >
+                Next
+              </button>
+            )}
+            {step === 'details' && (
+              <button
+                disabled={creating}
+                onClick={handleCreate}
+                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+              >
+                {creating ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Creating…
+                  </span>
+                ) : (
+                  'Create workspace'
+                )}
+              </button>
+            )}
+            {step === 'success' && (
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
+              >
+                Enter workspace
+              </button>
+            )}
+            {step === 'join-code' && (
+              <button
+                disabled={joining || validating || (!validatedOrg && inviteCode.trim().length < 8)}
+                onClick={validatedOrg ? handleJoin : handleValidate}
+                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+              >
+                {joining ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Joining…
+                  </span>
+                ) : validating ? (
+                  <span className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Validating…
+                  </span>
+                ) : validatedOrg ? (
+                  `Join ${validatedOrg.name}`
+                ) : (
+                  'Validate code'
+                )}
+              </button>
+            )}
+          </div>
+        </footer>
+      </main>
+    </div>
   )
 }
 

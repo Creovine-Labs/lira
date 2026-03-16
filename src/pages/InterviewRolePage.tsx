@@ -1,6 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowLeft, BriefcaseIcon, Loader2, Trash2, User, UserPlus } from 'lucide-react'
+import {
+  ArrowLeft,
+  BriefcaseIcon,
+  ChevronRight,
+  Loader2,
+  Trash2,
+  User,
+  UserPlus,
+} from 'lucide-react'
 import { toast } from 'sonner'
 
 import { useOrgStore, useInterviewStore } from '@/app/store'
@@ -45,35 +53,39 @@ function CandidateRow({
   const initial = latest.candidate_name?.trim()?.charAt(0)?.toUpperCase()
   const totalRounds = interviews.length
   const latestRound = Math.max(...interviews.map((iv) => iv.round ?? 1))
+  const statusColor = STATUS_COLORS[latest.status] ?? 'text-slate-500 bg-slate-100'
 
   return (
-    <div className="flex items-center">
-      <button
-        onClick={onOpen}
-        className="flex-1 flex items-center px-5 py-4 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors text-left min-w-0"
-      >
-        <div className="shrink-0 w-9 h-9 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300 flex items-center justify-center text-sm font-semibold mr-4">
+    <div className="group relative flex items-center rounded-xl border border-gray-200 bg-white px-4 py-3.5 hover:border-violet-300 hover:shadow-sm transition-all">
+      <button onClick={onOpen} className="flex-1 flex items-center gap-4 text-left min-w-0">
+        {/* Avatar */}
+        <div className="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
           {initial ? initial : <User className="w-4 h-4" />}
         </div>
         <div className="flex-1 min-w-0">
-          <span className="font-medium text-slate-900 dark:text-slate-100 truncate block">
-            {latest.candidate_name?.trim() || latest.candidate_email || 'Candidate'}
-          </span>
-          {totalRounds > 1 && (
-            <span className="text-xs text-slate-400 dark:text-slate-500">
-              Round {latestRound} of {totalRounds}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-gray-900 truncate">
+              {latest.candidate_name?.trim() || latest.candidate_email || 'Candidate'}
             </span>
+            <span
+              className={cn(
+                'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium',
+                statusColor
+              )}
+            >
+              {STATUS_LABELS[latest.status] ?? latest.status}
+            </span>
+            {totalRounds > 1 && (
+              <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700">
+                Round {latestRound}/{totalRounds}
+              </span>
+            )}
+          </div>
+          {latest.candidate_email && (
+            <p className="text-xs text-gray-400 mt-0.5 truncate">{latest.candidate_email}</p>
           )}
         </div>
-        <span
-          className={cn(
-            'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ml-3',
-            STATUS_COLORS[latest.status] ?? 'text-slate-500 bg-slate-100'
-          )}
-        >
-          {totalRounds > 1 ? `Round ${latestRound} — ` : ''}
-          {STATUS_LABELS[latest.status] ?? latest.status}
-        </span>
+        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0" />
       </button>
       <button
         onClick={(e) => {
@@ -81,13 +93,13 @@ function CandidateRow({
           onDelete(latest)
         }}
         disabled={deleting === latest.interview_id}
-        className="shrink-0 p-3 mr-2 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-40"
+        className="absolute right-10 top-1/2 -translate-y-1/2 p-1.5 rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 opacity-30 sm:opacity-0 sm:group-hover:opacity-100 transition-all disabled:opacity-40"
         title="Delete candidate"
       >
         {deleting === latest.interview_id ? (
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
         ) : (
-          <Trash2 className="w-4 h-4" />
+          <Trash2 className="w-3.5 h-3.5" />
         )}
       </button>
     </div>
@@ -205,7 +217,7 @@ function InterviewRolePage() {
         onClose={() => setConfirm(null)}
       />
       {/* Header */}
-      <div className="flex items-center gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-700/60">
+      <div className="flex items-center gap-4 px-4 sm:px-6 py-5 border-b border-slate-200 dark:border-slate-700/60">
         <button
           onClick={() => navigate('/org/roles')}
           className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
@@ -233,13 +245,13 @@ function InterviewRolePage() {
       </div>
 
       {/* List */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
           </div>
         ) : (
-          <div className="rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+          <div className="space-y-2">
             {candidateGroups.map((group) => {
               const latest = group[0] // newest first
               return (
@@ -253,24 +265,26 @@ function InterviewRolePage() {
               )
             })}
 
-            {/* Interview Another Person — same row height as a candidate */}
+            {/* Interview Another Person */}
             {templateId && (
               <button
                 onClick={() => navigate(`/org/roles/new?from=${templateId}`)}
-                className="w-full flex items-center px-5 py-4 hover:bg-violet-50 dark:hover:bg-violet-900/10 transition-colors text-left"
+                className="w-full flex items-center gap-4 rounded-xl border border-dashed border-violet-300 bg-violet-50/60 px-4 py-3.5 hover:bg-violet-50 hover:border-violet-400 transition-all text-left"
               >
-                <div className="shrink-0 w-9 h-9 rounded-full border-2 border-dashed border-violet-300 dark:border-violet-700 text-violet-400 flex items-center justify-center mr-4">
+                <div className="shrink-0 w-10 h-10 rounded-full border-2 border-dashed border-violet-400 text-violet-500 flex items-center justify-center">
                   <UserPlus className="w-4 h-4" />
                 </div>
-                <span className="font-medium text-violet-600 dark:text-violet-400">
-                  Interview Another Person
-                </span>
+                <span className="font-semibold text-violet-600">Interview Another Person</span>
               </button>
             )}
 
             {candidateGroups.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center py-16 text-center px-6">
-                <p className="text-slate-500 dark:text-slate-400 font-medium">No candidates yet</p>
+                <div className="p-3 rounded-xl bg-gray-100 mb-3">
+                  <User className="w-7 h-7 text-gray-400" />
+                </div>
+                <p className="text-gray-700 font-medium">No candidates yet</p>
+                <p className="text-sm text-gray-400 mt-1">Add a candidate to start interviewing.</p>
               </div>
             )}
           </div>

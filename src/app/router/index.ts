@@ -1,5 +1,6 @@
 export const ROUTES = {
   home: '/',
+  dashboard: '/dashboard',
   meeting: '/meeting',
   meetings: '/meetings',
   meetingDetail: '/meetings/:id',

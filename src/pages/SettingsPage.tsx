@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Bot, CreditCard, FileText, Lock, Mic, Save, Shield, Users } from 'lucide-react'
+import { Building2, CreditCard, Lock, Mic, Save, Shield, Sparkles } from 'lucide-react'
 
 import { useUserPrefsStore, type VoiceId, type Personality } from '@/app/store'
-import { LiraLogo } from '@/components/LiraLogo'
 import { Button } from '@/components/common'
+import { cn } from '@/lib'
+import { OrgSettingsPage } from './OrgSettingsPage'
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -153,16 +153,13 @@ function AiConfigSection() {
   const nameSuggestions = currentVoice?.gender === 'male' ? MALE_NAMES : FEMALE_NAMES
 
   return (
-    <Section icon={Bot} title="AI Configuration">
+    <Section icon={Sparkles} title="Lira Configuration">
       {/* AI Name */}
-      <div className="space-y-4">
+      <div className="space-y-5">
         <div>
-          <label htmlFor="ai-name" className="mb-1.5 block text-sm font-medium text-foreground">
+          <label htmlFor="ai-name" className="mb-2 block text-sm font-medium text-foreground">
             AI Name
           </label>
-          <p className="mb-2 text-xs text-muted-foreground">
-            This is the name your AI assistant will use in meetings.
-          </p>
           <div className="flex gap-2">
             <input
               type="text"
@@ -204,10 +201,7 @@ function AiConfigSection() {
 
         {/* Voice selection */}
         <div>
-          <p className="mb-1.5 text-sm font-medium text-foreground">Voice</p>
-          <p className="mb-2 text-xs text-muted-foreground">
-            Powered by Amazon Nova Sonic. The selected voice will be used in all future meetings.
-          </p>
+          <p className="mb-2 text-sm font-medium text-foreground">Voice</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {VOICE_OPTIONS.map((v) => (
               <button
@@ -220,25 +214,13 @@ function AiConfigSection() {
                     : 'border-border hover:border-violet-300'
                 }`}
               >
-                <div
-                  className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-xs font-bold ${
-                    v.gender === 'female'
-                      ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
-                      : 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
-                  }`}
-                >
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
                   <Mic className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{v.label}</span>
-                    <span
-                      className={`rounded-full px-1.5 py-0.5 text-[10px] font-semibold capitalize ${
-                        v.gender === 'female'
-                          ? 'bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400'
-                          : 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
-                      }`}
-                    >
+                    <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
                       {v.gender}
                     </span>
                   </div>
@@ -251,10 +233,7 @@ function AiConfigSection() {
 
         {/* Personality */}
         <div>
-          <p className="mb-1.5 text-sm font-medium text-foreground">Personality</p>
-          <p className="mb-2 text-xs text-muted-foreground">
-            Controls how your AI participates and responds during meetings.
-          </p>
+          <p className="mb-2 text-sm font-medium text-foreground">Personality</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {PERSONALITY_OPTIONS.map((p) => (
               <button
@@ -273,104 +252,99 @@ function AiConfigSection() {
             ))}
           </div>
         </div>
-
-        {/* Multiple AI Personalities — coming soon */}
-        <div>
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-foreground">Multiple AI Participants</p>
-            <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
-              Coming soon
-            </span>
-          </div>
-          <p className="mb-2 mt-1 text-xs text-muted-foreground">
-            Add multiple AI participants to a single meeting — each with a distinct name, voice, and
-            personality. For example: one supportive facilitator and one analytical challenger.
-          </p>
-          <div className="pointer-events-none select-none">
-            <div className="grid gap-2 sm:grid-cols-3">
-              {['Lira', 'Max', 'Nova'].map((name) => (
-                <div
-                  key={name}
-                  className="flex items-center gap-3 rounded-xl border border-dashed p-3 opacity-50"
-                >
-                  <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">{name}</p>
-                    <p className="text-xs text-muted-foreground/60">Custom AI</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
       </div>
     </Section>
   )
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
+// ── Settings tabs ─────────────────────────────────────────────────────────────
+
+type SettingsTab = 'ai' | 'organization' | 'subscription' | 'billing'
+
+const SETTINGS_TABS = [
+  { id: 'ai' as SettingsTab, icon: Sparkles, label: 'Lira Configuration' },
+  { id: 'organization' as SettingsTab, icon: Building2, label: 'Organization' },
+  { id: 'subscription' as SettingsTab, icon: Shield, label: 'Subscription' },
+  { id: 'billing' as SettingsTab, icon: CreditCard, label: 'Billing' },
+]
 
 function SettingsPage() {
-  const navigate = useNavigate()
+  const [activeTab, setActiveTab] = useState<SettingsTab>('ai')
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-violet-50/30 dark:to-violet-950/20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <LiraLogo size="sm" />
-            <h1 className="text-lg font-semibold">Settings</h1>
-          </div>
+    <div className="flex flex-col h-full">
+      {/* Page header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+          <p className="text-sm text-gray-500">Manage your Lira configuration and workspace</p>
         </div>
-      </header>
-
-      {/* Body */}
-      <div className="mx-auto max-w-3xl space-y-6 px-4 py-6">
-        {/* AI Configuration */}
-        <AiConfigSection />
-
-        {/* Subscription */}
-        <Section icon={Shield} title="Subscription" disabled>
-          <LockedRow
-            label="Manage Plan"
-            description="View and upgrade your current subscription plan."
-          />
-          <div className="mt-2">
-            <LockedRow label="Usage" description="Track minutes used and remaining in your plan." />
-          </div>
-        </Section>
-
-        {/* Billing */}
-        <Section icon={CreditCard} title="Billing" disabled>
-          <LockedRow label="Invoices" description="View and download past invoices." />
-          <div className="mt-2">
-            <LockedRow
-              label="Payment Methods"
-              description="Add or update your payment information."
-            />
-          </div>
-        </Section>
-
-        {/* License */}
-        <Section icon={FileText} title="License" disabled>
-          <LockedRow
-            label="Enterprise License"
-            description="Manage seat allocations and enterprise licensing terms."
-          />
-          <div className="mt-2">
-            <LockedRow label="License Key" description="View or transfer your license key." />
-          </div>
-        </Section>
       </div>
-    </main>
+
+      {/* Two-column layout: stacked on mobile, side-by-side on md+ */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Sub-nav tabs */}
+        <aside className="shrink-0 border-b border-gray-100 md:border-b-0 md:border-r md:w-52 overflow-x-auto md:overflow-x-visible md:overflow-y-auto">
+          <div className="flex flex-row gap-1 px-3 py-2 md:flex-col md:space-y-0.5 md:p-3">
+            {SETTINGS_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors whitespace-nowrap',
+                  activeTab === tab.id
+                    ? 'bg-[#1A1A1A] text-white'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                )}
+              >
+                <tab.icon className="h-4 w-4 shrink-0" />
+                <span className="text-[13px] font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* Main content */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
+          {activeTab === 'ai' && <AiConfigSection />}
+          {activeTab === 'organization' && <OrgSettingsPage />}
+          {activeTab === 'subscription' && (
+            <Section icon={Shield} title="Subscription" disabled>
+              <LockedRow
+                label="Manage Plan"
+                description="View and upgrade your current subscription plan."
+              />
+              <div className="mt-2">
+                <LockedRow
+                  label="Usage"
+                  description="Track minutes used and remaining in your plan."
+                />
+              </div>
+            </Section>
+          )}
+          {activeTab === 'billing' && (
+            <Section icon={CreditCard} title="Billing & License" disabled>
+              <LockedRow label="Invoices" description="View and download past invoices." />
+              <div className="mt-2">
+                <LockedRow
+                  label="Payment Methods"
+                  description="Add or update your payment information."
+                />
+              </div>
+              <div className="mt-2">
+                <LockedRow
+                  label="Enterprise License"
+                  description="Manage seat allocations and enterprise licensing terms."
+                />
+              </div>
+              <div className="mt-2">
+                <LockedRow label="License Key" description="View or transfer your license key." />
+              </div>
+            </Section>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 

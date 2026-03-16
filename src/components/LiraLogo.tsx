@@ -31,10 +31,7 @@ export function LiraLogo({ mark = false, size = 'md', className }: LiraLogoProps
       {/* Wordmark */}
       {!mark && (
         <span style={{ fontSize: s.text }} className="font-semibold tracking-tight">
-          Lira{' '}
-          <span className="bg-gradient-to-r from-violet-600 to-purple-500 bg-clip-text text-transparent">
-            AI
-          </span>
+          Lira
         </span>
       )}
     </div>

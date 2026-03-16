@@ -1,20 +1,9 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useState, useRef } from 'react'
+import { Navigate, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
-import {
-  Building2,
-  Clock,
-  Eye,
-  EyeOff,
-  Lock,
-  LogOut,
-  Mail,
-  Mic,
-  Settings,
-  User,
-} from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
 
-import { useAuthStore, useOrgStore } from '@/app/store'
+import { useAuthStore } from '@/app/store'
 import { env } from '@/env'
 import {
   login as apiLogin,
@@ -24,14 +13,221 @@ import {
   listOrganizations,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
-import { Button } from '@/components/common'
-import { BotDeployPanel } from '@/components/bot-deploy'
 
-// ── Login form ────────────────────────────────────────────────────────────────
+// ── Brand graphic ─────────────────────────────────────────────────────────────
+
+function AuthSparkle() {
+  return (
+    <svg
+      width="160"
+      height="160"
+      viewBox="0 0 160 160"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      aria-hidden="true"
+    >
+      <circle cx="80" cy="80" r="8" fill="#7C3AED" />
+      <line
+        x1="80"
+        y1="80"
+        x2="80"
+        y2="18"
+        stroke="#7C3AED"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="80"
+        y2="142"
+        stroke="#A78BFA"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="18"
+        y2="80"
+        stroke="#DDD6FE"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="142"
+        y2="80"
+        stroke="#7C3AED"
+        strokeWidth="3.5"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="35"
+        y2="35"
+        stroke="#C4B5FD"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="125"
+        y2="35"
+        stroke="#5B21B6"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="35"
+        y2="125"
+        stroke="#4C1D95"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="125"
+        y2="125"
+        stroke="#8B5CF6"
+        strokeWidth="3"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="52"
+        y2="22"
+        stroke="#EDE9FE"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="108"
+        y2="22"
+        stroke="#DDD6FE"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="22"
+        y2="52"
+        stroke="#7C3AED"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="138"
+        y2="52"
+        stroke="#A78BFA"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="22"
+        y2="108"
+        stroke="#C4B5FD"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="138"
+        y2="108"
+        stroke="#6D28D9"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="52"
+        y2="138"
+        stroke="#8B5CF6"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <line
+        x1="80"
+        y1="80"
+        x2="108"
+        y2="138"
+        stroke="#4C1D95"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+// ── Auth view types ───────────────────────────────────────────────────────────
+
+type AuthView = 'landing' | 'login' | 'signup-name' | 'signup-email' | 'signup-password'
+
+const AUTH_BACK: Partial<Record<AuthView, AuthView>> = {
+  login: 'landing',
+  'signup-name': 'landing',
+  'signup-email': 'signup-name',
+  'signup-password': 'signup-email',
+}
+
+const AUTH_LEFT_HEADINGS: Partial<Record<AuthView, string>> = {
+  login: 'Welcome\nback!',
+  'signup-name': "Let's get\nstarted",
+  'signup-email': "What's your\nemail?",
+  'signup-password': 'Almost\nthere',
+}
+// ── Google icon ─────────────────────────────────────────────────────────────
+
+function GoogleIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+      <path
+        fill="#EA4335"
+        d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"
+      />
+      <path
+        fill="#4285F4"
+        d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"
+      />
+      <path
+        fill="#34A853"
+        d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"
+      />
+      <path fill="none" d="M0 0h48v48H0z" />
+    </svg>
+  )
+}
+
+// ── Auth panel ────────────────────────────────────────────────────────────────
 
 function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
   const { setCredentials } = useAuthStore()
-  const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [authView, setAuthView] = useState<AuthView>('landing')
+  const googleRef = useRef<HTMLDivElement>(null)
+
+  function clickGoogleLogin() {
+    googleRef.current?.querySelector<HTMLElement>('div[role="button"]')?.click()
+  }
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -39,13 +235,14 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function switchMode(next: 'login' | 'signup') {
-    setMode(next)
+  function goTo(view: AuthView) {
     setError(null)
-    setName('')
-    setEmail('')
-    setPassword('')
-    setShowPassword(false)
+    setAuthView(view)
+  }
+
+  function goBack() {
+    const prev = AUTH_BACK[authView]
+    if (prev) goTo(prev)
   }
 
   async function handleGoogleSuccess(response: CredentialResponse) {
@@ -120,431 +317,422 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
     }
   }
 
-  const pillInput =
-    'w-full rounded-full bg-[#f0f0f0] dark:bg-[#2a2a2a] py-4 text-sm text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-violet-400/40 placeholder:text-gray-400 dark:placeholder:text-gray-500 disabled:opacity-50 transition'
+  const showFooter = authView !== 'landing'
+  const showBack = AUTH_BACK[authView] !== undefined
 
   return (
-    <div className="space-y-5">
-      {/* Mode-aware title */}
-      <div className="mb-1 text-center">
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-          {mode === 'login' ? 'Welcome back' : 'Create account'}
-        </h1>
-        <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">
-          {mode === 'login' ? 'Sign in to your Lira account' : 'Get started with Lira AI'}
-        </p>
-      </div>
-
-      {/* Google Sign-In */}
+    <div className="flex h-screen overflow-hidden">
+      {/* Hidden Google OAuth trigger — rendered off-screen so Google JS initialises */}
       {env.VITE_GOOGLE_CLIENT_ID && (
-        <>
-          <div className="flex justify-center">
-            <GoogleLogin
-              onSuccess={handleGoogleSuccess}
-              onError={() => setError('Google sign-in failed. Please try again.')}
-              theme="outline"
-              size="large"
-              text="continue_with"
-              shape="pill"
-              width="304"
-            />
-          </div>
-          <div className="relative flex items-center gap-3">
-            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-            <span className="text-xs text-gray-400">or continue with email</span>
-            <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
-          </div>
-        </>
+        <div
+          ref={googleRef}
+          className="pointer-events-none absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
+          aria-hidden="true"
+        >
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => setError('Google sign-in failed. Please try again.')}
+            width="1"
+          />
+        </div>
       )}
 
-      {mode === 'login' ? (
-        <form onSubmit={handleLogin} className="space-y-3" noValidate>
-          {/* Email */}
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              className={`${pillInput} pl-11 pr-5`}
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-
-          {/* Password */}
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="current-password"
-              className={`${pillInput} pl-11 pr-12`}
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              tabIndex={-1}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-
-          {error && (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500 dark:bg-red-950/30">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !email.trim() || !password.trim()}
-            className="mt-2 w-full cursor-pointer rounded-full bg-[#1c1c1e] py-4 text-sm font-semibold text-white transition hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#1c1c1e] dark:hover:bg-white/80"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Signing in…
-              </span>
-            ) : (
-              'Sign in'
-            )}
-          </button>
-
-          <p className="text-center text-sm text-gray-400">
-            Don&apos;t have an account?{' '}
-            <button
-              type="button"
-              onClick={() => switchMode('signup')}
-              className="font-semibold text-violet-600 transition hover:text-violet-700 dark:text-violet-400"
-            >
-              Sign up
-            </button>
-          </p>
-        </form>
-      ) : (
-        <form onSubmit={handleSignup} className="space-y-3" noValidate>
-          {/* Full name */}
-          <div className="relative">
-            <User className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              id="name"
-              type="text"
-              autoComplete="name"
-              className={`${pillInput} pl-11 pr-5`}
-              placeholder="Full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-
-          {/* Email */}
-          <div className="relative">
-            <Mail className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              id="signup-email"
-              type="email"
-              autoComplete="email"
-              className={`${pillInput} pl-11 pr-5`}
-              placeholder="Email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              disabled={loading}
-            />
-          </div>
-
-          {/* Password */}
-          <div className="relative">
-            <Lock className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <input
-              id="signup-password"
-              type={showPassword ? 'text' : 'password'}
-              autoComplete="new-password"
-              className={`${pillInput} pl-11 pr-12`}
-              placeholder="Password (min 8 characters)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword((p) => !p)}
-              tabIndex={-1}
-              className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 transition hover:text-gray-600 dark:hover:text-gray-300"
-            >
-              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
-          </div>
-
-          {error && (
-            <p className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-500 dark:bg-red-950/30">
-              {error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading || !name.trim() || !email.trim() || !password.trim()}
-            className="mt-2 w-full cursor-pointer rounded-full bg-[#1c1c1e] py-4 text-sm font-semibold text-white transition hover:bg-black/75 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-[#1c1c1e] dark:hover:bg-white/80"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                Creating account…
-              </span>
-            ) : (
-              'Create account'
-            )}
-          </button>
-
-          <p className="text-center text-sm text-gray-400">
-            Already have an account?{' '}
-            <button
-              type="button"
-              onClick={() => switchMode('login')}
-              className="font-semibold text-violet-600 transition hover:text-violet-700 dark:text-violet-400"
-            >
-              Sign in
-            </button>
-          </p>
-        </form>
-      )}
-    </div>
-  )
-}
-
-// ── Dashboard card ────────────────────────────────────────────────────────────
-
-function DashCard({
-  icon: Icon,
-  title,
-  description,
-  onClick,
-  badge,
-  disabled,
-}: {
-  icon: React.ElementType
-  title: string
-  description: string
-  onClick?: () => void
-  badge?: string
-  disabled?: boolean
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className={`group flex w-full items-start gap-4 rounded-xl border bg-card p-5 text-left shadow-sm transition ${
-        disabled
-          ? 'cursor-default opacity-60'
-          : 'hover:border-violet-300 hover:shadow-md dark:hover:border-violet-700'
-      }`}
-    >
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
-        <Icon className="h-5 w-5" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
-          {badge && (
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
-              {badge}
-            </span>
+      {/* ── Left panel ── */}
+      <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 px-10 py-10">
+        <LiraLogo size="md" />
+        <div className="flex flex-1 flex-col justify-center gap-6">
+          {authView === 'landing' ? (
+            <>
+              <AuthSparkle />
+              <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
+                One platform for every meeting, every decision, every team.
+              </p>
+            </>
+          ) : (
+            <h2 className="whitespace-pre-line text-5xl font-bold leading-tight tracking-tight text-gray-900">
+              {AUTH_LEFT_HEADINGS[authView] ?? ''}
+            </h2>
           )}
         </div>
-        <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-      </div>
-    </button>
-  )
-}
+      </aside>
 
-// ── Authenticated dashboard ──────────────────────────────────────────────────
-
-function AuthenticatedHome({ onSignOut }: { onSignOut: () => void }) {
-  const navigate = useNavigate()
-  const { userEmail, userName, userPicture, clearCredentials } = useAuthStore()
-  const { organizations, setOrganizations } = useOrgStore()
-  const [orgsFetched, setOrgsFetched] = useState(false)
-
-  useEffect(() => {
-    listOrganizations()
-      .then((orgs) => {
-        setOrganizations(orgs)
-        setOrgsFetched(true)
-      })
-      .catch(() => setOrgsFetched(true))
-  }, [setOrganizations])
-
-  useEffect(() => {
-    if (orgsFetched && organizations.length === 0) {
-      navigate('/onboarding')
-    }
-  }, [orgsFetched, organizations.length, navigate])
-
-  function handleSignOut() {
-    clearCredentials()
-    credentials.clear()
-    onSignOut()
-  }
-
-  const displayName = userName || userEmail || 'User'
-
-  return (
-    <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-background via-background to-violet-50/30 dark:to-violet-950/20">
-      {/* ── Top navigation bar ──────────────────────────────────────────── */}
-      <header className="border-b bg-card/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-3">
-          <LiraLogo size="md" />
-          <div className="flex items-center gap-3">
-            <div className="hidden items-center gap-2 sm:flex">
-              {userPicture ? (
-                <img
-                  src={userPicture}
-                  alt=""
-                  className="h-8 w-8 rounded-full border object-cover"
-                />
-              ) : (
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-violet-100 text-xs font-bold text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
-                  {displayName[0]?.toUpperCase()}
-                </div>
-              )}
-              <span className="max-w-[180px] truncate text-sm font-medium text-foreground">
-                {displayName}
-              </span>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSignOut}
-              className="gap-1.5 text-muted-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-              <span className="hidden sm:inline">Sign out</span>
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      {/* ── Main content ────────────────────────────────────────────────── */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-6 py-8">
-        {/* Welcome + Deploy section */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
-            Welcome back{userName ? `, ${userName.split(' ')[0]}` : ''}
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Deploy Lira to your meetings or review past sessions.
-          </p>
-        </div>
-
-        <div className="grid gap-6 lg:grid-cols-5">
-          {/* Left column — Deploy Lira */}
-          <div className="lg:col-span-3">
-            <div className="rounded-xl border bg-card p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <Mic className="h-5 w-5 text-violet-500" />
-                <h2 className="text-lg font-semibold">Deploy Lira</h2>
-              </div>
-              <BotDeployPanel />
-            </div>
-
-            {/* Demo meeting — secondary */}
-            <div className="mt-4 rounded-xl border border-dashed bg-muted/30 p-4">
-              <div className="flex items-center justify-between gap-4">
+      {/* ── Right panel ── */}
+      <main className="flex flex-1 flex-col bg-white">
+        {/* Scrollable content */}
+        <div className="flex flex-1 flex-col justify-center overflow-y-auto px-5 py-8 sm:px-10 sm:py-12 md:px-16">
+          <div className="w-full max-w-[480px]">
+            {/* ── Landing ── */}
+            {authView === 'landing' && (
+              <div className="space-y-8">
                 <div>
-                  <p className="text-sm font-medium text-foreground">Browser Meeting</p>
-                  <p className="text-xs text-muted-foreground">
-                    Try Lira in a local audio session — no meeting link needed.
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    Create your account
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
+                </div>
+                <div className="space-y-3">
+                  {env.VITE_GOOGLE_CLIENT_ID && (
+                    <button
+                      type="button"
+                      onClick={clickGoogleLogin}
+                      disabled={loading}
+                      className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+                    >
+                      <GoogleIcon />
+                      Continue with Google
+                    </button>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <div className="h-px flex-1 bg-gray-200" />
+                    <span className="text-xs text-gray-400">or</span>
+                    <div className="h-px flex-1 bg-gray-200" />
+                  </div>
+                  <button
+                    onClick={() => goTo('signup-name')}
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
+                  >
+                    Continue with email
+                  </button>
+                </div>
+                {error && (
+                  <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
+                )}
+                <p className="text-sm text-gray-500">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => goTo('login')}
+                    className="font-semibold text-violet-600 hover:text-violet-700"
+                  >
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            )}
+
+            {/* ── Login ── */}
+            {authView === 'login' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    Sign in to Lira
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Welcome back. Pick up where you left off.
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => navigate('/meeting')}
-                  className="shrink-0"
-                >
-                  Open
-                </Button>
+                <div className="space-y-4">
+                  {env.VITE_GOOGLE_CLIENT_ID && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={clickGoogleLogin}
+                        disabled={loading}
+                        className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+                      >
+                        <GoogleIcon />
+                        Continue with Google
+                      </button>
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-gray-200" />
+                        <span className="text-xs text-gray-400">or continue with email</span>
+                        <div className="h-px flex-1 bg-gray-200" />
+                      </div>
+                    </>
+                  )}
+                  <form
+                    id="auth-login-form"
+                    onSubmit={handleLogin}
+                    className="space-y-3"
+                    noValidate
+                  >
+                    <div className="space-y-1.5">
+                      <label htmlFor="login-email" className="text-sm font-medium text-gray-700">
+                        Email
+                      </label>
+                      <div className="relative">
+                        <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <input
+                          id="login-email"
+                          type="email"
+                          autoComplete="email"
+                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                          placeholder="you@example.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          disabled={loading}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label htmlFor="login-password" className="text-sm font-medium text-gray-700">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <input
+                          id="login-password"
+                          type={showPassword ? 'text' : 'password'}
+                          autoComplete="current-password"
+                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                          placeholder="Your password"
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          disabled={loading}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((p) => !p)}
+                          tabIndex={-1}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    {error && (
+                      <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
+                    )}
+                  </form>
+                  <p className="text-sm text-gray-500">
+                    Don&apos;t have an account?{' '}
+                    <button
+                      onClick={() => goTo('landing')}
+                      className="font-semibold text-violet-600 hover:text-violet-700"
+                    >
+                      Sign up
+                    </button>
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
+            )}
 
-          {/* Right column — Quick links */}
-          <div className="flex flex-col gap-3 lg:col-span-2">
-            <DashCard
-              icon={Building2}
-              title="Organizations"
-              description="Manage your organizations' context, settings, and knowledge — this is how Lira understands your team."
-              onClick={() => navigate('/organizations')}
-              badge={organizations.length === 0 ? 'New' : undefined}
-            />
-            <DashCard
-              icon={Clock}
-              title="Meeting History"
-              description="Review past meetings and transcripts."
-              onClick={() => navigate('/meetings')}
-            />
-            <DashCard
-              icon={Settings}
-              title="Settings"
-              description="Configure your AI assistant, voice, and preferences."
-              onClick={() => navigate('/settings')}
-            />
+            {/* ── Signup step 1: name ── */}
+            {authView === 'signup-name' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    What's your name?
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">This is how you'll appear in Lira.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="signup-fullname" className="text-sm font-medium text-gray-700">
+                    Full name <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      id="signup-fullname"
+                      type="text"
+                      autoComplete="name"
+                      className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                      placeholder="Ada Lovelace"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && name.trim()) goTo('signup-email')
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Signup step 2: email ── */}
+            {authView === 'signup-email' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    What's your email?
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">You'll use this to sign in to Lira.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="signup-email-field" className="text-sm font-medium text-gray-700">
+                    Email address <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <input
+                      id="signup-email-field"
+                      type="email"
+                      autoComplete="email"
+                      className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && email.trim()) goTo('signup-password')
+                      }}
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Signup step 3: password ── */}
+            {authView === 'signup-password' && (
+              <div className="space-y-8">
+                <div>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    Create a password
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Use at least 8 characters. You'll use this to sign in.
+                  </p>
+                </div>
+                <form id="auth-signup-form" onSubmit={handleSignup} noValidate>
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="signup-password-field"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Password <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        id="signup-password-field"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                        placeholder="Min 8 characters"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        disabled={loading}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((p) => !p)}
+                        tabIndex={-1}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  {error && (
+                    <p className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">
+                      {error}
+                    </p>
+                  )}
+                </form>
+              </div>
+            )}
           </div>
         </div>
-      </main>
 
-      {/* ── Footer ──────────────────────────────────────────────────────── */}
-      <footer className="border-t py-4">
-        <p className="text-center text-xs text-muted-foreground">
-          Powered by{' '}
-          <a
-            href="https://creovine.com"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium underline-offset-2 hover:underline"
-          >
-            Creovine
-          </a>
-        </p>
-      </footer>
+        {/* ── Footer nav ── */}
+        {showFooter && (
+          <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
+            <div className="flex w-full max-w-[480px] items-center justify-between">
+              {showBack ? (
+                <button
+                  onClick={goBack}
+                  className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  Back
+                </button>
+              ) : (
+                <div />
+              )}
+
+              {authView === 'login' && (
+                <button
+                  type="submit"
+                  form="auth-login-form"
+                  disabled={loading || !email.trim() || !password.trim()}
+                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Signing in…
+                    </span>
+                  ) : (
+                    'Sign in'
+                  )}
+                </button>
+              )}
+
+              {authView === 'signup-name' && (
+                <button
+                  disabled={!name.trim()}
+                  onClick={() => goTo('signup-email')}
+                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              )}
+
+              {authView === 'signup-email' && (
+                <button
+                  disabled={!email.trim()}
+                  onClick={() => goTo('signup-password')}
+                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                >
+                  Next
+                </button>
+              )}
+
+              {authView === 'signup-password' && (
+                <button
+                  type="submit"
+                  form="auth-signup-form"
+                  disabled={loading || !password.trim() || password.trim().length < 8}
+                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        />
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                        />
+                      </svg>
+                      Creating account…
+                    </span>
+                  ) : (
+                    'Create account'
+                  )}
+                </button>
+              )}
+            </div>
+          </footer>
+        )}
+      </main>
     </div>
   )
 }
@@ -565,51 +753,17 @@ function HomePage() {
     if (isNew) {
       navigate('/onboarding')
     } else {
-      setStage('home')
+      navigate('/dashboard', { replace: true })
     }
   }
 
-  // Authenticated — full-screen dashboard
+  // Authenticated — redirect to dashboard
   if (stage === 'home') {
-    return <AuthenticatedHome onSignOut={() => setStage('login')} />
+    return <Navigate to="/dashboard" replace />
   }
 
-  // Unauthenticated — full-screen auth page
-  return (
-    <main
-      className="relative flex min-h-screen w-full items-center justify-center overflow-hidden p-4"
-      style={{ background: 'linear-gradient(135deg, #ede8ff 0%, #f5f2ff 50%, #e4dcff 100%)' }}
-    >
-      {/* Decorative blurred orbs */}
-      <div className="pointer-events-none absolute -right-40 -top-40 h-[520px] w-[520px] rounded-full bg-violet-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-40 -left-40 h-[520px] w-[520px] rounded-full bg-purple-400/20 blur-3xl" />
-      <div className="pointer-events-none absolute left-1/2 top-1/3 h-64 w-64 -translate-x-1/2 rounded-full bg-indigo-300/10 blur-2xl" />
-
-      <div className="relative w-full max-w-sm">
-        {/* Card */}
-        <div className="rounded-3xl bg-white p-8 shadow-2xl shadow-violet-900/10 dark:bg-[#1c1c1e]">
-          {/* Logo */}
-          <div className="mb-7 flex justify-center">
-            <LiraLogo size="lg" />
-          </div>
-
-          <LoginForm onLogin={handleLogin} />
-        </div>
-
-        <p className="mt-5 text-center text-xs text-gray-400">
-          Powered by{' '}
-          <a
-            href="https://creovine.com"
-            target="_blank"
-            rel="noreferrer"
-            className="font-medium text-violet-600 hover:underline"
-          >
-            Creovine
-          </a>
-        </p>
-      </div>
-    </main>
-  )
+  // Unauthenticated — full-screen split-panel auth
+  return <LoginForm onLogin={handleLogin} />
 }
 
 export { HomePage }

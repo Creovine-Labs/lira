@@ -173,154 +173,161 @@ function DocumentsPage() {
   }
 
   return (
-    <div className="space-y-8 pb-8">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Documents</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Upload documents to enrich Lira's knowledge. Supported formats: PDF, DOCX, TXT, MD, CSV,
-          XLSX.
-        </p>
+    <div className="flex flex-col h-full">
+      {/* Page header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-violet-100">
+            <FileText className="w-5 h-5 text-violet-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Documents</h1>
+            <p className="text-sm text-gray-500">Upload documents to enrich Lira’s knowledge</p>
+          </div>
+        </div>
       </div>
 
-      {connectionLost && (
-        <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
-          Connection lost — document status updates paused. Refresh to retry.
-        </div>
-      )}
-
-      {/* Upload area */}
-      <div
-        onDragOver={(e) => {
-          e.preventDefault()
-          setDragging(true)
-        }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        className={cn(
-          'rounded-xl border-2 border-dashed bg-card p-8 text-center transition',
-          dragging
-            ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
-            : 'border-border hover:border-violet-500/50'
-        )}
-      >
-        <Upload className="mx-auto h-10 w-10 text-muted-foreground/50" />
-        <p className="mt-3 text-sm text-foreground">
-          Drag & drop files here, or{' '}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className="font-medium text-violet-600 underline-offset-2 hover:underline dark:text-violet-400"
-          >
-            browse
-          </button>
-        </p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          PDF, DOCX, TXT, MD, CSV, XLSX — max 25 MB
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          accept={ACCEPTED_TYPES}
-          className="hidden"
-          onChange={(e) => e.target.files && handleUpload(e.target.files)}
-        />
-        {uploading && (
-          <div className="mt-4 flex items-center justify-center gap-2 text-sm text-violet-600">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            Uploading…
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8">
+        {connectionLost && (
+          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            Connection lost — document status updates paused. Refresh to retry.
           </div>
         )}
-      </div>
 
-      {/* Documents list */}
-      <section className="rounded-xl border bg-card">
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-base font-semibold text-foreground">
-            Uploaded Documents ({documents.length})
-          </h2>
-          <button
-            onClick={loadDocs}
-            className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
-          >
-            <RefreshCw className="h-3.5 w-3.5" />
-          </button>
+        {/* Upload area */}
+        <div
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragging(true)
+          }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          className={cn(
+            'rounded-xl border-2 border-dashed bg-card p-8 text-center transition',
+            dragging
+              ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
+              : 'border-border hover:border-violet-500/50'
+          )}
+        >
+          <Upload className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <p className="mt-3 text-sm text-foreground">
+            Drag & drop files here, or{' '}
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="font-medium text-violet-600 underline-offset-2 hover:underline dark:text-violet-400"
+            >
+              browse
+            </button>
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            PDF, DOCX, TXT, MD, CSV, XLSX — max 25 MB
+          </p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            accept={ACCEPTED_TYPES}
+            className="hidden"
+            onChange={(e) => e.target.files && handleUpload(e.target.files)}
+          />
+          {uploading && (
+            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-violet-600">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Uploading…
+            </div>
+          )}
         </div>
 
-        {documents.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              No documents uploaded yet. Drop files above to get started.
-            </p>
+        {/* Documents list */}
+        <section className="rounded-xl border bg-card">
+          <div className="flex items-center justify-between border-b px-6 py-4">
+            <h2 className="text-base font-semibold text-foreground">
+              Uploaded Documents ({documents.length})
+            </h2>
+            <button
+              onClick={loadDocs}
+              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </button>
           </div>
-        ) : (
-          <div className="divide-y">
-            {documents.map((doc) => {
-              const statusCfg = STATUS_CONFIG[doc.status]
-              const StatusIcon = statusCfg.icon
-              return (
-                <div key={doc.doc_id} className="flex items-center gap-4 px-6 py-4">
-                  <File className="h-5 w-5 shrink-0 text-muted-foreground" />
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-foreground">{doc.filename}</p>
-                    <div className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
-                      <span>{formatBytes(doc.file_size)}</span>
-                      {doc.chunk_count != null && <span>· {doc.chunk_count} chunks</span>}
-                      {doc.embedding_count != null && (
-                        <span>· {doc.embedding_count} embeddings</span>
+
+          {documents.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                No documents uploaded yet. Drop files above to get started.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {documents.map((doc) => {
+                const statusCfg = STATUS_CONFIG[doc.status]
+                const StatusIcon = statusCfg.icon
+                return (
+                  <div key={doc.doc_id} className="flex items-center gap-3 px-4 sm:px-6 py-4">
+                    <File className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-foreground">{doc.filename}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                        <span>{formatBytes(doc.file_size)}</span>
+                        {doc.chunk_count != null && <span>· {doc.chunk_count} chunks</span>}
+                        {doc.embedding_count != null && (
+                          <span>· {doc.embedding_count} embeddings</span>
+                        )}
+                        <span>· {new Date(doc.created_at).toLocaleDateString()}</span>
+                      </div>
+                      {doc.summary && (
+                        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
+                          {doc.summary}
+                        </p>
                       )}
-                      <span>· {new Date(doc.created_at).toLocaleDateString()}</span>
                     </div>
-                    {doc.summary && (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                        {doc.summary}
-                      </p>
-                    )}
-                  </div>
 
-                  {/* Status badge */}
-                  <span
-                    className={cn('flex items-center gap-1 text-xs font-medium', statusCfg.color)}
-                  >
-                    <StatusIcon
-                      className={cn('h-3.5 w-3.5', doc.status === 'processing' && 'animate-spin')}
-                    />
-                    {statusCfg.label}
-                  </span>
-
-                  {/* Actions */}
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => handleDownload(doc)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                      title="Download"
+                    {/* Status badge */}
+                    <span
+                      className={cn('flex items-center gap-1 text-xs font-medium', statusCfg.color)}
                     >
-                      <Download className="h-4 w-4" />
-                    </button>
-                    {doc.status === 'failed' && (
+                      <StatusIcon
+                        className={cn('h-3.5 w-3.5', doc.status === 'processing' && 'animate-spin')}
+                      />
+                      {statusCfg.label}
+                    </span>
+
+                    {/* Actions */}
+                    <div className="flex items-center gap-1">
                       <button
-                        onClick={() => handleReprocess(doc.doc_id)}
+                        onClick={() => handleDownload(doc)}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                        title="Reprocess"
+                        title="Download"
                       >
-                        <RefreshCw className="h-4 w-4" />
+                        <Download className="h-4 w-4" />
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleDelete(doc.doc_id)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
-                      title="Delete"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                      {doc.status === 'failed' && (
+                        <button
+                          onClick={() => handleReprocess(doc.doc_id)}
+                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                          title="Reprocess"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDelete(doc.doc_id)}
+                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                        title="Delete"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </section>
+                )
+              })}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

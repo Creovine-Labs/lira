@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, Calendar, Clock, MessageSquare, Trash2, Loader2, Building2 } from 'lucide-react'
+import { Calendar, Clock, MessageSquare, Trash2, Loader2, Building2, Mic } from 'lucide-react'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { listMeetings, deleteMeeting, type Meeting } from '@/services/api'
-import { LiraLogo } from '@/components/LiraLogo'
+import { BotDeployPanel } from '@/components/bot-deploy'
 import { cn } from '@/lib'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -47,7 +47,6 @@ function MeetingsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
-  const [filterOrgId, setFilterOrgId] = useState<string>('all')
 
   useEffect(() => {
     if (!token) {
@@ -115,122 +114,95 @@ function MeetingsPage() {
   }
 
   function toggleSelectAll() {
-    if (selectedIds.size === filteredMeetings.length) {
+    if (selectedIds.size === meetings.length) {
       setSelectedIds(new Set())
     } else {
-      setSelectedIds(new Set(filteredMeetings.map((m) => m.session_id)))
+      setSelectedIds(new Set(meetings.map((m) => m.session_id)))
     }
   }
-
-  const filteredMeetings =
-    filterOrgId === 'all'
-      ? meetings
-      : filterOrgId === 'none'
-        ? meetings.filter((m) => !m.org_id)
-        : meetings.filter((m) => m.org_id === filterOrgId)
 
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <main className="min-h-screen bg-gradient-to-br from-background via-background to-violet-50/30 dark:to-violet-950/20">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-4 py-3">
-          <button
-            onClick={() => navigate('/')}
-            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </button>
-          <div className="flex items-center gap-2">
-            <LiraLogo size="sm" />
-            <h1 className="text-lg font-semibold">Meeting History</h1>
+    <div className="flex flex-col h-full">
+      {/* Page header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-violet-100">
+            <Mic className="w-5 h-5 text-violet-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Meetings</h1>
+            <p className="text-sm text-gray-500">
+              {meetings.length} meeting{meetings.length !== 1 ? 's' : ''} recorded
+            </p>
           </div>
         </div>
-      </header>
+        <div className="flex items-center gap-2">
+          {meetings.length > 1 && (
+            <button
+              onClick={toggleSelectAll}
+              className="text-xs text-gray-400 hover:text-gray-700 transition"
+            >
+              {selectedIds.size === meetings.length ? 'Deselect all' : 'Select all'}
+            </button>
+          )}
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleBulkDelete}
+              disabled={bulkDeleting}
+              className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 transition"
+            >
+              {bulkDeleting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              Delete {selectedIds.size} selected
+            </button>
+          )}
+        </div>
+      </div>
 
-      {/* Body */}
-      <div className="mx-auto max-w-3xl px-4 py-6">
-        {/* Org filter + bulk actions */}
-        {!loading && !error && (
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            {organizations.length > 0 && (
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-muted-foreground" />
-                <select
-                  value={filterOrgId}
-                  onChange={(e) => {
-                    setFilterOrgId(e.target.value)
-                    setSelectedIds(new Set())
-                  }}
-                  className="rounded-lg border bg-background px-3 py-1.5 text-sm text-foreground"
-                >
-                  <option value="all">All organizations</option>
-                  <option value="none">No organization</option>
-                  {organizations.map((org) => (
-                    <option key={org.org_id} value={org.org_id}>
-                      {org.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {filteredMeetings.length > 0 && (
-              <button
-                onClick={toggleSelectAll}
-                className="text-xs text-muted-foreground hover:text-foreground transition"
-              >
-                {selectedIds.size === filteredMeetings.length ? 'Deselect all' : 'Select all'}
-              </button>
-            )}
-
-            {selectedIds.size > 0 && (
-              <button
-                onClick={handleBulkDelete}
-                disabled={bulkDeleting}
-                className="flex items-center gap-1.5 rounded-lg bg-destructive/10 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/20 disabled:opacity-50"
-              >
-                {bulkDeleting ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3.5 w-3.5" />
-                )}
-                Delete {selectedIds.size} selected
-              </button>
-            )}
-          </div>
-        )}
-
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {loading && (
           <div className="flex flex-col items-center justify-center gap-3 py-20">
             <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
-            <p className="text-sm text-muted-foreground">Loading meetings…</p>
+            <p className="text-sm text-gray-500">Loading meetings…</p>
           </div>
         )}
 
         {error && (
-          <div className="rounded-xl border border-destructive/30 bg-destructive/5 px-5 py-4 text-sm text-destructive">
+          <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
             {error}
           </div>
         )}
 
-        {!loading && !error && filteredMeetings.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-3 py-20">
-            <MessageSquare className="h-12 w-12 text-muted-foreground/40" />
-            <p className="text-sm text-muted-foreground">
-              {filterOrgId === 'all' ? 'No meetings yet' : 'No meetings for this organization'}
-            </p>
-            <p className="text-xs text-muted-foreground/70">
-              Meetings will appear here after Lira joins a call.
-            </p>
+        {!loading && !error && meetings.length === 0 && (
+          <div className="flex flex-col items-center gap-8 py-12">
+            {/* CTA heading */}
+            <div className="text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100">
+                <Mic className="h-7 w-7 text-violet-600" />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900">Deploy Lira to your first meeting</h2>
+              <p className="mt-2 max-w-sm text-sm text-gray-500">
+                Paste a Google Meet or Zoom link below and Lira will join as an AI participant, take
+                notes, and respond in real-time.
+              </p>
+            </div>
+
+            {/* Deploy panel */}
+            <div className="w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+              <BotDeployPanel />
+            </div>
           </div>
         )}
 
-        {!loading && !error && filteredMeetings.length > 0 && (
+        {!loading && !error && meetings.length > 0 && (
           <div className="space-y-3">
-            {filteredMeetings.map((m) => {
+            {meetings.map((m) => {
               const orgName = organizations.find((o) => o.org_id === m.org_id)?.name
               return (
                 <div
@@ -331,7 +303,7 @@ function MeetingsPage() {
           </div>
         )}
       </div>
-    </main>
+    </div>
   )
 }
 

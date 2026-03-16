@@ -173,7 +173,7 @@ function KnowledgeBasePage() {
   }
 
   return (
-    <div className="space-y-8 pb-8">
+    <div className="flex flex-col h-full">
       <ConfirmDialog
         open={!!confirm}
         title={confirm?.title ?? ''}
@@ -182,212 +182,222 @@ function KnowledgeBasePage() {
         onConfirm={confirm?.onConfirm ?? (async () => {})}
         onClose={() => setConfirm(null)}
       />
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Knowledge Base</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Crawl your website to build organizational knowledge. Lira uses this to provide informed
-          responses during meetings.
-        </p>
+
+      {/* Page header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-violet-100">
+            <Globe className="w-5 h-5 text-violet-600" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900">Knowledge Base</h1>
+            <p className="text-sm text-gray-500">
+              Crawl your website to build Lira's organizational knowledge
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Crawl form */}
-      <section className="rounded-xl border bg-card p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Website Crawl</h2>
+      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8">
+        {/* Crawl form */}
+        <section className="rounded-xl border bg-card p-6">
+          <h2 className="mb-4 text-base font-semibold text-foreground">Website Crawl</h2>
 
-        {/* Crawl status banner */}
-        {isCrawling && (
-          <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-            <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
-            <div>
-              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
-                Crawling in progress…
-              </p>
-              {crawlStatus.pages_crawled != null && (
-                <p className="text-xs text-muted-foreground">
-                  {crawlStatus.pages_crawled} pages crawled
-                  {crawlStatus.total_pages ? ` of ~${crawlStatus.total_pages}` : ''}
+          {/* Crawl status banner */}
+          {isCrawling && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+              <div>
+                <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                  Crawling in progress…
                 </p>
+                {crawlStatus.pages_crawled != null && (
+                  <p className="text-xs text-muted-foreground">
+                    {crawlStatus.pages_crawled} pages crawled
+                    {crawlStatus.total_pages ? ` of ~${crawlStatus.total_pages}` : ''}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {crawlStatus?.status === 'completed' && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
+              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              <p className="text-sm text-emerald-600 dark:text-emerald-400">
+                Last crawl completed — {crawlStatus.pages_crawled} pages indexed
+              </p>
+            </div>
+          )}
+
+          {/* Show discovered social links */}
+          {crawlStatus?.social_links && crawlStatus.social_links.length > 0 && (
+            <div className="mb-4 rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-3">
+              <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-2">
+                Connected platforms discovered:
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {crawlStatus.social_links.map((link) => (
+                  <a
+                    key={link}
+                    href={link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 dark:bg-violet-900/30 px-3 py-1 text-xs text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 transition"
+                  >
+                    {new URL(link).hostname.replace('www.', '')}
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {crawlStatus?.status === 'failed' && (
+            <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <p className="text-sm text-red-500">{crawlStatus.error ?? 'Crawl failed'}</p>
+            </div>
+          )}
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <input
+              type="url"
+              className={`input-field flex-1 ${
+                crawlError ? 'border-red-400 focus:border-red-400 focus:ring-red-400/30' : ''
+              }`}
+              placeholder="https://example.com"
+              value={crawlUrl}
+              onChange={(e) => {
+                setCrawlUrl(e.target.value)
+                setCrawlError(null)
+              }}
+              disabled={isCrawling}
+            />
+            <div className="flex items-center gap-2">
+              <label
+                htmlFor="crawl-max-pages"
+                className="text-xs text-muted-foreground whitespace-nowrap"
+              >
+                Max pages:
+              </label>
+              <input
+                id="crawl-max-pages"
+                type="number"
+                className="input-field w-20"
+                min={1}
+                max={50}
+                value={maxPages}
+                onChange={(e) => setMaxPages(Math.min(50, Math.max(1, Number(e.target.value))))}
+                disabled={isCrawling}
+              />
+            </div>
+            <button
+              onClick={handleCrawl}
+              disabled={crawling || isCrawling || !crawlUrl.trim()}
+              className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
+            >
+              {crawling ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Search className="h-4 w-4" />
+              )}
+              Crawl
+            </button>
+          </div>
+          {crawlError && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
+              <AlertCircle className="h-3 w-3 shrink-0" />
+              {crawlError}
+            </p>
+          )}
+        </section>
+
+        {/* Entries list */}
+        <section className="rounded-xl border bg-card">
+          <div className="flex items-center justify-between border-b px-6 py-4">
+            <h2 className="text-base font-semibold text-foreground">
+              Indexed Pages ({entries.length})
+            </h2>
+            <div className="flex gap-2">
+              <button
+                onClick={loadData}
+                className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+              </button>
+              {entries.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  disabled={clearing}
+                  className="flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
+                >
+                  {clearing ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                  Clear All
+                </button>
               )}
             </div>
           </div>
-        )}
 
-        {crawlStatus?.status === 'completed' && (
-          <div className="mb-4 flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-            <p className="text-sm text-emerald-600 dark:text-emerald-400">
-              Last crawl completed — {crawlStatus.pages_crawled} pages indexed
-            </p>
-          </div>
-        )}
-
-        {/* Show discovered social links */}
-        {crawlStatus?.social_links && crawlStatus.social_links.length > 0 && (
-          <div className="mb-4 rounded-lg border border-violet-500/30 bg-violet-500/5 px-4 py-3">
-            <p className="text-xs font-medium text-violet-600 dark:text-violet-400 mb-2">
-              Connected platforms discovered:
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {crawlStatus.social_links.map((link) => (
-                <a
-                  key={link}
-                  href={link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 rounded-full bg-violet-100 dark:bg-violet-900/30 px-3 py-1 text-xs text-violet-700 dark:text-violet-300 hover:bg-violet-200 dark:hover:bg-violet-800/40 transition"
-                >
-                  {new URL(link).hostname.replace('www.', '')}
-                </a>
+          {entries.length === 0 ? (
+            <div className="px-6 py-12 text-center">
+              <Globe className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                No pages indexed yet. Enter your website URL above to start.
+              </p>
+            </div>
+          ) : (
+            <div className="divide-y">
+              {entries.map((entry) => (
+                <div key={entry.id} className="flex items-start gap-4 px-6 py-4">
+                  <Globe className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="truncate text-sm font-medium text-foreground">{entry.title}</p>
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[10px] font-medium',
+                          CATEGORY_COLORS[entry.category] ?? CATEGORY_COLORS.other
+                        )}
+                      >
+                        {entry.category}
+                      </span>
+                    </div>
+                    {entry.summary && (
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                        {entry.summary}
+                      </p>
+                    )}
+                    <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
+                      <a
+                        href={entry.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 hover:underline"
+                      >
+                        <ExternalLink className="h-3 w-3" />
+                        {entry.source_url}
+                      </a>
+                      <span>·</span>
+                      <span>{entry.embedding_count} embeddings</span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => handleDelete(entry.id, entry.title || entry.source_url)}
+                    className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                    title="Delete entry"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {crawlStatus?.status === 'failed' && (
-          <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3">
-            <AlertCircle className="h-5 w-5 text-red-500" />
-            <p className="text-sm text-red-500">{crawlStatus.error ?? 'Crawl failed'}</p>
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <input
-            type="url"
-            className={`input-field flex-1 ${
-              crawlError ? 'border-red-400 focus:border-red-400 focus:ring-red-400/30' : ''
-            }`}
-            placeholder="https://example.com"
-            value={crawlUrl}
-            onChange={(e) => {
-              setCrawlUrl(e.target.value)
-              setCrawlError(null)
-            }}
-            disabled={isCrawling}
-          />
-          <div className="flex items-center gap-2">
-            <label
-              htmlFor="crawl-max-pages"
-              className="text-xs text-muted-foreground whitespace-nowrap"
-            >
-              Max pages:
-            </label>
-            <input
-              id="crawl-max-pages"
-              type="number"
-              className="input-field w-20"
-              min={1}
-              max={50}
-              value={maxPages}
-              onChange={(e) => setMaxPages(Math.min(50, Math.max(1, Number(e.target.value))))}
-              disabled={isCrawling}
-            />
-          </div>
-          <button
-            onClick={handleCrawl}
-            disabled={crawling || isCrawling || !crawlUrl.trim()}
-            className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
-          >
-            {crawling ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Search className="h-4 w-4" />
-            )}
-            Crawl
-          </button>
-        </div>
-        {crawlError && (
-          <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
-            <AlertCircle className="h-3 w-3 shrink-0" />
-            {crawlError}
-          </p>
-        )}
-      </section>
-
-      {/* Entries list */}
-      <section className="rounded-xl border bg-card">
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <h2 className="text-base font-semibold text-foreground">
-            Indexed Pages ({entries.length})
-          </h2>
-          <div className="flex gap-2">
-            <button
-              onClick={loadData}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
-            >
-              <RefreshCw className="h-3.5 w-3.5" />
-            </button>
-            {entries.length > 0 && (
-              <button
-                onClick={handleClearAll}
-                disabled={clearing}
-                className="flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
-              >
-                {clearing ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : (
-                  <Trash2 className="h-3 w-3" />
-                )}
-                Clear All
-              </button>
-            )}
-          </div>
-        </div>
-
-        {entries.length === 0 ? (
-          <div className="px-6 py-12 text-center">
-            <Globe className="mx-auto h-10 w-10 text-muted-foreground/40" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              No pages indexed yet. Enter your website URL above to start.
-            </p>
-          </div>
-        ) : (
-          <div className="divide-y">
-            {entries.map((entry) => (
-              <div key={entry.id} className="flex items-start gap-4 px-6 py-4">
-                <Globe className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="truncate text-sm font-medium text-foreground">{entry.title}</p>
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[10px] font-medium',
-                        CATEGORY_COLORS[entry.category] ?? CATEGORY_COLORS.other
-                      )}
-                    >
-                      {entry.category}
-                    </span>
-                  </div>
-                  {entry.summary && (
-                    <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                      {entry.summary}
-                    </p>
-                  )}
-                  <div className="mt-1.5 flex items-center gap-3 text-[11px] text-muted-foreground">
-                    <a
-                      href={entry.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                      {entry.source_url}
-                    </a>
-                    <span>·</span>
-                    <span>{entry.embedding_count} embeddings</span>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDelete(entry.id, entry.title || entry.source_url)}
-                  className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
-                  title="Delete entry"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+          )}
+        </section>
+      </div>
     </div>
   )
 }

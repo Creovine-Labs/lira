@@ -5,8 +5,6 @@
 
 ## Context
 
-The frontend needs clear module boundaries to keep real-time meeting flows maintainable as features expand.
-
 ## Decision
 
 Adopt a layered module structure under `src/`:
