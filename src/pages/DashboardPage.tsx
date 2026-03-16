@@ -53,37 +53,53 @@ function StatCard({
   label: string
   value: number | string
   icon: React.ElementType
-  accent: string // e.g. "violet" | "orange" | "amber" | "teal"
+  accent: string
   onClick?: () => void
 }) {
-  /* Tailwind can't interpolate dynamic class names, so we map accent → classes */
-  const palette: Record<string, { ring: string; iconBg: string; iconText: string; glow: string }> =
+  const palette: Record<
+    string,
     {
-      orange: {
-        ring: 'ring-orange-200/60',
-        iconBg: 'bg-orange-100',
-        iconText: 'text-orange-500',
-        glow: 'shadow-orange-200/40',
-      },
-      amber: {
-        ring: 'ring-amber-200/60',
-        iconBg: 'bg-amber-100',
-        iconText: 'text-amber-600',
-        glow: 'shadow-amber-200/40',
-      },
-      violet: {
-        ring: 'ring-violet-200/60',
-        iconBg: 'bg-violet-100',
-        iconText: 'text-violet-600',
-        glow: 'shadow-violet-200/40',
-      },
-      teal: {
-        ring: 'ring-teal-200/60',
-        iconBg: 'bg-teal-100',
-        iconText: 'text-teal-600',
-        glow: 'shadow-teal-200/40',
-      },
+      bg: string
+      iconBg: string
+      iconText: string
+      valueText: string
+      labelText: string
+      shadow: string
     }
+  > = {
+    orange: {
+      bg: 'bg-gradient-to-br from-orange-100 to-orange-200/80',
+      iconBg: 'bg-white/50',
+      iconText: 'text-orange-600',
+      valueText: 'text-orange-950',
+      labelText: 'text-orange-700/70',
+      shadow: 'shadow-orange-300/30',
+    },
+    amber: {
+      bg: 'bg-gradient-to-br from-amber-100 to-amber-200/80',
+      iconBg: 'bg-white/50',
+      iconText: 'text-amber-600',
+      valueText: 'text-amber-950',
+      labelText: 'text-amber-700/70',
+      shadow: 'shadow-amber-300/30',
+    },
+    violet: {
+      bg: 'bg-gradient-to-br from-violet-100 to-violet-200/80',
+      iconBg: 'bg-white/50',
+      iconText: 'text-violet-600',
+      valueText: 'text-violet-950',
+      labelText: 'text-violet-700/70',
+      shadow: 'shadow-violet-300/30',
+    },
+    teal: {
+      bg: 'bg-gradient-to-br from-teal-100 to-teal-200/80',
+      iconBg: 'bg-white/50',
+      iconText: 'text-teal-600',
+      valueText: 'text-teal-950',
+      labelText: 'text-teal-700/70',
+      shadow: 'shadow-teal-300/30',
+    },
+  }
   const c = palette[accent] ?? palette.violet
 
   return (
@@ -91,12 +107,10 @@ function StatCard({
       onClick={onClick}
       className={[
         'group relative flex w-full flex-col gap-4 rounded-2xl p-5 text-left',
-        'bg-white/70 backdrop-blur-lg',
-        'border border-white/50',
-        'ring-1',
-        c.ring,
+        c.bg,
+        'border border-white/40',
         'shadow-md',
-        c.glow,
+        c.shadow,
         'transition-all duration-200 ease-out',
         'hover:-translate-y-0.5 hover:shadow-lg',
       ].join(' ')}
@@ -112,8 +126,8 @@ function StatCard({
         </div>
       </div>
       <div>
-        <p className="text-2xl font-bold tracking-tight text-gray-900">{value}</p>
-        <p className="mt-0.5 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        <p className={`text-2xl font-bold tracking-tight ${c.valueText}`}>{value}</p>
+        <p className={`mt-0.5 text-[11px] font-semibold uppercase tracking-wider ${c.labelText}`}>
           {label}
         </p>
       </div>
