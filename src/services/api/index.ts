@@ -35,6 +35,8 @@ export interface Meeting {
   summary_short?: string
   summary_long?: string
   summary_generated_at?: string
+  meeting_type?: MeetingType
+  meeting_topic?: string
 }
 
 export interface MeetingSummary {
@@ -226,6 +228,13 @@ export async function updateMeetingSettings(
   })
 }
 
+export async function updateMeeting(id: string, patch: { title?: string }): Promise<Meeting> {
+  return apiFetch<Meeting>(`/lira/v1/meetings/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  })
+}
+
 export async function deleteMeeting(id: string): Promise<void> {
   return apiFetch<void>(`/lira/v1/meetings/${id}`, { method: 'DELETE' })
 }
@@ -262,13 +271,16 @@ export interface DeployBotResponse {
   display_name: string
 }
 
+export type MeetingType = 'meeting' | 'interview' | 'standup' | 'one_on_one' | 'technical' | 'brainstorming' | 'sales'
+
 /** Deploy a bot to a Google Meet / Zoom meeting */
 export async function deployBot(
   meetingUrl: string,
   displayName?: string,
   settings?: Partial<MeetingSettings>,
   orgId?: string,
-  meetingTopic?: string
+  meetingTopic?: string,
+  meetingType?: MeetingType
 ): Promise<DeployBotResponse> {
   return apiFetch<DeployBotResponse>('/lira/v1/bot/deploy', {
     method: 'POST',
@@ -278,6 +290,7 @@ export async function deployBot(
       settings,
       ...(orgId ? { org_id: orgId } : {}),
       ...(meetingTopic ? { meeting_topic: meetingTopic } : {}),
+      ...(meetingType ? { meeting_type: meetingType } : {}),
     }),
   })
 }
@@ -389,6 +402,7 @@ export interface OrgMembership {
   joined_at: string
   name?: string
   email?: string
+  picture?: string
 }
 
 // ── Knowledge Base Types ──────────────────────────────────────────────────────
@@ -536,6 +550,14 @@ export async function listOrgMembers(orgId: string): Promise<OrgMembership[]> {
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/members`
   )
   return data.members ?? []
+}
+
+export async function getMe(): Promise<{ id: string; name: string | null; email: string | null; picture: string | null }> {
+  return apiFetch('/lira/v1/me')
+}
+
+export async function updateMyPicture(picture: string): Promise<void> {
+  await apiFetch('/lira/v1/me/picture', { method: 'PUT', body: JSON.stringify({ picture }), headers: { 'Content-Type': 'application/json' } })
 }
 
 export async function updateMemberRole(
@@ -798,6 +820,60 @@ export async function getMeetingTasks(
 ): Promise<{ tasks: TaskRecord[]; count: number }> {
   return apiFetch(
     `/lira/v1/meetings/${encodeURIComponent(sessionId)}/tasks?org_id=${encodeURIComponent(orgId)}`
+  )
+}
+
+// ── User Notifications API ───────────────────────────────────────────────────
+
+export interface UserBackendNotif {
+  notif_id: string
+  user_id: string
+  kind: 'task_assigned'
+  task_id: string
+  task_title: string
+  org_id: string
+  assigned_by: string
+  created_at: string
+  read: boolean
+}
+
+export async function listMyNotifications(): Promise<UserBackendNotif[]> {
+  const data = await apiFetch<{ notifications: UserBackendNotif[]; count: number }>(
+    '/lira/v1/me/notifications',
+  )
+  return data.notifications ?? []
+}
+
+export async function markBackendNotifRead(notifId: string): Promise<void> {
+  await apiFetch(`/lira/v1/me/notifications/${encodeURIComponent(notifId)}/read`, {
+    method: 'PUT',
+  })
+}
+
+// ── Member Contributions ──────────────────────────────────────────────────────
+
+export interface MemberContribution {
+  session_id: string
+  title: string
+  date: string
+  message_count: number
+  word_count: number
+  highlights: string[]
+}
+
+export interface MemberContributionsResponse {
+  contributions: MemberContribution[]
+  total_meetings: number
+  total_messages: number
+  total_words: number
+}
+
+export async function getMemberContributions(
+  orgId: string,
+  userId: string,
+): Promise<MemberContributionsResponse> {
+  return apiFetch(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/members/${encodeURIComponent(userId)}/contributions`,
   )
 }
 

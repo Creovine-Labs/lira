@@ -14,6 +14,7 @@ export const ROUTES = {
   orgTasks: '/org/tasks',
   orgTaskDetail: '/org/tasks/:taskId',
   orgMembers: '/org/members',
+  orgMemberProfile: '/org/members/:userId',
   orgWebhooks: '/org/webhooks',
   orgInterviews: '/org/roles',
   orgInterviewRole: '/org/roles/:roleSlug',

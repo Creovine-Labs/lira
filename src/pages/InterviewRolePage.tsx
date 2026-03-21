@@ -121,9 +121,9 @@ function InterviewRolePage() {
     onConfirm: () => Promise<void>
   } | null>(null)
 
-  // Load interviews if store is empty (direct navigation)
+  // Load interviews for this org (also re-runs on direct navigation when store is empty)
   const loadIfNeeded = useCallback(async () => {
-    if (!currentOrgId || interviews.length > 0) return
+    if (!currentOrgId) return
     setLoading(true)
     try {
       const list = await listInterviews(currentOrgId)
@@ -133,7 +133,7 @@ function InterviewRolePage() {
     } finally {
       setLoading(false)
     }
-  }, [currentOrgId, interviews.length, setInterviews, setLoading])
+  }, [currentOrgId, setInterviews, setLoading])
 
   useEffect(() => {
     loadIfNeeded()
@@ -253,12 +253,15 @@ function InterviewRolePage() {
         ) : (
           <div className="space-y-2">
             {candidateGroups.map((group) => {
-              const latest = group[0] // newest first
+              // Navigate to the root interview (no parent_interview_id) so the
+              // full rounds list is visible and the back-button chain works correctly
+              const root =
+                group.find((iv) => !iv.parent_interview_id) ?? group[group.length - 1]
               return (
                 <CandidateRow
-                  key={latest.interview_id}
+                  key={root.interview_id}
                   interviews={group}
-                  onOpen={() => navigate(`/org/interviews/${latest.interview_id}`)}
+                  onOpen={() => navigate(`/org/interviews/${root.interview_id}`)}
                   onDelete={(iv) => handleDeleteCandidate(iv)}
                   deleting={deletingId}
                 />

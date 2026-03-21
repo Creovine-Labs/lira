@@ -17,8 +17,20 @@ import {
   terminateBot,
   terminateAllBots,
   type BotState,
+  type MeetingType,
 } from '@/services/api'
 import { cn } from '@/lib'
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const MEETING_TYPES: { value: MeetingType; label: string }[] = [
+  { value: 'meeting', label: 'General' },
+  { value: 'standup', label: 'Stand-up' },
+  { value: 'one_on_one', label: '1-on-1' },
+  { value: 'technical', label: 'Technical' },
+  { value: 'brainstorming', label: 'Brainstorm' },
+  { value: 'sales', label: 'Sales' },
+]
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +70,7 @@ const STATE_COLORS: Record<BotState, string> = {
 function BotDeployPanel() {
   const [meetingLink, setMeetingLink] = useState('')
   const [meetingTopic, setMeetingTopic] = useState('')
+  const [meetingType, setMeetingType] = useState<MeetingType>('meeting')
   const [deploying, setDeploying] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [terminatingAll, setTerminatingAll] = useState(false)
@@ -119,7 +132,8 @@ function BotDeployPanel() {
             setBotError('Session expired — please sign in again.')
             return
           }
-          // If bot no longer found, stop polling
+          // If bot no longer found on server (404), treat as terminated
+          setBotState('terminated')
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
         }
@@ -214,11 +228,13 @@ function BotDeployPanel() {
         aiName,
         { ai_name: aiName, voice_id: voiceId, personality },
         selectedOrgId ?? undefined,
-        meetingTopic.trim() || undefined
+        meetingTopic.trim() || undefined,
+        meetingType,
       )
       setBotDeployed(res.bot_id, url, res.platform, res.state)
       setMeetingLink('')
       setMeetingTopic('')
+      setMeetingType('meeting')
       startPolling(res.bot_id)
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to deploy bot')
@@ -413,7 +429,28 @@ function BotDeployPanel() {
   // ── Deploy form ─────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4">      {/* Meeting type chips */}
+      <div>
+        <p className="mb-1.5 text-sm font-medium text-foreground">Meeting type</p>
+        <div className="flex flex-wrap gap-1.5">
+          {MEETING_TYPES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMeetingType(value)}
+              disabled={deploying}
+              className={cn(
+                'rounded-full border px-3 py-0.5 text-xs font-medium transition',
+                meetingType === value
+                  ? 'border-violet-300 bg-violet-50 text-violet-700'
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700',
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
       <div>
         <label htmlFor="meeting-link" className="mb-1.5 block text-sm font-medium text-foreground">
           Meeting link
@@ -451,35 +488,6 @@ function BotDeployPanel() {
           Lira will join as a participant and respond in real-time.
         </p>
       </div>
-
-      {/* Organization context */}
-      {organizations.length > 0 && (
-        <div>
-          <label
-            htmlFor="bot-deploy-org-select"
-            className="mb-1.5 block text-sm font-medium text-foreground"
-          >
-            Organization context
-          </label>
-          <select
-            id="bot-deploy-org-select"
-            className="w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30"
-            value={selectedOrgId ?? ''}
-            onChange={(e) => setSelectedOrgId(e.target.value || null)}
-            disabled={deploying}
-          >
-            <option value="">None — no org context</option>
-            {organizations.map((org) => (
-              <option key={org.org_id} value={org.org_id}>
-                {org.name}
-              </option>
-            ))}
-          </select>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Lira will use this organization's knowledge in the meeting.
-          </p>
-        </div>
-      )}
 
       {/* Meeting topic */}
       <div>

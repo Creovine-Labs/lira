@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { NavLink, Navigate, Outlet, useNavigate } from 'react-router-dom'
+import { useEffect, useRef, useState } from 'react'
+import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   Bell,
   BookOpen,
@@ -9,6 +9,7 @@ import {
   ClipboardList,
   FileText,
   LayoutDashboard,
+  Loader2,
   LogOut,
   Menu,
   Mic,
@@ -21,10 +22,45 @@ import {
   ChevronsUpDown,
 } from 'lucide-react'
 
-import { useAuthStore, useOrgStore } from '@/app/store'
-import { listOrganizations, listTasks, type TaskRecord } from '@/services/api'
+import {
+  useAuthStore,
+  useOrgStore,
+  useKBStore,
+  useDocumentStore,
+  useInterviewStore,
+  useTaskStore,
+  useNotifStore,
+  useBotStore,
+} from '@/app/store'
+import { listOrganizations, listMyNotifications, listTasks, type TaskRecord } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 import { cn } from '@/lib'
+
+// ── Sidebar badge helper ──────────────────────────────────────────────────────
+function NavBadge({ count }: { count: number }) {
+  if (count === 0) return null
+  return (
+    <span className="ml-auto flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+      {count > 9 ? '9+' : count}
+    </span>
+  )
+}
+
+// ── useSidebarBadges — derive per-section unread counts ───────────────────────
+function useSidebarBadges() {
+  const { entries, readTaskNotifIds, meetingSeenAt, interviewSeenAt } = useNotifStore()
+  // Task badge: unread = task entries NOT individually marked read via detail view
+  const taskBadge = entries.filter(
+    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id),
+  ).length
+  const meetingBadge = entries.filter(
+    (e) => e.kind === 'meeting_ended' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt),
+  ).length
+  const interviewBadge = entries.filter(
+    (e) => e.kind === 'interview' && (interviewSeenAt === 0 || e.createdAt > interviewSeenAt),
+  ).length
+  return { '/org/tasks': taskBadge, '/meetings': meetingBadge, '/org/roles': interviewBadge } as Record<string, number>
+}
 
 // ── Sidebar nav structure ─────────────────────────────────────────────────────
 const NAV = [
@@ -59,6 +95,10 @@ const BOTTOM_NAV = [{ to: '/settings', icon: Settings, label: 'Settings' }]
 function OrgSwitcher() {
   const navigate = useNavigate()
   const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
+  const clearKB = useKBStore((s) => s.clear)
+  const clearDocuments = useDocumentStore((s) => s.clear)
+  const clearInterviews = useInterviewStore((s) => s.clear)
+  const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -98,6 +138,12 @@ function OrgSwitcher() {
                 <button
                   key={org.org_id}
                   onClick={() => {
+                    if (org.org_id !== currentOrgId) {
+                      clearKB()
+                      clearDocuments()
+                      clearInterviews()
+                      clearTasks()
+                    }
                     setCurrentOrg(org.org_id)
                     setOpen(false)
                   }}
@@ -136,7 +182,7 @@ function OrgSwitcher() {
 
 // ── User profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
-  const { userName, userEmail, userPicture } = useAuthStore()
+  const { userName, userEmail, userPicture, userId } = useAuthStore()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -179,12 +225,12 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
           <button
             onClick={() => {
               setOpen(false)
-              navigate('/settings')
+              if (userId) navigate(`/org/members/${userId}`)
             }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
           >
             <User className="h-4 w-4 text-gray-400" />
-            Account settings
+            My Profile
           </button>
           <div className="my-1 border-t border-gray-100" />
           <button
@@ -206,41 +252,74 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
 // ── Notification bell ─────────────────────────────────────────────────────────
 function NotificationBell() {
   const navigate = useNavigate()
-  const { token } = useAuthStore()
+  const { token, userEmail, userName } = useAuthStore()
   const { currentOrgId } = useOrgStore()
-  const [pendingTasks, setPendingTasks] = useState<TaskRecord[]>([])
+  const lastTerminatedAt = useBotStore((s) => s.lastTerminatedAt)
+  const { entries, addNotif, removeNotif, readTaskNotifIds, meetingSeenAt, markMeetingsSeen } = useNotifStore()
   const [open, setOpen] = useState(false)
-  const [seenVersion, setSeenVersion] = useState(0)
   const ref = useRef<HTMLDivElement>(null)
 
-  const lastSeenTaskId = currentOrgId
-    ? localStorage.getItem(`lira_notif_seen_${currentOrgId}`)
-    : null
-
-  const fetchTasks = useCallback((): Promise<TaskRecord[]> => {
-    if (!currentOrgId) return Promise.resolve([])
-    return listTasks(currentOrgId, { status: 'pending' })
-      .then((result) => {
-        const tasks = Array.isArray(result)
-          ? result
-          : ((result as { tasks: TaskRecord[] }).tasks ?? [])
-        tasks.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        return tasks
-      })
-      .catch(() => [] as TaskRecord[])
-  }, [currentOrgId])
-
+  // ── Sync pending tasks into notif store (narrowed to current user) ──
   useEffect(() => {
-    if (!token || !currentOrgId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setPendingTasks([])
-      return
-    }
-    fetchTasks().then(setPendingTasks)
-    const id = setInterval(() => fetchTasks().then(setPendingTasks), 60_000)
-    return () => clearInterval(id)
-  }, [token, currentOrgId, fetchTasks])
+    if (!token || !currentOrgId) return
+    function refresh() {
+      // 1. Pull backend assignment notifications for this user
+      listMyNotifications()
+        .then((notifs) => {
+          notifs
+            .filter((n) => !n.read)
+            .forEach((n) =>
+              addNotif({
+                id: `task-${n.task_id}`,
+                kind: 'task',
+                title: n.task_title,
+                subtitle: `Assigned to you by ${n.assigned_by}`,
+                link: `/org/tasks/${n.task_id}`,
+              }),
+            )
+        })
+        .catch(() => {})
 
+      // 2. Pull pending tasks assigned to the current user by name/email
+      const targets = [userEmail, userName].filter(Boolean) as string[]
+      targets.forEach((identity) => {
+        listTasks(currentOrgId!, { status: 'pending', assigned_to: identity })
+          .then((result) => {
+            const tasks: TaskRecord[] = Array.isArray(result)
+              ? result
+              : ((result as { tasks: TaskRecord[] }).tasks ?? [])
+            tasks.forEach((t) =>
+              addNotif({
+                id: `task-${t.task_id}`,
+                kind: 'task',
+                title: t.title,
+                subtitle: t.session_id ? 'Assigned to you · from meeting' : 'Assigned to you',
+                link: `/org/tasks/${t.task_id}`,
+              }),
+            )
+          })
+          .catch(() => {})
+      })
+    }
+    refresh()
+    const id = setInterval(refresh, 60_000)
+    return () => clearInterval(id)
+  }, [token, currentOrgId, userEmail, userName, addNotif])
+
+  // ── Meeting-ended notification ──
+  useEffect(() => {
+    if (!lastTerminatedAt) return
+    const id = `meeting-ended-${lastTerminatedAt}`
+    addNotif({
+      id,
+      kind: 'meeting_ended',
+      title: 'Meeting just ended',
+      subtitle: 'Review the transcript and generate a summary',
+      link: '/meetings',
+    })
+  }, [lastTerminatedAt, addNotif])
+
+  // ── Outside click ──
   useEffect(() => {
     function outside(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
@@ -249,20 +328,24 @@ function NotificationBell() {
     return () => document.removeEventListener('mousedown', outside)
   }, [])
 
-  const lastSeenIndex = lastSeenTaskId
-    ? pendingTasks.findIndex((t) => t.task_id === lastSeenTaskId)
-    : -1
-  const unreadCount = lastSeenIndex === -1 ? pendingTasks.length : lastSeenIndex
-
-  // suppress unused warning from seenVersion
-  void seenVersion
+  // Unread count: task entries not yet individually read + unseen meetings
+  const unreadTaskCount = entries.filter(
+    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id),
+  ).length
+  const unreadOtherCount = entries.filter(
+    (e) => e.kind !== 'task' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt),
+  ).length
+  const unreadCount = unreadTaskCount + unreadOtherCount
 
   function handleOpen() {
     setOpen((v) => !v)
-    if (pendingTasks.length > 0 && currentOrgId) {
-      localStorage.setItem(`lira_notif_seen_${currentOrgId}`, pendingTasks[0].task_id)
-      setSeenVersion((v) => v + 1)
-    }
+    markMeetingsSeen()
+  }
+
+  const kindIcon: Record<string, React.ReactNode> = {
+    task: <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />,
+    meeting_ended: <Mic className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />,
+    interview: <BriefcaseIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />,
   }
 
   return (
@@ -273,7 +356,7 @@ function NotificationBell() {
       >
         <Bell className="h-4 w-4" />
         {unreadCount > 0 && (
-          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-violet-600 text-[9px] font-bold text-white">
+          <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -288,36 +371,44 @@ function NotificationBell() {
             </button>
           </div>
           <div className="max-h-72 overflow-y-auto">
-            {pendingTasks.length === 0 ? (
+            {entries.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
                 <Bell className="h-8 w-8 text-gray-200" />
                 <p className="text-sm text-gray-400">No new notifications</p>
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {pendingTasks.slice(0, 10).map((task) => (
-                  <button
-                    key={task.task_id}
-                    onClick={() => {
-                      setOpen(false)
-                      navigate(`/org/tasks/${task.task_id}`)
-                    }}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-gray-50"
-                  >
-                    <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900">{task.title}</p>
-                      <p className="mt-0.5 text-xs text-gray-400">
-                        Pending task{task.session_id ? ' · from meeting' : ''}
-                      </p>
-                    </div>
-                  </button>
+                {entries.slice(0, 10).map((entry) => (
+                  <div key={entry.id} className="flex items-start gap-3 px-4 py-3">
+                    <button
+                      onClick={() => {
+                        setOpen(false)
+                        navigate(entry.link)
+                      }}
+                      className="flex flex-1 items-start gap-3 text-left transition hover:opacity-75"
+                    >
+                      {kindIcon[entry.kind] ?? kindIcon.task}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">{entry.title}</p>
+                        {entry.subtitle && (
+                          <p className="mt-0.5 text-xs text-gray-400">{entry.subtitle}</p>
+                        )}
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => removeNotif(entry.id)}
+                      className="mt-0.5 shrink-0 rounded p-0.5 text-gray-300 hover:text-gray-500"
+                      aria-label="Dismiss"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
           </div>
-          {pendingTasks.length > 0 && (
-            <div className="border-t border-gray-100 px-4 py-2.5">
+          {entries.length > 0 && (
+            <div className="flex items-center justify-between border-t border-gray-100 px-4 py-2.5">
               <button
                 onClick={() => {
                   setOpen(false)
@@ -326,6 +417,12 @@ function NotificationBell() {
                 className="text-xs font-medium text-violet-600 hover:text-violet-700"
               >
                 View all tasks →
+              </button>
+              <button
+                onClick={() => useNotifStore.getState().clearAll()}
+                className="text-xs text-gray-400 hover:text-gray-600"
+              >
+                Clear all
               </button>
             </div>
           )}
@@ -341,6 +438,7 @@ function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const { token, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
+  const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
 
   // Load orgs on mount
   useEffect(() => {
@@ -348,7 +446,20 @@ function AppShell() {
     listOrganizations()
       .then((orgs) => setOrganizations(orgs))
       .catch(() => {})
+      .finally(() => setOrgLoading(false))
   }, [token, setOrganizations])
+
+  const badges = useSidebarBadges()
+  const { markMeetingsSeen, markInterviewsSeen } = useNotifStore()
+  const location = useLocation()
+
+  // Clear sidebar badge when user navigates to the relevant section
+  // NOTE: tasks are NOT cleared here — they only clear when individual task detail is opened
+  useEffect(() => {
+    const p = location.pathname
+    if (p.startsWith('/meetings') || p.startsWith('/meeting')) markMeetingsSeen()
+    else if (p.startsWith('/org/roles') || p.startsWith('/org/interviews')) markInterviewsSeen()
+  }, [location.pathname, markMeetingsSeen, markInterviewsSeen])
 
   function handleSignOut() {
     clearCredentials()
@@ -359,6 +470,15 @@ function AppShell() {
   // Not authenticated — redirect to home/login
   if (!token) {
     return <Navigate to="/" replace />
+  }
+
+  // Loading orgs — show spinner to prevent flash of empty state
+  if (orgLoading && organizations.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    )
   }
 
   // No org yet — prompt onboarding
@@ -439,6 +559,7 @@ function AppShell() {
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         {label}
+                        <NavBadge count={badges[to] ?? 0} />
                       </NavLink>
                     ))}
                   </div>
@@ -508,6 +629,7 @@ function AppShell() {
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     {label}
+                    <NavBadge count={badges[to] ?? 0} />
                   </NavLink>
                 ))}
               </div>

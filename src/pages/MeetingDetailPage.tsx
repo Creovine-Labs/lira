@@ -3,23 +3,25 @@ import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft,
   Calendar,
+  Check,
   Clock,
   Loader2,
   MessageSquare,
+  Pencil,
   Sparkles,
   User,
   Bot,
   ChevronDown,
   ChevronUp,
   Copy,
-  Check,
-  Share2,
   RefreshCw,
+  Share2,
+  X,
 } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 
 import { useAuthStore } from '@/app/store'
-import { getMeeting, getMeetingSummary, type Meeting, type Message } from '@/services/api'
+import { getMeeting, getMeetingSummary, updateMeeting, type Meeting, type Message } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 import { cn } from '@/lib'
 
@@ -92,7 +94,24 @@ function TranscriptBubble({ msg }: { msg: Message }) {
   )
 }
 
-// ── Main component ───────────────────────────────────────────────────────────
+// ── Meeting type metadata ────────────────────────────────────────────────────
+
+const MEETING_TYPE_LABELS: Record<string, string> = {
+  meeting: 'General', standup: 'Stand-up', one_on_one: '1-on-1',
+  technical: 'Technical', brainstorming: 'Brainstorm', sales: 'Sales', interview: 'Interview',
+}
+
+const MEETING_TYPE_COLORS: Record<string, string> = {
+  meeting: 'bg-gray-100 text-gray-500',
+  standup: 'bg-sky-100 text-sky-700',
+  one_on_one: 'bg-violet-100 text-violet-700',
+  technical: 'bg-amber-100 text-amber-700',
+  brainstorming: 'bg-orange-100 text-orange-700',
+  sales: 'bg-emerald-100 text-emerald-700',
+  interview: 'bg-pink-100 text-pink-700',
+}
+
+// ── Main component ───────────────────────────────────────────────────────────────────────────────
 
 function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -102,6 +121,12 @@ function MeetingDetailPage() {
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+
+  // Title editing
+  const [editingTitle, setEditingTitle] = useState(false)
+  const [titleDraft, setTitleDraft] = useState('')
+  const [savingTitle, setSavingTitle] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement | null>(null)
 
   // Summary
   const [summary, setSummary] = useState<string | null>(null)
@@ -245,6 +270,26 @@ function MeetingDetailPage() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [shareOpen])
 
+  useEffect(() => {
+    if (editingTitle && titleInputRef.current) {
+      titleInputRef.current.focus()
+      titleInputRef.current.select()
+    }
+  }, [editingTitle])
+
+  async function handleSaveTitle() {
+    const trimmed = titleDraft.trim()
+    if (!trimmed || !id) { setEditingTitle(false); return }
+    setSavingTitle(true)
+    try {
+      await updateMeeting(id, { title: trimmed })
+      setMeeting((prev) => prev ? { ...prev, title: trimmed } : prev)
+    } catch { /* ignore */ } finally {
+      setSavingTitle(false)
+      setEditingTitle(false)
+    }
+  }
+
   // ── Loading / error states ──────────────────────────────────────────────
 
   if (loading) {
@@ -300,9 +345,54 @@ function MeetingDetailPage() {
       <div className="mx-auto max-w-3xl px-4 py-6 space-y-6">
         {/* Meeting info card */}
         <div className="rounded-xl border bg-card px-5 py-5">
-          <h2 className="text-xl font-semibold text-foreground">
-            {meeting.title || 'Untitled Meeting'}
-          </h2>
+          {/* Editable title */}
+          <div className="flex items-start gap-2">
+            {editingTitle ? (
+              <div className="flex flex-1 items-center gap-1.5">
+                <input
+                  ref={titleInputRef}
+                  className="flex-1 rounded-lg border border-violet-400 bg-white px-2 py-1 text-lg font-semibold text-foreground outline-none focus:ring-2 focus:ring-violet-500/30"
+                  value={titleDraft}
+                  onChange={(e) => setTitleDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveTitle()
+                    if (e.key === 'Escape') setEditingTitle(false)
+                  }}
+                  maxLength={200}
+                />
+                <button onClick={handleSaveTitle} disabled={savingTitle} className="rounded p-1 text-emerald-600 hover:bg-emerald-50" title="Save">
+                  {savingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                </button>
+                <button onClick={() => setEditingTitle(false)} className="rounded p-1 text-gray-400 hover:bg-gray-100" title="Cancel">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <>
+                <h2 className="flex-1 text-xl font-semibold text-foreground">
+                  {meeting.title || 'Untitled Meeting'}
+                </h2>
+                <button
+                  onClick={() => { setTitleDraft(meeting.title || ''); setEditingTitle(true) }}
+                  className="mt-1 shrink-0 rounded p-1 text-muted-foreground/40 hover:text-foreground hover:bg-gray-100 transition"
+                  title="Edit title"
+                >
+                  <Pencil className="h-3.5 w-3.5" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Meeting type badge */}
+          {meeting.meeting_type && (
+            <div className="mt-2">
+              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+                MEETING_TYPE_COLORS[meeting.meeting_type] ?? 'bg-gray-100 text-gray-500'
+              }`}>
+                {MEETING_TYPE_LABELS[meeting.meeting_type] ?? meeting.meeting_type}
+              </span>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
               <Calendar className="h-4 w-4" />

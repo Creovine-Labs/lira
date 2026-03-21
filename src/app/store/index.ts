@@ -13,10 +13,11 @@ import type {
 
 interface AuthSlice {
   token: string | null
+  userId: string | null
   userEmail: string | null
   userName: string | null
   userPicture: string | null
-  setCredentials: (token: string, email?: string, name?: string, picture?: string) => void
+  setCredentials: (token: string, email?: string, name?: string, picture?: string, id?: string) => void
   clearCredentials: () => void
 }
 
@@ -24,18 +25,20 @@ export const useAuthStore = create<AuthSlice>()(
   persist(
     (set) => ({
       token: null,
+      userId: null,
       userEmail: null,
       userName: null,
       userPicture: null,
-      setCredentials: (token, email, name, picture) =>
+      setCredentials: (token, email, name, picture, id) =>
         set({
           token,
+          userId: id ?? null,
           userEmail: email ?? null,
           userName: name ?? null,
           userPicture: picture ?? null,
         }),
       clearCredentials: () =>
-        set({ token: null, userEmail: null, userName: null, userPicture: null }),
+        set({ token: null, userId: null, userEmail: null, userName: null, userPicture: null }),
     }),
     { name: 'lira-auth' }
   )
@@ -109,6 +112,7 @@ interface BotSlice {
   botState: BotState | null
   error: string | null
   deployedAt: string | null
+  lastTerminatedAt: number
   setBotDeployed: (
     botId: string,
     meetingUrl: string,
@@ -155,6 +159,7 @@ export const useBotStore = create<BotSlice>()((set) => ({
   botState: null,
   error: null,
   deployedAt: null,
+  lastTerminatedAt: 0,
   setBotDeployed: (botId, meetingUrl, platform, state) =>
     set({
       botId,
@@ -164,7 +169,8 @@ export const useBotStore = create<BotSlice>()((set) => ({
       error: null,
       deployedAt: new Date().toISOString(),
     }),
-  setBotState: (state) => set({ botState: state, error: null }),
+  setBotState: (state) =>
+    set({ botState: state, error: null, ...(state === 'terminated' ? { lastTerminatedAt: Date.now() } : {}) }),
   setBotError: (error) => set({ botState: 'error', error }),
   clearBot: () =>
     set({
@@ -345,3 +351,59 @@ export const useInterviewStore = create<InterviewSlice>()((set) => ({
   setStatusFilter: (statusFilter) => set({ statusFilter }),
   clear: () => set({ interviews: [], statusFilter: null }),
 }))
+
+// ── Notification Store ────────────────────────────────────────────────────────
+// Lightweight client-side badge counts keyed to sections.
+// Persisted per org in localStorage so page refresh keeps counts.
+
+export interface NotifEntry {
+  id: string
+  kind: 'task' | 'meeting_ended' | 'interview'
+  title: string
+  subtitle?: string
+  link: string
+  createdAt: number
+}
+
+interface NotifSlice {
+  entries: NotifEntry[]
+  // timestamp-based "seen" for meetings and interviews (section-level)
+  meetingSeenAt: number
+  interviewSeenAt: number
+  // per-task read tracking — only clears when user opens the individual task detail
+  readTaskNotifIds: string[]
+  addNotif: (entry: Omit<NotifEntry, 'createdAt'>) => void
+  removeNotif: (id: string) => void
+  clearAll: () => void
+  markTaskRead: (notifId: string) => void
+  markMeetingsSeen: () => void
+  markInterviewsSeen: () => void
+}
+
+export const useNotifStore = create<NotifSlice>()(
+  persist(
+    (set) => ({
+      entries: [],
+      meetingSeenAt: 0,
+      interviewSeenAt: 0,
+      readTaskNotifIds: [],
+      addNotif: (entry) =>
+        set((s) => {
+          // dedupe by id
+          if (s.entries.some((e) => e.id === entry.id)) return s
+          return { entries: [{ ...entry, createdAt: Date.now() }, ...s.entries].slice(0, 50) }
+        }),
+      removeNotif: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+      clearAll: () => set({ entries: [] }),
+      markTaskRead: (notifId) =>
+        set((s) =>
+          s.readTaskNotifIds.includes(notifId)
+            ? s
+            : { readTaskNotifIds: [...s.readTaskNotifIds, notifId] }
+        ),
+      markMeetingsSeen: () => set({ meetingSeenAt: Date.now() }),
+      markInterviewsSeen: () => set({ interviewSeenAt: Date.now() }),
+    }),
+    { name: 'lira-notif' }
+  )
+)

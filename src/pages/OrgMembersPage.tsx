@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, Link } from 'react-router-dom'
 import {
   ArrowRightLeft,
   Copy,
@@ -213,12 +213,29 @@ function OrgMembersPage() {
           <div className="divide-y">
             {members.map((m) => (
               <div key={m.user_id} className="flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-600 dark:bg-violet-900/40 dark:text-violet-400">
-                  {(m.name ?? m.email ?? m.user_id).slice(0, 2).toUpperCase()}
-                </div>
+                {/* Avatar — clickable, goes to profile */}
+                <Link to={`/org/members/${m.user_id}`} className="shrink-0">
+                  {m.picture ? (
+                    <img
+                      src={m.picture}
+                      alt={m.name ?? m.email ?? ''}
+                      className="h-10 w-10 rounded-full object-cover ring-2 ring-violet-100 hover:ring-violet-400 transition-all"
+                      referrerPolicy="no-referrer"
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-600 dark:bg-violet-900/40 dark:text-violet-400 hover:ring-2 hover:ring-violet-400 transition-all">
+                      {(m.name ?? m.email ?? m.user_id).slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                </Link>
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium text-foreground">
-                    {m.name ?? m.email ?? m.user_id}
+                    <Link
+                      to={`/org/members/${m.user_id}`}
+                      className="hover:text-violet-600 hover:underline transition-colors"
+                    >
+                      {m.name ?? m.email ?? m.user_id}
+                    </Link>
                     {m.user_id === userId && (
                       <span className="ml-2 text-xs text-muted-foreground">(you)</span>
                     )}

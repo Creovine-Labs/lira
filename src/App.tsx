@@ -15,6 +15,7 @@ import {
   OrganizationsPage,
   OrgSettingsPage,
   OrgMembersPage,
+  MemberProfilePage,
   KnowledgeBasePage,
   DocumentsPage,
   TasksPage,
@@ -75,6 +76,7 @@ function App() {
             <Route path="tasks" element={<TasksPage />} />
             <Route path="tasks/:taskId" element={<OrgTaskDetailPage />} />
             <Route path="members" element={<OrgMembersPage />} />
+            <Route path="members/:userId" element={<MemberProfilePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
             <Route path="roles" element={<InterviewsPage />} />
             <Route path="roles/new" element={<InterviewCreatePage />} />

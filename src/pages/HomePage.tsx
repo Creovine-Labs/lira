@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import { ArrowLeft, Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
@@ -223,11 +223,7 @@ function GoogleIcon() {
 function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
   const { setCredentials } = useAuthStore()
   const [authView, setAuthView] = useState<AuthView>('landing')
-  const googleRef = useRef<HTMLDivElement>(null)
 
-  function clickGoogleLogin() {
-    googleRef.current?.querySelector<HTMLElement>('div[role="button"]')?.click()
-  }
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -265,7 +261,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
       }
 
       const res = await apiGoogleLogin(response.credential)
-      setCredentials(res.token, res.user.email, gName, gPicture)
+      setCredentials(res.token, res.user.email, gName, gPicture, res.user.id)
       credentials.set(res.token)
       const orgs = await listOrganizations().catch(() => [])
       onLogin(orgs.length === 0)
@@ -286,7 +282,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
     setError(null)
     try {
       const res = await apiLogin(email.trim(), password.trim())
-      setCredentials(res.token, res.user.email)
+      setCredentials(res.token, res.user.email, undefined, undefined, res.user.id)
       credentials.set(res.token)
       const orgs = await listOrganizations().catch(() => [])
       onLogin(orgs.length === 0)
@@ -307,7 +303,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
     setError(null)
     try {
       const res = await apiSignup(name.trim(), email.trim(), password.trim())
-      setCredentials(res.token, res.user.email)
+      setCredentials(res.token, res.user.email, undefined, undefined, res.user.id)
       credentials.set(res.token)
       onLogin(true)
     } catch (err) {
@@ -322,21 +318,6 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Hidden Google OAuth trigger — rendered off-screen so Google JS initialises */}
-      {env.VITE_GOOGLE_CLIENT_ID && (
-        <div
-          ref={googleRef}
-          className="pointer-events-none absolute left-0 top-0 h-px w-px overflow-hidden opacity-0"
-          aria-hidden="true"
-        >
-          <GoogleLogin
-            onSuccess={handleGoogleSuccess}
-            onError={() => setError('Google sign-in failed. Please try again.')}
-            width="1"
-          />
-        </div>
-      )}
-
       {/* ── Left panel ── */}
       <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 px-10 py-10">
         <LiraLogo size="md" />
@@ -372,15 +353,28 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                 </div>
                 <div className="space-y-3">
                   {env.VITE_GOOGLE_CLIENT_ID && (
-                    <button
-                      type="button"
-                      onClick={clickGoogleLogin}
-                      disabled={loading}
-                      className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
-                    >
-                      <GoogleIcon />
-                      Continue with Google
-                    </button>
+                    <div className="relative">
+                      <button
+                        type="button"
+                        disabled={loading}
+                        className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+                      >
+                        <GoogleIcon />
+                        Continue with Google
+                      </button>
+                      <div
+                        className="absolute inset-0 z-10 overflow-hidden opacity-0"
+                        style={loading ? { pointerEvents: 'none' } : undefined}
+                        aria-hidden="true"
+                      >
+                        <GoogleLogin
+                          onSuccess={handleGoogleSuccess}
+                          onError={() => setError('Google sign-in failed. Please try again.')}
+                          width="1000"
+                          size="large"
+                        />
+                      </div>
+                    </div>
                   )}
                   <div className="flex items-center gap-3">
                     <div className="h-px flex-1 bg-gray-200" />
@@ -423,15 +417,28 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                 <div className="space-y-4">
                   {env.VITE_GOOGLE_CLIENT_ID && (
                     <>
-                      <button
-                        type="button"
-                        onClick={clickGoogleLogin}
-                        disabled={loading}
-                        className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
-                      >
-                        <GoogleIcon />
-                        Continue with Google
-                      </button>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          disabled={loading}
+                          className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+                        >
+                          <GoogleIcon />
+                          Continue with Google
+                        </button>
+                        <div
+                          className="absolute inset-0 z-10 overflow-hidden opacity-0"
+                          style={loading ? { pointerEvents: 'none' } : undefined}
+                          aria-hidden="true"
+                        >
+                          <GoogleLogin
+                            onSuccess={handleGoogleSuccess}
+                            onError={() => setError('Google sign-in failed. Please try again.')}
+                            width="1000"
+                            size="large"
+                          />
+                        </div>
+                      </div>
                       <div className="flex items-center gap-3">
                         <div className="h-px flex-1 bg-gray-200" />
                         <span className="text-xs text-gray-400">or continue with email</span>

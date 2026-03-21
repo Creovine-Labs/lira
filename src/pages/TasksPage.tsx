@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   XCircle,
   Zap,
+  Trash2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -17,6 +18,7 @@ import {
   listTasks,
   createTask,
   updateTask,
+  deleteTask,
   type TaskRecord,
   type TaskStatus,
   type TaskPriority,
@@ -182,6 +184,16 @@ function TasksPage() {
                     toast.error('Failed to update status')
                   }
                 }}
+                onDelete={async () => {
+                  if (!currentOrgId) return
+                  try {
+                    await deleteTask(currentOrgId, task.task_id)
+                    useTaskStore.getState().removeTask(task.task_id)
+                    toast.success('Task deleted')
+                  } catch {
+                    toast.error('Failed to delete task')
+                  }
+                }}
               />
             ))}
           </div>
@@ -197,10 +209,12 @@ function TaskCard({
   task,
   onClick,
   onStatusChange,
+  onDelete,
 }: {
   task: TaskRecord
   onClick: () => void
   onStatusChange: (status: TaskStatus) => void
+  onDelete: () => void
 }) {
   return (
     <div
@@ -208,7 +222,7 @@ function TaskCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className="flex cursor-pointer items-start gap-4 rounded-xl border bg-card px-5 py-4 transition hover:border-violet-500/30 hover:shadow-sm"
+      className="group/card flex cursor-pointer items-start gap-4 rounded-xl border bg-card px-5 py-4 transition hover:border-violet-500/30 hover:shadow-sm"
     >
       {/* Status checkbox */}
       <button
@@ -279,6 +293,15 @@ function TaskCard({
           )}
         </div>
       </div>
+
+      {/* Delete */}
+      <button
+        onClick={(e) => { e.stopPropagation(); onDelete() }}
+        className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover/card:opacity-100"
+        title="Delete task"
+      >
+        <Trash2 className="h-4 w-4" />
+      </button>
     </div>
   )
 }

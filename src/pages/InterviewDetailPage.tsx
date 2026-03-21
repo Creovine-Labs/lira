@@ -214,12 +214,10 @@ function InterviewDetailPage() {
     try {
       const data = await getInterviewRecord(currentOrgId, interviewId)
       setInterview(data)
-      // Auto-switch to Evaluation tab when eval data is available
-      if (data.evaluation) setActiveTab('evaluation')
-      // Load related interviews (other rounds)
+      // Load related interviews (all rounds including current)
       try {
         const related = await getRelatedInterviews(currentOrgId, interviewId)
-        setRelatedInterviews(related.filter((r) => r.interview_id !== interviewId))
+        setRelatedInterviews(related)
       } catch {
         /* non-fatal */
       }
@@ -491,7 +489,11 @@ function InterviewDetailPage() {
       {/* Header */}
       <div className="flex items-center gap-4 px-6 py-5 border-b border-slate-200 dark:border-slate-700/60">
         <button
-          onClick={() => navigate(`/org/roles/${encodeURIComponent(interview.title)}`)}
+          onClick={() =>
+            interview.parent_interview_id
+              ? navigate(`/org/interviews/${interview.parent_interview_id}`)
+              : navigate(`/org/roles/${encodeURIComponent(interview.title)}`)
+          }
           className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -618,7 +620,7 @@ function InterviewDetailPage() {
             )}
           >
             <FileText className="w-4 h-4" />
-            Details
+            Rounds
           </button>
           <button
             onClick={() => setActiveTab('evaluation')}
@@ -640,24 +642,6 @@ function InterviewDetailPage() {
         {/* ═══ Details Tab ═══ */}
         {(activeTab === 'details' || !hasEval) && (
           <>
-            {/* Meta row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <MetaCard label="Experience" value={interview.experience_level} />
-              <MetaCard
-                label="Mode"
-                value={interview.mode.charAt(0).toUpperCase() + interview.mode.slice(1)}
-              />
-              <MetaCard
-                label="Duration"
-                value={`${interview.evaluation?.interview_duration_minutes || interview.time_limit_minutes} min`}
-              />
-              {interview.scheduled_at && (
-                <MetaCard
-                  label="Scheduled"
-                  value={format(new Date(interview.scheduled_at), 'MMM d, h:mm a')}
-                />
-              )}
-            </div>
 
             {/* Salary row */}
             {(interview.salary_min != null ||
@@ -880,80 +864,92 @@ function InterviewDetailPage() {
               </details>
             )}
 
-            {/* Questions */}
-            {(interview.questions ?? []).length > 0 && (
-              <details className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                <summary className="px-4 py-3 bg-slate-50 dark:bg-slate-800 text-sm font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">
-                  Questions ({interview.questions.length})
-                </summary>
-                <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                  {(interview.questions ?? []).map((q, i) => (
-                    <div key={q.id} className="px-4 py-3">
-                      <div className="flex items-start gap-3">
-                        <span className="shrink-0 w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold flex items-center justify-center">
-                          {i + 1}
-                        </span>
-                        <div>
-                          <p className="text-sm text-slate-800 dark:text-slate-200">{q.text}</p>
-                          <div className="flex gap-2 mt-1">
-                            <span className="text-xs text-slate-400 capitalize">
-                              {q.category.replace('_', ' ')}
-                            </span>
-                            <span className="text-xs text-slate-400">·</span>
-                            <span className="text-xs text-slate-400">{q.expected_depth}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </details>
-            )}
-
-            {/* Interview Round History */}
+            {/* Interview Rounds — all rounds with per-round details */}
             {relatedInterviews.length > 0 && (
               <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                 <div className="px-4 py-3 bg-slate-50 dark:bg-slate-800">
                   <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Interview Rounds ({relatedInterviews.length + 1})
+                    Interview Rounds ({relatedInterviews.length})
                   </p>
                 </div>
                 <div className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-                  {relatedInterviews.map((ri) => (
-                    <button
-                      key={ri.interview_id}
-                      onClick={() => navigate(`/org/interviews/${ri.interview_id}`)}
-                      className="w-full px-4 py-3 flex items-center gap-3 text-left hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
-                    >
-                      <span className="shrink-0 w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 text-xs font-bold flex items-center justify-center">
-                        {ri.round ?? 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
-                          Round {ri.round ?? 1}
-                          {ri.interview_purpose && (
-                            <span className="ml-1.5 text-slate-500 dark:text-slate-400 font-normal">
-                              —{' '}
-                              {ri.interview_purpose === 'custom'
-                                ? ri.custom_purpose
-                                : ri.interview_purpose.replace('_', ' ')}
-                            </span>
-                          )}
-                        </p>
-                        <p className="text-xs text-slate-400 mt-0.5">
-                          {ri.title} · {ri.mode}
-                        </p>
-                      </div>
-                      <span
+                  {relatedInterviews.map((ri) => {
+                    const isCurrent = ri.interview_id === interviewId
+                    const purposeLabel =
+                      ri.interview_purpose === 'custom'
+                        ? ri.custom_purpose
+                        : ri.interview_purpose?.replace(/_/g, ' ')
+                    return (
+                      <div
+                        key={ri.interview_id}
                         className={cn(
-                          'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize',
-                          STATUS_COLORS[ri.status]
+                          'border-l-2 transition-colors',
+                          isCurrent
+                            ? 'border-l-violet-500 bg-violet-50/40 dark:bg-violet-900/10'
+                            : 'border-l-transparent',
                         )}
                       >
-                        {ri.status.replace('_', ' ')}
-                      </span>
-                    </button>
-                  ))}
+                        <button
+                          disabled={isCurrent}
+                          onClick={() =>
+                            !isCurrent && navigate(`/org/interviews/${ri.interview_id}`)
+                          }
+                          className={cn(
+                            'w-full px-4 py-3 flex items-center gap-3 text-left',
+                            !isCurrent &&
+                              'hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors',
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'shrink-0 w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center',
+                              isCurrent
+                                ? 'bg-violet-200 text-violet-700 dark:bg-violet-800 dark:text-violet-300'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
+                            )}
+                          >
+                            {ri.round ?? 1}
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+                              Round {ri.round ?? 1}
+                              {purposeLabel && (
+                                <span className="ml-1.5 text-slate-500 dark:text-slate-400 font-normal capitalize">
+                                  — {purposeLabel}
+                                </span>
+                              )}
+                              {isCurrent && (
+                                <span className="ml-1.5 text-xs text-violet-500 dark:text-violet-400 font-normal">
+                                  (current)
+                                </span>
+                              )}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                              <span className="text-xs text-slate-400 capitalize">
+                                {ri.experience_level}
+                              </span>
+                              <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
+                              <span className="text-xs text-slate-400 capitalize">{ri.mode}</span>
+                              <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
+                              <span className="text-xs text-slate-400">
+                                {ri.evaluation?.interview_duration_minutes ||
+                                  ri.time_limit_minutes}{' '}
+                                min
+                              </span>
+                            </div>
+                          </div>
+                          <span
+                            className={cn(
+                              'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize',
+                              STATUS_COLORS[ri.status],
+                            )}
+                          >
+                            {ri.status.replace(/_/g, ' ')}
+                          </span>
+                        </button>
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -1257,17 +1253,6 @@ function InterviewDetailPage() {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function MetaCard({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-4 py-3">
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">{label}</p>
-      <p className="text-sm font-semibold text-slate-800 dark:text-slate-200 mt-1 capitalize">
-        {value}
-      </p>
     </div>
   )
 }
