@@ -21,7 +21,7 @@ export function LiraLogo({ mark = false, size = 'md', className }: LiraLogoProps
     <div className={`flex items-center gap-2 ${className ?? ''}`}>
       {/* Icon mark */}
       <img
-        src="/lira_logo.png"
+        src="/lira_black.png"
         alt="Lira AI"
         width={s.icon}
         height={s.icon}

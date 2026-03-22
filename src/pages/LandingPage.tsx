@@ -180,7 +180,11 @@ function MeetingDemo() {
               >
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-20 h-20 rounded-full bg-violet-600/20 border-2 border-violet-400/50 flex items-center justify-center meet-pulse">
-                    <img src="/lira_logo.png" alt="" className="w-10 h-10 object-contain" />
+                    <img
+                      src="/lira_black_with_white_backgound.png"
+                      alt=""
+                      className="w-10 h-10 object-contain"
+                    />
                   </div>
                 </div>
                 <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 bg-black/50 rounded-full px-2 py-0.5">
@@ -263,7 +267,11 @@ function MeetingDemo() {
                 {/* Lira thumbnail — bottom right */}
                 <div className="absolute bottom-2.5 right-2.5">
                   <div className="w-12 h-12 rounded-lg bg-[#131320] border border-white/10 flex items-center justify-center">
-                    <img src="/lira_logo.png" alt="" className="w-6 h-6 object-contain" />
+                    <img
+                      src="/lira_black_with_white_backgound.png"
+                      alt=""
+                      className="w-6 h-6 object-contain"
+                    />
                   </div>
                 </div>
               </div>
@@ -354,7 +362,11 @@ function MeetingDemo() {
                 >
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-white/[.08]">
                     <div className="w-3.5 h-3.5 rounded-full bg-violet-500/30 border border-violet-400/40 flex items-center justify-center overflow-hidden">
-                      <img src="/lira_logo.png" alt="" className="w-2 h-2 object-contain" />
+                      <img
+                        src="/lira_black_with_white_backgound.png"
+                        alt=""
+                        className="w-2 h-2 object-contain"
+                      />
                     </div>
                     <span className="text-[8px] text-white/85 font-semibold tracking-wider uppercase">
                       Lira · Sales Coach
@@ -424,7 +436,11 @@ function MeetingDemo() {
               <div className="rounded-2xl overflow-hidden bg-[#13111a]">
                 <div className="px-3 py-3 text-center border-b border-white/[.05]">
                   <div className="w-10 h-10 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center mx-auto mb-1">
-                    <img src="/lira_logo.png" alt="" className="w-5 h-5 object-contain" />
+                    <img
+                      src="/lira_black_with_white_backgound.png"
+                      alt=""
+                      className="w-5 h-5 object-contain"
+                    />
                   </div>
                   <div className="text-[10px] text-white/90 font-medium">Lira · Support Agent</div>
                   <div className="flex items-center justify-center gap-[2px] h-3.5 my-1">
@@ -601,7 +617,7 @@ function MeetingDemo() {
                             className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center transition-all duration-500 ${meetActive === 'lira' ? 'meet-pulse' : ''}`}
                           >
                             <img
-                              src="/lira_logo.png"
+                              src="/lira_black_with_white_backgound.png"
                               alt="Lira"
                               className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain"
                             />
@@ -658,7 +674,7 @@ function MeetingDemo() {
                             className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center transition-all duration-500 ${ivActive === 'lira' ? 'meet-pulse' : ''}`}
                           >
                             <img
-                              src="/lira_logo.png"
+                              src="/lira_black_with_white_backgound.png"
                               alt="Lira"
                               className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain"
                             />
@@ -772,7 +788,11 @@ function MeetingDemo() {
                     {/* Header */}
                     <div className="flex items-center gap-1.5 px-3 py-2 border-b border-white/[.09]">
                       <div className="w-4 h-4 rounded-full bg-violet-500/30 border border-violet-400/40 flex items-center justify-center overflow-hidden flex-shrink-0">
-                        <img src="/lira_logo.png" alt="" className="w-2.5 h-2.5 object-contain" />
+                        <img
+                          src="/lira_black_with_white_backgound.png"
+                          alt=""
+                          className="w-2.5 h-2.5 object-contain"
+                        />
                       </div>
                       <span className="text-[8px] sm:text-[9px] text-white/85 font-semibold tracking-wider uppercase">
                         Lira · Sales Coach
@@ -963,7 +983,7 @@ function MeetingDemo() {
                 <div className="bg-[#13111a] px-4 py-3 sm:py-4 text-center border-b border-white/[.05]">
                   <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center mx-auto mb-2">
                     <img
-                      src="/lira_logo.png"
+                      src="/lira_black_with_white_backgound.png"
                       alt="Lira"
                       className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
                     />
