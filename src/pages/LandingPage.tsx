@@ -179,11 +179,11 @@ function MeetingDemo() {
                 style={{ height: 240 }}
               >
                 <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full bg-violet-600/20 border-2 border-violet-400/50 flex items-center justify-center meet-pulse">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-violet-400/50 meet-pulse">
                     <img
                       src="/lira_black_with_white_backgound.png"
                       alt=""
-                      className="w-10 h-10 object-contain"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 </div>
@@ -266,11 +266,11 @@ function MeetingDemo() {
                 </div>
                 {/* Lira thumbnail — bottom right */}
                 <div className="absolute bottom-2.5 right-2.5">
-                  <div className="w-12 h-12 rounded-lg bg-[#131320] border border-white/10 flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
                     <img
                       src="/lira_black_with_white_backgound.png"
                       alt=""
-                      className="w-6 h-6 object-contain"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                 </div>
@@ -361,11 +361,11 @@ function MeetingDemo() {
                   }}
                 >
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 border-b border-white/[.08]">
-                    <div className="w-3.5 h-3.5 rounded-full bg-violet-500/30 border border-violet-400/40 flex items-center justify-center overflow-hidden">
+                    <div className="w-3.5 h-3.5 rounded-full overflow-hidden border border-violet-400/40">
                       <img
                         src="/lira_black_with_white_backgound.png"
                         alt=""
-                        className="w-2 h-2 object-contain"
+                        className="w-full h-full object-cover"
                       />
                     </div>
                     <span className="text-[8px] text-white/85 font-semibold tracking-wider uppercase">
@@ -435,11 +435,11 @@ function MeetingDemo() {
             <div className="demo-fade-in">
               <div className="rounded-2xl overflow-hidden bg-[#13111a]">
                 <div className="px-3 py-3 text-center border-b border-white/[.05]">
-                  <div className="w-10 h-10 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center mx-auto mb-1">
+                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-violet-400/25 mx-auto mb-1">
                     <img
                       src="/lira_black_with_white_backgound.png"
                       alt=""
-                      className="w-5 h-5 object-contain"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="text-[10px] text-white/90 font-medium">Lira · Support Agent</div>
@@ -614,12 +614,12 @@ function MeetingDemo() {
                       >
                         <div className="absolute inset-0 bg-[#131320] flex items-center justify-center">
                           <div
-                            className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center transition-all duration-500 ${meetActive === 'lira' ? 'meet-pulse' : ''}`}
+                            className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-violet-400/25 transition-all duration-500 ${meetActive === 'lira' ? 'meet-pulse' : ''}`}
                           >
                             <img
                               src="/lira_black_with_white_backgound.png"
                               alt="Lira"
-                              className="w-7 h-7 sm:w-9 sm:h-9 md:w-10 md:h-10 object-contain"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         </div>
@@ -671,12 +671,12 @@ function MeetingDemo() {
                       >
                         <div className="absolute inset-0 bg-[#131320] flex items-center justify-center">
                           <div
-                            className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center transition-all duration-500 ${ivActive === 'lira' ? 'meet-pulse' : ''}`}
+                            className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-violet-400/25 transition-all duration-500 ${ivActive === 'lira' ? 'meet-pulse' : ''}`}
                           >
                             <img
                               src="/lira_black_with_white_backgound.png"
                               alt="Lira"
-                              className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 object-contain"
+                              className="w-full h-full object-cover"
                             />
                           </div>
                         </div>
@@ -791,7 +791,7 @@ function MeetingDemo() {
                         <img
                           src="/lira_black_with_white_backgound.png"
                           alt=""
-                          className="w-2.5 h-2.5 object-contain"
+                          className="w-full h-full object-cover"
                         />
                       </div>
                       <span className="text-[8px] sm:text-[9px] text-white/85 font-semibold tracking-wider uppercase">
@@ -981,11 +981,11 @@ function MeetingDemo() {
                   </div>
                 </div>
                 <div className="bg-[#13111a] px-4 py-3 sm:py-4 text-center border-b border-white/[.05]">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-violet-600/20 border-2 border-violet-400/25 flex items-center justify-center mx-auto mb-2">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-violet-400/25 mx-auto mb-2">
                     <img
                       src="/lira_black_with_white_backgound.png"
                       alt="Lira"
-                      className="w-5 h-5 sm:w-6 sm:h-6 object-contain"
+                      className="w-full h-full object-cover"
                     />
                   </div>
                   <div className="text-[11px] sm:text-[13px] text-white/90 font-medium">
