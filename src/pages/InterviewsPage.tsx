@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BriefcaseIcon, ChevronRight, Loader2, Plus, Search, Trash2 } from 'lucide-react'
+import {
+  ArrowPathIcon,
+  BriefcaseIcon,
+  ChevronRightIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore, useInterviewStore } from '@/app/store'
@@ -111,18 +118,18 @@ function InterviewsPage() {
           onClick={() => navigate('/org/roles/new')}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <PlusIcon className="w-4 h-4" />
           Create Role
         </button>
       </div>
 
-      {/* Search */}
+      {/* MagnifyingGlassIcon */}
       <div className="px-4 sm:px-6 py-3 border-b border-gray-200">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <MagnifyingGlassIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Search roles or candidates…"
+            placeholder="MagnifyingGlassIcon roles or candidates…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white transition-colors"
@@ -134,7 +141,7 @@ function InterviewsPage() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+            <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
           </div>
         ) : sortedRoles.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -150,7 +157,7 @@ function InterviewsPage() {
                 onClick={() => navigate('/org/roles/new')}
                 className="mt-5 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors"
               >
-                <Plus className="w-4 h-4" />
+                <PlusIcon className="w-4 h-4" />
                 Create Role
               </button>
             )}
@@ -200,7 +207,7 @@ function InterviewsPage() {
                         </span>
                       </div>
                     </div>
-                    <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0 mt-1" />
+                    <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0 mt-1" />
                   </button>
 
                   {/* Delete button — hover only */}
@@ -211,9 +218,9 @@ function InterviewsPage() {
                     title="Delete role"
                   >
                     {deletingRole === role ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
                     ) : (
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <TrashIcon className="w-3.5 h-3.5" />
                     )}
                   </button>
                 </div>

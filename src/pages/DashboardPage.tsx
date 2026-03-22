@@ -1,19 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  AlertCircle,
-  ArrowRight,
-  BookOpen,
+  ArrowPathIcon,
+  ArrowRightIcon,
+  BookOpenIcon,
   BriefcaseIcon,
-  CheckSquare,
-  Clock,
-  Loader2,
-  Mic,
-  Plus,
-  Radio,
-  Video,
-} from 'lucide-react'
-
+  ClipboardDocumentCheckIcon,
+  ClockIcon,
+  ExclamationCircleIcon,
+  MicrophoneIcon,
+  PlusIcon,
+  RadioIcon,
+  VideoCameraIcon,
+} from '@heroicons/react/24/outline'
 import { useAuthStore, useBotStore, useOrgStore, useUserPrefsStore } from '@/app/store'
 import {
   deployBot,
@@ -132,7 +131,7 @@ function StatCard({
         </div>
         {onClick && (
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900 text-white opacity-0 transition group-hover:opacity-100">
-            <ArrowRight className="h-3.5 w-3.5" />
+            <ArrowRightIcon className="h-3.5 w-3.5" />
           </div>
         )}
       </div>
@@ -182,7 +181,7 @@ function QuickAction({
         <p className="text-sm font-semibold text-gray-900">{label}</p>
         <p className="mt-0.5 truncate text-xs text-gray-500">{description}</p>
       </div>
-      <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-500" />
+      <ArrowRightIcon className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-500" />
     </button>
   )
 }
@@ -194,7 +193,7 @@ function RecentMeetings({ meetings }: { meetings: Meeting[] }) {
     return (
       <div className="flex flex-col items-center gap-2 py-8 text-center">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100">
-          <Mic className="h-5 w-5 text-gray-400" />
+          <MicrophoneIcon className="h-5 w-5 text-gray-400" />
         </div>
         <p className="text-sm text-gray-400">No meetings yet</p>
       </div>
@@ -209,13 +208,13 @@ function RecentMeetings({ meetings }: { meetings: Meeting[] }) {
           className="flex w-full items-center gap-3 py-3 text-left transition hover:bg-gray-50/60 px-1 rounded-lg"
         >
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100">
-            <Mic className="h-3.5 w-3.5 text-violet-600" />
+            <MicrophoneIcon className="h-3.5 w-3.5 text-violet-600" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-gray-900">{m.title}</p>
             <p className="text-xs text-gray-400">{formatDate(m.created_at)}</p>
           </div>
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" />
         </button>
       ))}
     </div>
@@ -229,7 +228,7 @@ function RecentTasks({ tasks }: { tasks: TaskRecord[] }) {
     return (
       <div className="flex flex-col items-center gap-2 py-8 text-center">
         <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100">
-          <CheckSquare className="h-5 w-5 text-gray-400" />
+          <ClipboardDocumentCheckIcon className="h-5 w-5 text-gray-400" />
         </div>
         <p className="text-sm text-gray-400">No tasks yet</p>
       </div>
@@ -256,7 +255,7 @@ function RecentTasks({ tasks }: { tasks: TaskRecord[] }) {
             <p className="truncate text-sm font-medium text-gray-900">{t.title}</p>
             <p className="text-xs text-gray-400">{timeAgo(t.created_at)}</p>
           </div>
-          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+          <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" />
         </button>
       ))}
     </div>
@@ -298,7 +297,7 @@ function ActivityPanel({
               'flex items-center gap-1.5 rounded-t-lg px-3.5 py-2 text-sm font-medium transition',
               tab === t.id
                 ? 'border-b-2 border-violet-600 text-violet-700'
-                : 'text-gray-500 hover:text-gray-800',
+                : 'text-gray-500 hover:text-gray-800'
             )}
           >
             {t.label}
@@ -306,7 +305,7 @@ function ActivityPanel({
               <span
                 className={cn(
                   'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
-                  tab === t.id ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500',
+                  tab === t.id ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500'
                 )}
               >
                 {t.count}
@@ -322,7 +321,7 @@ function ActivityPanel({
         {tab === 'actions' && (
           <div className="space-y-2">
             <QuickAction
-              icon={Mic}
+              icon={MicrophoneIcon}
               label="Start a meeting"
               description="Invite Lira to a live conversation"
               onClick={() => navigate('/meetings')}
@@ -335,13 +334,13 @@ function ActivityPanel({
               onClick={() => navigate('/org/roles')}
             />
             <QuickAction
-              icon={BookOpen}
+              icon={BookOpenIcon}
               label="Add knowledge"
-              description="Upload docs or crawl your website"
+              description="ArrowUpTrayIcon docs or crawl your website"
               onClick={() => navigate('/org/knowledge')}
             />
             <QuickAction
-              icon={Plus}
+              icon={PlusIcon}
               label="Invite team members"
               description="Grow your workspace"
               onClick={() => navigate('/org/members')}
@@ -358,7 +357,7 @@ function ActivityPanel({
                 onClick={() => navigate('/meetings')}
                 className="mt-3 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
               >
-                View all meetings <ArrowRight className="h-3 w-3" />
+                View all meetings <ArrowRightIcon className="h-3 w-3" />
               </button>
             )}
           </div>
@@ -373,7 +372,7 @@ function ActivityPanel({
                 onClick={() => navigate('/org/tasks')}
                 className="mt-3 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
               >
-                View all tasks <ArrowRight className="h-3 w-3" />
+                View all tasks <ArrowRightIcon className="h-3 w-3" />
               </button>
             )}
           </div>
@@ -413,7 +412,7 @@ function ActivityPanel({
                   onClick={() => navigate('/org/roles')}
                   className="mt-3 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
                 >
-                  Manage interview roles <ArrowRight className="h-3 w-3" />
+                  Manage interview roles <ArrowRightIcon className="h-3 w-3" />
                 </button>
               </>
             )}
@@ -479,14 +478,14 @@ function DeployHeroBar() {
             pollRef.current = null
           }
         } catch {
-          // Bot no longer found on server (404) — treat as terminated
+          // CpuChipIcon no longer found on server (404) — treat as terminated
           setBotState('terminated')
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
         }
       }, 2_000)
     },
-    [setBotState, setBotError],
+    [setBotState, setBotError]
   )
 
   // Restore active bot on mount
@@ -517,7 +516,7 @@ function DeployHeroBar() {
     () => () => {
       if (pollRef.current) clearInterval(pollRef.current)
     },
-    [],
+    []
   )
 
   // Auto-reset on terminate
@@ -545,7 +544,7 @@ function DeployHeroBar() {
         { ai_name: aiName, voice_id: voiceId, personality },
         currentOrgId ?? undefined,
         undefined,
-        meetingType ?? 'meeting',
+        meetingType ?? 'meeting'
       )
       setBotDeployed(res.bot_id, url, res.platform, res.state)
       setMeetingLink('')
@@ -593,7 +592,7 @@ function DeployHeroBar() {
               ? 'border-emerald-200 bg-emerald-50/70'
               : botState === 'error'
                 ? 'border-red-200 bg-red-50/70'
-                : 'border-amber-200 bg-amber-50/70',
+                : 'border-amber-200 bg-amber-50/70'
           )}
         >
           <div className="flex items-center justify-between gap-4">
@@ -605,15 +604,15 @@ function DeployHeroBar() {
                     ? 'bg-emerald-100'
                     : botState === 'error'
                       ? 'bg-red-100'
-                      : 'bg-amber-100',
+                      : 'bg-amber-100'
                 )}
               >
                 {isInProgress ? (
-                  <Loader2 className="h-5 w-5 animate-spin text-amber-600" />
+                  <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-600" />
                 ) : botState === 'active' ? (
-                  <Radio className="h-5 w-5 animate-pulse text-emerald-600" />
+                  <RadioIcon className="h-5 w-5 animate-pulse text-emerald-600" />
                 ) : (
-                  <AlertCircle className="h-5 w-5 text-red-600" />
+                  <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
                 )}
               </div>
               <div>
@@ -624,13 +623,13 @@ function DeployHeroBar() {
                       ? 'text-emerald-800'
                       : botState === 'error'
                         ? 'text-red-800'
-                        : 'text-amber-800',
+                        : 'text-amber-800'
                   )}
                 >
                   {stateLabel[botState] ?? botState}
                 </p>
                 <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
-                  <Video className="h-3 w-3" />
+                  <VideoCameraIcon className="h-3 w-3" />
                   {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
                 </p>
               </div>
@@ -679,9 +678,7 @@ function DeployHeroBar() {
   return (
     <div className="mb-8 max-w-3xl">
       <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-        <h2 className="mb-3.5 text-sm font-semibold text-gray-900">
-          Invite Lira to your meeting
-        </h2>
+        <h2 className="mb-3.5 text-sm font-semibold text-gray-900">Invite Lira to your meeting</h2>
 
         {/* Meeting type chips */}
         <div className="mb-3 flex flex-wrap gap-1.5">
@@ -695,7 +692,7 @@ function DeployHeroBar() {
                   'rounded-full border px-3 py-0.5 text-xs font-medium transition',
                   selected
                     ? 'border-violet-300 bg-violet-50 text-violet-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700',
+                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
                 )}
               >
                 {label}
@@ -725,7 +722,7 @@ function DeployHeroBar() {
                     'rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
                     detectedPlatform === 'google_meet'
                       ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-sky-100 text-sky-700',
+                      : 'bg-sky-100 text-sky-700'
                   )}
                 >
                   {detectedPlatform === 'google_meet' ? 'Meet' : 'Zoom'}
@@ -741,18 +738,18 @@ function DeployHeroBar() {
           >
             {deploying ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
                 Sending…
               </>
             ) : (
-              'Send Lira'
+              'PaperAirplaneIcon Lira'
             )}
           </button>
         </div>
 
         {error && (
           <p className="mt-2.5 flex items-center gap-1.5 text-sm text-red-600">
-            <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+            <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
             {error}
           </p>
         )}
@@ -817,11 +814,15 @@ function DashboardPage() {
     }
     // Clear stale data immediately so the old org's numbers don't show
     // while the new org's data is loading.
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset stale UI before async fetch
     setStats(null)
+
     setMeetings([])
+
     setTasks([])
+
     setInterviews([])
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+
     setLoading(true)
 
     // Stats card numbers come from the dedicated stats endpoint (single call)
@@ -917,14 +918,14 @@ function DashboardPage() {
         <StatCard
           label="Total meetings"
           value={stats?.meetings_total ?? meetings.length}
-          icon={Mic}
+          icon={MicrophoneIcon}
           accent="orange"
           onClick={() => navigate('/meetings')}
         />
         <StatCard
           label="Pending tasks"
           value={stats?.tasks_pending ?? tasks.length}
-          icon={CheckSquare}
+          icon={ClipboardDocumentCheckIcon}
           accent="amber"
           onClick={() => navigate('/org/tasks')}
         />
@@ -950,11 +951,11 @@ function DashboardPage() {
             }
             if (candidates.length === 0) return '—'
             const latest = candidates.sort(
-              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
             )[0]
             return `${latest._kind} · ${timeAgo(latest.created_at)}`
           })()}
-          icon={Clock}
+          icon={ClockIcon}
           accent="teal"
         />
       </div>

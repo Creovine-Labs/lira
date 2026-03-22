@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
-  ArrowLeft,
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  ArrowUpTrayIcon,
   BriefcaseIcon,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  Plus,
-  Sparkles,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react'
+  ChevronDownIcon,
+  ChevronUpIcon,
+  PlusIcon,
+  SparklesIcon,
+  TrashIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore, useInterviewStore } from '@/app/store'
@@ -240,9 +240,9 @@ function SectionCard({
         </div>
         {collapsible &&
           (open ? (
-            <ChevronUp className="w-4 h-4 text-slate-400" />
+            <ChevronUpIcon className="w-4 h-4 text-slate-400" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-slate-400" />
+            <ChevronDownIcon className="w-4 h-4 text-slate-400" />
           ))}
       </div>
       {open && <div className="p-5 space-y-4">{children}</div>}
@@ -398,7 +398,7 @@ function InterviewCreatePage() {
   const [showQuestions, setShowQuestions] = useState(false)
   const [generatingQuestions, setGeneratingQuestions] = useState(false)
   // Resume
-  const [resumeFile, setResumeFile] = useState<File | null>(null)
+  const [resumeFile, setResumeFile] = useState<DocumentIcon | null>(null)
   const resumeRef = useRef<HTMLInputElement>(null)
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -679,7 +679,7 @@ function InterviewCreatePage() {
   if (loadingEdit) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+        <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
       </div>
     )
   }
@@ -693,7 +693,7 @@ function InterviewCreatePage() {
             onClick={() => navigate('/org/roles')}
             className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeftIcon className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-violet-100">
@@ -709,7 +709,7 @@ function InterviewCreatePage() {
             {/* Icon + headline */}
             <div className="text-center space-y-2">
               <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-2 shadow-lg">
-                <Sparkles className="w-7 h-7 text-white" />
+                <SparklesIcon className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
                 What role are you hiring for?
@@ -757,12 +757,12 @@ function InterviewCreatePage() {
             >
               {drafting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <ArrowPathIcon className="w-4 h-4 animate-spin" />
                   Setting up your role…
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <SparklesIcon className="w-4 h-4" />
                   Generate Role Setup
                 </>
               )}
@@ -846,7 +846,7 @@ function InterviewCreatePage() {
           }
           className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeftIcon className="w-5 h-5" />
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 truncate">
@@ -960,7 +960,7 @@ function InterviewCreatePage() {
                   }}
                   className="px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                 >
-                  <Plus className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                  <PlusIcon className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                 </button>
               </div>
               {errors.required_skills && (
@@ -982,7 +982,7 @@ function InterviewCreatePage() {
                       }
                       className="hover:text-red-500"
                     >
-                      <X className="w-3 h-3" />
+                      <XMarkIcon className="w-3 h-3" />
                     </button>
                   </span>
                 ))}
@@ -1069,8 +1069,8 @@ function InterviewCreatePage() {
           <SectionCard title="Candidate Resume">
             <p className="text-xs text-slate-500">
               {editMode && hasExistingResume
-                ? 'A resume is already on file. Upload a new one to replace it.'
-                : "Upload the candidate's resume. Lira will extract their details automatically."}
+                ? 'A resume is already on file. ArrowUpTrayIcon a new one to replace it.'
+                : "ArrowUpTrayIcon the candidate's resume. Lira will extract their details automatically."}
             </p>
             <div
               className={cn(
@@ -1091,11 +1091,11 @@ function InterviewCreatePage() {
               role="button"
               tabIndex={0}
             >
-              <Upload
-                className={cn(
+              <ArrowUpTrayIcon
+                className="cn(
                   'w-5 h-5 shrink-0',
                   resumeFile ? 'text-emerald-500' : 'text-slate-400'
-                )}
+                )"
               />
               {resumeFile ? (
                 <div className="flex-1 min-w-0 flex items-center justify-between">
@@ -1155,9 +1155,9 @@ function InterviewCreatePage() {
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors disabled:opacity-50"
                 >
                   {generatingQuestions ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
                   ) : (
-                    <Sparkles className="w-3.5 h-3.5" />
+                    <SparklesIcon className="w-3.5 h-3.5" />
                   )}
                   {generatingQuestions
                     ? 'Generating...'
@@ -1177,7 +1177,7 @@ function InterviewCreatePage() {
             </div>
             {review.questions.length === 0 && !generatingQuestions && (
               <div className="px-5 py-6 flex flex-col items-center text-center">
-                <Sparkles className="w-6 h-6 text-slate-300 dark:text-slate-600 mb-2" />
+                <SparklesIcon className="w-6 h-6 text-slate-300 dark:text-slate-600 mb-2" />
                 <p className="text-sm text-slate-500 dark:text-slate-400">No questions yet</p>
                 <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
                   Click "Generate Questions" to create interview questions based on the role
@@ -1187,7 +1187,7 @@ function InterviewCreatePage() {
             )}
             {generatingQuestions && review.questions.length === 0 && (
               <div className="px-5 py-6 flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin text-violet-500" />
+                <ArrowPathIcon className="w-5 h-5 animate-spin text-violet-500" />
                 <p className="text-sm text-slate-500">Generating questions...</p>
               </div>
             )}
@@ -1264,7 +1264,7 @@ function InterviewCreatePage() {
                       }
                       className="shrink-0 p-1 text-red-400 hover:text-red-600 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <TrashIcon className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
@@ -1283,7 +1283,7 @@ function InterviewCreatePage() {
                   }
                   className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-violet-400 text-slate-400 hover:text-violet-600 text-sm transition-colors flex items-center justify-center gap-2"
                 >
-                  <Plus className="w-4 h-4" /> Add Question
+                  <PlusIcon className="w-4 h-4" /> Add Question
                 </button>
               </div>
             )}
@@ -1298,11 +1298,15 @@ function InterviewCreatePage() {
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
           >
             {creating ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <ArrowPathIcon className="w-4 h-4 animate-spin" />
             ) : (
               <BriefcaseIcon className="w-4 h-4" />
             )}
-            {editMode ? 'Save Changes' : templateMode ? 'Create Interview' : 'Create Role'}
+            {editMode
+              ? 'ArrowDownOnSquareIcon Changes'
+              : templateMode
+                ? 'Create Interview'
+                : 'Create Role'}
           </button>
         </div>
       </div>

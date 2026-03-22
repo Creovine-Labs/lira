@@ -1,5 +1,12 @@
-import { Hand, Mic, MicOff, Pin, Video, VideoOff, Volume2 } from 'lucide-react'
-
+import {
+  HandRaisedIcon,
+  MapPinIcon,
+  MicrophoneIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+  VideoCameraIcon,
+  VideoCameraSlashIcon,
+} from '@heroicons/react/24/outline'
 import { Avatar, AvatarFallback, AvatarImage, Badge } from '@/components/common'
 import { cn } from '@/lib'
 
@@ -57,20 +64,20 @@ function ParticipantTile({
             </Badge>
             {showActiveSpeaker ? (
               <Badge variant="outline" className="gap-1 bg-emerald-500/10 text-emerald-700">
-                <Volume2 className="h-3 w-3" />
+                <SpeakerWaveIcon className="h-3 w-3" />
                 Speaking
               </Badge>
             ) : null}
             {muted ? (
               <Badge variant="outline" className="gap-1 bg-destructive/10 text-destructive">
-                <MicOff className="h-3 w-3" />
+                <SpeakerXMarkIcon className="h-3 w-3" />
                 Muted
               </Badge>
             ) : null}
             {handRaised ? (
               <Badge variant="outline" className="gap-1 bg-amber-500/10 text-amber-700">
-                <Hand className="h-3 w-3" />
-                Hand Raised
+                <HandRaisedIcon className="h-3 w-3" />
+                HandRaisedIcon Raised
               </Badge>
             ) : null}
           </div>
@@ -80,7 +87,7 @@ function ParticipantTile({
               className="rounded-full bg-background/80 p-1 text-foreground"
               aria-label="Pinned participant"
             >
-              <Pin className="h-3.5 w-3.5" />
+              <MapPinIcon className="h-3.5 w-3.5" />
             </span>
           ) : null}
         </div>
@@ -102,16 +109,16 @@ function ParticipantTile({
               )}
             >
               {muted ? (
-                <MicOff className="h-3.5 w-3.5 text-destructive" />
+                <SpeakerXMarkIcon className="h-3.5 w-3.5 text-destructive" />
               ) : (
-                <Mic className="h-3.5 w-3.5 text-emerald-600" />
+                <MicrophoneIcon className="h-3.5 w-3.5 text-emerald-600" />
               )}
             </span>
             <span className={cn('rounded-full p-1.5', cameraOff ? 'bg-muted' : 'bg-sky-500/20')}>
               {cameraOff ? (
-                <VideoOff className="h-3.5 w-3.5 text-muted-foreground" />
+                <VideoCameraSlashIcon className="h-3.5 w-3.5 text-muted-foreground" />
               ) : (
-                <Video className="h-3.5 w-3.5 text-sky-600" />
+                <VideoCameraIcon className="h-3.5 w-3.5 text-sky-600" />
               )}
             </span>
           </div>

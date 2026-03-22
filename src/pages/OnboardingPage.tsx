@@ -1,15 +1,15 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  Loader2,
-  UserPlus,
-  Plus,
-  ArrowLeft,
-  Sparkles,
-  Pencil,
-  Check,
-  AlertCircle,
-} from 'lucide-react'
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  CheckIcon,
+  ExclamationCircleIcon,
+  PencilIcon,
+  PlusIcon,
+  SparklesIcon,
+  UserPlusIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore } from '@/app/store'
@@ -71,7 +71,7 @@ function CelebrationGraphic() {
       <circle cx="80" cy="80" r="56" stroke="#DDD6FE" strokeWidth="3" />
       {/* Inner fill circle */}
       <circle cx="80" cy="80" r="44" fill="#EDE9FE" />
-      {/* Check circle */}
+      {/* CheckIcon circle */}
       <circle cx="80" cy="80" r="32" fill="#7C3AED" />
       {/* Checkmark */}
       <polyline
@@ -344,7 +344,7 @@ function OnboardingPage() {
         setDescribeError("This website doesn't seem to exist or isn't reachable.")
       } else if (msg.includes('400')) {
         setDescribeError(
-          "We couldn't read this website. Check the URL or write a description manually."
+          "We couldn't read this website. CheckIcon the URL or write a description manually."
         )
       } else {
         setDescribeError('Unable to reach this website. You can write a description manually.')
@@ -466,7 +466,7 @@ function OnboardingPage() {
                   ].map((feat) => (
                     <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
                       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100">
-                        <Check className="h-3 w-3 text-violet-600" />
+                        <CheckIcon className="h-3 w-3 text-violet-600" />
                       </span>
                       {feat}
                     </li>
@@ -492,7 +492,7 @@ function OnboardingPage() {
                     className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-violet-400 hover:bg-violet-50/50"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 transition group-hover:bg-violet-200">
-                      <Plus className="h-5 w-5 text-violet-600" />
+                      <PlusIcon className="h-5 w-5 text-violet-600" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Create an organization</p>
@@ -506,7 +506,7 @@ function OnboardingPage() {
                     className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50/50"
                   >
                     <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 transition group-hover:bg-emerald-200">
-                      <UserPlus className="h-5 w-5 text-emerald-600" />
+                      <UserPlusIcon className="h-5 w-5 text-emerald-600" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Join an organization</p>
@@ -636,12 +636,12 @@ function OnboardingPage() {
                     />
                     {looksLikePartialUrl(website) ? (
                       <p className="flex items-center gap-1.5 text-xs text-amber-600">
-                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        <ExclamationCircleIcon className="h-3 w-3 shrink-0" />
                         Enter a valid URL, e.g. <span className="font-medium">acme.com</span>
                       </p>
                     ) : describeError ? (
                       <p className="flex items-center gap-1.5 text-xs text-red-500">
-                        <AlertCircle className="h-3 w-3 shrink-0" />
+                        <ExclamationCircleIcon className="h-3 w-3 shrink-0" />
                         {describeError}
                       </p>
                     ) : null}
@@ -669,13 +669,13 @@ function OnboardingPage() {
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         } disabled:cursor-not-allowed disabled:opacity-40`}
                       >
-                        <Sparkles className="h-3 w-3" />
+                        <SparklesIcon className="h-3 w-3" />
                         {describingUrl ? 'Generating…' : 'Let Lira write it'}
                       </button>
                     </div>
                     {describingUrl && (
                       <div className="flex items-center gap-2 text-xs text-violet-600">
-                        <Loader2 className="h-3 w-3 animate-spin" />
+                        <ArrowPathIcon className="h-3 w-3 animate-spin" />
                         Lira is reading your website…
                       </div>
                     )}
@@ -696,7 +696,7 @@ function OnboardingPage() {
                             onClick={() => setEditingDescription(false)}
                             className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500"
                           >
-                            <Check className="h-3 w-3" />
+                            <CheckIcon className="h-3 w-3" />
                             Done editing
                           </button>
                         )}
@@ -711,7 +711,7 @@ function OnboardingPage() {
                           onClick={() => setEditingDescription(true)}
                           className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500"
                         >
-                          <Pencil className="h-3 w-3" />
+                          <PencilIcon className="h-3 w-3" />
                           Edit description
                         </button>
                       </>
@@ -772,7 +772,7 @@ function OnboardingPage() {
                 onClick={goBack}
                 className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
               >
-                <ArrowLeft className="h-4 w-4" />
+                <ArrowLeftIcon className="h-4 w-4" />
                 Back
               </button>
             ) : (
@@ -806,7 +806,7 @@ function OnboardingPage() {
               >
                 {creating ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
                     Creating…
                   </span>
                 ) : (
@@ -830,12 +830,12 @@ function OnboardingPage() {
               >
                 {joining ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
                     Joining…
                   </span>
                 ) : validating ? (
                   <span className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
                     Validating…
                   </span>
                 ) : validatedOrg ? (

@@ -1,27 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
-  Bell,
-  BookOpen,
+  ArrowPathIcon,
+  ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  BellIcon,
+  BookOpenIcon,
   BriefcaseIcon,
-  Building2,
-  ChevronDown,
-  ClipboardList,
-  FileText,
-  LayoutDashboard,
-  Loader2,
-  LogOut,
-  Menu,
-  Mic,
-  Plus,
-  Settings,
-  Users,
-  CheckSquare,
-  X,
-  User,
-  ChevronsUpDown,
-} from 'lucide-react'
-
+  BuildingOffice2Icon,
+  ChevronDownIcon,
+  ChevronUpDownIcon,
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentListIcon,
+  Cog6ToothIcon,
+  DocumentTextIcon,
+  MicrophoneIcon,
+  PlusIcon,
+  Squares2X2Icon,
+  UserIcon,
+  UsersIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import {
   useAuthStore,
   useOrgStore,
@@ -51,45 +50,49 @@ function useSidebarBadges() {
   const { entries, readTaskNotifIds, meetingSeenAt, interviewSeenAt } = useNotifStore()
   // Task badge: unread = task entries NOT individually marked read via detail view
   const taskBadge = entries.filter(
-    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id),
+    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id)
   ).length
   const meetingBadge = entries.filter(
-    (e) => e.kind === 'meeting_ended' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt),
+    (e) => e.kind === 'meeting_ended' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt)
   ).length
   const interviewBadge = entries.filter(
-    (e) => e.kind === 'interview' && (interviewSeenAt === 0 || e.createdAt > interviewSeenAt),
+    (e) => e.kind === 'interview' && (interviewSeenAt === 0 || e.createdAt > interviewSeenAt)
   ).length
-  return { '/org/tasks': taskBadge, '/meetings': meetingBadge, '/org/roles': interviewBadge } as Record<string, number>
+  return {
+    '/org/tasks': taskBadge,
+    '/meetings': meetingBadge,
+    '/org/roles': interviewBadge,
+  } as Record<string, number>
 }
 
 // ── Sidebar nav structure ─────────────────────────────────────────────────────
 const NAV = [
   {
     group: null,
-    items: [{ to: '/dashboard', icon: LayoutDashboard, label: 'Home' }],
+    items: [{ to: '/dashboard', icon: Squares2X2Icon, label: 'Home' }],
   },
   {
     group: 'Conversations',
     items: [
-      { to: '/meetings', icon: Mic, label: 'Meetings' },
+      { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
       { to: '/org/roles', icon: BriefcaseIcon, label: 'Interviews' },
     ],
   },
   {
     group: 'Workspace',
     items: [
-      { to: '/org/knowledge', icon: BookOpen, label: 'Knowledge Base' },
-      { to: '/org/documents', icon: FileText, label: 'Documents' },
-      { to: '/org/tasks', icon: CheckSquare, label: 'Tasks' },
+      { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
+      { to: '/org/documents', icon: DocumentTextIcon, label: 'Documents' },
+      { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
     ],
   },
   {
     group: 'Team',
-    items: [{ to: '/org/members', icon: Users, label: 'Members' }],
+    items: [{ to: '/org/members', icon: UsersIcon, label: 'Members' }],
   },
 ]
 
-const BOTTOM_NAV = [{ to: '/settings', icon: Settings, label: 'Settings' }]
+const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Cog6ToothIcon' }]
 
 // ── Org switcher dropdown ──────────────────────────────────────────────────────
 function OrgSwitcher() {
@@ -124,7 +127,7 @@ function OrgSwitcher() {
         <span className="min-w-0 flex-1 truncate text-left">
           {currentOrg?.name ?? 'Select org'}
         </span>
-        <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        <ChevronUpDownIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
       </button>
 
       {open && (
@@ -171,7 +174,7 @@ function OrgSwitcher() {
             }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
           >
-            <Plus className="h-4 w-4 text-gray-400" />
+            <PlusIcon className="h-4 w-4 text-gray-400" />
             New organization
           </button>
         </div>
@@ -180,7 +183,7 @@ function OrgSwitcher() {
   )
 }
 
-// ── User profile dropdown ─────────────────────────────────────────────────────
+// ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
   const { userName, userEmail, userPicture, userId } = useAuthStore()
   const navigate = useNavigate()
@@ -206,7 +209,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
         {userPicture ? (
           <img
             src={userPicture}
-            alt={userName ?? 'User'}
+            alt={userName ?? 'UserIcon'}
             className="h-7 w-7 rounded-full object-cover ring-1 ring-gray-200"
           />
         ) : (
@@ -217,7 +220,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
         <span className="text-sm font-medium text-gray-700">
           {userName?.split(' ')[0] ?? 'Account'}
         </span>
-        <ChevronDown className="h-3.5 w-3.5 text-gray-400" />
+        <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
       </button>
 
       {open && (
@@ -229,7 +232,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
           >
-            <User className="h-4 w-4 text-gray-400" />
+            <UserIcon className="h-4 w-4 text-gray-400" />
             My Profile
           </button>
           <div className="my-1 border-t border-gray-100" />
@@ -240,7 +243,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-600 transition hover:bg-red-50"
           >
-            <LogOut className="h-4 w-4" />
+            <ArrowRightOnRectangleIcon className="h-4 w-4" />
             Sign out
           </button>
         </div>
@@ -255,7 +258,8 @@ function NotificationBell() {
   const { token, userEmail, userName } = useAuthStore()
   const { currentOrgId } = useOrgStore()
   const lastTerminatedAt = useBotStore((s) => s.lastTerminatedAt)
-  const { entries, addNotif, removeNotif, readTaskNotifIds, meetingSeenAt, markMeetingsSeen } = useNotifStore()
+  const { entries, addNotif, removeNotif, readTaskNotifIds, meetingSeenAt, markMeetingsSeen } =
+    useNotifStore()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -275,7 +279,7 @@ function NotificationBell() {
                 title: n.task_title,
                 subtitle: `Assigned to you by ${n.assigned_by}`,
                 link: `/org/tasks/${n.task_id}`,
-              }),
+              })
             )
         })
         .catch(() => {})
@@ -295,7 +299,7 @@ function NotificationBell() {
                 title: t.title,
                 subtitle: t.session_id ? 'Assigned to you · from meeting' : 'Assigned to you',
                 link: `/org/tasks/${t.task_id}`,
-              }),
+              })
             )
           })
           .catch(() => {})
@@ -330,10 +334,10 @@ function NotificationBell() {
 
   // Unread count: task entries not yet individually read + unseen meetings
   const unreadTaskCount = entries.filter(
-    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id),
+    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id)
   ).length
   const unreadOtherCount = entries.filter(
-    (e) => e.kind !== 'task' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt),
+    (e) => e.kind !== 'task' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt)
   ).length
   const unreadCount = unreadTaskCount + unreadOtherCount
 
@@ -343,8 +347,8 @@ function NotificationBell() {
   }
 
   const kindIcon: Record<string, React.ReactNode> = {
-    task: <ClipboardList className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />,
-    meeting_ended: <Mic className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />,
+    task: <ClipboardDocumentListIcon className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />,
+    meeting_ended: <MicrophoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />,
     interview: <BriefcaseIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />,
   }
 
@@ -354,7 +358,7 @@ function NotificationBell() {
         onClick={handleOpen}
         className="relative flex h-8 w-8 items-center justify-center rounded-xl text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
       >
-        <Bell className="h-4 w-4" />
+        <BellIcon className="h-4 w-4" />
         {unreadCount > 0 && (
           <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
             {unreadCount > 9 ? '9+' : unreadCount}
@@ -367,13 +371,13 @@ function NotificationBell() {
           <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
             <h3 className="text-sm font-semibold text-gray-900">Notifications</h3>
             <button onClick={() => setOpen(false)}>
-              <X className="h-4 w-4 text-gray-400" />
+              <XMarkIcon className="h-4 w-4 text-gray-400" />
             </button>
           </div>
           <div className="max-h-72 overflow-y-auto">
             {entries.length === 0 ? (
               <div className="flex flex-col items-center gap-2 py-8 text-center">
-                <Bell className="h-8 w-8 text-gray-200" />
+                <BellIcon className="h-8 w-8 text-gray-200" />
                 <p className="text-sm text-gray-400">No new notifications</p>
               </div>
             ) : (
@@ -400,7 +404,7 @@ function NotificationBell() {
                       className="mt-0.5 shrink-0 rounded p-0.5 text-gray-300 hover:text-gray-500"
                       aria-label="Dismiss"
                     >
-                      <X className="h-3 w-3" />
+                      <XMarkIcon className="h-3 w-3" />
                     </button>
                   </div>
                 ))}
@@ -476,7 +480,7 @@ function AppShell() {
   if (orgLoading && organizations.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -487,7 +491,7 @@ function AppShell() {
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100">
-            <Building2 className="h-6 w-6 text-violet-600" />
+            <BuildingOffice2Icon className="h-6 w-6 text-violet-600" />
           </div>
           <p className="text-sm font-medium text-gray-900">No organization yet</p>
           <p className="mt-1 text-sm text-gray-500">
@@ -528,7 +532,7 @@ function AppShell() {
                 onClick={() => setSidebarOpen(false)}
                 className="rounded-lg p-1 text-gray-400 hover:bg-gray-100"
               >
-                <X className="h-4 w-4" />
+                <XMarkIcon className="h-4 w-4" />
               </button>
             </div>
             <div className="mb-4">
@@ -669,7 +673,7 @@ function AppShell() {
               onClick={() => setSidebarOpen(true)}
               className="flex h-8 w-8 items-center justify-center rounded-xl text-gray-500 transition hover:bg-gray-100 md:hidden"
             >
-              <Menu className="h-4 w-4" />
+              <Bars3Icon className="h-4 w-4" />
             </button>
             <NavLink to="/dashboard" className="md:hidden">
               <LiraLogo size="sm" />

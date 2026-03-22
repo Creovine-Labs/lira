@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Lock, Plus, Save, Trash2, X } from 'lucide-react'
+import {
+  ArrowDownOnSquareIcon,
+  ArrowPathIcon,
+  LockClosedIcon,
+  PlusIcon,
+  TrashIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -109,7 +116,7 @@ function OrgSettingsPage() {
     } finally {
       setLoading(false)
     }
-  }, [currentOrgId])
+  }, [currentOrgId, userId])
 
   useEffect(() => {
     loadOrg()
@@ -137,7 +144,7 @@ function OrgSettingsPage() {
       }
       await updateOrganization(currentOrgId, { name: name.trim(), profile })
       updateOrgInStore(currentOrgId, { name: name.trim() })
-      toast.success('Settings saved')
+      toast.success('Cog6ToothIcon saved')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save')
     } finally {
@@ -148,7 +155,7 @@ function OrgSettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -158,7 +165,7 @@ function OrgSettingsPage() {
   return (
     <div className="space-y-8 pb-8">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Organization Settings</h1>
+        <h1 className="text-xl font-bold text-foreground">Organization Cog6ToothIcon</h1>
         {name && (
           <p className="mt-0.5 text-base font-bold text-violet-600 dark:text-violet-400">{name}</p>
         )}
@@ -171,7 +178,7 @@ function OrgSettingsPage() {
       {/* Read-only notice for plain members */}
       {!canEdit && (
         <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <Lock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <LockClosedIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
           <p className="text-sm text-amber-700 dark:text-amber-300">
             You're viewing these settings as a <strong>member</strong>. Only admins and the owner
             can make changes. Ask your organization owner to promote you to admin if you need
@@ -289,7 +296,7 @@ function OrgSettingsPage() {
                     onClick={() => setValues(values.filter((_, j) => j !== i))}
                     className="ml-0.5 hover:text-red-500"
                   >
-                    <X className="h-3 w-3" />
+                    <XMarkIcon className="h-3 w-3" />
                   </button>
                 </span>
               ))}
@@ -318,7 +325,7 @@ function OrgSettingsPage() {
                 disabled={!canEdit}
                 className="rounded-lg border px-3 py-2 text-sm hover:bg-muted disabled:opacity-50"
               >
-                <Plus className="h-4 w-4" />
+                <PlusIcon className="h-4 w-4" />
               </button>
             </div>
           </Field>
@@ -336,7 +343,7 @@ function OrgSettingsPage() {
             disabled={!canEdit}
             className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <PlusIcon className="h-3.5 w-3.5" />
             Add
           </button>
         </div>
@@ -376,7 +383,7 @@ function OrgSettingsPage() {
                   onClick={() => setProducts(products.filter((_, j) => j !== i))}
                   className="self-start p-1 text-muted-foreground hover:text-red-500"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
             ))}
@@ -393,7 +400,7 @@ function OrgSettingsPage() {
             disabled={!canEdit}
             className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <PlusIcon className="h-3.5 w-3.5" />
             Add
           </button>
         </div>
@@ -433,7 +440,7 @@ function OrgSettingsPage() {
                   onClick={() => setTerminology(terminology.filter((_, j) => j !== i))}
                   className="self-start p-1 text-muted-foreground hover:text-red-500"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
             ))}
@@ -456,15 +463,19 @@ function OrgSettingsPage() {
         />
       </section>
 
-      {/* Save */}
+      {/* ArrowDownOnSquareIcon */}
       <div className="flex justify-end">
         <button
           onClick={handleSave}
           disabled={saving || !name.trim() || !canEdit}
           className="flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save Settings
+          {saving ? (
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowDownOnSquareIcon className="h-4 w-4" />
+          )}
+          ArrowDownOnSquareIcon Cog6ToothIcon
         </button>
       </div>
     </div>

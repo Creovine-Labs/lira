@@ -1,27 +1,32 @@
 import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
-  Calendar,
-  Check,
-  Clock,
-  Loader2,
-  MessageSquare,
-  Pencil,
-  Sparkles,
-  User,
-  Bot,
-  ChevronDown,
-  ChevronUp,
-  Copy,
-  RefreshCw,
-  Share2,
-  X,
-} from 'lucide-react'
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  CalendarIcon,
+  ChatBubbleLeftIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ClockIcon,
+  CpuChipIcon,
+  DocumentDuplicateIcon,
+  PencilIcon,
+  ShareIcon,
+  SparklesIcon,
+  UserIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import ReactMarkdown from 'react-markdown'
 
 import { useAuthStore } from '@/app/store'
-import { getMeeting, getMeetingSummary, updateMeeting, type Meeting, type Message } from '@/services/api'
+import {
+  getMeeting,
+  getMeetingSummary,
+  updateMeeting,
+  type Meeting,
+  type Message,
+} from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 import { cn } from '@/lib'
 
@@ -72,7 +77,7 @@ function TranscriptBubble({ msg }: { msg: Message }) {
           isAi ? 'bg-violet-500/20 text-violet-400' : 'bg-slate-500/20 text-slate-400'
         )}
       >
-        {isAi ? <Bot className="h-3.5 w-3.5" /> : <User className="h-3.5 w-3.5" />}
+        {isAi ? <CpuChipIcon className="h-3.5 w-3.5" /> : <UserIcon className="h-3.5 w-3.5" />}
       </div>
 
       {/* Bubble */}
@@ -97,8 +102,13 @@ function TranscriptBubble({ msg }: { msg: Message }) {
 // ── Meeting type metadata ────────────────────────────────────────────────────
 
 const MEETING_TYPE_LABELS: Record<string, string> = {
-  meeting: 'General', standup: 'Stand-up', one_on_one: '1-on-1',
-  technical: 'Technical', brainstorming: 'Brainstorm', sales: 'Sales', interview: 'Interview',
+  meeting: 'General',
+  standup: 'Stand-up',
+  one_on_one: '1-on-1',
+  technical: 'Technical',
+  brainstorming: 'Brainstorm',
+  sales: 'Sales',
+  interview: 'Interview',
 }
 
 const MEETING_TYPE_COLORS: Record<string, string> = {
@@ -217,7 +227,7 @@ function MeetingDetailPage() {
     [id, summaryLoading, summaryMode, meeting]
   )
 
-  // Copy summary to clipboard
+  // DocumentDuplicateIcon summary to clipboard
   const handleCopy = useCallback(() => {
     if (!summary) return
     // Strip markdown formatting for clean clipboard text
@@ -279,12 +289,17 @@ function MeetingDetailPage() {
 
   async function handleSaveTitle() {
     const trimmed = titleDraft.trim()
-    if (!trimmed || !id) { setEditingTitle(false); return }
+    if (!trimmed || !id) {
+      setEditingTitle(false)
+      return
+    }
     setSavingTitle(true)
     try {
       await updateMeeting(id, { title: trimmed })
-      setMeeting((prev) => prev ? { ...prev, title: trimmed } : prev)
-    } catch { /* ignore */ } finally {
+      setMeeting((prev) => (prev ? { ...prev, title: trimmed } : prev))
+    } catch {
+      /* ignore */
+    } finally {
       setSavingTitle(false)
       setEditingTitle(false)
     }
@@ -296,7 +311,7 @@ function MeetingDetailPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-violet-50/30 dark:to-violet-950/20">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+          <ArrowPathIcon className="h-8 w-8 animate-spin text-violet-500" />
           <p className="text-sm text-muted-foreground">Loading meeting…</p>
         </div>
       </main>
@@ -335,7 +350,7 @@ function MeetingDetailPage() {
             onClick={() => navigate('/meetings')}
             className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm text-muted-foreground transition hover:bg-accent hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeftIcon className="h-4 w-4" />
             Meetings
           </button>
           <LiraLogo size="sm" />
@@ -360,11 +375,24 @@ function MeetingDetailPage() {
                   }}
                   maxLength={200}
                 />
-                <button onClick={handleSaveTitle} disabled={savingTitle} className="rounded p-1 text-emerald-600 hover:bg-emerald-50" title="Save">
-                  {savingTitle ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                <button
+                  onClick={handleSaveTitle}
+                  disabled={savingTitle}
+                  className="rounded p-1 text-emerald-600 hover:bg-emerald-50"
+                  title="ArrowDownOnSquareIcon"
+                >
+                  {savingTitle ? (
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckIcon className="h-4 w-4" />
+                  )}
                 </button>
-                <button onClick={() => setEditingTitle(false)} className="rounded p-1 text-gray-400 hover:bg-gray-100" title="Cancel">
-                  <X className="h-4 w-4" />
+                <button
+                  onClick={() => setEditingTitle(false)}
+                  className="rounded p-1 text-gray-400 hover:bg-gray-100"
+                  title="Cancel"
+                >
+                  <XMarkIcon className="h-4 w-4" />
                 </button>
               </div>
             ) : (
@@ -373,11 +401,14 @@ function MeetingDetailPage() {
                   {meeting.title || 'Untitled Meeting'}
                 </h2>
                 <button
-                  onClick={() => { setTitleDraft(meeting.title || ''); setEditingTitle(true) }}
+                  onClick={() => {
+                    setTitleDraft(meeting.title || '')
+                    setEditingTitle(true)
+                  }}
                   className="mt-1 shrink-0 rounded p-1 text-muted-foreground/40 hover:text-foreground hover:bg-gray-100 transition"
                   title="Edit title"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilIcon className="h-3.5 w-3.5" />
                 </button>
               </>
             )}
@@ -386,25 +417,27 @@ function MeetingDetailPage() {
           {/* Meeting type badge */}
           {meeting.meeting_type && (
             <div className="mt-2">
-              <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
-                MEETING_TYPE_COLORS[meeting.meeting_type] ?? 'bg-gray-100 text-gray-500'
-              }`}>
+              <span
+                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide ${
+                  MEETING_TYPE_COLORS[meeting.meeting_type] ?? 'bg-gray-100 text-gray-500'
+                }`}
+              >
                 {MEETING_TYPE_LABELS[meeting.meeting_type] ?? meeting.meeting_type}
               </span>
             </div>
           )}
           <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
+              <CalendarIcon className="h-4 w-4" />
               {formatDate(meeting.created_at)}
             </span>
             <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
+              <ClockIcon className="h-4 w-4" />
               {formatTime(meeting.created_at)} – {formatTime(meeting.updated_at)} ·{' '}
               {duration(meeting.created_at, meeting.updated_at)}
             </span>
             <span className="flex items-center gap-1.5">
-              <MessageSquare className="h-4 w-4" />
+              <ChatBubbleLeftIcon className="h-4 w-4" />
               {msgCount} messages ({participantMsgCount} from participants, {aiMsgCount} from Lira)
             </span>
           </div>
@@ -414,7 +447,7 @@ function MeetingDetailPage() {
         <div className="rounded-xl border bg-card">
           <div className="flex items-center justify-between px-5 py-4 border-b">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-violet-500" />
+              <SparklesIcon className="h-5 w-5 text-violet-500" />
               <h3 className="font-semibold text-foreground">Meeting Summary</h3>
               {summary && summaryGeneratedAt && (
                 <span className="text-[10px] text-muted-foreground">
@@ -434,7 +467,7 @@ function MeetingDetailPage() {
                 className="rounded-full border border-violet-500/30 bg-violet-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-500 hover:shadow-md disabled:opacity-50 disabled:hover:shadow-sm"
               >
                 <span className="flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" />
+                  <SparklesIcon className="h-3.5 w-3.5" />
                   Generate Summary
                 </span>
               </button>
@@ -452,7 +485,7 @@ function MeetingDetailPage() {
 
             {summaryLoading && (
               <div className="flex items-center gap-3 py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
+                <ArrowPathIcon className="h-5 w-5 animate-spin text-violet-500" />
                 <p className="text-sm text-muted-foreground">
                   Generating {summaryMode} summary from {msgCount} messages…
                 </p>
@@ -520,7 +553,7 @@ function MeetingDetailPage() {
                     disabled={summaryLoading}
                     className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md disabled:opacity-50"
                   >
-                    <RefreshCw className="h-3.5 w-3.5" />
+                    <ArrowPathIcon className="h-3.5 w-3.5" />
                     Regenerate
                   </button>
 
@@ -532,21 +565,21 @@ function MeetingDetailPage() {
                     disabled={summaryLoading}
                     className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-50 px-4 py-2 text-xs font-medium text-violet-700 shadow-sm transition hover:bg-violet-100 hover:shadow-md dark:bg-violet-500/10 dark:text-violet-400 dark:hover:bg-violet-500/20 disabled:opacity-50"
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <SparklesIcon className="h-3.5 w-3.5" />
                     {summaryMode === 'short' ? 'Detailed Summary' : 'Shorter Summary'}
                   </button>
 
-                  {/* Copy */}
+                  {/* DocumentDuplicateIcon */}
                   <button
                     onClick={handleCopy}
                     className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md"
                   >
                     {copied ? (
-                      <Check className="h-3.5 w-3.5 text-green-500" />
+                      <CheckIcon className="h-3.5 w-3.5 text-green-500" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5" />
+                      <DocumentDuplicateIcon className="h-3.5 w-3.5" />
                     )}
-                    {copied ? 'Copied!' : 'Copy'}
+                    {copied ? 'Copied!' : 'DocumentDuplicateIcon'}
                   </button>
 
                   {/* Share dropdown */}
@@ -555,7 +588,7 @@ function MeetingDetailPage() {
                       onClick={() => setShareOpen((v) => !v)}
                       className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md"
                     >
-                      <Share2 className="h-3.5 w-3.5" />
+                      <ShareIcon className="h-3.5 w-3.5" />
                       Share
                     </button>
                     {shareOpen && (
@@ -577,14 +610,15 @@ function MeetingDetailPage() {
                             onClick={() => handleShare('twitter')}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
                           >
-                            <span className="text-base">🐦</span> Twitter / X
+                            <span className="text-base">🐦</span> Twitter / XMarkIcon
                           </button>
                           <div className="my-1 border-t border-border/50" />
                           <button
                             onClick={() => handleShare('clipboard')}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
                           >
-                            <Copy className="h-4 w-4" /> Copy to clipboard
+                            <DocumentDuplicateIcon className="h-4 w-4" /> DocumentDuplicateIcon to
+                            clipboard
                           </button>
                         </div>
                       </div>
@@ -604,14 +638,14 @@ function MeetingDetailPage() {
               className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-accent/50"
             >
               <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+                <ChatBubbleLeftIcon className="h-5 w-5 text-muted-foreground" />
                 <h3 className="font-semibold text-foreground">Full Transcript</h3>
                 <span className="text-xs text-muted-foreground">({msgCount} messages)</span>
               </div>
               {showTranscript ? (
-                <ChevronUp className="h-5 w-5 text-muted-foreground" />
+                <ChevronUpIcon className="h-5 w-5 text-muted-foreground" />
               ) : (
-                <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                <ChevronDownIcon className="h-5 w-5 text-muted-foreground" />
               )}
             </button>
 

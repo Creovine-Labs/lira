@@ -1,5 +1,4 @@
-import { AudioLines, Bot, Sparkles } from 'lucide-react'
-
+import { CpuChipIcon, SparklesIcon, SpeakerWaveIcon } from '@heroicons/react/24/outline'
 import { Avatar, AvatarFallback, Badge, Button, Stack } from '@/components/common'
 import { cn } from '@/lib'
 
@@ -34,11 +33,11 @@ function AiParticipantCard({
         <div className="flex items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge className="gap-1 bg-sky-600 text-white hover:bg-sky-600">
-              <Bot className="h-3 w-3" />
+              <CpuChipIcon className="h-3 w-3" />
               AI Participant
             </Badge>
             <Badge variant="outline" className="gap-1 border-sky-400/40 bg-sky-500/10 text-sky-700">
-              <Sparkles className="h-3 w-3" />
+              <SparklesIcon className="h-3 w-3" />
               {statusMap[status]}
             </Badge>
           </div>
@@ -48,7 +47,7 @@ function AiParticipantCard({
           <div className="flex min-w-0 items-center gap-2">
             <Avatar className="ring-2 ring-sky-400/40">
               <AvatarFallback className="bg-sky-600 text-white">
-                <Bot className="h-4 w-4" />
+                <CpuChipIcon className="h-4 w-4" />
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0">
@@ -59,7 +58,7 @@ function AiParticipantCard({
 
           <div className="flex items-center gap-2">
             <span className="rounded-full bg-sky-500/15 p-1.5 text-sky-700">
-              <AudioLines className={cn('h-3.5 w-3.5', status === 'speaking' && 'animate-pulse')} />
+              <SpeakerWaveIcon className="cn('h-3.5 w-3.5', status === 'speaking' && 'animate-pulse')" />
             </span>
             <Button variant="outline" size="sm" className="border-sky-300/50 bg-background/70">
               Prompt

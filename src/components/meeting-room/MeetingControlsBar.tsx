@@ -1,5 +1,11 @@
-import { Hand, MessageSquare, Mic, PhoneOff, ScreenShare, Video } from 'lucide-react'
-
+import {
+  ChatBubbleLeftIcon,
+  HandRaisedIcon,
+  MicrophoneIcon,
+  PhoneXMarkIcon,
+  PresentationChartBarIcon,
+  VideoCameraIcon,
+} from '@heroicons/react/24/outline'
 import { Button, Cluster } from '@/components/common'
 
 type MeetingControlsBarProps = {
@@ -18,22 +24,22 @@ function MeetingControlsBar({ onLeave, isConnected }: MeetingControlsBarProps) {
             aria-label="Toggle microphone"
             disabled={!isConnected}
           >
-            <Mic />
+            <MicrophoneIcon />
           </Button>
           <Button variant="secondary" size="icon" aria-label="Toggle camera">
-            <Video />
+            <VideoCameraIcon />
           </Button>
           <Button variant="secondary" size="icon" aria-label="Share screen">
-            <ScreenShare />
+            <PresentationChartBarIcon />
           </Button>
           <Button variant="secondary" size="icon" aria-label="Open chat">
-            <MessageSquare />
+            <ChatBubbleLeftIcon />
           </Button>
           <Button variant="secondary" size="icon" aria-label="Raise hand">
-            <Hand />
+            <HandRaisedIcon />
           </Button>
           <Button variant="destructive" size="icon" aria-label="Leave meeting" onClick={onLeave}>
-            <PhoneOff />
+            <PhoneXMarkIcon />
           </Button>
         </Cluster>
       </div>

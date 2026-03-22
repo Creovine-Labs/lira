@@ -1,8 +1,14 @@
 import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
-import { ArrowLeft, Eye, EyeOff, Lock, Mail, User } from 'lucide-react'
-
+import {
+  ArrowLeftIcon,
+  EnvelopeIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  LockClosedIcon,
+  UserIcon,
+} from '@heroicons/react/24/outline'
 import { useAuthStore } from '@/app/store'
 import { env } from '@/env'
 import {
@@ -220,9 +226,15 @@ function GoogleIcon() {
 
 // ── Auth panel ────────────────────────────────────────────────────────────────
 
-function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
+function LoginForm({
+  onLogin,
+  initialView,
+}: {
+  onLogin: (isNew: boolean) => void
+  initialView?: AuthView
+}) {
   const { setCredentials } = useAuthStore()
-  const [authView, setAuthView] = useState<AuthView>('landing')
+  const [authView, setAuthView] = useState<AuthView>(initialView ?? 'landing')
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -457,7 +469,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                         Email
                       </label>
                       <div className="relative">
-                        <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <input
                           id="login-email"
                           type="email"
@@ -475,7 +487,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                         Password
                       </label>
                       <div className="relative">
-                        <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                        <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                         <input
                           id="login-password"
                           type={showPassword ? 'text' : 'password'}
@@ -493,9 +505,9 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                           className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                         >
                           {showPassword ? (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeSlashIcon className="h-4 w-4" />
                           ) : (
-                            <Eye className="h-4 w-4" />
+                            <EyeIcon className="h-4 w-4" />
                           )}
                         </button>
                       </div>
@@ -531,7 +543,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                     Full name <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <User className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     <input
                       id="signup-fullname"
                       type="text"
@@ -563,7 +575,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                     Email address <span className="text-red-500">*</span>
                   </label>
                   <div className="relative">
-                    <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                     <input
                       id="signup-email-field"
                       type="email"
@@ -601,7 +613,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                       Password <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
-                      <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <LockClosedIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       <input
                         id="signup-password-field"
                         type={showPassword ? 'text' : 'password'}
@@ -619,9 +631,9 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                         className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
+                          <EyeSlashIcon className="h-4 w-4" />
                         ) : (
-                          <Eye className="h-4 w-4" />
+                          <EyeIcon className="h-4 w-4" />
                         )}
                       </button>
                     </div>
@@ -646,7 +658,7 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
                   onClick={goBack}
                   className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeftIcon className="h-4 w-4" />
                   Back
                 </button>
               ) : (
@@ -746,15 +758,19 @@ function LoginForm({ onLogin }: { onLogin: (isNew: boolean) => void }) {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
-function HomePage() {
+interface HomePageProps {
+  /** Force the initial auth view. Defaults to 'landing' (shows signup options). */
+  defaultView?: AuthView
+}
+
+function HomePage({ defaultView }: HomePageProps) {
   const { token } = useAuthStore()
   const navigate = useNavigate()
 
-  const [stage, setStage] = useState<'login' | 'home'>(() => (token ? 'home' : 'login'))
-
-  // Keep stage in sync with token (handles sign-out from any location)
-  const derivedStage = token ? 'home' : 'login'
-  if (stage !== derivedStage) setStage(derivedStage)
+  // Authenticated — redirect to dashboard
+  if (token) {
+    return <Navigate to="/dashboard" replace />
+  }
 
   function handleLogin(isNew: boolean) {
     if (isNew) {
@@ -764,13 +780,7 @@ function HomePage() {
     }
   }
 
-  // Authenticated — redirect to dashboard
-  if (stage === 'home') {
-    return <Navigate to="/dashboard" replace />
-  }
-
-  // Unauthenticated — full-screen split-panel auth
-  return <LoginForm onLogin={handleLogin} />
+  return <LoginForm onLogin={handleLogin} initialView={defaultView} />
 }
 
 export { HomePage }

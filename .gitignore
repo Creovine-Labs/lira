@@ -32,3 +32,4 @@ test-results
 .env.local
 .env.*.local
 .vercel
+public/participants/*.mov

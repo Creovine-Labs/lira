@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Bot, Mic, MicOff, PhoneOff, Send, AudioLines, CheckSquare, Building2 } from 'lucide-react'
-
+import {
+  BuildingOffice2Icon,
+  ClipboardDocumentCheckIcon,
+  CpuChipIcon,
+  MicrophoneIcon,
+  PaperAirplaneIcon,
+  PhoneXMarkIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+} from '@heroicons/react/24/outline'
 import { useAuthStore } from '@/app/store'
 import { useOrgStore } from '@/app/store'
 import type { AiStatus, TranscriptLine } from '@/app/store'
@@ -108,7 +116,7 @@ function MeetingPage() {
                     htmlFor="org-select"
                     className="mb-1.5 block text-sm font-medium text-slate-200"
                   >
-                    <Building2 className="inline h-3.5 w-3.5 mr-1 opacity-70" />
+                    <BuildingOffice2Icon className="inline h-3.5 w-3.5 mr-1 opacity-70" />
                     Link to organization{' '}
                     <span className="text-slate-500 font-normal">(optional)</span>
                   </label>
@@ -195,7 +203,7 @@ function MeetingPage() {
       {/* Task created toast */}
       {taskToast && (
         <div className="fixed bottom-24 left-1/2 z-50 -translate-x-1/2 flex items-center gap-2 rounded-xl border border-violet-500/40 bg-slate-900/95 px-5 py-3 shadow-2xl backdrop-blur-sm">
-          <CheckSquare className="h-4 w-4 text-violet-400 shrink-0" />
+          <ClipboardDocumentCheckIcon className="h-4 w-4 text-violet-400 shrink-0" />
           <p className="text-sm text-white">{taskToast}</p>
         </div>
       )}
@@ -279,7 +287,7 @@ function ActiveMeetingHeader({
   )
 }
 
-// ── User Card ────────────────────────────────────────────────────────────────
+// ── UserIcon Card ────────────────────────────────────────────────────────────────
 
 function UserCard({ micOn, micLevel }: { micOn: boolean; micLevel: number }) {
   const { userEmail, userName, userPicture } = useAuthStore()
@@ -319,14 +327,18 @@ function UserCard({ micOn, micLevel }: { micOn: boolean; micLevel: number }) {
           <p className="text-xs text-slate-400">You</p>
         </div>
 
-        {/* Mic status */}
+        {/* MicrophoneIcon status */}
         <div
           className={cn(
             'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium',
             micOn ? 'bg-violet-500/20 text-violet-300' : 'bg-slate-500/20 text-slate-400'
           )}
         >
-          {micOn ? <Mic className="h-3.5 w-3.5" /> : <MicOff className="h-3.5 w-3.5" />}
+          {micOn ? (
+            <MicrophoneIcon className="h-3.5 w-3.5" />
+          ) : (
+            <SpeakerXMarkIcon className="h-3.5 w-3.5" />
+          )}
           {micOn ? 'Speaking' : 'Muted'}
         </div>
       </div>
@@ -366,7 +378,7 @@ function AiCard({ status, aiName }: { status: AiStatus; aiName: string }) {
       <div className="relative flex items-center gap-4">
         {/* AI Avatar */}
         <div className="relative flex h-14 w-14 items-center justify-center rounded-full bg-sky-600 ring-2 ring-sky-400/40">
-          <Bot className="h-7 w-7 text-white" />
+          <CpuChipIcon className="h-7 w-7 text-white" />
           {status === 'speaking' && (
             <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-slate-900 bg-emerald-400" />
           )}
@@ -387,7 +399,7 @@ function AiCard({ status, aiName }: { status: AiStatus; aiName: string }) {
             cfg.color
           )}
         >
-          <AudioLines className={cn('h-3.5 w-3.5', status === 'speaking' && 'animate-pulse')} />
+          <SpeakerWaveIcon className="cn('h-3.5 w-3.5', status === 'speaking' && 'animate-pulse')" />
           {cfg.label}
         </div>
       </div>
@@ -510,7 +522,7 @@ function TextInput({ onSend, disabled }: { onSend: (text: string) => void; disab
         onClick={handleSend}
         disabled={disabled || !text.trim()}
       >
-        <Send className="h-4 w-4" />
+        <PaperAirplaneIcon className="h-4 w-4" />
       </button>
     </div>
   )
@@ -534,7 +546,7 @@ function Controls({
   return (
     <footer className="sticky bottom-0 border-t border-white/10 bg-black/30 px-4 py-4 backdrop-blur">
       <div className="mx-auto flex max-w-xs items-center justify-center gap-4">
-        {/* Mic toggle */}
+        {/* MicrophoneIcon toggle */}
         <button
           onClick={onToggleMic}
           disabled={!isConnected}
@@ -546,7 +558,11 @@ function Controls({
           )}
           aria-label={micOn ? 'Mute microphone' : 'Unmute microphone'}
         >
-          {micOn ? <Mic className="h-6 w-6" /> : <MicOff className="h-6 w-6" />}
+          {micOn ? (
+            <MicrophoneIcon className="h-6 w-6" />
+          ) : (
+            <SpeakerXMarkIcon className="h-6 w-6" />
+          )}
           {micOn && (
             <span className="absolute -right-0.5 -top-0.5 h-3 w-3 animate-pulse rounded-full border-2 border-slate-900 bg-red-500" />
           )}
@@ -558,11 +574,11 @@ function Controls({
           className="flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white transition hover:bg-red-500"
           aria-label="End meeting"
         >
-          <PhoneOff className="h-6 w-6" />
+          <PhoneXMarkIcon className="h-6 w-6" />
         </button>
       </div>
 
-      {/* Mic hint */}
+      {/* MicrophoneIcon hint */}
       <p className="mt-2 text-center text-xs text-slate-500">
         {micOn
           ? `Microphone is on — say "${aiName}" to get the AI's attention`

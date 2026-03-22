@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useState } from 'react'
 import {
-  Globe,
-  Loader2,
-  RefreshCw,
-  Trash2,
-  ExternalLink,
-  Search,
-  AlertCircle,
-  CheckCircle2,
-} from 'lucide-react'
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  CheckCircleIcon,
+  ExclamationCircleIcon,
+  GlobeAltIcon,
+  MagnifyingGlassIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore, useKBStore } from '@/app/store'
@@ -167,7 +166,7 @@ function KnowledgeBasePage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -187,7 +186,7 @@ function KnowledgeBasePage() {
       <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-violet-100">
-            <Globe className="w-5 h-5 text-violet-600" />
+            <GlobeAltIcon className="w-5 h-5 text-violet-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Knowledge Base</h1>
@@ -206,7 +205,7 @@ function KnowledgeBasePage() {
           {/* Crawl status banner */}
           {isCrawling && (
             <div className="mb-4 flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-3">
-              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+              <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-500" />
               <div>
                 <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
                   Crawling in progress…
@@ -223,7 +222,7 @@ function KnowledgeBasePage() {
 
           {crawlStatus?.status === 'completed' && (
             <div className="mb-4 flex items-center gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3">
-              <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              <CheckCircleIcon className="h-5 w-5 text-emerald-500" />
               <p className="text-sm text-emerald-600 dark:text-emerald-400">
                 Last crawl completed — {crawlStatus.pages_crawled} pages indexed
               </p>
@@ -254,7 +253,7 @@ function KnowledgeBasePage() {
 
           {crawlStatus?.status === 'failed' && (
             <div className="mb-4 flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/5 px-4 py-3">
-              <AlertCircle className="h-5 w-5 text-red-500" />
+              <ExclamationCircleIcon className="h-5 w-5 text-red-500" />
               <p className="text-sm text-red-500">{crawlStatus.error ?? 'Crawl failed'}</p>
             </div>
           )}
@@ -297,16 +296,16 @@ function KnowledgeBasePage() {
               className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
             >
               {crawling ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
               ) : (
-                <Search className="h-4 w-4" />
+                <MagnifyingGlassIcon className="h-4 w-4" />
               )}
               Crawl
             </button>
           </div>
           {crawlError && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-red-500 dark:text-red-400">
-              <AlertCircle className="h-3 w-3 shrink-0" />
+              <ExclamationCircleIcon className="h-3 w-3 shrink-0" />
               {crawlError}
             </p>
           )}
@@ -323,7 +322,7 @@ function KnowledgeBasePage() {
                 onClick={loadData}
                 className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
               >
-                <RefreshCw className="h-3.5 w-3.5" />
+                <ArrowPathIcon className="h-3.5 w-3.5" />
               </button>
               {entries.length > 0 && (
                 <button
@@ -332,9 +331,9 @@ function KnowledgeBasePage() {
                   className="flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
                 >
                   {clearing ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <ArrowPathIcon className="h-3 w-3 animate-spin" />
                   ) : (
-                    <Trash2 className="h-3 w-3" />
+                    <TrashIcon className="h-3 w-3" />
                   )}
                   Clear All
                 </button>
@@ -344,7 +343,7 @@ function KnowledgeBasePage() {
 
           {entries.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <Globe className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <GlobeAltIcon className="mx-auto h-10 w-10 text-muted-foreground/40" />
               <p className="mt-3 text-sm text-muted-foreground">
                 No pages indexed yet. Enter your website URL above to start.
               </p>
@@ -353,7 +352,7 @@ function KnowledgeBasePage() {
             <div className="divide-y">
               {entries.map((entry) => (
                 <div key={entry.id} className="flex items-start gap-4 px-6 py-4">
-                  <Globe className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <GlobeAltIcon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate text-sm font-medium text-foreground">{entry.title}</p>
@@ -378,7 +377,7 @@ function KnowledgeBasePage() {
                         rel="noreferrer"
                         className="flex items-center gap-1 hover:underline"
                       >
-                        <ExternalLink className="h-3 w-3" />
+                        <ArrowTopRightOnSquareIcon className="h-3 w-3" />
                         {entry.source_url}
                       </a>
                       <span>·</span>
@@ -390,7 +389,7 @@ function KnowledgeBasePage() {
                     className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
                     title="Delete entry"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <TrashIcon className="h-4 w-4" />
                   </button>
                 </div>
               ))}

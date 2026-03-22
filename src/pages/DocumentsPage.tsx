@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  FileText,
-  Upload,
-  Loader2,
-  Trash2,
-  Download,
-  RefreshCw,
-  File,
-  CheckCircle2,
-  AlertCircle,
-  Clock,
-} from 'lucide-react'
+  ArrowDownTrayIcon,
+  ArrowPathIcon,
+  ArrowUpTrayIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  DocumentIcon,
+  DocumentTextIcon,
+  ExclamationCircleIcon,
+  TrashIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore, useDocumentStore } from '@/app/store'
@@ -28,10 +27,10 @@ const STATUS_CONFIG: Record<
   DocumentRecord['status'],
   { icon: React.ElementType; color: string; label: string }
 > = {
-  uploaded: { icon: Clock, color: 'text-amber-500', label: 'Uploaded' },
-  processing: { icon: Loader2, color: 'text-blue-500', label: 'Processing' },
-  indexed: { icon: CheckCircle2, color: 'text-emerald-500', label: 'Indexed' },
-  failed: { icon: AlertCircle, color: 'text-red-500', label: 'Failed' },
+  uploaded: { icon: ClockIcon, color: 'text-amber-500', label: 'Uploaded' },
+  processing: { icon: ArrowPathIcon, color: 'text-blue-500', label: 'Processing' },
+  indexed: { icon: CheckCircleIcon, color: 'text-emerald-500', label: 'Indexed' },
+  failed: { icon: ExclamationCircleIcon, color: 'text-red-500', label: 'Failed' },
 }
 
 const ACCEPTED_TYPES = '.pdf,.docx,.doc,.txt,.md,.csv,.xlsx'
@@ -100,7 +99,7 @@ function DocumentsPage() {
     return () => clearInterval(interval)
   }, [documents, currentOrgId, setDocuments])
 
-  async function handleUpload(files: FileList | File[]) {
+  async function handleUpload(files: FileList | DocumentIcon[]) {
     if (!currentOrgId) return
     const fileArray = Array.from(files)
     if (fileArray.length === 0) return
@@ -167,7 +166,7 @@ function DocumentsPage() {
   if (loading && documents.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -178,11 +177,13 @@ function DocumentsPage() {
       <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-violet-100">
-            <FileText className="w-5 h-5 text-violet-600" />
+            <DocumentTextIcon className="w-5 h-5 text-violet-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Documents</h1>
-            <p className="text-sm text-gray-500">Upload documents to enrich Lira’s knowledge</p>
+            <p className="text-sm text-gray-500">
+              ArrowUpTrayIcon documents to enrich Lira’s knowledge
+            </p>
           </div>
         </div>
       </div>
@@ -190,12 +191,12 @@ function DocumentsPage() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8">
         {connectionLost && (
           <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
-            <AlertCircle className="h-4 w-4 shrink-0" />
+            <ExclamationCircleIcon className="h-4 w-4 shrink-0" />
             Connection lost — document status updates paused. Refresh to retry.
           </div>
         )}
 
-        {/* Upload area */}
+        {/* ArrowUpTrayIcon area */}
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -210,7 +211,7 @@ function DocumentsPage() {
               : 'border-border hover:border-violet-500/50'
           )}
         >
-          <Upload className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <ArrowUpTrayIcon className="mx-auto h-10 w-10 text-muted-foreground/50" />
           <p className="mt-3 text-sm text-foreground">
             Drag & drop files here, or{' '}
             <button
@@ -233,7 +234,7 @@ function DocumentsPage() {
           />
           {uploading && (
             <div className="mt-4 flex items-center justify-center gap-2 text-sm text-violet-600">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
               Uploading…
             </div>
           )}
@@ -249,13 +250,13 @@ function DocumentsPage() {
               onClick={loadDocs}
               className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <ArrowPathIcon className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {documents.length === 0 ? (
             <div className="px-6 py-12 text-center">
-              <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <DocumentTextIcon className="mx-auto h-10 w-10 text-muted-foreground/40" />
               <p className="mt-3 text-sm text-muted-foreground">
                 No documents uploaded yet. Drop files above to get started.
               </p>
@@ -267,7 +268,7 @@ function DocumentsPage() {
                 const StatusIcon = statusCfg.icon
                 return (
                   <div key={doc.doc_id} className="flex items-center gap-3 px-4 sm:px-6 py-4">
-                    <File className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <DocumentIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-foreground">{doc.filename}</p>
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
@@ -300,9 +301,9 @@ function DocumentsPage() {
                       <button
                         onClick={() => handleDownload(doc)}
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                        title="Download"
+                        title="ArrowDownTrayIcon"
                       >
-                        <Download className="h-4 w-4" />
+                        <ArrowDownTrayIcon className="h-4 w-4" />
                       </button>
                       {doc.status === 'failed' && (
                         <button
@@ -310,7 +311,7 @@ function DocumentsPage() {
                           className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
                           title="Reprocess"
                         >
-                          <RefreshCw className="h-4 w-4" />
+                          <ArrowPathIcon className="h-4 w-4" />
                         </button>
                       )}
                       <button
@@ -318,7 +319,7 @@ function DocumentsPage() {
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
                         title="Delete"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <TrashIcon className="h-4 w-4" />
                       </button>
                     </div>
                   </div>

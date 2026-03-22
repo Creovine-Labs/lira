@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { AlertTriangle } from 'lucide-react'
-
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib'
 
@@ -35,7 +34,7 @@ function ErrorState({
       role="alert"
     >
       <div className="rounded-full bg-destructive/15 p-3 text-destructive">
-        <AlertTriangle className="h-5 w-5" />
+        <ExclamationTriangleIcon className="h-5 w-5" />
       </div>
       <div className="space-y-1">
         <h3 className="text-base font-semibold text-destructive">{title}</h3>

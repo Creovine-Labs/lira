@@ -1,16 +1,16 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  CheckSquare,
-  Loader2,
-  Plus,
-  Clock,
-  PlayCircle,
-  CheckCircle2,
-  XCircle,
-  Zap,
-  Trash2,
-} from 'lucide-react'
+  ArrowPathIcon,
+  BoltIcon,
+  CheckCircleIcon,
+  ClipboardDocumentCheckIcon,
+  ClockIcon,
+  PlayCircleIcon,
+  PlusIcon,
+  TrashIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore, useTaskStore } from '@/app/store'
@@ -28,11 +28,11 @@ import {
 import { cn } from '@/lib'
 
 const STATUS_TABS: { value: TaskStatus | 'all'; label: string; icon: React.ElementType }[] = [
-  { value: 'all', label: 'All', icon: CheckSquare },
-  { value: 'pending', label: 'Pending', icon: Clock },
-  { value: 'in_progress', label: 'In Progress', icon: PlayCircle },
-  { value: 'completed', label: 'Completed', icon: CheckCircle2 },
-  { value: 'cancelled', label: 'Cancelled', icon: XCircle },
+  { value: 'all', label: 'All', icon: ClipboardDocumentCheckIcon },
+  { value: 'pending', label: 'Pending', icon: ClockIcon },
+  { value: 'in_progress', label: 'In Progress', icon: PlayCircleIcon },
+  { value: 'completed', label: 'Completed', icon: CheckCircleIcon },
+  { value: 'cancelled', label: 'Cancelled', icon: XCircleIcon },
 ]
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
@@ -90,7 +90,7 @@ function TasksPage() {
   if (loading && tasks.length === 0) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -101,7 +101,7 @@ function TasksPage() {
       <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-violet-100">
-            <CheckSquare className="w-5 h-5 text-violet-600" />
+            <ClipboardDocumentCheckIcon className="w-5 h-5 text-violet-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Tasks</h1>
@@ -114,7 +114,7 @@ function TasksPage() {
           onClick={() => setShowCreate(!showCreate)}
           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors"
         >
-          <Plus className="w-4 h-4" />
+          <PlusIcon className="w-4 h-4" />
           New Task
         </button>
       </div>
@@ -161,7 +161,7 @@ function TasksPage() {
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
             <div className="p-3 rounded-xl bg-gray-100 mb-3">
-              <CheckSquare className="h-8 w-8 text-gray-400" />
+              <ClipboardDocumentCheckIcon className="h-8 w-8 text-gray-400" />
             </div>
             <p className="text-sm font-medium text-gray-700">No tasks yet</p>
             <p className="mt-1 text-xs text-gray-400">
@@ -237,7 +237,7 @@ function TaskCard({
             : 'border-border hover:border-violet-500'
         )}
       >
-        {task.status === 'completed' && <CheckCircle2 className="h-3 w-3" />}
+        {task.status === 'completed' && <CheckCircleIcon className="h-3 w-3" />}
       </button>
 
       <div className="min-w-0 flex-1">
@@ -274,13 +274,13 @@ function TaskCard({
           {/* AI execution badge */}
           {task.execution_status === 'completed' && (
             <span className="flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
-              <Zap className="h-2.5 w-2.5" />
+              <BoltIcon className="h-2.5 w-2.5" />
               AI Result
             </span>
           )}
           {task.execution_status === 'running' && (
             <span className="flex items-center gap-0.5 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
-              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+              <ArrowPathIcon className="h-2.5 w-2.5 animate-spin" />
               Running
             </span>
           )}
@@ -296,11 +296,14 @@ function TaskCard({
 
       {/* Delete */}
       <button
-        onClick={(e) => { e.stopPropagation(); onDelete() }}
+        onClick={(e) => {
+          e.stopPropagation()
+          onDelete()
+        }}
         className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover/card:opacity-100"
         title="Delete task"
       >
-        <Trash2 className="h-4 w-4" />
+        <TrashIcon className="h-4 w-4" />
       </button>
     </div>
   )
@@ -360,7 +363,7 @@ function CreateTaskForm({
             className="input-field"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Send Q4 report to stakeholders"
+            placeholder="e.g. PaperAirplaneIcon Q4 report to stakeholders"
             maxLength={200}
           />
         </div>
@@ -462,7 +465,7 @@ function CreateTaskForm({
             disabled={creating || !title.trim() || !description.trim()}
             className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
           >
-            {creating && <Loader2 className="h-4 w-4 animate-spin" />}
+            {creating && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
             Create
           </button>
         </div>

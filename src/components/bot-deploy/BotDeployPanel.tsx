@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  AlertTriangle,
-  ExternalLink,
-  Loader2,
-  Radio,
-  Square,
-  Video,
-  CheckCircle2,
-} from 'lucide-react'
-
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  RadioIcon,
+  StopIcon,
+  VideoCameraIcon,
+} from '@heroicons/react/24/outline'
 import { useBotStore, useUserPrefsStore, useOrgStore } from '@/app/store'
 import {
   deployBot,
@@ -229,7 +228,7 @@ function BotDeployPanel() {
         { ai_name: aiName, voice_id: voiceId, personality },
         selectedOrgId ?? undefined,
         meetingTopic.trim() || undefined,
-        meetingType,
+        meetingType
       )
       setBotDeployed(res.bot_id, url, res.platform, res.state)
       setMeetingLink('')
@@ -287,7 +286,7 @@ function BotDeployPanel() {
         <div className="overflow-hidden rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-5 py-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20">
-              <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+              <CheckCircleIcon className="h-5 w-5 text-emerald-400" />
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-sm font-semibold text-emerald-400">Lira has left the meeting</p>
@@ -349,11 +348,11 @@ function BotDeployPanel() {
               )}
             >
               {isInProgress ? (
-                <Loader2 className={cn('h-5 w-5 animate-spin', STATE_COLORS[botState])} />
+                <ArrowPathIcon className="cn('h-5 w-5 animate-spin', STATE_COLORS[botState])" />
               ) : botState === 'active' ? (
-                <Radio className="h-5 w-5 text-emerald-400 animate-pulse" />
+                <RadioIcon className="h-5 w-5 text-emerald-400 animate-pulse" />
               ) : (
-                <Square className="h-5 w-5 text-slate-400" />
+                <StopIcon className="h-5 w-5 text-slate-400" />
               )}
             </div>
 
@@ -363,9 +362,9 @@ function BotDeployPanel() {
               </p>
               <p className="mt-0.5 flex items-center gap-1.5 text-xs text-slate-400">
                 {platform === 'google_meet' ? (
-                  <Video className="h-3 w-3" />
+                  <VideoCameraIcon className="h-3 w-3" />
                 ) : (
-                  <Video className="h-3 w-3" />
+                  <VideoCameraIcon className="h-3 w-3" />
                 )}
                 {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
               </p>
@@ -429,7 +428,9 @@ function BotDeployPanel() {
   // ── Deploy form ─────────────────────────────────────────────────────────
 
   return (
-    <div className="space-y-4">      {/* Meeting type chips */}
+    <div className="space-y-4">
+      {' '}
+      {/* Meeting type chips */}
       <div>
         <p className="mb-1.5 text-sm font-medium text-foreground">Meeting type</p>
         <div className="flex flex-wrap gap-1.5">
@@ -443,7 +444,7 @@ function BotDeployPanel() {
                 'rounded-full border px-3 py-0.5 text-xs font-medium transition',
                 meetingType === value
                   ? 'border-violet-300 bg-violet-50 text-violet-700'
-                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700',
+                  : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
               )}
             >
               {label}
@@ -488,7 +489,6 @@ function BotDeployPanel() {
           Lira will join as a participant and respond in real-time.
         </p>
       </div>
-
       {/* Meeting topic */}
       <div>
         <label
@@ -508,11 +508,10 @@ function BotDeployPanel() {
           maxLength={500}
         />
       </div>
-
       {error && (
         <div className="rounded-lg bg-red-500/10 px-4 py-3">
           <div className="flex items-start gap-2">
-            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+            <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
             <div className="min-w-0 flex-1">
               <p className="text-sm text-red-400">{error}</p>
               {error.includes('active bot') && (
@@ -535,7 +534,7 @@ function BotDeployPanel() {
                 >
                   {terminatingAll ? (
                     <span className="flex items-center gap-1.5">
-                      <Loader2 className="h-3 w-3 animate-spin" /> Terminating…
+                      <ArrowPathIcon className="h-3 w-3 animate-spin" /> Terminating…
                     </span>
                   ) : (
                     'Terminate All Active Bots'
@@ -546,7 +545,6 @@ function BotDeployPanel() {
           </div>
         </div>
       )}
-
       <button
         className="w-full rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
         onClick={handleDeploy}
@@ -554,13 +552,13 @@ function BotDeployPanel() {
       >
         {deploying ? (
           <span className="flex items-center justify-center gap-2">
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
             Deploying Lira…
           </span>
         ) : (
           <span className="flex items-center justify-center gap-2">
-            <ExternalLink className="h-4 w-4" />
-            Send Lira to Meeting
+            <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+            PaperAirplaneIcon Lira to Meeting
           </span>
         )}
       </button>

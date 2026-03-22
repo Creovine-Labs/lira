@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle2, AlertTriangle, XCircle, RefreshCw, Clock } from 'lucide-react'
-
+import {
+  ArrowPathIcon,
+  CheckCircleIcon,
+  ClockIcon,
+  ExclamationTriangleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline'
 import { getBotAuthStatus, refreshBotAuth, type PlatformAuthStatus } from '@/services/api'
 import { cn } from '@/lib'
 
@@ -8,35 +13,35 @@ import { cn } from '@/lib'
 
 const URGENCY_STYLES = {
   ok: {
-    icon: CheckCircle2,
+    icon: CheckCircleIcon,
     iconColor: 'text-emerald-400',
     bg: 'bg-emerald-500/10',
     border: 'border-emerald-500/20',
     label: 'text-emerald-400',
   },
   warning: {
-    icon: AlertTriangle,
+    icon: ExclamationTriangleIcon,
     iconColor: 'text-amber-400',
     bg: 'bg-amber-500/10',
     border: 'border-amber-500/20',
     label: 'text-amber-400',
   },
   critical: {
-    icon: AlertTriangle,
+    icon: ExclamationTriangleIcon,
     iconColor: 'text-red-400',
     bg: 'bg-red-500/10',
     border: 'border-red-500/20',
     label: 'text-red-400',
   },
   expired: {
-    icon: XCircle,
+    icon: XCircleIcon,
     iconColor: 'text-red-500',
     bg: 'bg-red-500/15',
     border: 'border-red-500/30',
     label: 'text-red-400',
   },
   not_configured: {
-    icon: XCircle,
+    icon: XCircleIcon,
     iconColor: 'text-slate-500',
     bg: 'bg-slate-500/10',
     border: 'border-slate-500/20',
@@ -146,12 +151,12 @@ export function AuthStatusCard() {
           >
             {refreshing ? (
               <span className="flex items-center gap-1.5">
-                <RefreshCw className="h-3 w-3 animate-spin" />
+                <ArrowPathIcon className="h-3 w-3 animate-spin" />
                 Refreshing…
               </span>
             ) : (
               <span className="flex items-center gap-1.5">
-                <RefreshCw className="h-3 w-3" />
+                <ArrowPathIcon className="h-3 w-3" />
                 Refresh
               </span>
             )}
@@ -176,7 +181,7 @@ export function AuthStatusCard() {
         <div className="mt-2 rounded-lg bg-background/50 px-3 py-2 text-xs text-muted-foreground leading-relaxed">
           The session has expired. Run in a terminal:
           <code className="mt-1 flex items-center gap-1.5 font-mono text-foreground">
-            <Clock className="h-3 w-3 shrink-0" />
+            <ClockIcon className="h-3 w-3 shrink-0" />
             npx tsx scripts/setup-bot-auth.ts --google
           </code>
         </div>

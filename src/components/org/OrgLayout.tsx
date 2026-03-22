@@ -1,6 +1,5 @@
 import { Navigate, Outlet, useNavigate } from 'react-router-dom'
-import { Building2 } from 'lucide-react'
-
+import { BuildingOffice2Icon } from '@heroicons/react/24/outline'
 import { useAuthStore, useOrgStore } from '@/app/store'
 
 function OrgLayout() {
@@ -17,7 +16,7 @@ function OrgLayout() {
       <div className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100">
-            <Building2 className="h-6 w-6 text-violet-600" />
+            <BuildingOffice2Icon className="h-6 w-6 text-violet-600" />
           </div>
           <p className="text-sm font-medium text-gray-900">No organization yet</p>
           <p className="mt-1 text-sm text-gray-500">

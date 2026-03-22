@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
+  ArrowLeftIcon,
+  ArrowPathIcon,
   BriefcaseIcon,
-  ChevronRight,
-  Loader2,
-  Trash2,
-  User,
-  UserPlus,
-} from 'lucide-react'
+  ChevronRightIcon,
+  TrashIcon,
+  UserIcon,
+  UserPlusIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore, useInterviewStore } from '@/app/store'
@@ -60,7 +60,7 @@ function CandidateRow({
       <button onClick={onOpen} className="flex-1 flex items-center gap-4 text-left min-w-0">
         {/* Avatar */}
         <div className="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
-          {initial ? initial : <User className="w-4 h-4" />}
+          {initial ? initial : <UserIcon className="w-4 h-4" />}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -85,7 +85,7 @@ function CandidateRow({
             <p className="text-xs text-gray-400 mt-0.5 truncate">{latest.candidate_email}</p>
           )}
         </div>
-        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0" />
+        <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0" />
       </button>
       <button
         onClick={(e) => {
@@ -97,9 +97,9 @@ function CandidateRow({
         title="Delete candidate"
       >
         {deleting === latest.interview_id ? (
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
         ) : (
-          <Trash2 className="w-3.5 h-3.5" />
+          <TrashIcon className="w-3.5 h-3.5" />
         )}
       </button>
     </div>
@@ -222,7 +222,7 @@ function InterviewRolePage() {
           onClick={() => navigate('/org/roles')}
           className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeftIcon className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-3 flex-1 min-w-0">
           <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30 shrink-0">
@@ -236,9 +236,9 @@ function InterviewRolePage() {
           className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 transition-colors disabled:opacity-40"
         >
           {deletingRole ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
           ) : (
-            <Trash2 className="w-3.5 h-3.5" />
+            <TrashIcon className="w-3.5 h-3.5" />
           )}
           Delete Role
         </button>
@@ -248,15 +248,14 @@ function InterviewRolePage() {
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+            <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
           </div>
         ) : (
           <div className="space-y-2">
             {candidateGroups.map((group) => {
               // Navigate to the root interview (no parent_interview_id) so the
               // full rounds list is visible and the back-button chain works correctly
-              const root =
-                group.find((iv) => !iv.parent_interview_id) ?? group[group.length - 1]
+              const root = group.find((iv) => !iv.parent_interview_id) ?? group[group.length - 1]
               return (
                 <CandidateRow
                   key={root.interview_id}
@@ -275,7 +274,7 @@ function InterviewRolePage() {
                 className="w-full flex items-center gap-4 rounded-xl border border-dashed border-violet-300 bg-violet-50/60 px-4 py-3.5 hover:bg-violet-50 hover:border-violet-400 transition-all text-left"
               >
                 <div className="shrink-0 w-10 h-10 rounded-full border-2 border-dashed border-violet-400 text-violet-500 flex items-center justify-center">
-                  <UserPlus className="w-4 h-4" />
+                  <UserPlusIcon className="w-4 h-4" />
                 </div>
                 <span className="font-semibold text-violet-600">Interview Another Person</span>
               </button>
@@ -284,7 +283,7 @@ function InterviewRolePage() {
             {candidateGroups.length === 0 && !loading && (
               <div className="flex flex-col items-center justify-center py-16 text-center px-6">
                 <div className="p-3 rounded-xl bg-gray-100 mb-3">
-                  <User className="w-7 h-7 text-gray-400" />
+                  <UserIcon className="w-7 h-7 text-gray-400" />
                 </div>
                 <p className="text-gray-700 font-medium">No candidates yet</p>
                 <p className="text-sm text-gray-400 mt-1">Add a candidate to start interviewing.</p>

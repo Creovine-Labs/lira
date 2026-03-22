@@ -1,4 +1,4 @@
-import { AlertTriangle, Loader2 } from 'lucide-react'
+import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
 import {
@@ -51,7 +51,7 @@ function ConfirmDialog({
           <div className="flex items-center gap-3">
             {destructive && (
               <div className="shrink-0 flex items-center justify-center w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-500" />
               </div>
             )}
             <div>
@@ -75,7 +75,7 @@ function ConfirmDialog({
               destructive ? 'bg-red-500 hover:bg-red-600' : 'bg-violet-600 hover:bg-violet-700'
             }`}
           >
-            {busy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+            {busy && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
             {confirmLabel}
           </button>
         </DialogFooter>

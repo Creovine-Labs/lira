@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { Inbox } from 'lucide-react'
-
+import { InboxIcon } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
 
 type EmptyStateProps = {
@@ -28,7 +27,7 @@ function EmptyState({
       aria-live="polite"
     >
       <div className="rounded-full bg-muted p-3 text-muted-foreground">
-        {icon ?? <Inbox className="h-5 w-5" />}
+        {icon ?? <InboxIcon className="h-5 w-5" />}
       </div>
       <div className="space-y-1">
         <h3 className="text-base font-semibold">{title}</h3>

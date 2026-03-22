@@ -1,25 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
-  ArrowLeft,
-  Building2,
-  Calendar,
-  Camera,
-  CheckCircle2,
-  CheckSquare,
-  ChevronDown,
-  Clock,
-  Crown,
-  Loader2,
-  MessageSquare,
-  Mic,
-  PlayCircle,
-  Shield,
-  ShieldCheck,
-  TrendingUp,
-  XCircle,
-  Zap,
-} from 'lucide-react'
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  ArrowTrendingUpIcon,
+  BoltIcon,
+  BuildingOffice2Icon,
+  CalendarIcon,
+  CameraIcon,
+  ChatBubbleLeftIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ClipboardDocumentCheckIcon,
+  ClockIcon,
+  MicrophoneIcon,
+  PlayCircleIcon,
+  ShieldCheckIcon,
+  TrophyIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -38,11 +37,19 @@ import { cn } from '@/lib'
 
 const ROLE_CONFIG: Record<
   OrgMembership['role'],
-  { label: string; icon: React.ElementType; pill: string; gradient: string; banner: string; bannerGlowA: string; bannerGlowB: string }
+  {
+    label: string
+    icon: React.ElementType
+    pill: string
+    gradient: string
+    banner: string
+    bannerGlowA: string
+    bannerGlowB: string
+  }
 > = {
   owner: {
     label: 'Owner',
-    icon: Crown,
+    icon: TrophyIcon,
     pill: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
     gradient: 'from-violet-500 to-purple-600',
     banner: 'from-violet-700 via-purple-600 to-fuchsia-700',
@@ -51,7 +58,7 @@ const ROLE_CONFIG: Record<
   },
   admin: {
     label: 'Admin',
-    icon: ShieldCheck,
+    icon: ShieldCheckIcon,
     pill: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
     gradient: 'from-blue-500 to-indigo-600',
     banner: 'from-blue-700 via-indigo-600 to-cyan-600',
@@ -60,7 +67,7 @@ const ROLE_CONFIG: Record<
   },
   member: {
     label: 'Member',
-    icon: Shield,
+    icon: ShieldCheckIcon,
     pill: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
     gradient: 'from-slate-500 to-slate-700',
     banner: 'from-indigo-700 via-violet-600 to-slate-700',
@@ -69,18 +76,45 @@ const ROLE_CONFIG: Record<
   },
 }
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; icon: React.ElementType; dot: string; text: string; bg: string }> = {
-  pending:     { label: 'Pending',     icon: Clock,        dot: 'bg-amber-400',   text: 'text-amber-600 dark:text-amber-400',   bg: 'bg-amber-50 dark:bg-amber-950/30' },
-  in_progress: { label: 'In Progress', icon: PlayCircle,   dot: 'bg-blue-500',    text: 'text-blue-600 dark:text-blue-400',     bg: 'bg-blue-50 dark:bg-blue-950/30'  },
-  completed:   { label: 'Completed',   icon: CheckCircle2, dot: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-950/30' },
-  cancelled:   { label: 'Cancelled',   icon: XCircle,      dot: 'bg-slate-400',   text: 'text-slate-500 dark:text-slate-500',   bg: 'bg-slate-50 dark:bg-slate-900/30' },
+const STATUS_CONFIG: Record<
+  TaskStatus,
+  { label: string; icon: React.ElementType; dot: string; text: string; bg: string }
+> = {
+  pending: {
+    label: 'Pending',
+    icon: ClockIcon,
+    dot: 'bg-amber-400',
+    text: 'text-amber-600 dark:text-amber-400',
+    bg: 'bg-amber-50 dark:bg-amber-950/30',
+  },
+  in_progress: {
+    label: 'In Progress',
+    icon: PlayCircleIcon,
+    dot: 'bg-blue-500',
+    text: 'text-blue-600 dark:text-blue-400',
+    bg: 'bg-blue-50 dark:bg-blue-950/30',
+  },
+  completed: {
+    label: 'Completed',
+    icon: CheckCircleIcon,
+    dot: 'bg-emerald-500',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-950/30',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    icon: XCircleIcon,
+    dot: 'bg-slate-400',
+    text: 'text-slate-500 dark:text-slate-500',
+    bg: 'bg-slate-50 dark:bg-slate-900/30',
+  },
 }
 
 const PRIORITY_CONFIG: Record<TaskPriority, { label: string; bar: string; text: string }> = {
-  urgent: { label: 'Urgent', bar: 'bg-red-500',    text: 'text-red-500' },
-  high:   { label: 'High',   bar: 'bg-orange-500', text: 'text-orange-500' },
-  medium: { label: 'Medium', bar: 'bg-amber-400',  text: 'text-amber-500' },
-  low:    { label: 'Low',    bar: 'bg-slate-400',  text: 'text-slate-400' },
+  urgent: { label: 'Urgent', bar: 'bg-red-500', text: 'text-red-500' },
+  high: { label: 'High', bar: 'bg-orange-500', text: 'text-orange-500' },
+  medium: { label: 'Medium', bar: 'bg-amber-400', text: 'text-amber-500' },
+  low: { label: 'Low', bar: 'bg-slate-400', text: 'text-slate-400' },
 }
 
 function StatCard({
@@ -133,7 +167,8 @@ function MemberProfilePage() {
   // Close org dropdown on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (orgDropRef.current && !orgDropRef.current.contains(e.target as Node)) setOrgDropOpen(false)
+      if (orgDropRef.current && !orgDropRef.current.contains(e.target as Node))
+        setOrgDropOpen(false)
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
@@ -141,9 +176,10 @@ function MemberProfilePage() {
 
   const loadData = useCallback(async () => {
     if (!userId) return
-    const orgsToFetch = selectedOrgId === 'all'
-      ? organizations.map((o) => o.org_id)
-      : [effectiveOrgId ?? currentOrgId ?? '']
+    const orgsToFetch =
+      selectedOrgId === 'all'
+        ? organizations.map((o) => o.org_id)
+        : [effectiveOrgId ?? currentOrgId ?? '']
     if (!orgsToFetch[0]) return
     setLoading(true)
     try {
@@ -151,10 +187,9 @@ function MemberProfilePage() {
       const primaryOrgId = orgsToFetch[0]
       const [members, ...rest] = await Promise.all([
         listOrgMembers(primaryOrgId),
-        ...orgsToFetch.map((oid) => Promise.all([
-          listTasks(oid),
-          getMemberContributions(oid, userId),
-        ])),
+        ...orgsToFetch.map((oid) =>
+          Promise.all([listTasks(oid), getMemberContributions(oid, userId)])
+        ),
       ])
 
       const found = (members as OrgMembership[]).find((m) => m.user_id === userId)
@@ -171,9 +206,14 @@ function MemberProfilePage() {
       let totalMessages = 0
       let totalWords = 0
 
-      for (const [taskResult, contribResult] of rest as Array<[{ tasks: TaskRecord[] }, { contributions: MemberContribution[]; total_messages: number; total_words: number }]>) {
+      for (const [taskResult, contribResult] of rest as Array<
+        [
+          { tasks: TaskRecord[] },
+          { contributions: MemberContribution[]; total_messages: number; total_words: number },
+        ]
+      >) {
         const memberTasks = taskResult.tasks.filter(
-          (t) => t.assigned_to && (t.assigned_to === found.name || t.assigned_to === found.email),
+          (t) => t.assigned_to && (t.assigned_to === found.name || t.assigned_to === found.email)
         )
         allTasks = [...allTasks, ...memberTasks]
         allContribs = [...allContribs, ...contribResult.contributions]
@@ -208,7 +248,7 @@ function MemberProfilePage() {
       const dataUrl = await resizeImage(file, 200, 200)
       await updateMyPicture(dataUrl)
       // Update local member state so avatar refreshes immediately
-      setMember((prev) => prev ? { ...prev, picture: dataUrl } : prev)
+      setMember((prev) => (prev ? { ...prev, picture: dataUrl } : prev))
       toast.success('Profile picture updated')
     } catch {
       toast.error('Failed to upload picture')
@@ -222,7 +262,7 @@ function MemberProfilePage() {
     return (
       <div className="flex items-center justify-center py-32">
         <div className="flex flex-col items-center gap-3">
-          <Loader2 className="h-7 w-7 animate-spin text-violet-500" />
+          <ArrowPathIcon className="h-7 w-7 animate-spin text-violet-500" />
           <p className="text-sm text-muted-foreground">Loading profile…</p>
         </div>
       </div>
@@ -241,28 +281,27 @@ function MemberProfilePage() {
     .slice(0, 2)
     .toUpperCase()
 
-  const completedCount  = tasks.filter((t) => t.status === 'completed').length
+  const completedCount = tasks.filter((t) => t.status === 'completed').length
   const inProgressCount = tasks.filter((t) => t.status === 'in_progress').length
-  const pendingCount    = tasks.filter((t) => t.status === 'pending').length
-  const completionRate  = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0
+  const pendingCount = tasks.filter((t) => t.status === 'pending').length
+  const completionRate = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0
 
   const joinDate = new Date(member.joined_at)
   const now = new Date()
   const monthsActive = Math.max(
     0,
-    (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth()),
+    (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth())
   )
 
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-12">
-
       {/* ── Back nav ──────────────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate('/org/members')}
           className="group flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
         >
-          <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+          <ArrowLeftIcon className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
           Back to Members
         </button>
 
@@ -273,35 +312,42 @@ function MemberProfilePage() {
               onClick={() => setOrgDropOpen((v) => !v)}
               className="flex items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted/50 transition-colors"
             >
-              <Building2 className="h-3.5 w-3.5 text-violet-500" />
+              <BuildingOffice2Icon className="h-3.5 w-3.5 text-violet-500" />
               {selectedOrgId === 'all'
                 ? 'All Organizations'
-                : (organizations.find((o) => o.org_id === (selectedOrgId ?? currentOrgId))?.name ?? 'Current Org')}
-              <ChevronDown className="h-3 w-3 text-muted-foreground" />
+                : (organizations.find((o) => o.org_id === (selectedOrgId ?? currentOrgId))?.name ??
+                  'Current Org')}
+              <ChevronDownIcon className="h-3 w-3 text-muted-foreground" />
             </button>
             {orgDropOpen && (
               <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border bg-white py-1 shadow-lg dark:bg-gray-900">
                 {organizations.length > 1 && (
                   <button
-                    onClick={() => { setSelectedOrgId('all'); setOrgDropOpen(false) }}
+                    onClick={() => {
+                      setSelectedOrgId('all')
+                      setOrgDropOpen(false)
+                    }}
                     className={cn(
                       'flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-gray-50 dark:hover:bg-gray-800',
-                      selectedOrgId === 'all' ? 'font-semibold text-violet-600' : 'text-foreground',
+                      selectedOrgId === 'all' ? 'font-semibold text-violet-600' : 'text-foreground'
                     )}
                   >
-                    <Building2 className="h-3.5 w-3.5" />
+                    <BuildingOffice2Icon className="h-3.5 w-3.5" />
                     All Organizations
                   </button>
                 )}
                 {organizations.map((org) => (
                   <button
                     key={org.org_id}
-                    onClick={() => { setSelectedOrgId(org.org_id); setOrgDropOpen(false) }}
+                    onClick={() => {
+                      setSelectedOrgId(org.org_id)
+                      setOrgDropOpen(false)
+                    }}
                     className={cn(
                       'flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-gray-50 dark:hover:bg-gray-800',
                       (selectedOrgId ?? currentOrgId) === org.org_id && selectedOrgId !== 'all'
                         ? 'font-semibold text-violet-600'
-                        : 'text-foreground',
+                        : 'text-foreground'
                     )}
                   >
                     <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-violet-100 text-[9px] font-bold text-violet-600">
@@ -323,19 +369,27 @@ function MemberProfilePage() {
           {/* Highlight glow top-left */}
           <div
             className="absolute inset-0"
-            style={{ background: `radial-gradient(ellipse 70% 90% at -5% -20%, ${role.bannerGlowA}, transparent)` }}
+            style={{
+              background: `radial-gradient(ellipse 70% 90% at -5% -20%, ${role.bannerGlowA}, transparent)`,
+            }}
           />
           {/* Accent glow bottom-right */}
           <div
             className="absolute inset-0"
-            style={{ background: `radial-gradient(ellipse 55% 65% at 105% 110%, ${role.bannerGlowB}, transparent)` }}
+            style={{
+              background: `radial-gradient(ellipse 55% 65% at 105% 110%, ${role.bannerGlowB}, transparent)`,
+            }}
           />
           {/* Subtle bottom fade to card */}
           <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
           {/* Fine diagonal shimmer lines */}
-          <div className="absolute inset-0 opacity-[0.07]" style={{
-            backgroundImage: 'repeating-linear-gradient(45deg, rgba(255,255,255,0.8) 0px, rgba(255,255,255,0.8) 1px, transparent 1px, transparent 12px)',
-          }} />
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                'repeating-linear-gradient(45deg, rgba(255,255,255,0.8) 0px, rgba(255,255,255,0.8) 1px, transparent 1px, transparent 12px)',
+            }}
+          />
         </div>
 
         {/* Avatar + name row */}
@@ -354,7 +408,7 @@ function MemberProfilePage() {
                 <div
                   className={cn(
                     'flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl font-bold text-white shadow-lg ring-4 ring-card',
-                    role.gradient,
+                    role.gradient
                   )}
                 >
                   {initials}
@@ -364,12 +418,12 @@ function MemberProfilePage() {
               <span
                 className={cn(
                   'absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-card',
-                  role.gradient,
+                  role.gradient
                 )}
               >
                 <RoleIcon className="h-2.5 w-2.5 text-white" />
               </span>
-              {/* Upload button — only for own profile */}
+              {/* ArrowUpTrayIcon button — only for own profile */}
               {isOwnProfile && (
                 <>
                   <button
@@ -378,10 +432,11 @@ function MemberProfilePage() {
                     className="absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-card hover:bg-gray-50 transition-colors disabled:opacity-50"
                     title="Change photo"
                   >
-                    {uploadingPic
-                      ? <Loader2 className="h-3 w-3 animate-spin text-violet-600" />
-                      : <Camera className="h-3 w-3 text-violet-600" />
-                    }
+                    {uploadingPic ? (
+                      <ArrowPathIcon className="h-3 w-3 animate-spin text-violet-600" />
+                    ) : (
+                      <CameraIcon className="h-3 w-3 text-violet-600" />
+                    )}
                   </button>
                   <input
                     ref={fileInputRef}
@@ -403,7 +458,7 @@ function MemberProfilePage() {
                 <span
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                    role.pill,
+                    role.pill
                   )}
                 >
                   <RoleIcon className="h-3 w-3" />
@@ -415,18 +470,18 @@ function MemberProfilePage() {
               )}
               <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
+                  <CalendarIcon className="h-3 w-3" />
                   Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                 </span>
                 {monthsActive > 0 && (
                   <span className="flex items-center gap-1">
-                    <Zap className="h-3 w-3 text-amber-500" />
+                    <BoltIcon className="h-3 w-3 text-amber-500" />
                     {monthsActive}mo active
                   </span>
                 )}
                 {selectedOrgId === 'all' && organizations.length > 1 && (
                   <span className="flex items-center gap-1 text-violet-600">
-                    <Building2 className="h-3 w-3" />
+                    <BuildingOffice2Icon className="h-3 w-3" />
                     All {organizations.length} orgs
                   </span>
                 )}
@@ -439,28 +494,28 @@ function MemberProfilePage() {
       {/* ── Stat cards ────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <StatCard
-          icon={CheckSquare}
+          icon={ClipboardDocumentCheckIcon}
           label="Total Tasks"
           value={tasks.length}
           sub={tasks.length === 0 ? 'None assigned' : undefined}
           accent="bg-violet-100 text-violet-600 dark:bg-violet-900/30"
         />
         <StatCard
-          icon={TrendingUp}
+          icon={ArrowTrendingUpIcon}
           label="Completion"
           value={`${completionRate}%`}
           sub={tasks.length > 0 ? `${completedCount} of ${tasks.length} done` : undefined}
           accent="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"
         />
         <StatCard
-          icon={Mic}
+          icon={MicrophoneIcon}
           label="Meetings"
           value={contributions.length}
           sub={contributions.length > 0 ? 'contributed to' : 'None yet'}
           accent="bg-blue-100 text-blue-600 dark:bg-blue-900/30"
         />
         <StatCard
-          icon={MessageSquare}
+          icon={ChatBubbleLeftIcon}
           label="Messages"
           value={contribStats.total_messages}
           sub={
@@ -477,7 +532,7 @@ function MemberProfilePage() {
         {/* Section header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
-            <CheckSquare className="h-4 w-4 text-violet-500" />
+            <ClipboardDocumentCheckIcon className="h-4 w-4 text-violet-500" />
             <h2 className="text-sm font-semibold text-foreground">Assigned Tasks</h2>
             {tasks.length > 0 && (
               <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -524,7 +579,7 @@ function MemberProfilePage() {
           {tasks.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-                <CheckSquare className="h-5 w-5 text-muted-foreground/50" />
+                <ClipboardDocumentCheckIcon className="h-5 w-5 text-muted-foreground/50" />
               </div>
               <p className="text-sm font-medium text-foreground">No tasks assigned yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -552,7 +607,7 @@ function MemberProfilePage() {
                           'truncate text-sm font-medium transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400',
                           task.status === 'completed'
                             ? 'text-muted-foreground line-through'
-                            : 'text-foreground',
+                            : 'text-foreground'
                         )}
                       >
                         {task.title}
@@ -563,7 +618,7 @@ function MemberProfilePage() {
                           <>
                             <span>·</span>
                             <span className="flex items-center gap-0.5">
-                              <Clock className="h-3 w-3" />
+                              <ClockIcon className="h-3 w-3" />
                               {new Date(task.due_date).toLocaleDateString('en-US', {
                                 month: 'short',
                                 day: 'numeric',
@@ -579,7 +634,7 @@ function MemberProfilePage() {
                       className={cn(
                         'flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
                         s.bg,
-                        s.text,
+                        s.text
                       )}
                     >
                       <span className={cn('h-1.5 w-1.5 rounded-full', s.dot)} />
@@ -597,7 +652,7 @@ function MemberProfilePage() {
       <section className="rounded-2xl border bg-card shadow-sm">
         <div className="flex items-center justify-between border-b px-6 py-4">
           <div className="flex items-center gap-2">
-            <Mic className="h-4 w-4 text-violet-500" />
+            <MicrophoneIcon className="h-4 w-4 text-violet-500" />
             <h2 className="text-sm font-semibold text-foreground">Meeting Contributions</h2>
             {contributions.length > 0 && (
               <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
@@ -607,9 +662,11 @@ function MemberProfilePage() {
           </div>
           {contribStats.total_words > 0 && (
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="hidden sm:inline">{contribStats.total_words.toLocaleString()} words spoken</span>
+              <span className="hidden sm:inline">
+                {contribStats.total_words.toLocaleString()} words spoken
+              </span>
               <span className="flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" />
+                <ChatBubbleLeftIcon className="h-3 w-3" />
                 {contribStats.total_messages} messages
               </span>
             </div>
@@ -620,7 +677,7 @@ function MemberProfilePage() {
           {contributions.length === 0 ? (
             <div className="flex flex-col items-center py-12 text-center">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-                <Mic className="h-5 w-5 text-muted-foreground/50" />
+                <MicrophoneIcon className="h-5 w-5 text-muted-foreground/50" />
               </div>
               <p className="text-sm font-medium text-foreground">No speaking contributions yet</p>
               <p className="mt-1 text-xs text-muted-foreground">
@@ -647,7 +704,7 @@ function MemberProfilePage() {
                       </Link>
                       <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
-                          <MessageSquare className="h-3 w-3" />
+                          <ChatBubbleLeftIcon className="h-3 w-3" />
                           {c.message_count}
                         </span>
                         <span className="hidden sm:inline">·</span>
@@ -675,10 +732,7 @@ function MemberProfilePage() {
                     {c.highlights.length > 0 && (
                       <div className="border-t bg-muted/30 px-4 py-2.5 space-y-1">
                         {c.highlights.slice(0, 2).map((h, i) => (
-                          <p
-                            key={i}
-                            className="line-clamp-1 text-xs text-muted-foreground italic"
-                          >
+                          <p key={i} className="line-clamp-1 text-xs text-muted-foreground italic">
                             &ldquo;{h}&rdquo;
                           </p>
                         ))}
@@ -699,7 +753,7 @@ export { MemberProfilePage }
 
 // ── Image resize helper ───────────────────────────────────────────────────────
 
-function resizeImage(file: File, maxW: number, maxH: number): Promise<string> {
+function resizeImage(file: DocumentIcon, maxW: number, maxH: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {

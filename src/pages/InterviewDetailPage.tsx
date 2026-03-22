@@ -1,25 +1,24 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
-  ArrowLeft,
-  BarChart3,
+  ArrowLeftIcon,
+  ArrowPathIcon,
   BriefcaseIcon,
-  CalendarPlus,
-  CheckCircle2,
-  ChevronDown,
-  ChevronUp,
-  ClipboardList,
-  FileText,
-  Loader2,
-  Pencil,
-  Play,
-  RefreshCw,
-  ThumbsUp,
-  Trash2,
-  UserCheck,
-  UserX,
-  XCircle,
-} from 'lucide-react'
+  CalendarDaysIcon,
+  ChartBarIcon,
+  CheckBadgeIcon,
+  CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ClipboardDocumentListIcon,
+  DocumentTextIcon,
+  HandThumbUpIcon,
+  PencilIcon,
+  PlayIcon,
+  TrashIcon,
+  UserMinusIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 
@@ -62,10 +61,10 @@ const DECISION_CONFIG: Record<
   DecisionOutcome,
   { label: string; color: string; icon: React.ElementType }
 > = {
-  hire: { label: 'Hire', color: 'text-emerald-600', icon: UserCheck },
-  no_hire: { label: 'No Hire', color: 'text-red-500', icon: UserX },
-  next_round: { label: 'Next Round', color: 'text-blue-600', icon: CheckCircle2 },
-  undecided: { label: 'Undecided', color: 'text-slate-500', icon: ClipboardList },
+  hire: { label: 'Hire', color: 'text-emerald-600', icon: CheckBadgeIcon },
+  no_hire: { label: 'No Hire', color: 'text-red-500', icon: UserMinusIcon },
+  next_round: { label: 'Next Round', color: 'text-blue-600', icon: CheckCircleIcon },
+  undecided: { label: 'Undecided', color: 'text-slate-500', icon: ClipboardDocumentListIcon },
 }
 
 // ── Sub-components ────────────────────────────────────────────────────────────
@@ -112,9 +111,9 @@ function QACard({ qa, index }: { qa: QASummary; index: number }) {
           {expanded ? 'Hide score & analysis' : 'View score & analysis'}
         </span>
         {expanded ? (
-          <ChevronUp className="w-3.5 h-3.5 text-slate-400" />
+          <ChevronUpIcon className="w-3.5 h-3.5 text-slate-400" />
         ) : (
-          <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+          <ChevronDownIcon className="w-3.5 h-3.5 text-slate-400" />
         )}
       </button>
 
@@ -286,7 +285,7 @@ function InterviewDetailPage() {
       )
       setInterview(result.interview)
       updateInterview(interviewId, result.interview)
-      toast.success('Bot deployed — interview is starting')
+      toast.success('CpuChipIcon deployed — interview is starting')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start interview')
     } finally {
@@ -445,7 +444,7 @@ function InterviewDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <Loader2 className="w-6 h-6 animate-spin text-violet-500" />
+        <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
       </div>
     )
   }
@@ -496,7 +495,7 @@ function InterviewDetailPage() {
           }
           className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 transition-colors"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeftIcon className="w-5 h-5" />
         </button>
 
         <div className="flex-1 min-w-0">
@@ -533,9 +532,9 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
             >
               {actionLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
               ) : (
-                <RefreshCw className="w-4 h-4" />
+                <ArrowPathIcon className="w-4 h-4" />
               )}
               Re-evaluate
             </button>
@@ -545,7 +544,7 @@ function InterviewDetailPage() {
               onClick={() => setShowDecision(true)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-300 dark:border-violet-700 text-sm text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
             >
-              <ThumbsUp className="w-4 h-4" />
+              <HandThumbUpIcon className="w-4 h-4" />
               Decide
             </button>
           )}
@@ -556,9 +555,9 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
             >
               {followUpCreating ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
               ) : (
-                <CalendarPlus className="w-4 h-4" />
+                <CalendarDaysIcon className="w-4 h-4" />
               )}
               New Interview Round
             </button>
@@ -568,7 +567,7 @@ function InterviewDetailPage() {
               onClick={() => navigate(`/org/interviews/${interviewId}/edit`)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              <Pencil className="w-4 h-4" />
+              <PencilIcon className="w-4 h-4" />
               Edit
             </button>
           )}
@@ -578,7 +577,7 @@ function InterviewDetailPage() {
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-40"
             title="Delete candidate"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            <TrashIcon className="w-3.5 h-3.5" />
           </button>
           {canStart && (
             <button
@@ -587,9 +586,9 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               {actionLoading ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <ArrowPathIcon className="w-4 h-4 animate-spin" />
               ) : (
-                <Play className="w-4 h-4" />
+                <PlayIcon className="w-4 h-4" />
               )}
               {interview.status === 'scheduled' ? 'Start Now' : 'Start Interview'}
             </button>
@@ -600,7 +599,7 @@ function InterviewDetailPage() {
               disabled={actionLoading}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-300 dark:border-red-800 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors disabled:opacity-50"
             >
-              <XCircle className="w-4 h-4" />
+              <XCircleIcon className="w-4 h-4" />
               Cancel
             </button>
           )}
@@ -619,7 +618,7 @@ function InterviewDetailPage() {
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             )}
           >
-            <FileText className="w-4 h-4" />
+            <DocumentTextIcon className="w-4 h-4" />
             Rounds
           </button>
           <button
@@ -631,7 +630,7 @@ function InterviewDetailPage() {
                 : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
             )}
           >
-            <BarChart3 className="w-4 h-4" />
+            <ChartBarIcon className="w-4 h-4" />
             Evaluation
           </button>
         </div>
@@ -642,7 +641,6 @@ function InterviewDetailPage() {
         {/* ═══ Details Tab ═══ */}
         {(activeTab === 'details' || !hasEval) && (
           <>
-
             {/* Salary row */}
             {(interview.salary_min != null ||
               interview.salary_max != null ||
@@ -715,9 +713,9 @@ function InterviewDetailPage() {
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {actionLoading ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <ArrowPathIcon className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Play className="w-4 h-4" />
+                      <PlayIcon className="w-4 h-4" />
                     )}
                     Start Now
                   </button>
@@ -762,7 +760,7 @@ function InterviewDetailPage() {
             {/* In-progress / evaluating status cards (no tabs yet) */}
             {(interview.status === 'in_progress' || interview.status === 'bot_deployed') && (
               <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10">
-                <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                <ArrowPathIcon className="w-8 h-8 animate-spin text-amber-500" />
                 <p className="font-medium text-amber-700 dark:text-amber-400">
                   Interview in progress
                 </p>
@@ -773,7 +771,7 @@ function InterviewDetailPage() {
             )}
             {interview.status === 'evaluating' && !hasEval && (
               <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/10">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
+                <ArrowPathIcon className="w-8 h-8 animate-spin text-purple-500" />
                 <p className="font-medium text-purple-700 dark:text-purple-400">
                   Generating evaluation...
                 </p>
@@ -784,7 +782,7 @@ function InterviewDetailPage() {
             )}
             {interview.status === 'completed' && !hasEval && (
               <div className="flex flex-col items-center justify-center py-12 gap-4 text-center rounded-xl border border-slate-200 dark:border-slate-700">
-                <ClipboardList className="w-10 h-10 text-slate-400" />
+                <ClipboardDocumentListIcon className="w-10 h-10 text-slate-400" />
                 <div>
                   <p className="font-medium text-slate-700 dark:text-slate-300">
                     No evaluation yet
@@ -799,9 +797,9 @@ function InterviewDetailPage() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm transition-colors disabled:opacity-50"
                 >
                   {actionLoading ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
                   ) : (
-                    <RefreshCw className="w-4 h-4" />
+                    <ArrowPathIcon className="w-4 h-4" />
                   )}
                   Run Evaluation
                 </button>
@@ -886,7 +884,7 @@ function InterviewDetailPage() {
                           'border-l-2 transition-colors',
                           isCurrent
                             ? 'border-l-violet-500 bg-violet-50/40 dark:bg-violet-900/10'
-                            : 'border-l-transparent',
+                            : 'border-l-transparent'
                         )}
                       >
                         <button
@@ -897,7 +895,7 @@ function InterviewDetailPage() {
                           className={cn(
                             'w-full px-4 py-3 flex items-center gap-3 text-left',
                             !isCurrent &&
-                              'hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors',
+                              'hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors'
                           )}
                         >
                           <span
@@ -905,7 +903,7 @@ function InterviewDetailPage() {
                               'shrink-0 w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center',
                               isCurrent
                                 ? 'bg-violet-200 text-violet-700 dark:bg-violet-800 dark:text-violet-300'
-                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400',
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
                             )}
                           >
                             {ri.round ?? 1}
@@ -932,8 +930,7 @@ function InterviewDetailPage() {
                               <span className="text-xs text-slate-400 capitalize">{ri.mode}</span>
                               <span className="text-xs text-slate-300 dark:text-slate-600">·</span>
                               <span className="text-xs text-slate-400">
-                                {ri.evaluation?.interview_duration_minutes ||
-                                  ri.time_limit_minutes}{' '}
+                                {ri.evaluation?.interview_duration_minutes || ri.time_limit_minutes}{' '}
                                 min
                               </span>
                             </div>
@@ -941,7 +938,7 @@ function InterviewDetailPage() {
                           <span
                             className={cn(
                               'shrink-0 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium capitalize',
-                              STATUS_COLORS[ri.status],
+                              STATUS_COLORS[ri.status]
                             )}
                           >
                             {ri.status.replace(/_/g, ' ')}
@@ -1176,7 +1173,7 @@ function InterviewDetailPage() {
                 className="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {actionLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  <ArrowPathIcon className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
                   'Start Interview'
                 )}
@@ -1244,9 +1241,9 @@ function InterviewDetailPage() {
                 className="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {actionLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin mx-auto" />
+                  <ArrowPathIcon className="w-4 h-4 animate-spin mx-auto" />
                 ) : (
-                  'Save Decision'
+                  'ArrowDownOnSquareIcon Decision'
                 )}
               </button>
             </div>

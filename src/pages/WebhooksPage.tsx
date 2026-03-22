@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Loader2, Save, SendHorizonal } from 'lucide-react'
+import {
+  ArrowDownOnSquareIcon,
+  ArrowPathIcon,
+  PaperAirplaneIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore } from '@/app/store'
@@ -101,7 +105,7 @@ function WebhooksPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -142,7 +146,7 @@ function WebhooksPage() {
             className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
           />
           <span className="text-sm text-foreground">
-            Send email notifications for selected events
+            PaperAirplaneIcon email notifications for selected events
           </span>
         </label>
       </section>
@@ -174,28 +178,32 @@ function WebhooksPage() {
         </div>
       </section>
 
-      {/* Save */}
+      {/* ArrowDownOnSquareIcon */}
       <div className="flex flex-col gap-3 sm:flex-row sm:justify-end">
         <button
           onClick={handleTest}
           disabled={testing || !slackUrl.trim()}
           className="flex items-center gap-2 rounded-xl border px-5 py-2.5 text-sm font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
-          title="Send a test event to verify your webhook configuration"
+          title="PaperAirplaneIcon a test event to verify your webhook configuration"
         >
           {testing ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
           ) : (
-            <SendHorizonal className="h-4 w-4" />
+            <PaperAirplaneIcon className="h-4 w-4" />
           )}
-          Send Test
+          PaperAirplaneIcon Test
         </button>
         <button
           onClick={handleSave}
           disabled={saving}
           className="flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
         >
-          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-          Save Settings
+          {saving ? (
+            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowDownOnSquareIcon className="h-4 w-4" />
+          )}
+          ArrowDownOnSquareIcon Cog6ToothIcon
         </button>
       </div>
     </div>

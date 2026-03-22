@@ -5,6 +5,7 @@ import { Toaster } from 'sonner'
 
 import {
   DashboardPage,
+  LandingPage,
   HomePage,
   MeetingPage,
   MeetingsPage,
@@ -25,6 +26,12 @@ import {
   InterviewRolePage,
   InterviewCreatePage,
   InterviewDetailPage,
+  ProductSalesPage,
+  ProductInterviewsPage,
+  ProductCustomerSupportPage,
+  ResourcesPage,
+  BlogPage,
+  BlogPostPage,
 } from '@/pages'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -57,9 +64,17 @@ function App() {
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_CLIENT_ID}>
       <Routes>
         {/* Public routes — no shell */}
-        <Route path="/" element={<HomePage />} />
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<HomePage defaultView="login" />} />
+        <Route path="/signup" element={<HomePage defaultView="signup-name" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
+        <Route path="/products/sales" element={<ProductSalesPage />} />
+        <Route path="/products/interviews" element={<ProductInterviewsPage />} />
+        <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
+        <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/blog" element={<BlogPage />} />
+        <Route path="/blog/:slug" element={<BlogPostPage />} />
 
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>

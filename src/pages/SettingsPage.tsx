@@ -1,6 +1,13 @@
 import { useState } from 'react'
-import { Building2, CreditCard, Lock, Mic, Save, Shield, Sparkles } from 'lucide-react'
-
+import {
+  ArrowDownOnSquareIcon,
+  BuildingOffice2Icon,
+  CreditCardIcon,
+  LockClosedIcon,
+  MicrophoneIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
+} from '@heroicons/react/24/outline'
 import { useUserPrefsStore, type VoiceId, type Personality } from '@/app/store'
 import { Button } from '@/components/common'
 import { cn } from '@/lib'
@@ -96,7 +103,7 @@ function Section({
         <h2 className="text-base font-semibold text-foreground">{title}</h2>
         {disabled && (
           <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
-            <Lock className="h-3 w-3" />
+            <LockClosedIcon className="h-3 w-3" />
             Not available yet
           </span>
         )}
@@ -113,7 +120,7 @@ function LockedRow({ label, description }: { label: string; description: string 
         <p className="text-sm font-medium">{label}</p>
         <p className="text-xs">{description}</p>
       </div>
-      <Lock className="h-4 w-4 shrink-0" />
+      <LockClosedIcon className="h-4 w-4 shrink-0" />
     </div>
   )
 }
@@ -153,7 +160,7 @@ function AiConfigSection() {
   const nameSuggestions = currentVoice?.gender === 'male' ? MALE_NAMES : FEMALE_NAMES
 
   return (
-    <Section icon={Sparkles} title="Lira Configuration">
+    <Section icon={SparklesIcon} title="Lira Configuration">
       {/* AI Name */}
       <div className="space-y-5">
         <div>
@@ -176,8 +183,8 @@ function AiConfigSection() {
               disabled={!localName.trim() || localName.trim() === aiName}
               className="gap-1.5 rounded-xl"
             >
-              <Save className="h-3.5 w-3.5" />
-              {saved ? 'Saved!' : 'Save'}
+              <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
+              {saved ? 'Saved!' : 'ArrowDownOnSquareIcon'}
             </Button>
           </div>
           {/* Name quick-picks */}
@@ -215,7 +222,7 @@ function AiConfigSection() {
                 }`}
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
-                  <Mic className="h-4 w-4" />
+                  <MicrophoneIcon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -257,15 +264,15 @@ function AiConfigSection() {
   )
 }
 
-// ── Settings tabs ─────────────────────────────────────────────────────────────
+// ── Cog6ToothIcon tabs ─────────────────────────────────────────────────────────────
 
 type SettingsTab = 'ai' | 'organization' | 'subscription' | 'billing'
 
 const SETTINGS_TABS = [
-  { id: 'ai' as SettingsTab, icon: Sparkles, label: 'Lira Configuration' },
-  { id: 'organization' as SettingsTab, icon: Building2, label: 'Organization' },
-  { id: 'subscription' as SettingsTab, icon: Shield, label: 'Subscription' },
-  { id: 'billing' as SettingsTab, icon: CreditCard, label: 'Billing' },
+  { id: 'ai' as SettingsTab, icon: SparklesIcon, label: 'Lira Configuration' },
+  { id: 'organization' as SettingsTab, icon: BuildingOffice2Icon, label: 'Organization' },
+  { id: 'subscription' as SettingsTab, icon: ShieldCheckIcon, label: 'Subscription' },
+  { id: 'billing' as SettingsTab, icon: CreditCardIcon, label: 'Billing' },
 ]
 
 function SettingsPage() {
@@ -276,7 +283,7 @@ function SettingsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Settings</h1>
+          <h1 className="text-xl font-bold text-gray-900">Cog6ToothIcon</h1>
           <p className="text-sm text-gray-500">Manage your Lira configuration and workspace</p>
         </div>
       </div>
@@ -309,7 +316,7 @@ function SettingsPage() {
           {activeTab === 'ai' && <AiConfigSection />}
           {activeTab === 'organization' && <OrgSettingsPage />}
           {activeTab === 'subscription' && (
-            <Section icon={Shield} title="Subscription" disabled>
+            <Section icon={ShieldCheckIcon} title="Subscription" disabled>
               <LockedRow
                 label="Manage Plan"
                 description="View and upgrade your current subscription plan."
@@ -323,7 +330,7 @@ function SettingsPage() {
             </Section>
           )}
           {activeTab === 'billing' && (
-            <Section icon={CreditCard} title="Billing & License" disabled>
+            <Section icon={CreditCardIcon} title="Billing & License" disabled>
               <LockedRow label="Invoices" description="View and download past invoices." />
               <div className="mt-2">
                 <LockedRow

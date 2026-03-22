@@ -1,21 +1,21 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
-  ArrowLeft,
-  Check,
-  CheckCircle2,
-  Clock,
-  ExternalLink,
-  Loader2,
-  Pencil,
-  PlayCircle,
-  Trash2,
-  User,
-  X,
-  XCircle,
-  Zap,
-  Copy,
-} from 'lucide-react'
+  ArrowLeftIcon,
+  ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
+  BoltIcon,
+  CheckCircleIcon,
+  CheckIcon,
+  ClockIcon,
+  DocumentDuplicateIcon,
+  PencilIcon,
+  PlayCircleIcon,
+  TrashIcon,
+  UserIcon,
+  XCircleIcon,
+  XMarkIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import ReactMarkdown from 'react-markdown'
 
@@ -37,10 +37,10 @@ import { cn } from '@/lib'
 
 const STATUS_LABELS: Record<TaskStatus, { label: string; icon: React.ElementType; color: string }> =
   {
-    pending: { label: 'Pending', icon: Clock, color: 'text-amber-500' },
-    in_progress: { label: 'In Progress', icon: PlayCircle, color: 'text-blue-500' },
-    completed: { label: 'Completed', icon: CheckCircle2, color: 'text-emerald-500' },
-    cancelled: { label: 'Cancelled', icon: XCircle, color: 'text-slate-500' },
+    pending: { label: 'Pending', icon: ClockIcon, color: 'text-amber-500' },
+    in_progress: { label: 'In Progress', icon: PlayCircleIcon, color: 'text-blue-500' },
+    completed: { label: 'Completed', icon: CheckCircleIcon, color: 'text-emerald-500' },
+    cancelled: { label: 'Cancelled', icon: XCircleIcon, color: 'text-slate-500' },
   }
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
@@ -152,7 +152,9 @@ function TaskDetailPage() {
     if (!currentOrgId || !taskId) return
     setSavingDueDate(true)
     try {
-      const updated = await updateTask(currentOrgId, taskId, { due_date: dueDateDraft || undefined })
+      const updated = await updateTask(currentOrgId, taskId, {
+        due_date: dueDateDraft || undefined,
+      })
       setTask(updated)
       updateTaskInStore(taskId, { due_date: updated.due_date })
       toast.success('Due date updated')
@@ -208,7 +210,7 @@ function TaskDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -232,14 +234,12 @@ function TaskDetailPage() {
 
   // Member lookup for assignee link + autocomplete suggestions
   const assignedMember = orgMembers.find(
-    (m) => task.assigned_to && (m.name === task.assigned_to || m.email === task.assigned_to),
+    (m) => task.assigned_to && (m.name === task.assigned_to || m.email === task.assigned_to)
   )
   const memberSuggestions = orgMembers.filter((m) => {
     if (!assigneeDraft.trim()) return true
     const q = assigneeDraft.toLowerCase()
-    return (
-      (m.name ?? '').toLowerCase().includes(q) || (m.email ?? '').toLowerCase().includes(q)
-    )
+    return (m.name ?? '').toLowerCase().includes(q) || (m.email ?? '').toLowerCase().includes(q)
   })
 
   const canExecute =
@@ -254,7 +254,7 @@ function TaskDetailPage() {
         onClick={() => navigate('/org/tasks')}
         className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowLeft className="h-4 w-4" />
+        <ArrowLeftIcon className="h-4 w-4" />
         Back to Tasks
       </button>
 
@@ -285,7 +285,7 @@ function TaskDetailPage() {
           disabled={deleting}
           className="flex items-center gap-1.5 rounded-lg border border-red-500/30 px-3 py-1.5 text-xs font-medium text-red-500 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <TrashIcon className="h-3.5 w-3.5" />
           Delete
         </button>
       </div>
@@ -323,7 +323,8 @@ function TaskDetailPage() {
                       if (e.key === 'Enter') handleSaveAssignee()
                       if (e.key === 'Escape') setEditAssignee(false)
                     }}
-                    placeholder="Search members…"
+                    placeholder="MagnifyingGlassIcon members…"
+                    // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional UX: auto-focus inline edit field
                     autoFocus
                   />
                   <button
@@ -331,10 +332,17 @@ function TaskDetailPage() {
                     disabled={savingAssignee}
                     className="rounded p-0.5 text-green-600 hover:bg-green-50"
                   >
-                    {savingAssignee ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                    {savingAssignee ? (
+                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckIcon className="h-4 w-4" />
+                    )}
                   </button>
-                  <button onClick={() => setEditAssignee(false)} className="rounded p-0.5 text-muted-foreground hover:bg-muted">
-                    <X className="h-4 w-4" />
+                  <button
+                    onClick={() => setEditAssignee(false)}
+                    className="rounded p-0.5 text-muted-foreground hover:bg-muted"
+                  >
+                    <XMarkIcon className="h-4 w-4" />
                   </button>
                 </div>
                 {memberSuggestions.length > 0 && (
@@ -353,7 +361,9 @@ function TaskDetailPage() {
                           {(m.name ?? m.email ?? '?')[0].toUpperCase()}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate font-medium text-foreground">{m.name ?? m.email}</p>
+                          <p className="truncate font-medium text-foreground">
+                            {m.name ?? m.email}
+                          </p>
                           {m.name && m.email && (
                             <p className="truncate text-xs text-muted-foreground">{m.email}</p>
                           )}
@@ -373,17 +383,22 @@ function TaskDetailPage() {
                     to={`/org/members/${assignedMember.user_id}`}
                     className="flex items-center gap-1 text-sm text-violet-600 hover:underline"
                   >
-                    <User className="h-3.5 w-3.5 shrink-0" />
+                    <UserIcon className="h-3.5 w-3.5 shrink-0" />
                     {task.assigned_to}
                   </Link>
                 ) : (
-                  <span className="text-sm text-foreground">{task.assigned_to || 'Unassigned'}</span>
+                  <span className="text-sm text-foreground">
+                    {task.assigned_to || 'Unassigned'}
+                  </span>
                 )}
                 <button
-                  onClick={() => { setAssigneeDraft(task.assigned_to ?? ''); setEditAssignee(true) }}
+                  onClick={() => {
+                    setAssigneeDraft(task.assigned_to ?? '')
+                    setEditAssignee(true)
+                  }}
                   className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-foreground hover:text-foreground transition-opacity"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilIcon className="h-3.5 w-3.5" />
                 </button>
               </dd>
             )}
@@ -399,14 +414,29 @@ function TaskDetailPage() {
                   className="h-7 rounded-md border bg-background px-2 text-sm focus:outline-none focus:ring-1 focus:ring-violet-500"
                   value={dueDateDraft}
                   onChange={(e) => setDueDateDraft(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') handleSaveDueDate(); if (e.key === 'Escape') setEditDueDate(false) }}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveDueDate()
+                    if (e.key === 'Escape') setEditDueDate(false)
+                  }}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- intentional UX: auto-focus inline edit field
                   autoFocus
                 />
-                <button onClick={handleSaveDueDate} disabled={savingDueDate} className="rounded p-0.5 text-green-600 hover:bg-green-50">
-                  {savingDueDate ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                <button
+                  onClick={handleSaveDueDate}
+                  disabled={savingDueDate}
+                  className="rounded p-0.5 text-green-600 hover:bg-green-50"
+                >
+                  {savingDueDate ? (
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckIcon className="h-4 w-4" />
+                  )}
                 </button>
-                <button onClick={() => setEditDueDate(false)} className="rounded p-0.5 text-muted-foreground hover:bg-muted">
-                  <X className="h-4 w-4" />
+                <button
+                  onClick={() => setEditDueDate(false)}
+                  className="rounded p-0.5 text-muted-foreground hover:bg-muted"
+                >
+                  <XMarkIcon className="h-4 w-4" />
                 </button>
               </dd>
             ) : (
@@ -415,10 +445,13 @@ function TaskDetailPage() {
                   {task.due_date ? new Date(task.due_date).toLocaleDateString() : 'No due date'}
                 </span>
                 <button
-                  onClick={() => { setDueDateDraft(task.due_date ? task.due_date.split('T')[0] : ''); setEditDueDate(true) }}
+                  onClick={() => {
+                    setDueDateDraft(task.due_date ? task.due_date.split('T')[0] : '')
+                    setEditDueDate(true)
+                  }}
                   className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-foreground hover:text-foreground transition-opacity"
                 >
-                  <Pencil className="h-3.5 w-3.5" />
+                  <PencilIcon className="h-3.5 w-3.5" />
                 </button>
               </dd>
             )}
@@ -436,7 +469,7 @@ function TaskDetailPage() {
                   to={`/meetings/${task.session_id}`}
                   className="flex items-center gap-1 text-sm text-violet-600 hover:underline"
                 >
-                  <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 shrink-0" />
                   {sourceMeeting?.title || task.session_id}
                 </Link>
               </dd>
@@ -476,7 +509,7 @@ function TaskDetailPage() {
       <section className="rounded-xl border bg-card p-6">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-violet-500" />
+            <BoltIcon className="h-5 w-5 text-violet-500" />
             <h2 className="text-sm font-semibold text-foreground">AI Execution</h2>
           </div>
           {canExecute && (
@@ -488,12 +521,12 @@ function TaskDetailPage() {
               >
                 {executing ? (
                   <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
                     Executing…
                   </>
                 ) : (
                   <>
-                    <Zap className="h-4 w-4" />
+                    <BoltIcon className="h-4 w-4" />
                     {executionResult ? 'Re-execute' : 'Execute with AI'}
                   </>
                 )}
@@ -511,15 +544,15 @@ function TaskDetailPage() {
           <div>
             <div className="mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1 text-xs font-medium text-emerald-600 dark:text-emerald-400">
-                <CheckCircle2 className="h-3.5 w-3.5" />
+                <CheckCircleIcon className="h-3.5 w-3.5" />
                 AI Result
               </span>
               <button
                 onClick={copyResult}
                 className="flex items-center gap-1 rounded-lg border px-2.5 py-1 text-xs hover:bg-muted"
               >
-                <Copy className="h-3 w-3" />
-                Copy
+                <DocumentDuplicateIcon className="h-3 w-3" />
+                DocumentDuplicateIcon
               </button>
             </div>
             <div className="prose prose-sm max-w-none rounded-lg border bg-background p-4 dark:prose-invert">
@@ -528,12 +561,12 @@ function TaskDetailPage() {
           </div>
         ) : task.execution_status === 'running' ? (
           <div className="flex items-center gap-3 rounded-lg bg-blue-50 px-4 py-3 dark:bg-blue-950/20">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
+            <ArrowPathIcon className="h-5 w-5 animate-spin text-blue-500" />
             <p className="text-sm text-blue-600 dark:text-blue-400">AI is processing this task…</p>
           </div>
         ) : task.execution_status === 'failed' ? (
           <div className="flex items-center gap-3 rounded-lg bg-red-50 px-4 py-3 dark:bg-red-950/20">
-            <XCircle className="h-5 w-5 text-red-500" />
+            <XCircleIcon className="h-5 w-5 text-red-500" />
             <p className="text-sm text-red-500">Execution failed. Try again.</p>
           </div>
         ) : (

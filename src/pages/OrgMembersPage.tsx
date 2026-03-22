@@ -1,17 +1,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  ArrowRightLeft,
-  Copy,
-  Loader2,
-  LogOut,
-  RefreshCw,
-  Shield,
-  ShieldCheck,
-  Crown,
-  UserMinus,
-  Users,
-} from 'lucide-react'
+  ArrowPathIcon,
+  ArrowRightOnRectangleIcon,
+  ArrowsRightLeftIcon,
+  DocumentDuplicateIcon,
+  ShieldCheckIcon,
+  TrophyIcon,
+  UserMinusIcon,
+  UsersIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -148,7 +146,7 @@ function OrgMembersPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -159,7 +157,7 @@ function OrgMembersPage() {
       <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-violet-100">
-            <Users className="w-5 h-5 text-violet-600" />
+            <UsersIcon className="w-5 h-5 text-violet-600" />
           </div>
           <div>
             <h1 className="text-xl font-bold text-gray-900">Team Members</h1>
@@ -186,9 +184,9 @@ function OrgMembersPage() {
               onClick={copyCode}
               disabled={!inviteCode}
               className="rounded-lg border px-3 py-2.5 text-sm hover:bg-muted disabled:opacity-50"
-              title="Copy invite code"
+              title="DocumentDuplicateIcon invite code"
             >
-              <Copy className="h-4 w-4" />
+              <DocumentDuplicateIcon className="h-4 w-4" />
             </button>
             {isOwnerOrAdmin && (
               <button
@@ -197,7 +195,7 @@ function OrgMembersPage() {
                 className="rounded-lg border px-3 py-2.5 text-sm hover:bg-muted disabled:opacity-50"
                 title="Regenerate invite code"
               >
-                <RefreshCw className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
+                <ArrowPathIcon className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
               </button>
             )}
           </div>
@@ -250,17 +248,17 @@ function OrgMembersPage() {
                 <div className="flex items-center gap-1.5">
                   {m.role === 'owner' ? (
                     <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
-                      <Crown className="h-3 w-3" />
+                      <TrophyIcon className="h-3 w-3" />
                       Owner
                     </span>
                   ) : m.role === 'admin' ? (
                     <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-400">
-                      <ShieldCheck className="h-3 w-3" />
+                      <ShieldCheckIcon className="h-3 w-3" />
                       Admin
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                      <Shield className="h-3 w-3" />
+                      <ShieldCheckIcon className="h-3 w-3" />
                       Member
                     </span>
                   )}
@@ -288,7 +286,7 @@ function OrgMembersPage() {
                       className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
                       title="Remove member"
                     >
-                      <UserMinus className="h-4 w-4" />
+                      <UserMinusIcon className="h-4 w-4" />
                     </button>
                     {currentMember?.role === 'owner' && (
                       <button
@@ -296,7 +294,7 @@ function OrgMembersPage() {
                         className="rounded-lg p-1.5 text-muted-foreground hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30"
                         title="Transfer ownership"
                       >
-                        <ArrowRightLeft className="h-4 w-4" />
+                        <ArrowsRightLeftIcon className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -319,7 +317,7 @@ function OrgMembersPage() {
               onClick={() => setLeavingOrg(true)}
               className="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
             >
-              <LogOut className="h-4 w-4" />
+              <ArrowRightOnRectangleIcon className="h-4 w-4" />
               Leave organization
             </button>
           </section>
@@ -386,7 +384,7 @@ function OrgMembersPage() {
                   disabled={transferring}
                   className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
                 >
-                  {transferring ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Transfer'}
+                  {transferring ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : 'Transfer'}
                 </button>
               </div>
             </div>
