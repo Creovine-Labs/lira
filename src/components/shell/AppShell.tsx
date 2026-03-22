@@ -92,7 +92,7 @@ const NAV = [
   },
 ]
 
-const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Cog6ToothIcon' }]
+const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
 
 // ── Org switcher dropdown ──────────────────────────────────────────────────────
 function OrgSwitcher() {
@@ -440,6 +440,7 @@ function NotificationBell() {
 function AppShell() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const { token, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
@@ -595,24 +596,43 @@ function AppShell() {
       )}
 
       {/* ── Desktop sidebar ── */}
-      <aside className="hidden md:flex w-[200px] shrink-0 flex-col border-r border-gray-100 bg-white px-3 py-4">
-        {/* Logo */}
-        <div className="mb-4 px-1">
+      <aside
+        className={cn(
+          'hidden md:flex shrink-0 flex-col border-r border-gray-100 bg-white py-4 transition-all duration-200 ease-in-out',
+          sidebarCollapsed ? 'w-16 px-2' : 'w-[210px] px-3'
+        )}
+      >
+        {/* Logo + collapse toggle */}
+        <div className="mb-4 flex items-center justify-between px-1">
           <NavLink to="/dashboard">
-            <LiraLogo size="sm" />
+            <LiraLogo size="sm" mark={sidebarCollapsed} />
           </NavLink>
+          <button
+            onClick={() => setSidebarCollapsed((v) => !v)}
+            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <Bars3Icon className="h-4 w-4" />
+          </button>
         </div>
 
-        {/* Org switcher */}
-        <div className="mb-4">
-          <OrgSwitcher />
-        </div>
+        {/* Org switcher — hidden when collapsed */}
+        {!sidebarCollapsed && (
+          <div className="mb-4">
+            <OrgSwitcher />
+          </div>
+        )}
 
         {/* Nav groups */}
-        <nav className="flex flex-1 flex-col gap-4 overflow-y-auto">
+        <nav
+          className={cn(
+            'flex flex-1 flex-col overflow-y-auto',
+            sidebarCollapsed ? 'gap-1' : 'gap-4'
+          )}
+        >
           {NAV.map((section, si) => (
             <div key={si}>
-              {section.group && (
+              {!sidebarCollapsed && section.group && (
                 <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                   {section.group}
                 </p>
@@ -622,9 +642,11 @@ function AppShell() {
                   <NavLink
                     key={to}
                     to={to}
+                    title={sidebarCollapsed ? label : undefined}
                     className={({ isActive }) =>
                       cn(
-                        'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
+                        'flex items-center rounded-xl py-2 text-[13px] font-medium transition-colors',
+                        sidebarCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3',
                         isActive
                           ? 'bg-[#1A1A1A] text-white'
                           : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
@@ -632,8 +654,8 @@ function AppShell() {
                     }
                   >
                     <Icon className="h-4 w-4 shrink-0" />
-                    {label}
-                    <NavBadge count={badges[to] ?? 0} />
+                    {!sidebarCollapsed && label}
+                    {!sidebarCollapsed && <NavBadge count={badges[to] ?? 0} />}
                   </NavLink>
                 ))}
               </div>
@@ -647,9 +669,11 @@ function AppShell() {
             <NavLink
               key={to}
               to={to}
+              title={sidebarCollapsed ? label : undefined}
               className={({ isActive }) =>
                 cn(
-                  'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
+                  'flex items-center rounded-xl py-2 text-[13px] font-medium transition-colors',
+                  sidebarCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3',
                   isActive
                     ? 'bg-[#1A1A1A] text-white'
                     : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
@@ -657,7 +681,7 @@ function AppShell() {
               }
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              {!sidebarCollapsed && label}
             </NavLink>
           ))}
         </div>

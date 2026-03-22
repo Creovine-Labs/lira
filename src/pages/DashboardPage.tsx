@@ -336,7 +336,7 @@ function ActivityPanel({
             <QuickAction
               icon={BookOpenIcon}
               label="Add knowledge"
-              description="ArrowUpTrayIcon docs or crawl your website"
+              description="Upload docs or crawl your website"
               onClick={() => navigate('/org/knowledge')}
             />
             <QuickAction
@@ -742,7 +742,7 @@ function DeployHeroBar() {
                 Sending…
               </>
             ) : (
-              'PaperAirplaneIcon Lira'
+              'Add Lira'
             )}
           </button>
         </div>
