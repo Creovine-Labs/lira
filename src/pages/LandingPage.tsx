@@ -1,6 +1,6 @@
 import React from 'react'
 import { useState, useEffect, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   ArrowRightIcon,
   ArrowTrendingUpIcon,
@@ -13,6 +13,7 @@ import {
   ComputerDesktopIcon,
   HeartIcon,
   VideoCameraIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { MarketingNavbar, MarketingFooter } from '@/components/marketing'
 
@@ -1093,57 +1094,153 @@ function MeetingDemo() {
   )
 }
 
-// ─── Hero ─────────────────────────────────────────────────────────────────────
+// ─── Meeting Intent Modal ────────────────────────────────────────────────────
 
-function Hero() {
+function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
+  const navigate = useNavigate()
+
+  const handleStart = () => {
+    navigate(`/signup?meetingUrl=${encodeURIComponent(url)}`)
+  }
+
   return (
-    <section className="relative overflow-hidden pt-36 sm:pt-44 pb-0 px-6 text-center">
-      {/* Headline */}
-      <h1 className="mx-auto max-w-2xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
-        The{' '}
-        <span
-          className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
-          style={{
-            background: '#1a3a5c',
-            boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
-          }}
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: 'rgba(0,0,0,0.50)', backdropFilter: 'blur(8px)' }}
+      role="presentation"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onKeyDown={(e) => e.key === 'Escape' && onClose()}
+    >
+      <div
+        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl px-8 py-10 text-center"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="meeting-modal-title"
+      >
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition"
+          aria-label="Close"
         >
-          AI
-        </span>{' '}
-        that listens,
-        <br />
-        remembers, and acts.
-      </h1>
+          <XMarkIcon className="w-5 h-5" />
+        </button>
 
-      {/* Join meeting widget */}
-      <div className="mx-auto mt-12 sm:mt-16 max-w-lg">
-        <div className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 shadow-md px-5 py-3.5">
-          <VideoCameraIcon className="h-4 w-4 shrink-0 text-gray-400" />
-          <input
-            type="url"
-            placeholder="Paste a Google Meet link…"
-            className="flex-1 min-w-0 text-sm text-gray-800 placeholder-gray-400 bg-transparent outline-none"
+        {/* Lira avatar */}
+        <div className="mx-auto mb-5 w-14 h-14 rounded-2xl overflow-hidden shadow-md">
+          <img
+            src="/lira_black_with_white_backgound.png"
+            alt="Lira"
+            className="w-full h-full object-cover"
           />
-          <Link
-            to="/signup"
-            className="shrink-0 rounded-xl bg-[#1a3a5c] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#14304f] transition"
-          >
-            Join meeting
-          </Link>
         </div>
-        <p className="mt-4 text-xs text-gray-400 tracking-wide">
-          ✦ &nbsp;Lira joins as a voice participant — no plugins required&nbsp; ✦
-        </p>
-      </div>
 
-      {/* Meeting demo */}
-      <MeetingDemo />
-    </section>
+        {/* Headline */}
+        <h2
+          id="meeting-modal-title"
+          className="text-xl font-black tracking-tight text-gray-900 mb-2"
+        >
+          Lira is ready to join your call.
+        </h2>
+
+        {/* Meeting URL preview */}
+        <div className="mx-auto mb-5 flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-3 py-2">
+          <VideoCameraIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+          <span className="text-xs text-gray-500 truncate">{url}</span>
+        </div>
+
+        {/* Body */}
+        <p className="text-sm text-gray-500 leading-relaxed mb-7">
+          Create a free account and Lira will be deployed to this meeting — takes 60 seconds.
+        </p>
+
+        {/* Primary CTA */}
+        <button
+          onClick={handleStart}
+          className="w-full rounded-xl bg-[#1a3a5c] text-white text-sm font-semibold py-3 hover:bg-[#14304f] transition flex items-center justify-center gap-2"
+        >
+          Start free
+          <ArrowRightIcon className="w-4 h-4" />
+        </button>
+
+        {/* Dismiss */}
+        <button
+          onClick={onClose}
+          className="mt-4 text-xs text-gray-400 hover:text-gray-600 transition"
+        >
+          Maybe later
+        </button>
+      </div>
+    </div>
   )
 }
 
-// ─── Mid CTA ──────────────────────────────────────────────────────────────────
+// ─── Hero ──────────────────────────────────────────────────────────────────────────────
 
+function Hero() {
+  const [meetingUrl, setMeetingUrl] = React.useState('')
+  const [showModal, setShowModal] = React.useState(false)
+
+  const handleJoin = () => {
+    const trimmed = meetingUrl.trim()
+    if (trimmed) {
+      setShowModal(true)
+    } else {
+      window.location.href = '/signup'
+    }
+  }
+
+  return (
+    <>
+      {showModal && <MeetingModal url={meetingUrl} onClose={() => setShowModal(false)} />}
+      <section className="relative overflow-hidden pt-36 sm:pt-44 pb-0 px-6 text-center">
+        {/* Headline */}
+        <h1 className="mx-auto max-w-2xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
+          The{' '}
+          <span
+            className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
+            style={{
+              background: '#1a3a5c',
+              boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
+            }}
+          >
+            AI
+          </span>{' '}
+          that listens,
+          <br />
+          remembers, and acts.
+        </h1>
+
+        {/* Join meeting widget */}
+        <div className="mx-auto mt-12 sm:mt-16 max-w-lg">
+          <div className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 shadow-md px-5 py-3.5">
+            <VideoCameraIcon className="h-4 w-4 shrink-0 text-gray-400" />
+            <input
+              type="url"
+              value={meetingUrl}
+              onChange={(e) => setMeetingUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
+              placeholder="Paste a Google Meet link…"
+              className="flex-1 min-w-0 text-sm text-gray-800 placeholder-gray-400 bg-transparent outline-none"
+            />
+            <button
+              onClick={handleJoin}
+              className="shrink-0 rounded-xl bg-[#1a3a5c] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#14304f] transition"
+            >
+              Join meeting
+            </button>
+          </div>
+          <p className="mt-4 text-xs text-gray-400 tracking-wide">
+            ✦ Lira joins as a voice participant — no plugins required ✦
+          </p>
+        </div>
+
+        {/* Meeting demo */}
+        <MeetingDemo />
+      </section>
+    </>
+  )
+}
 function MidCTA() {
   return (
     <section className="py-20 px-6 text-center">
