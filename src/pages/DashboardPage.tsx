@@ -49,37 +49,63 @@ function formatDate(iso: string): string {
   })
 }
 
-// ── Stat card ─────────────────────────────────────────────────────────────────
+// ── Stat card (glassmorphism gradient) ───────────────────────────────────────
+const STAT_PALETTES = {
+  purple: {
+    bg: 'from-[#3730a3] via-[#2e2a8a] to-[#1e1b4b]',
+    glow: 'shadow-[0_8px_32px_rgba(55,48,163,0.45)]',
+  },
+  dark: {
+    bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+    glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
+  },
+  indigo: {
+    bg: 'from-[#4f46e5] via-[#4338ca] to-[#312e81]',
+    glow: 'shadow-[0_8px_32px_rgba(79,70,229,0.40)]',
+  },
+  slate: {
+    bg: 'from-[#374151] via-[#1f2937] to-[#111827]',
+    glow: 'shadow-[0_8px_32px_rgba(17,24,39,0.50)]',
+  },
+} as const
+type StatAccent = keyof typeof STAT_PALETTES
+
 function StatCard({
   label,
   value,
   icon: Icon,
-  accent: _accent,
+  accent = 'purple',
   onClick,
 }: {
   label: string
   value: number | string
   icon: React.ElementType
-  accent?: string
+  accent?: StatAccent
   onClick?: () => void
 }) {
+  const { bg, glow } = STAT_PALETTES[accent]
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
       {...(onClick ? { onClick } : {})}
-      className="group relative flex w-full flex-col justify-between rounded-2xl border border-white/60 bg-white p-5 text-left shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
+      className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${bg} ${glow} p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
-          <Icon className="h-[18px] w-[18px]" />
+      {/* Glass shimmer overlay */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.12] to-transparent" />
+      {/* Inner border glow */}
+      <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/[0.08]" />
+
+      <div className="relative">
+        <div className="flex items-start justify-between">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/60 backdrop-blur-sm">
+            <Icon className="h-[15px] w-[15px]" />
+          </div>
+          {onClick && (
+            <ArrowRightIcon className="h-3 w-3 text-white/20 opacity-0 transition group-hover:opacity-100 group-hover:text-white/60" />
+          )}
         </div>
-        {onClick && (
-          <ArrowRightIcon className="h-3.5 w-3.5 text-gray-300 opacity-0 transition group-hover:opacity-100" />
-        )}
-      </div>
-      <div className="mt-4">
-        <p className="text-3xl font-bold tracking-tight text-gray-900">{value}</p>
-        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        <p className="mt-4 text-2xl font-bold tracking-tight text-white">{value}</p>
+        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/40">
           {label}
         </p>
       </div>
@@ -104,23 +130,23 @@ function QuickAction({
   return (
     <button
       onClick={onClick}
-      className="group flex w-full items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-gray-200 hover:shadow-sm"
+      className="group flex w-full items-center gap-3.5 rounded-xl px-4 py-3.5 text-left transition-all hover:bg-gray-50"
     >
       <div
         className={cn(
-          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition',
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors',
           accent
-            ? 'bg-gray-900 text-white group-hover:bg-gray-700'
-            : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
+            ? 'bg-[#3730a3] text-white group-hover:bg-[#312e81]'
+            : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200'
         )}
       >
-        <Icon className="h-4 w-4" />
+        <Icon className="h-3.5 w-3.5" />
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-gray-900">{label}</p>
-        <p className="mt-0.5 truncate text-xs text-gray-400">{description}</p>
+        <p className="text-sm font-medium text-gray-900">{label}</p>
+        <p className="mt-0.5 truncate text-[11px] text-gray-400">{description}</p>
       </div>
-      <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-300 transition group-hover:text-gray-500" />
+      <ArrowRightIcon className="h-3 w-3 shrink-0 text-gray-200 opacity-0 transition group-hover:opacity-100 group-hover:text-[#3730a3]" />
     </button>
   )
 }
@@ -202,7 +228,7 @@ function RecentTasks({ tasks }: { tasks: TaskRecord[] }) {
 }
 
 // ── Activity panel (tabbed) ───────────────────────────────────────────────────
-type Tab = 'actions' | 'meetings' | 'tasks' | 'interviews'
+type Tab = 'meetings' | 'tasks' | 'interviews'
 
 function ActivityPanel({
   meetings,
@@ -215,80 +241,46 @@ function ActivityPanel({
   interviews: Interview[]
   navigate: (path: string) => void
 }) {
-  const [tab, setTab] = useState<Tab>('actions')
+  const [tab, setTab] = useState<Tab>('meetings')
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: 'actions', label: 'Quick Actions' },
     { id: 'meetings', label: 'Meetings', count: meetings.length || undefined },
     { id: 'tasks', label: 'Tasks', count: tasks.length || undefined },
     { id: 'interviews', label: 'Interviews', count: interviews.length || undefined },
   ]
 
   return (
-    <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
-      {/* Pill tab bar — matches landing page style */}
-      <div className="p-4 pb-0">
-        <div className="inline-flex items-center gap-1 rounded-xl bg-gray-100 p-1">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setTab(t.id)}
-              className={cn(
-                'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all duration-200',
-                tab === t.id
-                  ? 'bg-gray-900 text-white shadow-sm'
-                  : 'text-gray-500 hover:text-gray-700'
-              )}
-            >
-              {t.label}
-              {t.count !== undefined && (
-                <span
-                  className={cn(
-                    'rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
-                    tab === t.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
-                  )}
-                >
-                  {t.count}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+    <div className="flex h-full flex-col rounded-2xl border border-white/60 bg-white shadow-sm">
+      {/* Underline tab bar — purple active */}
+      <div className="flex items-center gap-0 border-b border-gray-100 px-4 pt-4">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'flex items-center gap-1.5 border-b-2 px-3 pb-3 text-sm font-medium transition',
+              tab === t.id
+                ? 'border-[#3730a3] text-[#3730a3]'
+                : 'border-transparent text-gray-400 hover:text-gray-700'
+            )}
+          >
+            {t.label}
+            {t.count !== undefined && (
+              <span
+                className={cn(
+                  'rounded-full px-1.5 py-0.5 text-[10px] font-bold',
+                  tab === t.id ? 'bg-[#3730a3]/10 text-[#3730a3]' : 'bg-gray-100 text-gray-400'
+                )}
+              >
+                {t.count}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Panel content */}
-      <div className="p-4 pt-4">
-        {/* ── Quick Actions ── */}
-        {tab === 'actions' && (
-          <div className="space-y-2">
-            <QuickAction
-              icon={MicrophoneIcon}
-              label="Start a meeting"
-              description="Invite Lira to a live conversation"
-              onClick={() => navigate('/meetings')}
-              accent
-            />
-            <QuickAction
-              icon={BriefcaseIcon}
-              label="Start an interview"
-              description="AI-assisted candidate interview"
-              onClick={() => navigate('/org/roles')}
-            />
-            <QuickAction
-              icon={BookOpenIcon}
-              label="Add knowledge"
-              description="Upload docs or crawl your website"
-              onClick={() => navigate('/org/knowledge')}
-            />
-            <QuickAction
-              icon={PlusIcon}
-              label="Invite team members"
-              description="Grow your workspace"
-              onClick={() => navigate('/org/members')}
-            />
-          </div>
-        )}
-
+      <div className="flex-1 overflow-y-auto p-4">
         {/* ── Meetings ── */}
         {tab === 'meetings' && (
           <div>
@@ -296,7 +288,7 @@ function ActivityPanel({
             {meetings.length > 0 && (
               <button
                 onClick={() => navigate('/meetings')}
-                className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 transition hover:text-gray-900"
+                className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#3730a3] transition hover:text-[#312e81]"
               >
                 View all meetings <ArrowRightIcon className="h-3 w-3" />
               </button>
@@ -311,7 +303,7 @@ function ActivityPanel({
             {tasks.length > 0 && (
               <button
                 onClick={() => navigate('/org/tasks')}
-                className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 transition hover:text-gray-900"
+                className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#3730a3] transition hover:text-[#312e81]"
               >
                 View all tasks <ArrowRightIcon className="h-3 w-3" />
               </button>
@@ -338,7 +330,7 @@ function ActivityPanel({
                       <button
                         key={role}
                         onClick={() => navigate('/org/roles')}
-                        className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900"
+                        className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-[#3730a3]/30 hover:bg-[#3730a3]/5 hover:text-[#3730a3]"
                       >
                         <BriefcaseIcon className="h-3.5 w-3.5" />
                         {role}
@@ -351,7 +343,7 @@ function ActivityPanel({
                 </div>
                 <button
                   onClick={() => navigate('/org/roles')}
-                  className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 transition hover:text-gray-900"
+                  className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#3730a3] transition hover:text-[#312e81]"
                 >
                   Manage interview roles <ArrowRightIcon className="h-3 w-3" />
                 </button>
@@ -525,34 +517,25 @@ function DeployHeroBar() {
     }
 
     return (
-      <div
-        className={cn(
-          'rounded-2xl border p-5 transition-colors',
-          botState === 'active'
-            ? 'border-emerald-200 bg-emerald-50/70'
-            : botState === 'error'
-              ? 'border-red-200 bg-red-50/70'
-              : 'border-amber-200 bg-amber-50/70'
-        )}
-      >
+      <div className="rounded-2xl bg-[#0f0f0f] p-6 sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-xl',
                 botState === 'active'
-                  ? 'bg-emerald-100'
+                  ? 'bg-emerald-500/20'
                   : botState === 'error'
-                    ? 'bg-red-100'
-                    : 'bg-amber-100'
+                    ? 'bg-red-500/20'
+                    : 'bg-amber-500/20'
               )}
             >
               {isInProgress ? (
-                <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-600" />
+                <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-400" />
               ) : botState === 'active' ? (
-                <RadioIcon className="h-5 w-5 animate-pulse text-emerald-600" />
+                <RadioIcon className="h-5 w-5 animate-pulse text-emerald-400" />
               ) : (
-                <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
+                <ExclamationCircleIcon className="h-5 w-5 text-red-400" />
               )}
             </div>
             <div>
@@ -560,15 +543,15 @@ function DeployHeroBar() {
                 className={cn(
                   'text-sm font-semibold',
                   botState === 'active'
-                    ? 'text-emerald-800'
+                    ? 'text-emerald-400'
                     : botState === 'error'
-                      ? 'text-red-800'
-                      : 'text-amber-800'
+                      ? 'text-red-400'
+                      : 'text-amber-400'
                 )}
               >
                 {stateLabel[botState] ?? botState}
               </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/40">
                 <VideoCameraIcon className="h-3 w-3" />
                 {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
               </p>
@@ -578,7 +561,7 @@ function DeployHeroBar() {
           {isActive && botState !== 'leaving' && (
             <button
               onClick={handleTerminate}
-              className="shrink-0 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+              className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
             >
               Remove from call
             </button>
@@ -586,17 +569,17 @@ function DeployHeroBar() {
           {botState === 'error' && (
             <button
               onClick={clearBot}
-              className="shrink-0 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+              className="shrink-0 rounded-full bg-[#3730a3] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#312e81]"
             >
               Try again
             </button>
           )}
         </div>
 
-        {storeError && <p className="mt-3 text-sm text-red-600">{storeError}</p>}
+        {storeError && <p className="mt-3 text-sm text-red-400">{storeError}</p>}
 
         {botState === 'in_lobby' && (
-          <p className="mt-3 text-sm text-sky-700">Admit Lira from your meeting to let her join.</p>
+          <p className="mt-3 text-sm text-sky-400">Admit Lira from your meeting to let her join.</p>
         )}
       </div>
     )
@@ -613,13 +596,18 @@ function DeployHeroBar() {
   ]
 
   return (
-    <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
-        Invite Lira to a meeting
-      </p>
+    <div className="rounded-2xl bg-[#0f0f0f] p-6 sm:p-8">
+      <div className="mb-6 flex items-start justify-between">
+        <div>
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+            Meeting
+          </p>
+          <h2 className="text-xl font-bold text-white">Invite Lira to a meeting</h2>
+        </div>
+      </div>
 
       {/* Meeting type chips */}
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      <div className="mb-5 flex flex-wrap gap-2">
         {MEETING_TYPES.map(({ value, label }) => {
           const selected = (meetingType ?? 'meeting') === value
           return (
@@ -629,8 +617,8 @@ function DeployHeroBar() {
               className={cn(
                 'rounded-full px-3.5 py-1 text-xs font-semibold transition-all duration-200',
                 selected
-                  ? 'bg-gray-900 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                  ? 'bg-[#3730a3] text-white shadow-sm shadow-[#3730a3]/40'
+                  : 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white'
               )}
             >
               {label}
@@ -639,14 +627,15 @@ function DeployHeroBar() {
         })}
       </div>
 
-      <div className="flex gap-3">
+      {/* Input + button */}
+      <div className="flex gap-2 sm:gap-3">
         <div className="relative flex-1">
           <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
-            <VideoCameraIcon className="h-4 w-4 text-gray-400" />
+            <VideoCameraIcon className="h-4 w-4 text-white/25" />
           </div>
           <input
             type="url"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-gray-400 focus:bg-white focus:ring-2 focus:ring-gray-900/10"
+            className="w-full rounded-xl border border-white/10 bg-white/10 py-3 pl-10 pr-16 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#3730a3]/60 focus:ring-2 focus:ring-[#3730a3]/30"
             placeholder="Paste Google Meet or Zoom link…"
             value={meetingLink}
             onChange={(e) => {
@@ -662,8 +651,8 @@ function DeployHeroBar() {
                 className={cn(
                   'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
                   detectedPlatform === 'google_meet'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-sky-100 text-sky-700'
+                    ? 'bg-emerald-500/20 text-emerald-400'
+                    : 'bg-sky-500/20 text-sky-400'
                 )}
               >
                 {detectedPlatform === 'google_meet' ? 'Meet' : 'Zoom'}
@@ -689,37 +678,37 @@ function DeployHeroBar() {
       </div>
 
       {error && (
-        <p className="mt-3 flex items-center gap-1.5 text-sm text-red-600">
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-red-400">
           <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
           {error}
         </p>
       )}
 
       {/* Capability anchors */}
-      <div className="mt-4 flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-gray-400">
+      <div className="mt-5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-white/30">
         <span>Also:</span>
         <button
           onClick={() => navigate('/org/roles')}
-          className="font-medium text-gray-500 transition hover:text-gray-900"
+          className="text-white/50 transition hover:text-white"
         >
           Conduct interviews
         </button>
         <span>·</span>
         <button
           onClick={() => navigate('/org/tasks')}
-          className="font-medium text-gray-500 transition hover:text-gray-900"
+          className="text-white/50 transition hover:text-white"
         >
           Manage tasks
         </button>
         <span>·</span>
         <button
           onClick={() => navigate('/org/knowledge')}
-          className="font-medium text-gray-500 transition hover:text-gray-900"
+          className="text-white/50 transition hover:text-white"
         >
           Knowledge base
         </button>
         <span>·</span>
-        <span className="italic">Sales calls (coming soon)</span>
+        <span className="italic text-white/20">Sales calls (coming soon)</span>
       </div>
     </div>
   )
@@ -815,16 +804,19 @@ function DashboardPage() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="min-h-full bg-[#ebebeb] px-6 py-8">
+      <div className="min-h-full bg-[#ebebeb] px-5 py-7">
         <div className="mx-auto max-w-5xl space-y-4">
-          <div className="h-10 w-56 animate-pulse rounded-xl bg-gray-300/60" />
-          <div className="h-44 animate-pulse rounded-2xl bg-gray-300/60" />
+          <div className="h-8 w-48 animate-pulse rounded-xl bg-gray-300/60" />
+          <div className="h-52 animate-pulse rounded-2xl bg-gray-400/30" />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-28 animate-pulse rounded-2xl bg-gray-300/60" />
+              <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-300/60" />
             ))}
           </div>
-          <div className="h-64 animate-pulse rounded-2xl bg-gray-300/60" />
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+            <div className="h-64 animate-pulse rounded-2xl bg-gray-300/60" />
+            <div className="h-64 animate-pulse rounded-2xl bg-gray-300/60 lg:col-span-2" />
+          </div>
         </div>
       </div>
     )
@@ -846,69 +838,110 @@ function DashboardPage() {
   })()
 
   return (
-    <div className="min-h-full bg-[#ebebeb] px-6 py-8">
+    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-5xl">
         {/* ── Header ── */}
-        <div className="mb-6 flex items-baseline justify-between">
+        <div className="mb-5 flex items-end justify-between">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
+              {new Date().toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+              })}
+            </p>
+            <h1 className="mt-0.5 text-2xl font-bold tracking-tight text-gray-900">
               {greeting}
               {firstName ? `, ${firstName}` : ''}
             </h1>
-            {currentOrg && <p className="mt-1 text-sm text-gray-500">{currentOrg.name}</p>}
+            {currentOrg && <p className="mt-0.5 text-sm text-gray-400">{currentOrg.name}</p>}
           </div>
-          <p className="hidden text-xs text-gray-400 sm:block">
-            {new Date().toLocaleDateString('en-US', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-            })}
-          </p>
         </div>
 
-        {/* ── Deploy bar ── */}
+        {/* ── Dark hero card ── */}
         <div className="mb-4">
           <DeployHeroBar />
         </div>
 
-        {/* ── Stat cards ── */}
+        {/* ── Stat strip ── */}
         <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
-            label="Total meetings"
+            label="Meetings"
             value={stats?.meetings_total ?? meetings.length}
             icon={MicrophoneIcon}
-            accent="orange"
+            accent="purple"
             onClick={() => navigate('/meetings')}
           />
           <StatCard
             label="Pending tasks"
             value={stats?.tasks_pending ?? tasks.length}
             icon={ClipboardDocumentCheckIcon}
-            accent="amber"
+            accent="dark"
             onClick={() => navigate('/org/tasks')}
           />
           <StatCard
             label="Interviews"
             value={stats?.interviews_total ?? interviews.length}
             icon={BriefcaseIcon}
-            accent="violet"
+            accent="indigo"
             onClick={() => navigate('/org/roles')}
           />
           <StatCard
             label="Last activity"
             value={lastActivityLabel}
             icon={ClockIcon}
-            accent="teal"
+            accent="slate"
           />
         </div>
 
-        {/* ── Activity panel ── */}
-        <ActivityPanel
-          meetings={meetings}
-          tasks={tasks}
-          interviews={interviews}
-          navigate={navigate}
-        />
+        {/* ── Bento: Quick actions + Activity ── */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* Quick actions sidebar */}
+          <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
+            <div className="border-b border-gray-100 px-5 py-4">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                Quick Actions
+              </p>
+            </div>
+            <div className="py-2">
+              <QuickAction
+                icon={MicrophoneIcon}
+                label="Start a meeting"
+                description="Invite Lira to a live conversation"
+                onClick={() => navigate('/meetings')}
+                accent
+              />
+              <QuickAction
+                icon={BriefcaseIcon}
+                label="Start an interview"
+                description="AI-assisted candidate interview"
+                onClick={() => navigate('/org/roles')}
+              />
+              <QuickAction
+                icon={BookOpenIcon}
+                label="Add knowledge"
+                description="Upload docs or crawl your website"
+                onClick={() => navigate('/org/knowledge')}
+              />
+              <QuickAction
+                icon={PlusIcon}
+                label="Invite team members"
+                description="Grow your workspace"
+                onClick={() => navigate('/org/members')}
+              />
+            </div>
+          </div>
+
+          {/* Activity panel */}
+          <div className="lg:col-span-2">
+            <ActivityPanel
+              meetings={meetings}
+              tasks={tasks}
+              interviews={interviews}
+              navigate={navigate}
+            />
+          </div>
+        </div>
       </div>
     </div>
   )

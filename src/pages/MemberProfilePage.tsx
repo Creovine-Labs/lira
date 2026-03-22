@@ -43,36 +43,28 @@ const ROLE_CONFIG: Record<
     pill: string
     gradient: string
     banner: string
-    bannerGlowA: string
-    bannerGlowB: string
   }
 > = {
   owner: {
     label: 'Owner',
     icon: TrophyIcon,
-    pill: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-    gradient: 'from-violet-500 to-purple-600',
-    banner: 'from-violet-700 via-purple-600 to-fuchsia-700',
-    bannerGlowA: 'rgba(196,181,253,0.4)',
-    bannerGlowB: 'rgba(240,171,252,0.35)',
+    pill: 'bg-[#3730a3]/15 text-[#a5b4fc]',
+    gradient: 'from-[#3730a3] to-[#1e1b4b]',
+    banner: 'from-[#1e1b4b] via-[#3730a3] to-[#0f0f0f]',
   },
   admin: {
     label: 'Admin',
     icon: ShieldCheckIcon,
-    pill: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-    gradient: 'from-blue-500 to-indigo-600',
-    banner: 'from-blue-700 via-indigo-600 to-cyan-600',
-    bannerGlowA: 'rgba(147,197,253,0.4)',
-    bannerGlowB: 'rgba(165,243,252,0.3)',
+    pill: 'bg-[#4f46e5]/15 text-[#c7d2fe]',
+    gradient: 'from-[#4f46e5] to-[#1e1b4b]',
+    banner: 'from-[#0f0f0f] via-[#312e81] to-[#1e1b4b]',
   },
   member: {
     label: 'Member',
     icon: ShieldCheckIcon,
-    pill: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400',
-    gradient: 'from-slate-500 to-slate-700',
-    banner: 'from-indigo-700 via-violet-600 to-slate-700',
-    bannerGlowA: 'rgba(165,180,252,0.35)',
-    bannerGlowB: 'rgba(196,181,253,0.3)',
+    pill: 'bg-white/10 text-white/60',
+    gradient: 'from-[#374151] to-[#0f0f0f]',
+    banner: 'from-[#0f0f0f] via-[#1f2937] to-[#111827]',
   },
 }
 
@@ -128,19 +120,46 @@ function StatCard({
   label: string
   value: string | number
   sub?: string
-  accent: string
+  accent: 'purple' | 'dark' | 'indigo' | 'slate'
 }) {
+  const palettes = {
+    purple: {
+      bg: 'from-[#3730a3] via-[#2e2a8a] to-[#1e1b4b]',
+      glow: 'shadow-[0_8px_32px_rgba(55,48,163,0.45)]',
+    },
+    dark: {
+      bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+      glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
+    },
+    indigo: {
+      bg: 'from-[#4f46e5] via-[#4338ca] to-[#312e81]',
+      glow: 'shadow-[0_8px_32px_rgba(79,70,229,0.40)]',
+    },
+    slate: {
+      bg: 'from-[#374151] via-[#1f2937] to-[#111827]',
+      glow: 'shadow-[0_8px_32px_rgba(17,24,39,0.50)]',
+    },
+  }
+  const { bg, glow } = palettes[accent]
   return (
-    <div className="flex flex-col gap-1 rounded-xl border bg-card p-4">
-      <div className={cn('mb-1 flex h-8 w-8 items-center justify-center rounded-lg', accent)}>
-        <Icon className="h-4 w-4" />
+    <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bg} ${glow} p-5`}>
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.12] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/[0.08]" />
+      <div className="relative">
+        <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/60">
+          <Icon className="h-[15px] w-[15px]" />
+        </div>
+        <p className="text-2xl font-bold tracking-tight text-white">{value}</p>
+        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/40">
+          {label}
+        </p>
+        {sub && <p className="mt-1 text-[11px] text-white/30">{sub}</p>}
       </div>
-      <p className="text-2xl font-bold tracking-tight text-foreground">{value}</p>
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      {sub && <p className="text-xs text-muted-foreground/60">{sub}</p>}
     </div>
   )
 }
+
+type ProfileTab = 'profile' | 'tasks' | 'contributions'
 
 function MemberProfilePage() {
   const { userId } = useParams<{ userId: string }>()
@@ -162,6 +181,7 @@ function MemberProfilePage() {
   const [contribStats, setContribStats] = useState({ total_messages: 0, total_words: 0 })
   const [loading, setLoading] = useState(true)
   const [uploadingPic, setUploadingPic] = useState(false)
+  const [activeTab, setActiveTab] = useState<ProfileTab>('profile')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Close org dropdown on outside click
@@ -260,10 +280,20 @@ function MemberProfilePage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-32">
-        <div className="flex flex-col items-center gap-3">
-          <ArrowPathIcon className="h-7 w-7 animate-spin text-violet-500" />
-          <p className="text-sm text-muted-foreground">Loading profile…</p>
+      <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+        <div className="mx-auto max-w-5xl space-y-4">
+          <div className="h-6 w-32 animate-pulse rounded-xl bg-gray-300/60" />
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
+            <div className="h-64 animate-pulse rounded-2xl bg-gray-300/60" />
+            <div className="space-y-4 lg:col-span-3">
+              <div className="h-44 animate-pulse rounded-2xl bg-gray-400/30" />
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-gray-300/60" />
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )
@@ -293,462 +323,509 @@ function MemberProfilePage() {
     (now.getFullYear() - joinDate.getFullYear()) * 12 + (now.getMonth() - joinDate.getMonth())
   )
 
+  const NAV_TABS: { id: ProfileTab; label: string; icon: React.ElementType }[] = [
+    { id: 'profile', label: 'My Profile', icon: ShieldCheckIcon },
+    { id: 'tasks', label: 'Assigned Tasks', icon: ClipboardDocumentCheckIcon },
+    { id: 'contributions', label: 'Contributions', icon: MicrophoneIcon },
+  ]
+
   return (
-    <div className="mx-auto max-w-3xl space-y-6 pb-12">
-      {/* ── Back nav ──────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => navigate('/org/members')}
-          className="group flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-        >
-          <ArrowLeftIcon className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
-          Back to Members
-        </button>
+    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+      <div className="mx-auto max-w-5xl">
+        {/* ── Back nav ── */}
+        <div className="mb-5 flex items-center justify-between">
+          <button
+            onClick={() => navigate('/org/members')}
+            className="group flex items-center gap-1.5 text-sm font-medium text-gray-500 transition hover:text-gray-900"
+          >
+            <ArrowLeftIcon className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            Members
+          </button>
 
-        {/* Org selector — only shown on own profile */}
-        {isOwnProfile && organizations.length > 0 && (
-          <div className="relative" ref={orgDropRef}>
-            <button
-              onClick={() => setOrgDropOpen((v) => !v)}
-              className="flex items-center gap-1.5 rounded-xl border bg-card px-3 py-1.5 text-xs font-medium text-foreground shadow-sm hover:bg-muted/50 transition-colors"
-            >
-              <BuildingOffice2Icon className="h-3.5 w-3.5 text-violet-500" />
-              {selectedOrgId === 'all'
-                ? 'All Organizations'
-                : (organizations.find((o) => o.org_id === (selectedOrgId ?? currentOrgId))?.name ??
-                  'Current Org')}
-              <ChevronDownIcon className="h-3 w-3 text-muted-foreground" />
-            </button>
-            {orgDropOpen && (
-              <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border bg-white py-1 shadow-lg dark:bg-gray-900">
-                {organizations.length > 1 && (
-                  <button
-                    onClick={() => {
-                      setSelectedOrgId('all')
-                      setOrgDropOpen(false)
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-gray-50 dark:hover:bg-gray-800',
-                      selectedOrgId === 'all' ? 'font-semibold text-violet-600' : 'text-foreground'
-                    )}
-                  >
-                    <BuildingOffice2Icon className="h-3.5 w-3.5" />
-                    All Organizations
-                  </button>
-                )}
-                {organizations.map((org) => (
-                  <button
-                    key={org.org_id}
-                    onClick={() => {
-                      setSelectedOrgId(org.org_id)
-                      setOrgDropOpen(false)
-                    }}
-                    className={cn(
-                      'flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-gray-50 dark:hover:bg-gray-800',
-                      (selectedOrgId ?? currentOrgId) === org.org_id && selectedOrgId !== 'all'
-                        ? 'font-semibold text-violet-600'
-                        : 'text-foreground'
-                    )}
-                  >
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-violet-100 text-[9px] font-bold text-violet-600">
-                      {org.name.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="truncate">{org.name}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Hero card ─────────────────────────────────────────────────── */}
-      <div className="overflow-hidden rounded-2xl border bg-card shadow-sm">
-        {/* Banner */}
-        <div className={cn('h-40 w-full bg-gradient-to-br relative overflow-hidden', role.banner)}>
-          {/* Highlight glow top-left */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(ellipse 70% 90% at -5% -20%, ${role.bannerGlowA}, transparent)`,
-            }}
-          />
-          {/* Accent glow bottom-right */}
-          <div
-            className="absolute inset-0"
-            style={{
-              background: `radial-gradient(ellipse 55% 65% at 105% 110%, ${role.bannerGlowB}, transparent)`,
-            }}
-          />
-          {/* Subtle bottom fade to card */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
-          {/* Fine diagonal shimmer lines */}
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage:
-                'repeating-linear-gradient(45deg, rgba(255,255,255,0.8) 0px, rgba(255,255,255,0.8) 1px, transparent 1px, transparent 12px)',
-            }}
-          />
-        </div>
-
-        {/* Avatar + name row */}
-        <div className="px-6 pb-6">
-          <div className="-mt-10 flex flex-col gap-4 sm:flex-row sm:items-end sm:gap-5">
-            {/* Avatar with optional upload */}
-            <div className="relative shrink-0">
-              {member.picture ? (
-                <img
-                  src={member.picture}
-                  alt={member.name ?? ''}
-                  referrerPolicy="no-referrer"
-                  className="h-20 w-20 rounded-2xl object-cover shadow-lg ring-4 ring-card"
-                />
-              ) : (
-                <div
-                  className={cn(
-                    'flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl font-bold text-white shadow-lg ring-4 ring-card',
-                    role.gradient
+          {isOwnProfile && organizations.length > 0 && (
+            <div className="relative" ref={orgDropRef}>
+              <button
+                onClick={() => setOrgDropOpen((v) => !v)}
+                className="flex items-center gap-1.5 rounded-xl border border-white/60 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 shadow-sm transition hover:shadow-md"
+              >
+                <BuildingOffice2Icon className="h-3.5 w-3.5 text-[#3730a3]" />
+                {selectedOrgId === 'all'
+                  ? 'All Organizations'
+                  : (organizations.find((o) => o.org_id === (selectedOrgId ?? currentOrgId))
+                      ?.name ?? 'Current Org')}
+                <ChevronDownIcon className="h-3 w-3 text-gray-400" />
+              </button>
+              {orgDropOpen && (
+                <div className="absolute right-0 top-full z-50 mt-1 w-52 overflow-hidden rounded-xl border border-gray-100 bg-white py-1 shadow-lg">
+                  {organizations.length > 1 && (
+                    <button
+                      onClick={() => {
+                        setSelectedOrgId('all')
+                        setOrgDropOpen(false)
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-gray-50',
+                        selectedOrgId === 'all' ? 'font-semibold text-[#3730a3]' : 'text-gray-700'
+                      )}
+                    >
+                      <BuildingOffice2Icon className="h-3.5 w-3.5" />
+                      All Organizations
+                    </button>
                   )}
-                >
-                  {initials}
+                  {organizations.map((org) => (
+                    <button
+                      key={org.org_id}
+                      onClick={() => {
+                        setSelectedOrgId(org.org_id)
+                        setOrgDropOpen(false)
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 px-3 py-2 text-xs transition hover:bg-gray-50',
+                        (selectedOrgId ?? currentOrgId) === org.org_id && selectedOrgId !== 'all'
+                          ? 'font-semibold text-[#3730a3]'
+                          : 'text-gray-700'
+                      )}
+                    >
+                      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-[#3730a3]/10 text-[9px] font-bold text-[#3730a3]">
+                        {org.name.charAt(0).toUpperCase()}
+                      </span>
+                      <span className="truncate">{org.name}</span>
+                    </button>
+                  ))}
                 </div>
               )}
-              {/* Role badge */}
-              <span
-                className={cn(
-                  'absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-card',
-                  role.gradient
-                )}
-              >
-                <RoleIcon className="h-2.5 w-2.5 text-white" />
-              </span>
-              {/* ArrowUpTrayIcon button — only for own profile */}
-              {isOwnProfile && (
-                <>
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploadingPic}
-                    className="absolute -bottom-1 -left-1 flex h-6 w-6 items-center justify-center rounded-full bg-white shadow-md ring-2 ring-card hover:bg-gray-50 transition-colors disabled:opacity-50"
-                    title="Change photo"
-                  >
-                    {uploadingPic ? (
-                      <ArrowPathIcon className="h-3 w-3 animate-spin text-violet-600" />
-                    ) : (
-                      <CameraIcon className="h-3 w-3 text-violet-600" />
-                    )}
-                  </button>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={handlePictureUpload}
-                  />
-                </>
-              )}
             </div>
+          )}
+        </div>
 
-            {/* Name / meta */}
-            <div className="flex flex-1 flex-col gap-1 sm:pb-1">
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl font-bold leading-tight text-foreground">
-                  {member.name ?? member.email ?? 'Unknown Member'}
-                </h1>
+        {/* ── Main layout: left sidebar nav + right content ── */}
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-4">
+          {/* ── Left panel ── */}
+          <div className="flex flex-col gap-4">
+            {/* Profile card */}
+            <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
+              {/* Dark banner */}
+              <div className={cn('relative h-20 bg-gradient-to-br', role.banner)}>
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.08] to-transparent" />
+              </div>
+              {/* Avatar */}
+              <div className="flex flex-col items-center px-5 pb-5">
+                <div className="relative -mt-8 mb-3">
+                  {member.picture ? (
+                    <img
+                      src={member.picture}
+                      alt={member.name ?? ''}
+                      referrerPolicy="no-referrer"
+                      className="h-16 w-16 rounded-2xl object-cover shadow-lg ring-4 ring-white"
+                    />
+                  ) : (
+                    <div
+                      className={cn(
+                        'flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-xl font-bold text-white shadow-lg ring-4 ring-white',
+                        role.gradient
+                      )}
+                    >
+                      {initials}
+                    </div>
+                  )}
+                  {isOwnProfile && (
+                    <>
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPic}
+                        className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-[#3730a3] shadow-md ring-2 ring-white transition hover:bg-[#312e81] disabled:opacity-50"
+                        title="Change photo"
+                      >
+                        {uploadingPic ? (
+                          <ArrowPathIcon className="h-3 w-3 animate-spin text-white" />
+                        ) : (
+                          <CameraIcon className="h-3 w-3 text-white" />
+                        )}
+                      </button>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handlePictureUpload}
+                      />
+                    </>
+                  )}
+                </div>
+                <p className="text-center text-sm font-bold text-gray-900">
+                  {member.name ?? member.email ?? 'Unknown'}
+                </p>
+                {member.name && member.email && (
+                  <p className="mt-0.5 text-center text-xs text-gray-400">{member.email}</p>
+                )}
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                    role.pill
+                    'mt-2 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold',
+                    role.pill,
+                    'bg-[#3730a3]/10 text-[#3730a3]'
                   )}
                 >
                   <RoleIcon className="h-3 w-3" />
                   {role.label}
                 </span>
-              </div>
-              {member.name && member.email && (
-                <p className="text-sm text-muted-foreground">{member.email}</p>
-              )}
-              <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <CalendarIcon className="h-3 w-3" />
-                  Joined {joinDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                </span>
-                {monthsActive > 0 && (
-                  <span className="flex items-center gap-1">
-                    <BoltIcon className="h-3 w-3 text-amber-500" />
-                    {monthsActive}mo active
-                  </span>
-                )}
-                {selectedOrgId === 'all' && organizations.length > 1 && (
-                  <span className="flex items-center gap-1 text-violet-600">
-                    <BuildingOffice2Icon className="h-3 w-3" />
-                    All {organizations.length} orgs
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Stat cards ────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <StatCard
-          icon={ClipboardDocumentCheckIcon}
-          label="Total Tasks"
-          value={tasks.length}
-          sub={tasks.length === 0 ? 'None assigned' : undefined}
-          accent="bg-violet-100 text-violet-600 dark:bg-violet-900/30"
-        />
-        <StatCard
-          icon={ArrowTrendingUpIcon}
-          label="Completion"
-          value={`${completionRate}%`}
-          sub={tasks.length > 0 ? `${completedCount} of ${tasks.length} done` : undefined}
-          accent="bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30"
-        />
-        <StatCard
-          icon={MicrophoneIcon}
-          label="Meetings"
-          value={contributions.length}
-          sub={contributions.length > 0 ? 'contributed to' : 'None yet'}
-          accent="bg-blue-100 text-blue-600 dark:bg-blue-900/30"
-        />
-        <StatCard
-          icon={ChatBubbleLeftIcon}
-          label="Messages"
-          value={contribStats.total_messages}
-          sub={
-            contribStats.total_words > 0
-              ? `${contribStats.total_words.toLocaleString()} words`
-              : undefined
-          }
-          accent="bg-fuchsia-100 text-fuchsia-600 dark:bg-fuchsia-900/30"
-        />
-      </div>
-
-      {/* ── Assigned Tasks ────────────────────────────────────────────── */}
-      <section className="rounded-2xl border bg-card shadow-sm">
-        {/* Section header */}
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <div className="flex items-center gap-2">
-            <ClipboardDocumentCheckIcon className="h-4 w-4 text-violet-500" />
-            <h2 className="text-sm font-semibold text-foreground">Assigned Tasks</h2>
-            {tasks.length > 0 && (
-              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                {tasks.length}
-              </span>
-            )}
-          </div>
-          {tasks.length > 0 && (
-            <div className="flex items-center gap-3 text-xs text-muted-foreground">
-              {pendingCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  {pendingCount} pending
-                </span>
-              )}
-              {inProgressCount > 0 && (
-                <span className="flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-blue-500" />
-                  {inProgressCount} active
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Completion progress bar */}
-        {tasks.length > 0 && (
-          <div className="px-6 pt-4 pb-2">
-            <div className="mb-1.5 flex items-center justify-between text-xs text-muted-foreground">
-              <span>Completion rate</span>
-              <span className="font-semibold text-foreground">{completionRate}%</span>
-            </div>
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
-                style={{ width: `${completionRate}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Task list */}
-        <div className="p-4">
-          {tasks.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-                <ClipboardDocumentCheckIcon className="h-5 w-5 text-muted-foreground/50" />
-              </div>
-              <p className="text-sm font-medium text-foreground">No tasks assigned yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Tasks assigned to this member will appear here.
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {tasks.map((task) => {
-                const s = STATUS_CONFIG[task.status]
-                const p = PRIORITY_CONFIG[task.priority]
-                return (
-                  <Link
-                    key={task.task_id}
-                    to={`/org/tasks/${task.task_id}`}
-                    className="group flex items-center gap-3 rounded-xl border bg-background p-3.5 transition-all hover:border-violet-400/40 hover:shadow-sm"
-                  >
-                    {/* Priority bar */}
-                    <div className={cn('h-8 w-1 shrink-0 rounded-full', p.bar)} />
-
-                    {/* Title + meta */}
-                    <div className="min-w-0 flex-1">
-                      <p
-                        className={cn(
-                          'truncate text-sm font-medium transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400',
-                          task.status === 'completed'
-                            ? 'text-muted-foreground line-through'
-                            : 'text-foreground'
-                        )}
-                      >
-                        {task.title}
-                      </p>
-                      <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
-                        <span className={cn('font-medium', p.text)}>{p.label}</span>
-                        {task.due_date && (
-                          <>
-                            <span>·</span>
-                            <span className="flex items-center gap-0.5">
-                              <ClockIcon className="h-3 w-3" />
-                              {new Date(task.due_date).toLocaleDateString('en-US', {
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </span>
-                          </>
-                        )}
-                      </div>
+                <div className="mt-3 w-full space-y-1.5 border-t border-gray-100 pt-3">
+                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                    <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                    Joined{' '}
+                    {joinDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                  </div>
+                  {monthsActive > 0 && (
+                    <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                      <BoltIcon className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                      {monthsActive} month{monthsActive !== 1 ? 's' : ''} active
                     </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                    {/* Status badge */}
-                    <span
+            {/* Nav tabs */}
+            <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
+              <div className="px-3 py-2">
+                <p className="mb-1 px-2 pt-1 text-[9px] font-bold uppercase tracking-widest text-gray-400">
+                  Menu
+                </p>
+                {NAV_TABS.map((tab) => {
+                  const TabIcon = tab.icon
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
                       className={cn(
-                        'flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
-                        s.bg,
-                        s.text
+                        'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-all',
+                        activeTab === tab.id
+                          ? 'bg-[#3730a3] font-semibold text-white shadow-sm'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       )}
                     >
-                      <span className={cn('h-1.5 w-1.5 rounded-full', s.dot)} />
-                      {s.label}
-                    </span>
-                  </Link>
-                )
-              })}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* ── Meeting Contributions ─────────────────────────────────────── */}
-      <section className="rounded-2xl border bg-card shadow-sm">
-        <div className="flex items-center justify-between border-b px-6 py-4">
-          <div className="flex items-center gap-2">
-            <MicrophoneIcon className="h-4 w-4 text-violet-500" />
-            <h2 className="text-sm font-semibold text-foreground">Meeting Contributions</h2>
-            {contributions.length > 0 && (
-              <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700 dark:bg-violet-900/40 dark:text-violet-300">
-                {contributions.length}
-              </span>
-            )}
-          </div>
-          {contribStats.total_words > 0 && (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className="hidden sm:inline">
-                {contribStats.total_words.toLocaleString()} words spoken
-              </span>
-              <span className="flex items-center gap-1">
-                <ChatBubbleLeftIcon className="h-3 w-3" />
-                {contribStats.total_messages} messages
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4">
-          {contributions.length === 0 ? (
-            <div className="flex flex-col items-center py-12 text-center">
-              <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-muted">
-                <MicrophoneIcon className="h-5 w-5 text-muted-foreground/50" />
+                      <TabIcon className="h-4 w-4 shrink-0" />
+                      {tab.label}
+                    </button>
+                  )
+                })}
               </div>
-              <p className="text-sm font-medium text-foreground">No speaking contributions yet</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Meeting transcripts where this member spoke will appear here.
-              </p>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {contributions.map((c) => {
-                const maxMsgs = Math.max(...contributions.map((x) => x.message_count))
-                const barPct = maxMsgs > 0 ? Math.round((c.message_count / maxMsgs) * 100) : 0
-                return (
-                  <div
-                    key={c.session_id}
-                    className="group overflow-hidden rounded-xl border bg-background transition-all hover:border-violet-400/40 hover:shadow-sm"
-                  >
-                    {/* Meeting title row */}
-                    <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-2">
-                      <Link
-                        to={`/meetings/${c.session_id}`}
-                        className="min-w-0 flex-1 text-sm font-semibold text-foreground transition-colors group-hover:text-violet-600 dark:group-hover:text-violet-400 line-clamp-1"
-                      >
-                        {c.title || 'Untitled Meeting'}
-                      </Link>
-                      <div className="flex shrink-0 items-center gap-2 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <ChatBubbleLeftIcon className="h-3 w-3" />
-                          {c.message_count}
-                        </span>
-                        <span className="hidden sm:inline">·</span>
-                        <span className="hidden sm:inline">
-                          {new Date(c.date).toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric',
-                            year: 'numeric',
-                          })}
-                        </span>
-                      </div>
-                    </div>
+          </div>
 
-                    {/* Activity bar */}
-                    <div className="px-4 pb-2">
-                      <div className="h-1 w-full overflow-hidden rounded-full bg-muted">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-violet-500 to-fuchsia-500"
-                          style={{ width: `${barPct}%` }}
-                        />
-                      </div>
-                    </div>
+          {/* ── Right content ── */}
+          <div className="space-y-4 lg:col-span-3">
+            {/* ── PROFILE TAB ── */}
+            {activeTab === 'profile' && (
+              <>
+                {/* Stat cards */}
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <StatCard
+                    icon={ClipboardDocumentCheckIcon}
+                    label="Total Tasks"
+                    value={tasks.length}
+                    sub={tasks.length === 0 ? 'None assigned' : undefined}
+                    accent="purple"
+                  />
+                  <StatCard
+                    icon={ArrowTrendingUpIcon}
+                    label="Completion"
+                    value={`${completionRate}%`}
+                    sub={tasks.length > 0 ? `${completedCount} of ${tasks.length}` : undefined}
+                    accent="dark"
+                  />
+                  <StatCard
+                    icon={MicrophoneIcon}
+                    label="Meetings"
+                    value={contributions.length}
+                    sub={contributions.length > 0 ? 'contributed' : 'None yet'}
+                    accent="indigo"
+                  />
+                  <StatCard
+                    icon={ChatBubbleLeftIcon}
+                    label="Messages"
+                    value={contribStats.total_messages}
+                    sub={
+                      contribStats.total_words > 0
+                        ? `${contribStats.total_words.toLocaleString()} words`
+                        : undefined
+                    }
+                    accent="slate"
+                  />
+                </div>
 
-                    {/* Highlights */}
-                    {c.highlights.length > 0 && (
-                      <div className="border-t bg-muted/30 px-4 py-2.5 space-y-1">
-                        {c.highlights.slice(0, 2).map((h, i) => (
-                          <p key={i} className="line-clamp-1 text-xs text-muted-foreground italic">
-                            &ldquo;{h}&rdquo;
-                          </p>
-                        ))}
+                {/* Personal info card */}
+                <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+                  <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+                    <h2 className="text-sm font-semibold text-gray-900">Personal Information</h2>
+                  </div>
+                  <div className="grid grid-cols-1 gap-x-8 gap-y-5 px-6 py-5 sm:grid-cols-2">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        Full name
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-gray-900">{member.name ?? '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        Email address
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-gray-900">
+                        {member.email ?? '—'}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        Role
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-gray-900">{role.label}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        Member since
+                      </p>
+                      <p className="mt-1 text-sm font-medium text-gray-900">
+                        {joinDate.toLocaleDateString('en-US', {
+                          month: 'long',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </p>
+                    </div>
+                    {selectedOrgId === 'all' && organizations.length > 1 && (
+                      <div className="sm:col-span-2">
+                        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                          Organizations
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-[#3730a3]">
+                          {organizations.length} workspaces
+                        </p>
                       </div>
                     )}
                   </div>
-                )
-              })}
-            </div>
-          )}
+                </div>
+              </>
+            )}
+
+            {/* ── TASKS TAB ── */}
+            {activeTab === 'tasks' && (
+              <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <ClipboardDocumentCheckIcon className="h-4 w-4 text-[#3730a3]" />
+                    <h2 className="text-sm font-semibold text-gray-900">Assigned Tasks</h2>
+                    {tasks.length > 0 && (
+                      <span className="rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-xs font-semibold text-[#3730a3]">
+                        {tasks.length}
+                      </span>
+                    )}
+                  </div>
+                  {tasks.length > 0 && (
+                    <div className="flex items-center gap-3 text-xs text-gray-400">
+                      {pendingCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                          {pendingCount} pending
+                        </span>
+                      )}
+                      {inProgressCount > 0 && (
+                        <span className="flex items-center gap-1">
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#3730a3]" />
+                          {inProgressCount} active
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {tasks.length > 0 && (
+                  <div className="px-6 pt-4 pb-2">
+                    <div className="mb-1.5 flex items-center justify-between text-xs text-gray-400">
+                      <span>Completion rate</span>
+                      <span className="font-semibold text-gray-900">{completionRate}%</span>
+                    </div>
+                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-[#3730a3] to-[#4f46e5] transition-all duration-500"
+                        style={{ width: `${completionRate}%` }}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                <div className="p-4">
+                  {tasks.length === 0 ? (
+                    <div className="flex flex-col items-center py-12 text-center">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
+                        <ClipboardDocumentCheckIcon className="h-5 w-5 text-gray-300" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">No tasks assigned yet</p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        Tasks assigned to this member will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {tasks.map((task) => {
+                        const s = STATUS_CONFIG[task.status]
+                        const p = PRIORITY_CONFIG[task.priority]
+                        return (
+                          <Link
+                            key={task.task_id}
+                            to={`/org/tasks/${task.task_id}`}
+                            className="group flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50/50 p-3.5 transition hover:border-[#3730a3]/30 hover:bg-white hover:shadow-sm"
+                          >
+                            <div className={cn('h-8 w-1 shrink-0 rounded-full', p.bar)} />
+                            <div className="min-w-0 flex-1">
+                              <p
+                                className={cn(
+                                  'truncate text-sm font-medium transition group-hover:text-[#3730a3]',
+                                  task.status === 'completed'
+                                    ? 'text-gray-400 line-through'
+                                    : 'text-gray-900'
+                                )}
+                              >
+                                {task.title}
+                              </p>
+                              <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-400">
+                                <span className={cn('font-medium', p.text)}>{p.label}</span>
+                                {task.due_date && (
+                                  <>
+                                    <span>·</span>
+                                    <span className="flex items-center gap-0.5">
+                                      <ClockIcon className="h-3 w-3" />
+                                      {new Date(task.due_date).toLocaleDateString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                      })}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                            <span
+                              className={cn(
+                                'flex shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+                                s.bg,
+                                s.text
+                              )}
+                            >
+                              <span className={cn('h-1.5 w-1.5 rounded-full', s.dot)} />
+                              {s.label}
+                            </span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── CONTRIBUTIONS TAB ── */}
+            {activeTab === 'contributions' && (
+              <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+                <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <MicrophoneIcon className="h-4 w-4 text-[#3730a3]" />
+                    <h2 className="text-sm font-semibold text-gray-900">Meeting Contributions</h2>
+                    {contributions.length > 0 && (
+                      <span className="rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-xs font-semibold text-[#3730a3]">
+                        {contributions.length}
+                      </span>
+                    )}
+                  </div>
+                  {contribStats.total_words > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-gray-400">
+                      <span className="hidden sm:inline">
+                        {contribStats.total_words.toLocaleString()} words
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <ChatBubbleLeftIcon className="h-3 w-3" />
+                        {contribStats.total_messages} msgs
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="p-4">
+                  {contributions.length === 0 ? (
+                    <div className="flex flex-col items-center py-12 text-center">
+                      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
+                        <MicrophoneIcon className="h-5 w-5 text-gray-300" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-900">
+                        No speaking contributions yet
+                      </p>
+                      <p className="mt-1 text-xs text-gray-400">
+                        Meeting transcripts will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {contributions.map((c) => {
+                        const maxMsgs = Math.max(...contributions.map((x) => x.message_count))
+                        const barPct =
+                          maxMsgs > 0 ? Math.round((c.message_count / maxMsgs) * 100) : 0
+                        return (
+                          <div
+                            key={c.session_id}
+                            className="group overflow-hidden rounded-xl border border-gray-100 bg-gray-50/50 transition hover:border-[#3730a3]/30 hover:bg-white hover:shadow-sm"
+                          >
+                            <div className="flex items-start justify-between gap-3 px-4 pt-3.5 pb-2">
+                              <Link
+                                to={`/meetings/${c.session_id}`}
+                                className="min-w-0 flex-1 line-clamp-1 text-sm font-semibold text-gray-900 transition group-hover:text-[#3730a3]"
+                              >
+                                {c.title || 'Untitled Meeting'}
+                              </Link>
+                              <div className="flex shrink-0 items-center gap-2 text-xs text-gray-400">
+                                <span className="flex items-center gap-1">
+                                  <ChatBubbleLeftIcon className="h-3 w-3" />
+                                  {c.message_count}
+                                </span>
+                                <span className="hidden sm:inline">·</span>
+                                <span className="hidden sm:inline">
+                                  {new Date(c.date).toLocaleDateString('en-US', {
+                                    month: 'short',
+                                    day: 'numeric',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="px-4 pb-2">
+                              <div className="h-1 w-full overflow-hidden rounded-full bg-gray-100">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-[#3730a3] to-[#4f46e5]"
+                                  style={{ width: `${barPct}%` }}
+                                />
+                              </div>
+                            </div>
+                            {c.highlights.length > 0 && (
+                              <div className="space-y-1 border-t border-gray-100 bg-gray-50 px-4 py-2.5">
+                                {c.highlights.slice(0, 2).map((h, i) => (
+                                  <p key={i} className="line-clamp-1 text-xs italic text-gray-400">
+                                    &ldquo;{h}&rdquo;
+                                  </p>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+          {/* end right col */}
         </div>
-      </section>
+        {/* end grid */}
+      </div>
     </div>
   )
 }
-
 export { MemberProfilePage }
 
 // ── Image resize helper ───────────────────────────────────────────────────────
