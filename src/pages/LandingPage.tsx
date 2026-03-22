@@ -29,8 +29,18 @@ const MEETING_DEMO_STYLES = `
   @keyframes tabProgress{from{width:0}to{width:100%}}
   @keyframes demoFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   .demo-fade-in{animation:demoFadeIn .3s ease-out}
-  @keyframes aiBounce{0%{transform:rotate(-1.8deg) translateY(-14px) scale(0.82);opacity:0}55%{transform:rotate(-1.8deg) translateY(7px) scale(1.07);opacity:1}72%{transform:rotate(-1.8deg) translateY(1px) scale(0.97)}87%{transform:rotate(-1.8deg) translateY(5px) scale(1.02)}100%{transform:rotate(-1.8deg) translateY(4px) scale(1)}}
-  .ai-badge{animation:aiBounce 0.7s cubic-bezier(0.36,0.07,0.19,0.97) 0.25s both}
+  @keyframes aiBounce{
+    0%{transform:rotate(-1.8deg) translateY(-340px) scale(1,1);opacity:0}
+    5%{opacity:1}
+    40%{transform:rotate(-1.8deg) translateY(4px) scale(1.22,0.78);}
+    52%{transform:rotate(-1.8deg) translateY(-68px) scale(0.93,1.12);}
+    65%{transform:rotate(-1.8deg) translateY(4px) scale(1.12,0.89);}
+    74%{transform:rotate(-1.8deg) translateY(-22px) scale(0.97,1.05);}
+    83%{transform:rotate(-1.8deg) translateY(4px) scale(1.05,0.96);}
+    90%{transform:rotate(-1.8deg) translateY(-6px) scale(1,1);}
+    100%{transform:rotate(-1.8deg) translateY(4px) scale(1,1);}
+  }
+  .ai-badge{animation:aiBounce 1.15s linear 0.1s both}
 `
 
 function WaveBars() {
