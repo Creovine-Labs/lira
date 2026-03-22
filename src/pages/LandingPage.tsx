@@ -1102,10 +1102,10 @@ function Hero() {
       <h1 className="mx-auto max-w-2xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
         The{' '}
         <span
-          className="inline-block -rotate-[1.8deg] translate-y-1 bg-gray-900 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
+          className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
           style={{
-            boxShadow:
-              '0 6px 20px rgba(0,0,0,0.55), 0 2px 6px rgba(0,0,0,0.70), inset 0 1px 0 rgba(255,255,255,0.07)',
+            background: '#1a3a5c',
+            boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
           }}
         >
           AI
