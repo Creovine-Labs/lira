@@ -404,13 +404,9 @@ function MemberProfilePage() {
           <div className="flex flex-col gap-4">
             {/* Profile card */}
             <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
-              {/* Dark banner */}
-              <div className={cn('relative h-20 bg-gradient-to-br', role.banner)}>
-                <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.08] to-transparent" />
-              </div>
               {/* Avatar */}
-              <div className="flex flex-col items-center px-5 pb-5">
-                <div className="relative -mt-8 mb-3">
+              <div className="flex flex-col items-center px-5 pt-6 pb-5">
+                <div className="relative mb-3">
                   {member.picture ? (
                     <img
                       src={member.picture}

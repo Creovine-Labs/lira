@@ -44,13 +44,13 @@ const MEETING_TYPE_LABELS: Record<string, string> = {
 }
 
 const MEETING_TYPE_COLORS: Record<string, string> = {
-  meeting: 'bg-gray-100 text-gray-500',
-  standup: 'bg-sky-100 text-sky-700',
-  one_on_one: 'bg-violet-100 text-violet-700',
+  meeting: 'bg-gray-100 text-gray-600',
+  standup: 'bg-[#3730a3]/10 text-[#3730a3]',
+  one_on_one: 'bg-[#4f46e5]/10 text-[#4f46e5]',
   technical: 'bg-amber-100 text-amber-700',
   brainstorming: 'bg-orange-100 text-orange-700',
   sales: 'bg-emerald-100 text-emerald-700',
-  interview: 'bg-pink-100 text-pink-700',
+  interview: 'bg-purple-100 text-purple-700',
 }
 
 const MEETING_TYPES: { value: MeetingType; label: string }[] = [
@@ -196,131 +196,147 @@ function CompactInviteBar() {
   const detectedPlatform = meetingLink.trim() ? detectPlatform(meetingLink.trim()) : null
 
   return (
-    <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
-      {/* Active bot status banner */}
-      {botId && botState && botState !== 'terminated' && (
-        <div
-          className={cn(
-            'mb-3 flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm',
-            botState === 'active'
-              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : botState === 'error'
-                ? 'border-red-200 bg-red-50 text-red-700'
-                : 'border-amber-200 bg-amber-50 text-amber-700'
-          )}
-        >
-          <div className="flex items-center gap-2">
-            {botState === 'active' ? (
-              <RadioIcon className="h-4 w-4 animate-pulse" />
-            ) : (
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
-            )}
-            <span className="font-medium">{STATE_LABELS[botState]}</span>
-            <span className="text-xs opacity-70">
-              {platform === 'google_meet' ? '· Google Meet' : platform === 'zoom' ? '· Zoom' : ''}
-            </span>
-          </div>
-          {isActive && (
-            <button
-              onClick={handleTerminate}
-              className="shrink-0 rounded-lg border border-current/20 px-2.5 py-1 text-xs font-medium transition hover:bg-black/5"
-            >
-              End
-            </button>
-          )}
-        </div>
-      )}
+    <div className="relative overflow-hidden rounded-2xl bg-[#0f0f0f] p-5 shadow-[0_8px_32px_rgba(0,0,0,0.45)]">
+      {/* Glass shimmer */}
+      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.04] to-transparent" />
+      <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/[0.06]" />
 
-      {/* CpuChipIcon terminated banner */}
-      {botId && botState === 'terminated' && (
-        <div className="mb-3 flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-          <CheckIcon className="h-4 w-4" />
-          <span className="font-medium">Lira has left the meeting</span>
-        </div>
-      )}
-
-      <h2 className="mb-3 text-sm font-semibold text-gray-900">Invite Lira to a meeting</h2>
-
-      {/* Meeting type chips */}
-      <div className="mb-3 flex flex-wrap gap-1.5">
-        {MEETING_TYPES.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setMeetingType(value)}
-            disabled={deploying || !!isActive}
+      <div className="relative">
+        {/* Active bot banner */}
+        {botId && botState && botState !== 'terminated' && (
+          <div
             className={cn(
-              'rounded-full border px-3 py-0.5 text-xs font-medium transition',
-              meetingType === value
-                ? 'border-violet-300 bg-violet-50 text-violet-700'
-                : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
+              'mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-sm',
+              botState === 'active'
+                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                : botState === 'error'
+                  ? 'border-red-500/30 bg-red-500/10 text-red-400'
+                  : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
             )}
           >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      {/* Link input + PaperAirplaneIcon button */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <input
-            type="url"
-            className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20 disabled:opacity-50"
-            placeholder="Paste Google Meet or Zoom link…"
-            value={meetingLink}
-            onChange={(e) => {
-              setMeetingLink(e.target.value)
-              setLocalError(null)
-            }}
-            onKeyDown={(e) => e.key === 'Enter' && handleDeploy()}
-            disabled={deploying || !!isActive}
-          />
-          {detectedPlatform && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              <span
-                className={cn(
-                  'rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                  detectedPlatform === 'google_meet'
-                    ? 'bg-emerald-100 text-emerald-700'
-                    : 'bg-sky-100 text-sky-700'
-                )}
-              >
-                {detectedPlatform === 'google_meet' ? 'Meet' : 'Zoom'}
+            <div className="flex items-center gap-2">
+              {botState === 'active' ? (
+                <RadioIcon className="h-4 w-4 animate-pulse" />
+              ) : (
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              )}
+              <span className="font-semibold">{STATE_LABELS[botState]}</span>
+              <span className="text-xs opacity-60">
+                {platform === 'google_meet' ? '· Google Meet' : platform === 'zoom' ? '· Zoom' : ''}
               </span>
             </div>
-          )}
-          {!detectedPlatform && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-              <VideoCameraIcon className="h-4 w-4" />
-            </div>
-          )}
-        </div>
-        <button
-          onClick={handleDeploy}
-          disabled={deploying || !meetingLink.trim() || !!isActive}
-          className="flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {deploying ? (
-            <>
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              Sending…
-            </>
-          ) : (
-            <>
-              <ArrowTopRightOnSquareIcon className="h-4 w-4" />
-              PaperAirplaneIcon Lira
-            </>
-          )}
-        </button>
-      </div>
+            {isActive && (
+              <button
+                onClick={handleTerminate}
+                className="shrink-0 rounded-lg border border-white/20 px-2.5 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10"
+              >
+                End
+              </button>
+            )}
+          </div>
+        )}
 
-      {localError && (
-        <p className="mt-2 flex items-center gap-1.5 text-sm text-red-600">
-          <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
-          {localError}
-        </p>
-      )}
+        {botId && botState === 'terminated' && (
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm text-emerald-400">
+            <CheckIcon className="h-4 w-4" />
+            <span className="font-semibold">Lira has left the meeting</span>
+          </div>
+        )}
+
+        {/* Header */}
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+              Add Lira
+            </p>
+            <h2 className="text-base font-bold text-white">Invite to a meeting</h2>
+          </div>
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3730a3]">
+            <VideoCameraIcon className="h-4 w-4 text-white" />
+          </div>
+        </div>
+
+        {/* Meeting type chips */}
+        <div className="mb-4 flex flex-wrap gap-1.5">
+          {MEETING_TYPES.map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMeetingType(value)}
+              disabled={deploying || !!isActive}
+              className={cn(
+                'rounded-full border px-3 py-1 text-xs font-semibold transition',
+                meetingType === value
+                  ? 'border-[#3730a3] bg-[#3730a3] text-white'
+                  : 'border-white/10 bg-white/5 text-white/50 hover:border-white/20 hover:text-white/80'
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Link input + deploy button */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <input
+              type="url"
+              className="w-full rounded-xl border border-white/10 bg-white/8 px-4 py-2.5 pr-16 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
+              placeholder="Paste Google Meet or Zoom link…"
+              value={meetingLink}
+              onChange={(e) => {
+                setMeetingLink(e.target.value)
+                setLocalError(null)
+              }}
+              onKeyDown={(e) => e.key === 'Enter' && handleDeploy()}
+              disabled={deploying || !!isActive}
+            />
+            {detectedPlatform && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <span
+                  className={cn(
+                    'rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                    detectedPlatform === 'google_meet'
+                      ? 'bg-emerald-500/20 text-emerald-400'
+                      : 'bg-sky-500/20 text-sky-400'
+                  )}
+                >
+                  {detectedPlatform === 'google_meet' ? 'Meet' : 'Zoom'}
+                </span>
+              </div>
+            )}
+            {!detectedPlatform && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-white/20">
+                <VideoCameraIcon className="h-4 w-4" />
+              </div>
+            )}
+          </div>
+          <button
+            onClick={handleDeploy}
+            disabled={deploying || !meetingLink.trim() || !!isActive}
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {deploying ? (
+              <>
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                Sending…
+              </>
+            ) : (
+              <>
+                <ArrowTopRightOnSquareIcon className="h-4 w-4" />
+                Add Lira
+              </>
+            )}
+          </button>
+        </div>
+
+        {localError && (
+          <p className="mt-2 flex items-center gap-1.5 text-sm text-red-400">
+            <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
+            {localError}
+          </p>
+        )}
+      </div>
     </div>
   )
 }
@@ -487,105 +503,154 @@ function MeetingsPage() {
     }
   }
 
+  // ── Derived stats ────────────────────────────────────────────────────────
+  const totalMessages = meetings.reduce((sum, m) => sum + (m.messages ?? []).length, 0)
+  const withTranscripts = meetings.filter((m) => (m.messages ?? []).length > 0).length
+
   // ── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Page header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-violet-100">
-            <MicrophoneIcon className="w-5 h-5 text-violet-600" />
-          </div>
+    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+      <div className="mx-auto max-w-4xl">
+        {/* ── Page header ── */}
+        <div className="mb-5 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Meetings</h1>
-            <p className="text-sm text-gray-500">
-              {meetings.length} meeting{meetings.length !== 1 ? 's' : ''} recorded
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Workspace
             </p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Meetings</h1>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
           {meetings.length > 1 && (
-            <button
-              onClick={toggleSelectAll}
-              className="text-xs text-gray-400 hover:text-gray-700 transition"
-            >
-              {selectedIds.size === meetings.length ? 'Deselect all' : 'Select all'}
-            </button>
-          )}
-          {selectedIds.size > 0 && (
-            <button
-              onClick={handleBulkDelete}
-              disabled={bulkDeleting}
-              className="flex items-center gap-1.5 rounded-lg bg-red-50 px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-100 disabled:opacity-50 transition"
-            >
-              {bulkDeleting ? (
-                <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <TrashIcon className="h-3.5 w-3.5" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={toggleSelectAll}
+                className="rounded-xl border border-white/60 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:shadow-md"
+              >
+                {selectedIds.size === meetings.length ? 'Deselect all' : 'Select all'}
+              </button>
+              {selectedIds.size > 0 && (
+                <button
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="flex items-center gap-1.5 rounded-xl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  {bulkDeleting ? (
+                    <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  )}
+                  Delete {selectedIds.size}
+                </button>
               )}
-              Delete {selectedIds.size} selected
-            </button>
+            </div>
           )}
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 space-y-4">
-        {/* Invite Lira bar — always visible at top */}
-        <CompactInviteBar />
+        {/* ── Dark deploy hero ── */}
+        <div className="mb-5">
+          <CompactInviteBar />
+        </div>
 
+        {/* ── Stat strip ── */}
+        {!loading && !error && (
+          <div className="mb-5 grid grid-cols-3 gap-3">
+            {[
+              {
+                label: 'Total Meetings',
+                value: meetings.length,
+                accent: 'from-[#3730a3] via-[#2e2a8a] to-[#1e1b4b]',
+                glow: 'shadow-[0_8px_32px_rgba(55,48,163,0.35)]',
+              },
+              {
+                label: 'With Transcripts',
+                value: withTranscripts,
+                accent: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+                glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+              },
+              {
+                label: 'Total Messages',
+                value: totalMessages,
+                accent: 'from-[#4f46e5] via-[#4338ca] to-[#312e81]',
+                glow: 'shadow-[0_8px_32px_rgba(79,70,229,0.35)]',
+              },
+            ].map(({ label, value, accent, glow }) => (
+              <div
+                key={label}
+                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${accent} ${glow} p-4`}
+              >
+                <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.10] to-transparent" />
+                <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/[0.07]" />
+                <div className="relative">
+                  <p className="text-xl font-bold text-white">{value}</p>
+                  <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/40">
+                    {label}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ── States ── */}
         {loading && (
           <div className="flex flex-col items-center justify-center gap-3 py-20">
-            <ArrowPathIcon className="h-8 w-8 animate-spin text-violet-500" />
-            <p className="text-sm text-gray-500">Loading meetings…</p>
+            <ArrowPathIcon className="h-7 w-7 animate-spin text-[#3730a3]" />
+            <p className="text-sm text-gray-400">Loading meetings…</p>
           </div>
         )}
 
         {error && (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-600">
+          <div className="rounded-2xl border border-red-200 bg-white px-5 py-4 text-sm text-red-600 shadow-sm">
             {error}
           </div>
         )}
 
         {!loading && !error && meetings.length === 0 && (
-          <div className="flex flex-col items-center gap-6 py-8">
-            <div className="text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100">
-                <MicrophoneIcon className="h-7 w-7 text-violet-600" />
-              </div>
-              <h2 className="text-xl font-bold text-gray-900">No meetings yet</h2>
-              <p className="mt-2 max-w-sm text-sm text-gray-500">
-                Use the invite bar above to send Lira to your first meeting. She'll join as an AI
-                participant, take notes, and respond in real-time.
-              </p>
+          <div className="flex flex-col items-center rounded-2xl border border-white/60 bg-white py-16 text-center shadow-sm">
+            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#3730a3]/10">
+              <MicrophoneIcon className="h-7 w-7 text-[#3730a3]" />
             </div>
+            <h2 className="text-lg font-bold text-gray-900">No meetings yet</h2>
+            <p className="mt-2 max-w-sm text-sm text-gray-400">
+              Use the deploy bar above to send Lira to your first meeting.
+            </p>
           </div>
         )}
 
+        {/* ── Meeting list ── */}
         {!loading && !error && meetings.length > 0 && (
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {meetings.map((m) => (
               <div
                 key={m.session_id}
                 className={cn(
-                  'relative flex items-start gap-3 rounded-xl border bg-card transition hover:border-violet-500/30 hover:shadow-md hover:shadow-violet-500/5',
-                  deletingId === m.session_id && 'opacity-50 pointer-events-none',
-                  selectedIds.has(m.session_id) && 'border-violet-500/50 bg-violet-500/5'
+                  'group relative flex items-start gap-3 overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm transition hover:border-[#3730a3]/30 hover:shadow-md',
+                  deletingId === m.session_id && 'pointer-events-none opacity-50',
+                  selectedIds.has(m.session_id) && 'border-[#3730a3]/40 bg-[#3730a3]/[0.03]'
                 )}
               >
+                {/* Left accent bar */}
+                <div
+                  className={cn(
+                    'absolute left-0 top-0 h-full w-0.5 transition-all',
+                    selectedIds.has(m.session_id)
+                      ? 'bg-[#3730a3]'
+                      : 'bg-transparent group-hover:bg-[#3730a3]/40'
+                  )}
+                />
+
                 {/* Checkbox */}
                 <button
-                  className="shrink-0 pl-4 pt-4 pb-4"
+                  className="shrink-0 pl-4 pt-4"
                   onClick={() => toggleSelect(m.session_id)}
                   aria-label="Select meeting"
                 >
                   <div
                     className={cn(
-                      'h-4 w-4 rounded border-2 transition',
+                      'flex h-4 w-4 items-center justify-center rounded-md border-2 transition',
                       selectedIds.has(m.session_id)
-                        ? 'bg-violet-600 border-violet-600'
-                        : 'border-muted-foreground/30 hover:border-violet-500'
+                        ? 'border-[#3730a3] bg-[#3730a3]'
+                        : 'border-gray-200 hover:border-[#3730a3]'
                     )}
                   >
                     {selectedIds.has(m.session_id) && (
@@ -602,20 +667,20 @@ function MeetingsPage() {
                   </div>
                 </button>
 
-                {/* Card body */}
-                <div className="flex-1 py-4 pr-12 min-w-0">
-                  {/* Title row with inline edit */}
-                  <div className="flex items-center gap-2 min-w-0">
+                {/* Body */}
+                <div className="min-w-0 flex-1 py-3.5 pr-12">
+                  {/* Title row */}
+                  <div className="flex items-center gap-2">
                     {editingTitleId === m.session_id ? (
                       <div
                         role="presentation"
-                        className="flex flex-1 items-center gap-1.5 min-w-0"
+                        className="flex min-w-0 flex-1 items-center gap-1.5"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={(e) => e.stopPropagation()}
                       >
                         <input
                           ref={titleInputRef}
-                          className="flex-1 min-w-0 rounded-lg border border-violet-400 bg-white px-2 py-0.5 text-sm font-medium text-foreground outline-none focus:ring-2 focus:ring-violet-500/30"
+                          className="min-w-0 flex-1 rounded-lg border border-[#3730a3]/50 bg-white px-2 py-0.5 text-sm font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-[#3730a3]/20"
                           value={titleDraft}
                           onChange={(e) => setTitleDraft(e.target.value)}
                           onKeyDown={(e) => {
@@ -627,8 +692,7 @@ function MeetingsPage() {
                         <button
                           onClick={() => handleSaveTitle(m.session_id)}
                           disabled={savingTitleId === m.session_id}
-                          className="shrink-0 rounded p-1 text-emerald-600 hover:bg-emerald-50"
-                          title="ArrowDownOnSquareIcon"
+                          className="shrink-0 rounded-lg p-1 text-emerald-600 transition hover:bg-emerald-50"
                         >
                           {savingTitleId === m.session_id ? (
                             <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
@@ -638,8 +702,7 @@ function MeetingsPage() {
                         </button>
                         <button
                           onClick={() => setEditingTitleId(null)}
-                          className="shrink-0 rounded p-1 text-gray-400 hover:bg-gray-100"
-                          title="Cancel"
+                          className="shrink-0 rounded-lg p-1 text-gray-400 transition hover:bg-gray-100"
                         >
                           <XMarkIcon className="h-3.5 w-3.5" />
                         </button>
@@ -650,7 +713,7 @@ function MeetingsPage() {
                           className="min-w-0 flex-1 text-left"
                           onClick={() => navigate(`/meetings/${m.session_id}`)}
                         >
-                          <h3 className="truncate font-medium text-foreground">
+                          <h3 className="truncate text-sm font-semibold text-gray-900 transition group-hover:text-[#3730a3]">
                             {m.title || 'Untitled Meeting'}
                           </h3>
                         </button>
@@ -660,7 +723,7 @@ function MeetingsPage() {
                             setEditingTitleId(m.session_id)
                             setTitleDraft(m.title || '')
                           }}
-                          className="shrink-0 rounded p-1 text-muted-foreground/40 opacity-0 group-hover:opacity-100 hover:text-foreground hover:bg-gray-100 transition [.relative:hover_&]:opacity-100"
+                          className="shrink-0 rounded-lg p-1 text-gray-300 opacity-0 transition hover:bg-gray-100 hover:text-gray-600 group-hover:opacity-100"
                           title="Edit title"
                         >
                           <PencilIcon className="h-3 w-3" />
@@ -669,40 +732,36 @@ function MeetingsPage() {
                     )}
                   </div>
 
-                  {/* Type badge + meta */}
+                  {/* Meta row */}
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
                     {m.meeting_type && <MeetingTypeBadge type={m.meeting_type} />}
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
                       <CalendarIcon className="h-3 w-3" />
                       {formatDate(m.created_at)}
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
                       <ClockIcon className="h-3 w-3" />
                       {formatTime(m.created_at)} · {duration(m.created_at, m.updated_at)}
                     </span>
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1 text-xs text-gray-400">
                       <ChatBubbleLeftIcon className="h-3 w-3" />
-                      {(m.messages ?? []).length} messages
+                      {(m.messages ?? []).length} msg{(m.messages ?? []).length !== 1 ? 's' : ''}
                     </span>
-                  </div>
-
-                  {/* Status pill */}
-                  {(m.messages ?? []).length > 0 && (
-                    <div className="mt-1.5">
-                      <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-500">
+                    {(m.messages ?? []).length > 0 && (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600">
                         Transcript
                       </span>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
 
-                {/* Delete button */}
+                {/* Delete btn */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation()
                     handleDelete(m.session_id)
                   }}
-                  className="absolute right-3 top-3 rounded-lg p-1.5 text-muted-foreground/60 transition hover:bg-destructive/10 hover:text-destructive"
+                  className="absolute right-3 top-3 rounded-xl p-1.5 text-gray-300 transition hover:bg-red-50 hover:text-red-500"
                   title="Delete meeting"
                 >
                   {deletingId === m.session_id ? (
