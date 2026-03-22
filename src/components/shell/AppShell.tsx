@@ -712,7 +712,7 @@ function AppShell() {
         </header>
 
         {/* Main content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-[#ebebeb]">
           <Outlet />
         </main>
       </div>

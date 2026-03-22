@@ -54,90 +54,32 @@ function StatCard({
   label,
   value,
   icon: Icon,
-  accent,
+  accent: _accent,
   onClick,
 }: {
   label: string
   value: number | string
   icon: React.ElementType
-  accent: string
+  accent?: string
   onClick?: () => void
 }) {
-  const palette: Record<
-    string,
-    {
-      bg: string
-      iconBg: string
-      iconText: string
-      valueText: string
-      labelText: string
-      shadow: string
-    }
-  > = {
-    orange: {
-      bg: 'bg-gradient-to-br from-orange-100 to-orange-200/80',
-      iconBg: 'bg-white/50',
-      iconText: 'text-orange-600',
-      valueText: 'text-orange-950',
-      labelText: 'text-orange-700/70',
-      shadow: 'shadow-orange-300/30',
-    },
-    amber: {
-      bg: 'bg-gradient-to-br from-amber-100 to-amber-200/80',
-      iconBg: 'bg-white/50',
-      iconText: 'text-amber-600',
-      valueText: 'text-amber-950',
-      labelText: 'text-amber-700/70',
-      shadow: 'shadow-amber-300/30',
-    },
-    violet: {
-      bg: 'bg-gradient-to-br from-violet-100 to-violet-200/80',
-      iconBg: 'bg-white/50',
-      iconText: 'text-violet-600',
-      valueText: 'text-violet-950',
-      labelText: 'text-violet-700/70',
-      shadow: 'shadow-violet-300/30',
-    },
-    teal: {
-      bg: 'bg-gradient-to-br from-teal-100 to-teal-200/80',
-      iconBg: 'bg-white/50',
-      iconText: 'text-teal-600',
-      valueText: 'text-teal-950',
-      labelText: 'text-teal-700/70',
-      shadow: 'shadow-teal-300/30',
-    },
-  }
-  const c = palette[accent] ?? palette.violet
-
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
       {...(onClick ? { onClick } : {})}
-      className={[
-        'group relative flex w-full flex-col gap-4 rounded-2xl p-5 text-left',
-        c.bg,
-        'border border-white/40',
-        'shadow-md',
-        c.shadow,
-        'transition-all duration-200 ease-out',
-        onClick ? 'hover:-translate-y-0.5 hover:shadow-lg' : '',
-      ].join(' ')}
+      className="group relative flex w-full flex-col justify-between rounded-2xl border border-white/60 bg-white p-5 text-left shadow-sm transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="flex items-start justify-between">
-        <div
-          className={`flex h-9 w-9 items-center justify-center rounded-xl ${c.iconBg} ${c.iconText}`}
-        >
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
           <Icon className="h-[18px] w-[18px]" />
         </div>
         {onClick && (
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-900 text-white opacity-0 transition group-hover:opacity-100">
-            <ArrowRightIcon className="h-3.5 w-3.5" />
-          </div>
+          <ArrowRightIcon className="h-3.5 w-3.5 text-gray-300 opacity-0 transition group-hover:opacity-100" />
         )}
       </div>
-      <div>
-        <p className={`text-2xl font-bold tracking-tight ${c.valueText}`}>{value}</p>
-        <p className={`mt-0.5 text-[11px] font-semibold uppercase tracking-wider ${c.labelText}`}>
+      <div className="mt-4">
+        <p className="text-3xl font-bold tracking-tight text-gray-900">{value}</p>
+        <p className="mt-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
           {label}
         </p>
       </div>
@@ -162,26 +104,23 @@ function QuickAction({
   return (
     <button
       onClick={onClick}
-      className={`group flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition hover:shadow-sm ${
-        accent
-          ? 'border-violet-200 bg-violet-50 hover:border-violet-300'
-          : 'border-gray-100 bg-white hover:border-gray-200'
-      }`}
+      className="group flex w-full items-center gap-4 rounded-xl border border-gray-100 bg-white p-4 text-left transition hover:border-gray-200 hover:shadow-sm"
     >
       <div
-        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition ${
+        className={cn(
+          'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition',
           accent
-            ? 'bg-violet-100 text-violet-600 group-hover:bg-violet-200'
+            ? 'bg-gray-900 text-white group-hover:bg-gray-700'
             : 'bg-gray-100 text-gray-600 group-hover:bg-gray-200'
-        }`}
+        )}
       >
-        <Icon className="h-5 w-5" />
+        <Icon className="h-4 w-4" />
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-gray-900">{label}</p>
-        <p className="mt-0.5 truncate text-xs text-gray-500">{description}</p>
+        <p className="mt-0.5 truncate text-xs text-gray-400">{description}</p>
       </div>
-      <ArrowRightIcon className="h-4 w-4 shrink-0 text-gray-300 transition group-hover:text-gray-500" />
+      <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-300 transition group-hover:text-gray-500" />
     </button>
   )
 }
@@ -205,10 +144,10 @@ function RecentMeetings({ meetings }: { meetings: Meeting[] }) {
         <button
           key={m.session_id}
           onClick={() => navigate(`/meetings/${m.session_id}`)}
-          className="flex w-full items-center gap-3 py-3 text-left transition hover:bg-gray-50/60 px-1 rounded-lg"
+          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left transition hover:bg-gray-50"
         >
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-100">
-            <MicrophoneIcon className="h-3.5 w-3.5 text-violet-600" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+            <MicrophoneIcon className="h-3.5 w-3.5 text-gray-500" />
           </div>
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-medium text-gray-900">{m.title}</p>
@@ -246,7 +185,7 @@ function RecentTasks({ tasks }: { tasks: TaskRecord[] }) {
         <button
           key={t.task_id}
           onClick={() => navigate(`/org/tasks/${t.task_id}`)}
-          className="flex w-full items-center gap-3 py-3 text-left px-1 rounded-lg transition hover:bg-gray-50/60"
+          className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left transition hover:bg-gray-50"
         >
           <span
             className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${statusColor[t.status] ?? 'bg-gray-300'}`}
@@ -279,44 +218,46 @@ function ActivityPanel({
   const [tab, setTab] = useState<Tab>('actions')
 
   const tabs: { id: Tab; label: string; count?: number }[] = [
-    { id: 'actions', label: 'Actions' },
+    { id: 'actions', label: 'Quick Actions' },
     { id: 'meetings', label: 'Meetings', count: meetings.length || undefined },
     { id: 'tasks', label: 'Tasks', count: tasks.length || undefined },
     { id: 'interviews', label: 'Interviews', count: interviews.length || undefined },
   ]
 
   return (
-    <div className="rounded-2xl border border-gray-100 bg-white shadow-sm">
-      {/* Tab bar */}
-      <div className="flex items-center gap-1 border-b border-gray-100 px-4 pt-3">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={cn(
-              'flex items-center gap-1.5 rounded-t-lg px-3.5 py-2 text-sm font-medium transition',
-              tab === t.id
-                ? 'border-b-2 border-violet-600 text-violet-700'
-                : 'text-gray-500 hover:text-gray-800'
-            )}
-          >
-            {t.label}
-            {t.count !== undefined && (
-              <span
-                className={cn(
-                  'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
-                  tab === t.id ? 'bg-violet-100 text-violet-700' : 'bg-gray-100 text-gray-500'
-                )}
-              >
-                {t.count}
-              </span>
-            )}
-          </button>
-        ))}
+    <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+      {/* Pill tab bar — matches landing page style */}
+      <div className="p-4 pb-0">
+        <div className="inline-flex items-center gap-1 rounded-xl bg-gray-100 p-1">
+          {tabs.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={cn(
+                'flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-xs font-semibold transition-all duration-200',
+                tab === t.id
+                  ? 'bg-gray-900 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              )}
+            >
+              {t.label}
+              {t.count !== undefined && (
+                <span
+                  className={cn(
+                    'rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none',
+                    tab === t.id ? 'bg-white/20 text-white' : 'bg-gray-200 text-gray-500'
+                  )}
+                >
+                  {t.count}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Panel content */}
-      <div className="p-5">
+      <div className="p-4 pt-4">
         {/* ── Quick Actions ── */}
         {tab === 'actions' && (
           <div className="space-y-2">
@@ -355,7 +296,7 @@ function ActivityPanel({
             {meetings.length > 0 && (
               <button
                 onClick={() => navigate('/meetings')}
-                className="mt-3 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
+                className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 transition hover:text-gray-900"
               >
                 View all meetings <ArrowRightIcon className="h-3 w-3" />
               </button>
@@ -370,7 +311,7 @@ function ActivityPanel({
             {tasks.length > 0 && (
               <button
                 onClick={() => navigate('/org/tasks')}
-                className="mt-3 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
+                className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 transition hover:text-gray-900"
               >
                 View all tasks <ArrowRightIcon className="h-3 w-3" />
               </button>
@@ -397,7 +338,7 @@ function ActivityPanel({
                       <button
                         key={role}
                         onClick={() => navigate('/org/roles')}
-                        className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-700"
+                        className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-gray-100 hover:text-gray-900"
                       >
                         <BriefcaseIcon className="h-3.5 w-3.5" />
                         {role}
@@ -410,7 +351,7 @@ function ActivityPanel({
                 </div>
                 <button
                   onClick={() => navigate('/org/roles')}
-                  className="mt-3 flex items-center gap-1 text-xs font-medium text-violet-600 hover:text-violet-700"
+                  className="mt-3 flex items-center gap-1 text-xs font-semibold text-gray-500 transition hover:text-gray-900"
                 >
                   Manage interview roles <ArrowRightIcon className="h-3 w-3" />
                 </button>
@@ -584,83 +525,79 @@ function DeployHeroBar() {
     }
 
     return (
-      <div className="mb-8 max-w-3xl">
-        <div
-          className={cn(
-            'rounded-2xl border p-5 transition-colors',
-            botState === 'active'
-              ? 'border-emerald-200 bg-emerald-50/70'
-              : botState === 'error'
-                ? 'border-red-200 bg-red-50/70'
-                : 'border-amber-200 bg-amber-50/70'
-          )}
-        >
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div
-                className={cn(
-                  'flex h-10 w-10 items-center justify-center rounded-xl',
-                  botState === 'active'
-                    ? 'bg-emerald-100'
-                    : botState === 'error'
-                      ? 'bg-red-100'
-                      : 'bg-amber-100'
-                )}
-              >
-                {isInProgress ? (
-                  <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-600" />
-                ) : botState === 'active' ? (
-                  <RadioIcon className="h-5 w-5 animate-pulse text-emerald-600" />
-                ) : (
-                  <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
-                )}
-              </div>
-              <div>
-                <p
-                  className={cn(
-                    'text-sm font-semibold',
-                    botState === 'active'
-                      ? 'text-emerald-800'
-                      : botState === 'error'
-                        ? 'text-red-800'
-                        : 'text-amber-800'
-                  )}
-                >
-                  {stateLabel[botState] ?? botState}
-                </p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
-                  <VideoCameraIcon className="h-3 w-3" />
-                  {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
-                </p>
-              </div>
+      <div
+        className={cn(
+          'rounded-2xl border p-5 transition-colors',
+          botState === 'active'
+            ? 'border-emerald-200 bg-emerald-50/70'
+            : botState === 'error'
+              ? 'border-red-200 bg-red-50/70'
+              : 'border-amber-200 bg-amber-50/70'
+        )}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-xl',
+                botState === 'active'
+                  ? 'bg-emerald-100'
+                  : botState === 'error'
+                    ? 'bg-red-100'
+                    : 'bg-amber-100'
+              )}
+            >
+              {isInProgress ? (
+                <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-600" />
+              ) : botState === 'active' ? (
+                <RadioIcon className="h-5 w-5 animate-pulse text-emerald-600" />
+              ) : (
+                <ExclamationCircleIcon className="h-5 w-5 text-red-600" />
+              )}
             </div>
-
-            {isActive && botState !== 'leaving' && (
-              <button
-                onClick={handleTerminate}
-                className="shrink-0 rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            <div>
+              <p
+                className={cn(
+                  'text-sm font-semibold',
+                  botState === 'active'
+                    ? 'text-emerald-800'
+                    : botState === 'error'
+                      ? 'text-red-800'
+                      : 'text-amber-800'
+                )}
               >
-                Remove from call
-              </button>
-            )}
-            {botState === 'error' && (
-              <button
-                onClick={clearBot}
-                className="shrink-0 rounded-xl bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-              >
-                Try again
-              </button>
-            )}
+                {stateLabel[botState] ?? botState}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-500">
+                <VideoCameraIcon className="h-3 w-3" />
+                {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
+              </p>
+            </div>
           </div>
 
-          {storeError && <p className="mt-3 text-sm text-red-600">{storeError}</p>}
-
-          {botState === 'in_lobby' && (
-            <p className="mt-3 text-sm text-sky-700">
-              Admit Lira from your meeting to let her join.
-            </p>
+          {isActive && botState !== 'leaving' && (
+            <button
+              onClick={handleTerminate}
+              className="shrink-0 rounded-full border border-red-200 bg-white px-4 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            >
+              Remove from call
+            </button>
+          )}
+          {botState === 'error' && (
+            <button
+              onClick={clearBot}
+              className="shrink-0 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
+            >
+              Try again
+            </button>
           )}
         </div>
+
+        {storeError && <p className="mt-3 text-sm text-red-600">{storeError}</p>}
+
+        {botState === 'in_lobby' && (
+          <p className="mt-3 text-sm text-sky-700">Admit Lira from your meeting to let her join.</p>
+        )}
       </div>
     )
   }
@@ -676,105 +613,108 @@ function DeployHeroBar() {
   ]
 
   return (
-    <div className="mb-8 max-w-3xl">
-      <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
-        <h2 className="mb-3.5 text-sm font-semibold text-gray-900">Invite Lira to your meeting</h2>
+    <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-gray-400">
+        Invite Lira to a meeting
+      </p>
 
-        {/* Meeting type chips */}
-        <div className="mb-3 flex flex-wrap gap-1.5">
-          {MEETING_TYPES.map(({ value, label }) => {
-            const selected = (meetingType ?? 'meeting') === value
-            return (
-              <button
-                key={value}
-                onClick={() => setMeetingType(value === 'meeting' && !meetingType ? null : value)}
-                className={cn(
-                  'rounded-full border px-3 py-0.5 text-xs font-medium transition',
-                  selected
-                    ? 'border-violet-300 bg-violet-50 text-violet-700'
-                    : 'border-gray-200 bg-white text-gray-500 hover:border-gray-300 hover:text-gray-700'
-                )}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
-
-        <div className="flex gap-3">
-          <div className="relative flex-1">
-            <input
-              type="url"
-              className="w-full rounded-xl border border-gray-200 bg-white px-4 py-2.5 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-violet-400 focus:ring-2 focus:ring-violet-500/20"
-              placeholder="Paste Google Meet or Zoom link…"
-              value={meetingLink}
-              onChange={(e) => {
-                setMeetingLink(e.target.value)
-                setLocalError(null)
-              }}
-              onKeyDown={(e) => e.key === 'Enter' && handleDeploy()}
-              disabled={deploying}
-            />
-            {detectedPlatform && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                <span
-                  className={cn(
-                    'rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
-                    detectedPlatform === 'google_meet'
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-sky-100 text-sky-700'
-                  )}
-                >
-                  {detectedPlatform === 'google_meet' ? 'Meet' : 'Zoom'}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={handleDeploy}
-            disabled={deploying || !meetingLink.trim()}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {deploying ? (
-              <>
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                Sending…
-              </>
-            ) : (
-              'Add Lira'
-            )}
-          </button>
-        </div>
-
-        {error && (
-          <p className="mt-2.5 flex items-center gap-1.5 text-sm text-red-600">
-            <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
-            {error}
-          </p>
-        )}
+      {/* Meeting type chips */}
+      <div className="mb-4 flex flex-wrap gap-1.5">
+        {MEETING_TYPES.map(({ value, label }) => {
+          const selected = (meetingType ?? 'meeting') === value
+          return (
+            <button
+              key={value}
+              onClick={() => setMeetingType(value === 'meeting' && !meetingType ? null : value)}
+              className={cn(
+                'rounded-full px-3.5 py-1 text-xs font-semibold transition-all duration-200',
+                selected
+                  ? 'bg-gray-900 text-white shadow-sm'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+              )}
+            >
+              {label}
+            </button>
+          )
+        })}
       </div>
 
+      <div className="flex gap-3">
+        <div className="relative flex-1">
+          <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
+            <VideoCameraIcon className="h-4 w-4 text-gray-400" />
+          </div>
+          <input
+            type="url"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-gray-400 focus:bg-white focus:ring-2 focus:ring-gray-900/10"
+            placeholder="Paste Google Meet or Zoom link…"
+            value={meetingLink}
+            onChange={(e) => {
+              setMeetingLink(e.target.value)
+              setLocalError(null)
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleDeploy()}
+            disabled={deploying}
+          />
+          {detectedPlatform && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <span
+                className={cn(
+                  'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider',
+                  detectedPlatform === 'google_meet'
+                    ? 'bg-emerald-100 text-emerald-700'
+                    : 'bg-sky-100 text-sky-700'
+                )}
+              >
+                {detectedPlatform === 'google_meet' ? 'Meet' : 'Zoom'}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <button
+          onClick={handleDeploy}
+          disabled={deploying || !meetingLink.trim()}
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          {deploying ? (
+            <>
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              Sending…
+            </>
+          ) : (
+            'Add Lira'
+          )}
+        </button>
+      </div>
+
+      {error && (
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-red-600">
+          <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
+          {error}
+        </p>
+      )}
+
       {/* Capability anchors */}
-      <div className="mt-3 flex flex-wrap items-center gap-x-1 gap-y-0.5 px-1 text-xs text-gray-400">
+      <div className="mt-4 flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs text-gray-400">
         <span>Also:</span>
         <button
           onClick={() => navigate('/org/roles')}
-          className="font-medium text-gray-500 transition hover:text-violet-600"
+          className="font-medium text-gray-500 transition hover:text-gray-900"
         >
           Conduct interviews
         </button>
         <span>·</span>
         <button
           onClick={() => navigate('/org/tasks')}
-          className="font-medium text-gray-500 transition hover:text-violet-600"
+          className="font-medium text-gray-500 transition hover:text-gray-900"
         >
           Manage tasks
         </button>
         <span>·</span>
         <button
           onClick={() => navigate('/org/knowledge')}
-          className="font-medium text-gray-500 transition hover:text-violet-600"
+          className="font-medium text-gray-500 transition hover:text-gray-900"
         >
           Knowledge base
         </button>
@@ -875,98 +815,101 @@ function DashboardPage() {
   // Loading skeleton
   if (loading) {
     return (
-      <div className="px-4 py-6 sm:px-8 sm:py-8">
-        <div className="mb-8 h-8 w-64 animate-pulse rounded-xl bg-gray-200" />
-        <div className="mb-6 h-[104px] animate-pulse rounded-2xl bg-gray-200" />
-        <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-28 animate-pulse rounded-2xl bg-gray-200" />
-          ))}
-        </div>
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-          {[...Array(3)].map((_, i) => (
-            <div key={i} className="h-64 animate-pulse rounded-2xl bg-gray-200" />
-          ))}
+      <div className="min-h-full bg-[#ebebeb] px-6 py-8">
+        <div className="mx-auto max-w-5xl space-y-4">
+          <div className="h-10 w-56 animate-pulse rounded-xl bg-gray-300/60" />
+          <div className="h-44 animate-pulse rounded-2xl bg-gray-300/60" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-28 animate-pulse rounded-2xl bg-gray-300/60" />
+            ))}
+          </div>
+          <div className="h-64 animate-pulse rounded-2xl bg-gray-300/60" />
         </div>
       </div>
     )
   }
 
+  const lastActivityLabel = (() => {
+    type AnyItem = { created_at: string; _kind: string }
+    const candidates: AnyItem[] = [
+      ...meetings.map((m) => ({ created_at: m.created_at, _kind: 'Meeting' })),
+      ...tasks.map((t) => ({ created_at: t.created_at, _kind: 'Task' })),
+      ...interviews.map((iv) => ({ created_at: iv.created_at, _kind: 'Interview' })),
+    ]
+    if (stats?.last_activity_at && candidates.length === 0) return timeAgo(stats.last_activity_at)
+    if (candidates.length === 0) return '—'
+    const latest = candidates.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )[0]
+    return `${latest._kind} · ${timeAgo(latest.created_at)}`
+  })()
+
   return (
-    <div className="px-4 py-6 sm:px-8 sm:py-8">
-      {/* ── Welcome header ── */}
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-            {greeting}
-            {firstName ? `, ${firstName}` : ''}!
-          </h1>
-          {currentOrg && (
-            <p className="mt-1 text-sm text-gray-500">
-              You're working in{' '}
-              <span className="font-semibold text-gray-700">{currentOrg.name}</span>
-            </p>
-          )}
+    <div className="min-h-full bg-[#ebebeb] px-6 py-8">
+      <div className="mx-auto max-w-5xl">
+        {/* ── Header ── */}
+        <div className="mb-6 flex items-baseline justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+              {greeting}
+              {firstName ? `, ${firstName}` : ''}
+            </h1>
+            {currentOrg && <p className="mt-1 text-sm text-gray-500">{currentOrg.name}</p>}
+          </div>
+          <p className="hidden text-xs text-gray-400 sm:block">
+            {new Date().toLocaleDateString('en-US', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric',
+            })}
+          </p>
         </div>
-      </div>
 
-      {/* ── Deploy hero bar ── */}
-      <DeployHeroBar />
+        {/* ── Deploy bar ── */}
+        <div className="mb-4">
+          <DeployHeroBar />
+        </div>
 
-      {/* ── Stat cards ── */}
-      <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label="Total meetings"
-          value={stats?.meetings_total ?? meetings.length}
-          icon={MicrophoneIcon}
-          accent="orange"
-          onClick={() => navigate('/meetings')}
-        />
-        <StatCard
-          label="Pending tasks"
-          value={stats?.tasks_pending ?? tasks.length}
-          icon={ClipboardDocumentCheckIcon}
-          accent="amber"
-          onClick={() => navigate('/org/tasks')}
-        />
-        <StatCard
-          label="Interviews"
-          value={stats?.interviews_total ?? interviews.length}
-          icon={BriefcaseIcon}
-          accent="violet"
-          onClick={() => navigate('/org/roles')}
-        />
-        <StatCard
-          label="Last activity"
-          value={(() => {
-            // Find most recent item across meetings, tasks, interviews
-            type AnyItem = { created_at: string; _kind: string }
-            const candidates: AnyItem[] = [
-              ...meetings.map((m) => ({ created_at: m.created_at, _kind: 'Meeting' })),
-              ...tasks.map((t) => ({ created_at: t.created_at, _kind: 'Task' })),
-              ...interviews.map((iv) => ({ created_at: iv.created_at, _kind: 'Interview' })),
-            ]
-            if (stats?.last_activity_at && candidates.length === 0) {
-              return timeAgo(stats.last_activity_at)
-            }
-            if (candidates.length === 0) return '—'
-            const latest = candidates.sort(
-              (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-            )[0]
-            return `${latest._kind} · ${timeAgo(latest.created_at)}`
-          })()}
-          icon={ClockIcon}
-          accent="teal"
+        {/* ── Stat cards ── */}
+        <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <StatCard
+            label="Total meetings"
+            value={stats?.meetings_total ?? meetings.length}
+            icon={MicrophoneIcon}
+            accent="orange"
+            onClick={() => navigate('/meetings')}
+          />
+          <StatCard
+            label="Pending tasks"
+            value={stats?.tasks_pending ?? tasks.length}
+            icon={ClipboardDocumentCheckIcon}
+            accent="amber"
+            onClick={() => navigate('/org/tasks')}
+          />
+          <StatCard
+            label="Interviews"
+            value={stats?.interviews_total ?? interviews.length}
+            icon={BriefcaseIcon}
+            accent="violet"
+            onClick={() => navigate('/org/roles')}
+          />
+          <StatCard
+            label="Last activity"
+            value={lastActivityLabel}
+            icon={ClockIcon}
+            accent="teal"
+          />
+        </div>
+
+        {/* ── Activity panel ── */}
+        <ActivityPanel
+          meetings={meetings}
+          tasks={tasks}
+          interviews={interviews}
+          navigate={navigate}
         />
       </div>
-
-      {/* ── Activity panel ── */}
-      <ActivityPanel
-        meetings={meetings}
-        tasks={tasks}
-        interviews={interviews}
-        navigate={navigate}
-      />
     </div>
   )
 }
