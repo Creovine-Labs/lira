@@ -1195,7 +1195,7 @@ function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
         {/* Primary CTA */}
         <button
           onClick={handleStart}
-          className="w-full rounded-xl bg-[#1a3a5c] text-white text-sm font-semibold py-3 hover:bg-[#14304f] transition flex items-center justify-center gap-2"
+          className="w-full rounded-xl bg-[#3730a3] text-white text-sm font-semibold py-3 hover:bg-[#312e81] transition flex items-center justify-center gap-2"
         >
           Start free
           <ArrowRightIcon className="w-4 h-4" />
@@ -1238,7 +1238,7 @@ function Hero() {
           <span
             className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg ai-badge"
             style={{
-              background: '#1a3a5c',
+              background: '#3730a3',
               boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
             }}
           >
@@ -1263,7 +1263,7 @@ function Hero() {
             />
             <button
               onClick={handleJoin}
-              className="shrink-0 rounded-xl bg-[#1a3a5c] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#14304f] transition"
+              className="shrink-0 rounded-xl bg-[#3730a3] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#312e81] transition"
             >
               Join meeting
             </button>
