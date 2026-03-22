@@ -432,6 +432,10 @@ function OnboardingPage() {
 
       {/* ── Right panel ── */}
       <main className="flex flex-1 flex-col bg-white">
+        {/* Mobile logo — only visible when aside is hidden */}
+        <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
+          <LiraLogo size="sm" />
+        </div>
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
           <div className="w-full max-w-[560px]">

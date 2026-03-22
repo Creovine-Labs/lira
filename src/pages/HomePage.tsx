@@ -183,20 +183,16 @@ function AuthSparkle() {
 
 // ── Auth view types ───────────────────────────────────────────────────────────
 
-type AuthView = 'landing' | 'login' | 'signup-name' | 'signup-email' | 'signup-password'
+type AuthView = 'landing' | 'login' | 'signup'
 
 const AUTH_BACK: Partial<Record<AuthView, AuthView>> = {
   login: 'landing',
-  'signup-name': 'landing',
-  'signup-email': 'signup-name',
-  'signup-password': 'signup-email',
+  signup: 'landing',
 }
 
 const AUTH_LEFT_HEADINGS: Partial<Record<AuthView, string>> = {
   login: 'Welcome\nback!',
-  'signup-name': "Let's get\nstarted",
-  'signup-email': "What's your\nemail?",
-  'signup-password': 'Almost\nthere',
+  signup: "Let's get\nstarted",
 }
 // ── Google icon ─────────────────────────────────────────────────────────────
 
@@ -325,9 +321,6 @@ function LoginForm({
     }
   }
 
-  const showFooter = authView !== 'landing'
-  const showBack = AUTH_BACK[authView] !== undefined
-
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── Left panel ── */}
@@ -351,6 +344,10 @@ function LoginForm({
 
       {/* ── Right panel ── */}
       <main className="flex flex-1 flex-col bg-white">
+        {/* Mobile logo — only visible when aside is hidden */}
+        <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
+          <LiraLogo size="sm" />
+        </div>
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center overflow-y-auto px-5 py-8 sm:px-10 sm:py-12 md:px-16">
           <div className="w-full max-w-[480px]">
@@ -394,7 +391,7 @@ function LoginForm({
                     <div className="h-px flex-1 bg-gray-200" />
                   </div>
                   <button
-                    onClick={() => goTo('signup-name')}
+                    onClick={() => goTo('signup')}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
                   >
                     Continue with email
@@ -529,82 +526,60 @@ function LoginForm({
               </div>
             )}
 
-            {/* ── Signup step 1: name ── */}
-            {authView === 'signup-name' && (
+            {/* ── Signup ── */}
+            {authView === 'signup' && (
               <div className="space-y-8">
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    What's your name?
+                    Create your account
                   </h1>
-                  <p className="mt-2 text-sm text-gray-500">This is how you'll appear in Lira.</p>
+                  <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
                 </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="signup-fullname" className="text-sm font-medium text-gray-700">
-                    Full name <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input
-                      id="signup-fullname"
-                      type="text"
-                      autoComplete="name"
-                      className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                      placeholder="Ada Lovelace"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && name.trim()) goTo('signup-email')
-                      }}
-                    />
+                <form
+                  id="auth-signup-form"
+                  onSubmit={handleSignup}
+                  className="space-y-4"
+                  noValidate
+                >
+                  <div className="space-y-1.5">
+                    <label htmlFor="signup-fullname" className="text-sm font-medium text-gray-700">
+                      Full name <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <UserIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        id="signup-fullname"
+                        type="text"
+                        autoComplete="name"
+                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                        placeholder="Ada Lovelace"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Signup step 2: email ── */}
-            {authView === 'signup-email' && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    What's your email?
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">You'll use this to sign in to Lira.</p>
-                </div>
-                <div className="space-y-1.5">
-                  <label htmlFor="signup-email-field" className="text-sm font-medium text-gray-700">
-                    Email address <span className="text-red-500">*</span>
-                  </label>
-                  <div className="relative">
-                    <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                    <input
-                      id="signup-email-field"
-                      type="email"
-                      autoComplete="email"
-                      className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
-                      placeholder="you@example.com"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && email.trim()) goTo('signup-password')
-                      }}
-                    />
+                  <div className="space-y-1.5">
+                    <label
+                      htmlFor="signup-email-field"
+                      className="text-sm font-medium text-gray-700"
+                    >
+                      Email address <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                      <input
+                        id="signup-email-field"
+                        type="email"
+                        autoComplete="email"
+                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                        placeholder="you@example.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        disabled={loading}
+                      />
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* ── Signup step 3: password ── */}
-            {authView === 'signup-password' && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    Create a password
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Use at least 8 characters. You'll use this to sign in.
-                  </p>
-                </div>
-                <form id="auth-signup-form" onSubmit={handleSignup} noValidate>
                   <div className="space-y-1.5">
                     <label
                       htmlFor="signup-password-field"
@@ -639,115 +614,111 @@ function LoginForm({
                     </div>
                   </div>
                   {error && (
-                    <p className="mt-3 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">
-                      {error}
-                    </p>
+                    <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
                   )}
+                  <button
+                    type="submit"
+                    disabled={
+                      loading ||
+                      !name.trim() ||
+                      !email.trim() ||
+                      !password.trim() ||
+                      password.trim().length < 8
+                    }
+                    className="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                  >
+                    {loading ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Creating account…
+                      </span>
+                    ) : (
+                      'Create account'
+                    )}
+                  </button>
                 </form>
+                <p className="text-sm text-gray-500">
+                  Already have an account?{' '}
+                  <button
+                    onClick={() => goTo('login')}
+                    className="font-semibold text-violet-600 hover:text-violet-700"
+                  >
+                    Sign in
+                  </button>
+                </p>
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Footer nav ── */}
-        {showFooter && (
+        {/* ── Footer nav (login only) ── */}
+        {authView === 'login' && (
           <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
             <div className="flex w-full max-w-[480px] items-center justify-between">
-              {showBack ? (
-                <button
-                  onClick={goBack}
-                  className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-                >
-                  <ArrowLeftIcon className="h-4 w-4" />
-                  Back
-                </button>
-              ) : (
-                <div />
-              )}
-
-              {authView === 'login' && (
-                <button
-                  type="submit"
-                  form="auth-login-form"
-                  disabled={loading || !email.trim() || !password.trim()}
-                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Signing in…
-                    </span>
-                  ) : (
-                    'Sign in'
-                  )}
-                </button>
-              )}
-
-              {authView === 'signup-name' && (
-                <button
-                  disabled={!name.trim()}
-                  onClick={() => goTo('signup-email')}
-                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              )}
-
-              {authView === 'signup-email' && (
-                <button
-                  disabled={!email.trim()}
-                  onClick={() => goTo('signup-password')}
-                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-                >
-                  Next
-                </button>
-              )}
-
-              {authView === 'signup-password' && (
-                <button
-                  type="submit"
-                  form="auth-signup-form"
-                  disabled={loading || !password.trim() || password.trim().length < 8}
-                  className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-                >
-                  {loading ? (
-                    <span className="flex items-center gap-2">
-                      <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        />
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                        />
-                      </svg>
-                      Creating account…
-                    </span>
-                  ) : (
-                    'Create account'
-                  )}
-                </button>
-              )}
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Back
+              </button>
+              <button
+                type="submit"
+                form="auth-login-form"
+                disabled={loading || !email.trim() || !password.trim()}
+                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+              >
+                {loading ? (
+                  <span className="flex items-center gap-2">
+                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Signing in…
+                  </span>
+                ) : (
+                  'Sign in'
+                )}
+              </button>
+            </div>
+          </footer>
+        )}
+        {/* ── Footer nav (signup back only) ── */}
+        {authView === 'signup' && (
+          <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
+            <div className="flex w-full max-w-[480px] items-center">
+              <button
+                onClick={goBack}
+                className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+              >
+                <ArrowLeftIcon className="h-4 w-4" />
+                Back
+              </button>
             </div>
           </footer>
         )}
