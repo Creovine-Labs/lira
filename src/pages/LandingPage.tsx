@@ -130,7 +130,7 @@ function MeetingDemo() {
 
       {/* ── Tab bar ── */}
       <div className="flex items-center justify-center mb-4 sm:mb-6">
-        <div className="flex items-center gap-1 sm:gap-1.5 bg-white/80 backdrop-blur-sm rounded-full px-1.5 py-1.5 shadow-sm border border-gray-200/70">
+        <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1.5">
           {[
             { id: 'meetings' as DemoMode, label: 'Meetings', Icon: VideoCameraIcon },
             { id: 'interviews' as DemoMode, label: 'Interviews', Icon: CheckBadgeIcon },
@@ -506,7 +506,7 @@ function MeetingDemo() {
           className="relative px-2.5 pt-2 pb-2 sm:px-5 sm:pt-3 sm:pb-3 md:px-8 md:pt-4 md:pb-4"
           style={{
             background:
-              'radial-gradient(ellipse at 65% 35%, rgba(99,102,241,0.18) 0%, transparent 55%), radial-gradient(ellipse at 25% 75%, rgba(139,92,246,0.10) 0%, transparent 50%), linear-gradient(160deg, #0e0d1c 0%, #090912 45%, #050508 100%)',
+              'radial-gradient(ellipse at 20% 40%, rgba(186,210,240,0.9) 0%, transparent 55%), radial-gradient(ellipse at 80% 25%, rgba(200,182,230,0.7) 0%, transparent 50%), radial-gradient(ellipse at 55% 85%, rgba(210,195,235,0.5) 0%, transparent 45%), linear-gradient(160deg, #dce8f4 0%, #dddaf0 38%, #e5d8ee 68%, #edd8e6 100%)',
           }}
         >
           {/* Menu bar */}
@@ -514,21 +514,21 @@ function MeetingDemo() {
             <div />
             <div className="flex items-center gap-2 sm:gap-3">
               <svg
-                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white drop-shadow-sm"
+                className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-gray-700/60"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
                 <path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z" />
               </svg>
               <svg
-                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white drop-shadow-sm"
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-700/60"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
                 <path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
               </svg>
               <svg
-                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-white drop-shadow-sm"
+                className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-700/60"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
@@ -1102,10 +1102,11 @@ function Hero() {
       <h1 className="mx-auto max-w-2xl text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-gray-900 leading-[1.06]">
         The{' '}
         <span
-          className="inline-block -rotate-[1.8deg] translate-y-1 bg-gray-900 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
+          className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
           style={{
+            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
             boxShadow:
-              '0 10px 40px rgba(0,0,0,0.28), 0 3px 10px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.07)',
+              '0 14px 50px rgba(99,82,220,0.55), 0 5px 18px rgba(99,82,220,0.40), inset 0 1px 0 rgba(255,255,255,0.15)',
           }}
         >
           AI
