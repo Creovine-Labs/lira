@@ -506,7 +506,7 @@ function MeetingDemo() {
           className="relative px-2.5 pt-2 pb-2 sm:px-5 sm:pt-3 sm:pb-3 md:px-8 md:pt-4 md:pb-4"
           style={{
             background:
-              'linear-gradient(135deg, #fbc2eb 0%, #e1a8f0 15%, #c4a6f5 30%, #a8c0f7 50%, #9fd8e8 70%, #a1e7cb 85%, #f6d365 100%)',
+              'radial-gradient(ellipse at 65% 35%, rgba(99,102,241,0.18) 0%, transparent 55%), radial-gradient(ellipse at 25% 75%, rgba(139,92,246,0.10) 0%, transparent 50%), linear-gradient(160deg, #0e0d1c 0%, #090912 45%, #050508 100%)',
           }}
         >
           {/* Menu bar */}
@@ -1100,7 +1100,17 @@ function Hero() {
     <section className="relative overflow-hidden pt-28 pb-0 px-6 text-center">
       {/* Headline */}
       <h1 className="mx-auto max-w-2xl text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-gray-900 leading-[1.06]">
-        The AI that listens,
+        The{' '}
+        <span
+          className="inline-block -rotate-[1.8deg] translate-y-1 bg-gray-900 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
+          style={{
+            boxShadow:
+              '0 10px 40px rgba(0,0,0,0.28), 0 3px 10px rgba(0,0,0,0.18), inset 0 1px 0 rgba(255,255,255,0.07)',
+          }}
+        >
+          AI
+        </span>{' '}
+        that listens,
         <br />
         remembers, and acts.
       </h1>
@@ -1116,7 +1126,7 @@ function Hero() {
           />
           <Link
             to="/signup"
-            className="shrink-0 rounded-xl bg-violet-600 px-4 py-1.5 text-sm font-semibold text-white hover:bg-violet-700 transition"
+            className="shrink-0 rounded-xl bg-gray-900 px-4 py-1.5 text-sm font-semibold text-white hover:bg-black transition"
           >
             Join meeting
           </Link>
