@@ -66,7 +66,7 @@ function App() {
         {/* Public routes — no shell */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
-        <Route path="/signup" element={<HomePage defaultView="signup-name" />} />
+        <Route path="/signup" element={<HomePage defaultView="signup" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />
