@@ -343,13 +343,13 @@ function LoginForm({
       </aside>
 
       {/* ── Right panel ── */}
-      <main className="flex flex-1 flex-col bg-white">
+      <main className="flex flex-1 flex-col overflow-y-auto bg-white">
         {/* Mobile logo — only visible when aside is hidden */}
         <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
           <LiraLogo size="md" />
         </div>
         {/* Scrollable content */}
-        <div className="flex flex-1 flex-col justify-center overflow-y-auto px-5 py-8 sm:px-10 sm:py-12 md:px-16">
+        <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
           <div className="mx-auto w-full max-w-[420px]">
             {/* ── Landing ── */}
             {authView === 'landing' && (
@@ -523,6 +523,44 @@ function LoginForm({
                     </button>
                   </p>
                 </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Back
+                  </button>
+                  <button
+                    type="submit"
+                    form="auth-login-form"
+                    disabled={loading || !email.trim() || !password.trim()}
+                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                  >
+                    {loading ? (
+                      <span className="flex items-center gap-2">
+                        <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          />
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                          />
+                        </svg>
+                        Signing in…
+                      </span>
+                    ) : (
+                      'Sign in'
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -660,68 +698,19 @@ function LoginForm({
                     Sign in
                   </button>
                 </p>
+                <div className="border-t border-gray-100 pt-4">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Back
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
-
-        {/* ── Footer nav (login only) ── */}
-        {authView === 'login' && (
-          <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
-            <div className="flex w-full max-w-[420px] items-center justify-between">
-              <button
-                onClick={goBack}
-                className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-                Back
-              </button>
-              <button
-                type="submit"
-                form="auth-login-form"
-                disabled={loading || !email.trim() || !password.trim()}
-                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      />
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                      />
-                    </svg>
-                    Signing in…
-                  </span>
-                ) : (
-                  'Sign in'
-                )}
-              </button>
-            </div>
-          </footer>
-        )}
-        {/* ── Footer nav (signup back only) ── */}
-        {authView === 'signup' && (
-          <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
-            <div className="flex w-full max-w-[420px] items-center">
-              <button
-                onClick={goBack}
-                className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-                Back
-              </button>
-            </div>
-          </footer>
-        )}
       </main>
     </div>
   )

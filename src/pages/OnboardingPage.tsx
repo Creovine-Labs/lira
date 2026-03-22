@@ -431,7 +431,7 @@ function OnboardingPage() {
       </aside>
 
       {/* ── Right panel ── */}
-      <main className="flex flex-1 flex-col bg-white">
+      <main className="flex flex-1 flex-col overflow-y-auto bg-white">
         {/* Mobile logo — only visible when aside is hidden */}
         <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
           <LiraLogo size="md" />
@@ -476,6 +476,14 @@ function OnboardingPage() {
                     </li>
                   ))}
                 </ul>
+                <div className="border-t border-gray-100 pt-4">
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+                  >
+                    Enter workspace
+                  </button>
+                </div>
               </div>
             )}
 
@@ -548,6 +556,22 @@ function OnboardingPage() {
                     maxLength={100}
                   />
                 </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Back
+                  </button>
+                  <button
+                    disabled={!orgName.trim()}
+                    onClick={() => setStep('industry')}
+                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
 
@@ -605,6 +629,21 @@ function OnboardingPage() {
                     />
                   </div>
                 )}
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Back
+                  </button>
+                  <button
+                    onClick={() => setStep('details')}
+                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700"
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
             )}
 
@@ -722,6 +761,29 @@ function OnboardingPage() {
                     )}
                   </div>
                 </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Back
+                  </button>
+                  <button
+                    disabled={creating}
+                    onClick={handleCreate}
+                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                  >
+                    {creating ? (
+                      <span className="flex items-center gap-2">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        Creating…
+                      </span>
+                    ) : (
+                      'Create workspace'
+                    )}
+                  </button>
+                </div>
               </div>
             )}
 
@@ -762,95 +824,42 @@ function OnboardingPage() {
                     </div>
                   )}
                 </div>
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <button
+                    onClick={goBack}
+                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
+                  >
+                    <ArrowLeftIcon className="h-4 w-4" />
+                    Back
+                  </button>
+                  <button
+                    disabled={
+                      joining || validating || (!validatedOrg && inviteCode.trim().length < 8)
+                    }
+                    onClick={validatedOrg ? handleJoin : handleValidate}
+                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                  >
+                    {joining ? (
+                      <span className="flex items-center gap-2">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        Joining…
+                      </span>
+                    ) : validating ? (
+                      <span className="flex items-center gap-2">
+                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        Validating…
+                      </span>
+                    ) : validatedOrg ? (
+                      `Join ${validatedOrg.name}`
+                    ) : (
+                      'Validate code'
+                    )}
+                  </button>
+                </div>
               </div>
             )}
           </div>
         </div>
-
-        {/* ── Footer: Back + primary action ── */}
-        <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
-          <div className="flex w-full max-w-[560px] items-center justify-between">
-            {/* Back */}
-            {STEP_BACK[step] && step !== 'success' ? (
-              <button
-                onClick={goBack}
-                className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-                Back
-              </button>
-            ) : (
-              <div />
-            )}
-
-            {/* Primary action */}
-            {step === 'choose' && <div />}
-            {step === 'org-name' && (
-              <button
-                disabled={!orgName.trim()}
-                onClick={() => setStep('industry')}
-                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-              >
-                Next
-              </button>
-            )}
-            {step === 'industry' && (
-              <button
-                onClick={() => setStep('details')}
-                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700"
-              >
-                Next
-              </button>
-            )}
-            {step === 'details' && (
-              <button
-                disabled={creating}
-                onClick={handleCreate}
-                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-              >
-                {creating ? (
-                  <span className="flex items-center gap-2">
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                    Creating…
-                  </span>
-                ) : (
-                  'Create workspace'
-                )}
-              </button>
-            )}
-            {step === 'success' && (
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
-              >
-                Enter workspace
-              </button>
-            )}
-            {step === 'join-code' && (
-              <button
-                disabled={joining || validating || (!validatedOrg && inviteCode.trim().length < 8)}
-                onClick={validatedOrg ? handleJoin : handleValidate}
-                className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-              >
-                {joining ? (
-                  <span className="flex items-center gap-2">
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                    Joining…
-                  </span>
-                ) : validating ? (
-                  <span className="flex items-center gap-2">
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                    Validating…
-                  </span>
-                ) : validatedOrg ? (
-                  `Join ${validatedOrg.name}`
-                ) : (
-                  'Validate code'
-                )}
-              </button>
-            )}
-          </div>
-        </footer>
       </main>
     </div>
   )
