@@ -398,7 +398,7 @@ function InterviewCreatePage() {
   const [showQuestions, setShowQuestions] = useState(false)
   const [generatingQuestions, setGeneratingQuestions] = useState(false)
   // Resume
-  const [resumeFile, setResumeFile] = useState<DocumentIcon | null>(null)
+  const [resumeFile, setResumeFile] = useState<File | null>(null)
   const resumeRef = useRef<HTMLInputElement>(null)
 
   // ── Helpers ──────────────────────────────────────────────────────────────────

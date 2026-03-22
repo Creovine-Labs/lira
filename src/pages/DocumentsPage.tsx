@@ -99,7 +99,7 @@ function DocumentsPage() {
     return () => clearInterval(interval)
   }, [documents, currentOrgId, setDocuments])
 
-  async function handleUpload(files: FileList | DocumentIcon[]) {
+  async function handleUpload(files: FileList | File[]) {
     if (!currentOrgId) return
     const fileArray = Array.from(files)
     if (fileArray.length === 0) return

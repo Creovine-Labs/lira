@@ -753,7 +753,7 @@ export { MemberProfilePage }
 
 // ── Image resize helper ───────────────────────────────────────────────────────
 
-function resizeImage(file: DocumentIcon, maxW: number, maxH: number): Promise<string> {
+function resizeImage(file: File, maxW: number, maxH: number): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = (e) => {
