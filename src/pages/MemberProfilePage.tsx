@@ -122,24 +122,11 @@ function StatCard({
   sub?: string
   accent: 'purple' | 'dark' | 'indigo' | 'slate'
 }) {
-  const palettes = {
-    purple: {
-      bg: 'from-[#3730a3] via-[#2e2a8a] to-[#1e1b4b]',
-      glow: 'shadow-[0_8px_32px_rgba(55,48,163,0.45)]',
-    },
-    dark: {
-      bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
-      glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
-    },
-    indigo: {
-      bg: 'from-[#4f46e5] via-[#4338ca] to-[#312e81]',
-      glow: 'shadow-[0_8px_32px_rgba(79,70,229,0.40)]',
-    },
-    slate: {
-      bg: 'from-[#374151] via-[#1f2937] to-[#111827]',
-      glow: 'shadow-[0_8px_32px_rgba(17,24,39,0.50)]',
-    },
+  const _dark = {
+    bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+    glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
   }
+  const palettes = { purple: _dark, dark: _dark, indigo: _dark, slate: _dark }
   const { bg, glow } = palettes[accent]
   return (
     <div className={`relative overflow-hidden rounded-2xl bg-gradient-to-br ${bg} ${glow} p-5`}>

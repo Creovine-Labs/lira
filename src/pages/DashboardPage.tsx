@@ -50,23 +50,15 @@ function formatDate(iso: string): string {
 }
 
 // ── Stat card (glassmorphism gradient) ───────────────────────────────────────
+const _DARK_CARD = {
+  bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+  glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
+} as const
 const STAT_PALETTES = {
-  purple: {
-    bg: 'from-[#3730a3] via-[#2e2a8a] to-[#1e1b4b]',
-    glow: 'shadow-[0_8px_32px_rgba(55,48,163,0.45)]',
-  },
-  dark: {
-    bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
-    glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
-  },
-  indigo: {
-    bg: 'from-[#4f46e5] via-[#4338ca] to-[#312e81]',
-    glow: 'shadow-[0_8px_32px_rgba(79,70,229,0.40)]',
-  },
-  slate: {
-    bg: 'from-[#374151] via-[#1f2937] to-[#111827]',
-    glow: 'shadow-[0_8px_32px_rgba(17,24,39,0.50)]',
-  },
+  purple: _DARK_CARD,
+  dark: _DARK_CARD,
+  indigo: _DARK_CARD,
+  slate: _DARK_CARD,
 } as const
 type StatAccent = keyof typeof STAT_PALETTES
 

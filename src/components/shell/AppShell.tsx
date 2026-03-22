@@ -690,7 +690,7 @@ function AppShell() {
       {/* ── Right side: topbar + content ── */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-gray-100 bg-white px-4 sm:px-6">
+        <header className="flex h-14 shrink-0 items-center justify-between bg-[#ebebeb] px-4 sm:px-6">
           {/* Left — hamburger on mobile, empty on desktop */}
           <div className="flex items-center gap-2">
             <button

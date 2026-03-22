@@ -558,20 +558,20 @@ function MeetingsPage() {
               {
                 label: 'Total Meetings',
                 value: meetings.length,
-                accent: 'from-[#3730a3] via-[#2e2a8a] to-[#1e1b4b]',
-                glow: 'shadow-[0_8px_32px_rgba(55,48,163,0.35)]',
+                accent: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+                glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
               },
               {
                 label: 'With Transcripts',
                 value: withTranscripts,
                 accent: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
-                glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.4)]',
+                glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
               },
               {
                 label: 'Total Messages',
                 value: totalMessages,
-                accent: 'from-[#4f46e5] via-[#4338ca] to-[#312e81]',
-                glow: 'shadow-[0_8px_32px_rgba(79,70,229,0.35)]',
+                accent: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
+                glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
               },
             ].map(({ label, value, accent, glow }) => (
               <div
