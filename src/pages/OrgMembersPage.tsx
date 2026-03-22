@@ -8,9 +8,10 @@ import {
   ShieldCheckIcon,
   TrophyIcon,
   UserMinusIcon,
-  UsersIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+
+import { cn } from '@/lib'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
 import {
@@ -145,136 +146,135 @@ function OrgMembersPage() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <div className="h-5 w-24 animate-pulse rounded-lg bg-gray-300/40" />
+          <div className="h-8 w-48 animate-pulse rounded-lg bg-gray-300/60" />
+          <div className="h-32 animate-pulse rounded-2xl bg-gray-300/40" />
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-gray-300/60" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-violet-100">
-            <UsersIcon className="w-5 h-5 text-violet-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Team Members</h1>
-            <p className="text-sm text-gray-500">
-              Manage team members and invite new people to your organization.
-            </p>
-          </div>
+    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+      <div className="mx-auto max-w-4xl space-y-5">
+        {/* Header */}
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Settings</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Team Members</h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Manage your team and invite people to your organization.
+          </p>
         </div>
-      </div>
 
-      {/* Scrollable content */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
         {/* Invite Code */}
-        <section className="rounded-xl border bg-card p-6">
-          <h2 className="mb-3 text-base font-semibold text-foreground">Invite Code</h2>
-          <p className="mb-4 text-sm text-muted-foreground">
+        <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
+          <h2 className="mb-1 text-sm font-bold text-gray-900">Invite Code</h2>
+          <p className="mb-4 text-sm text-gray-400">
             Share this code with teammates so they can join your organization.
           </p>
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg border bg-background px-4 py-2.5 font-mono text-lg font-bold tracking-widest text-foreground">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-lg font-bold tracking-widest text-gray-900">
               {inviteCode || '—'}
             </div>
             <button
               onClick={copyCode}
               disabled={!inviteCode}
-              className="rounded-lg border px-3 py-2.5 text-sm hover:bg-muted disabled:opacity-50"
-              title="DocumentDuplicateIcon invite code"
+              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+              title="Copy invite code"
             >
               <DocumentDuplicateIcon className="h-4 w-4" />
+              Copy
             </button>
             {isOwnerOrAdmin && (
               <button
                 onClick={handleRegenerate}
                 disabled={regenerating}
-                className="rounded-lg border px-3 py-2.5 text-sm hover:bg-muted disabled:opacity-50"
+                className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
                 title="Regenerate invite code"
               >
-                <ArrowPathIcon className={`h-4 w-4 ${regenerating ? 'animate-spin' : ''}`} />
+                <ArrowPathIcon className={cn('h-4 w-4', regenerating && 'animate-spin')} />
+                Regenerate
               </button>
             )}
           </div>
-        </section>
+        </div>
 
         {/* Members list */}
-        <section className="rounded-xl border bg-card">
-          <div className="border-b px-6 py-4">
-            <h2 className="text-base font-semibold text-foreground">
-              Team Members ({members.length})
-            </h2>
+        <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+          <div className="border-b border-gray-100 px-6 py-4">
+            <h2 className="text-sm font-bold text-gray-900">Team Members ({members.length})</h2>
           </div>
-          <div className="divide-y">
+          <div className="divide-y divide-gray-100">
             {members.map((m) => (
               <div key={m.user_id} className="flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3">
-                {/* Avatar — clickable, goes to profile */}
                 <Link to={`/org/members/${m.user_id}`} className="shrink-0">
                   {m.picture ? (
                     <img
                       src={m.picture}
                       alt={m.name ?? m.email ?? ''}
-                      className="h-10 w-10 rounded-full object-cover ring-2 ring-violet-100 hover:ring-violet-400 transition-all"
+                      className="h-10 w-10 rounded-full object-cover ring-2 ring-gray-100 transition hover:ring-[#3730a3]/30"
                       referrerPolicy="no-referrer"
                     />
                   ) : (
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-violet-100 text-sm font-bold text-violet-600 dark:bg-violet-900/40 dark:text-violet-400 hover:ring-2 hover:ring-violet-400 transition-all">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#1c1c1e] to-[#0a0a0a] text-sm font-bold text-white transition hover:ring-2 hover:ring-[#3730a3]/30">
                       {(m.name ?? m.email ?? m.user_id).slice(0, 2).toUpperCase()}
                     </div>
                   )}
                 </Link>
+
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">
+                  <p className="truncate text-sm font-semibold text-gray-900">
                     <Link
                       to={`/org/members/${m.user_id}`}
-                      className="hover:text-violet-600 hover:underline transition-colors"
+                      className="transition hover:text-[#3730a3] hover:underline"
                     >
                       {m.name ?? m.email ?? m.user_id}
                     </Link>
                     {m.user_id === userId && (
-                      <span className="ml-2 text-xs text-muted-foreground">(you)</span>
+                      <span className="ml-2 text-xs text-gray-400">(you)</span>
                     )}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-gray-400">
                     {m.email && m.name ? `${m.email} · ` : ''}
                     Joined {new Date(m.joined_at).toLocaleDateString()}
                   </p>
                 </div>
 
-                {/* Role badge */}
                 <div className="flex items-center gap-1.5">
                   {m.role === 'owner' ? (
-                    <span className="flex items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-xs font-medium text-amber-700 dark:bg-amber-900/40 dark:text-amber-400">
+                    <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
                       <TrophyIcon className="h-3 w-3" />
                       Owner
                     </span>
                   ) : m.role === 'admin' ? (
-                    <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-400">
+                    <span className="flex items-center gap-1 rounded-full bg-[#3730a3]/10 px-2.5 py-1 text-xs font-semibold text-[#3730a3]">
                       <ShieldCheckIcon className="h-3 w-3" />
                       Admin
                     </span>
                   ) : (
-                    <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                    <span className="flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
                       <ShieldCheckIcon className="h-3 w-3" />
                       Member
                     </span>
                   )}
                 </div>
 
-                {/* Actions (only for owner/admin, not on self or other owners) */}
                 {isOwnerOrAdmin && m.user_id !== userId && m.role !== 'owner' && (
                   <div className="flex items-center gap-1">
-                    {/* Only the owner can promote/demote — backend enforces this */}
                     {currentMember?.role === 'owner' && (
                       <select
                         value={m.role}
                         onChange={(e) =>
                           handleRoleChange(m.user_id, e.target.value as 'admin' | 'member')
                         }
-                        className="rounded-lg border bg-background px-2 py-1 text-xs"
+                        className="rounded-xl border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
                         title="Change role"
                       >
                         <option value="member">Member</option>
@@ -283,7 +283,7 @@ function OrgMembersPage() {
                     )}
                     <button
                       onClick={() => handleRemove(m.user_id)}
-                      className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                      className="rounded-xl p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
                       title="Remove member"
                     >
                       <UserMinusIcon className="h-4 w-4" />
@@ -291,7 +291,7 @@ function OrgMembersPage() {
                     {currentMember?.role === 'owner' && (
                       <button
                         onClick={() => setTransferTarget(m)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-amber-50 hover:text-amber-600 dark:hover:bg-amber-950/30"
+                        className="rounded-xl p-1.5 text-gray-400 transition hover:bg-amber-50 hover:text-amber-600"
                         title="Transfer ownership"
                       >
                         <ArrowsRightLeftIcon className="h-4 w-4" />
@@ -302,57 +302,54 @@ function OrgMembersPage() {
               </div>
             ))}
           </div>
-        </section>
+        </div>
 
-        {/* Danger Zone */}
+        {/* Danger Zone - non-owner */}
         {currentMember && currentMember.role !== 'owner' && (
-          <section className="rounded-xl border border-red-200 bg-card p-6 dark:border-red-900/50">
-            <h2 className="mb-1 text-base font-semibold text-red-600 dark:text-red-400">
-              Danger Zone
-            </h2>
-            <p className="mb-4 text-sm text-muted-foreground">
+          <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-1 text-sm font-bold text-red-600">Danger Zone</h2>
+            <p className="mb-4 text-sm text-gray-400">
               Leaving this organization is permanent. You will need a new invite code to rejoin.
             </p>
             <button
               onClick={() => setLeavingOrg(true)}
-              className="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-950/30"
+              className="flex items-center gap-2 rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
             >
               <ArrowRightOnRectangleIcon className="h-4 w-4" />
               Leave organization
             </button>
-          </section>
-        )}
-        {currentMember?.role === 'owner' && (
-          <section className="rounded-xl border border-amber-200 bg-card p-6 dark:border-amber-900/50">
-            <h2 className="mb-1 text-base font-semibold text-amber-600 dark:text-amber-400">
-              Can't leave yet
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              You're the owner of this organization. Transfer ownership to another member before
-              leaving.
-            </p>
-          </section>
+          </div>
         )}
 
-        {/* Leave Org Confirmation Modal */}
+        {currentMember?.role === 'owner' && (
+          <div className="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-1 text-sm font-bold text-amber-600">Can’t leave yet</h2>
+            <p className="text-sm text-gray-400">
+              You’re the owner of this organization. Transfer ownership to another member before
+              leaving.
+            </p>
+          </div>
+        )}
+
+        {/* Leave Org Modal */}
         {leavingOrg && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-xl">
-              <h3 className="text-base font-semibold text-foreground">Leave Organization?</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                You will be removed from this organization immediately. You'll need a new invite
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-xl">
+              <h3 className="text-base font-bold text-gray-900">Leave Organization?</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                You will be removed from this organization immediately. You’ll need a new invite
                 code to rejoin.
               </p>
-              <div className="mt-4 flex justify-end gap-2">
+              <div className="mt-5 flex justify-end gap-3">
                 <button
                   onClick={() => setLeavingOrg(false)}
-                  className="rounded-lg border px-4 py-2 text-sm hover:bg-muted"
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleLeave}
-                  className="rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white hover:bg-red-600"
+                  className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
                 >
                   Leave organization
                 </button>
@@ -361,28 +358,28 @@ function OrgMembersPage() {
           </div>
         )}
 
-        {/* Transfer Ownership Confirmation Modal */}
+        {/* Transfer Ownership Modal */}
         {transferTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-xl border bg-card p-6 shadow-xl">
-              <h3 className="text-base font-semibold text-foreground">Transfer Ownership</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-xl">
+              <h3 className="text-base font-bold text-gray-900">Transfer Ownership</h3>
+              <p className="mt-2 text-sm text-gray-500">
                 Transfer ownership to{' '}
-                <span className="font-medium text-foreground">{transferTarget.user_id}</span>? You
+                <span className="font-semibold text-gray-900">{transferTarget.user_id}</span>? You
                 will be demoted to admin. This cannot be undone without their cooperation.
               </p>
-              <div className="mt-4 flex justify-end gap-2">
+              <div className="mt-5 flex justify-end gap-3">
                 <button
                   onClick={() => setTransferTarget(null)}
                   disabled={transferring}
-                  className="rounded-lg border px-4 py-2 text-sm hover:bg-muted disabled:opacity-50"
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleTransferOwnership}
                   disabled={transferring}
-                  className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-white hover:bg-amber-600 disabled:opacity-50"
+                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50"
                 >
                   {transferring ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : 'Transfer'}
                 </button>

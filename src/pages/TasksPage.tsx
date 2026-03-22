@@ -89,67 +89,111 @@ function TasksPage() {
 
   if (loading && tasks.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <div className="h-8 w-40 animate-pulse rounded-lg bg-gray-300/60" />
+          <div className="h-5 w-64 animate-pulse rounded-lg bg-gray-300/40" />
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-300/60" />
+            ))}
+          </div>
+          <div className="h-12 animate-pulse rounded-2xl bg-gray-300/40" />
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-300/60" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-violet-100">
-            <ClipboardDocumentCheckIcon className="w-5 h-5 text-violet-600" />
-          </div>
+    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+      <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h1 className="text-xl font-bold text-gray-900">Tasks</h1>
-            <p className="text-sm text-gray-500">
-              Track action items extracted from meetings or created by you.
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Workspace
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Tasks</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Track action items from meetings and beyond.
             </p>
           </div>
+          <button
+            onClick={() => setShowCreate(!showCreate)}
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#1a1a1a]"
+          >
+            <PlusIcon className="h-4 w-4" />
+            New Task
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreate(!showCreate)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors"
-        >
-          <PlusIcon className="w-4 h-4" />
-          New Task
-        </button>
-      </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 space-y-5">
+        {/* Stat strip */}
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'All Tasks', count: counts.all },
+            { label: 'Pending', count: counts.pending },
+            { label: 'In Progress', count: counts.in_progress },
+            { label: 'Completed', count: counts.completed },
+          ].map(({ label, count }) => (
+            <div
+              key={label}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1c1c1e] via-[#141414] to-[#0a0a0a] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+            >
+              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent" />
+              <div className="pointer-events-none absolute inset-[1px] rounded-[15px] border border-white/[0.06]" />
+              <div className="relative">
+                <p className="text-2xl font-bold text-white">{count}</p>
+                <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/40">
+                  {label}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {/* Create task form */}
         {showCreate && (
-          <CreateTaskForm
-            orgId={currentOrgId!}
-            onCreated={(task) => {
-              addTask(task)
-              setShowCreate(false)
-            }}
-            onCancel={() => setShowCreate(false)}
-          />
+          <div className="mb-5">
+            <CreateTaskForm
+              orgId={currentOrgId!}
+              onCreated={(task) => {
+                addTask(task)
+                setShowCreate(false)
+              }}
+              onCancel={() => setShowCreate(false)}
+            />
+          </div>
         )}
 
         {/* Status tabs */}
-        <div className="overflow-x-auto pb-0.5">
-          <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1 min-w-max">
+        <div className="mb-4 overflow-x-auto pb-0.5">
+          <div className="flex gap-1 rounded-2xl border border-white/60 bg-white p-1 shadow-sm min-w-max">
             {STATUS_TABS.map(({ value, label, icon: Icon }) => (
               <button
                 key={value}
                 onClick={() => setStatusFilter(value === 'all' ? null : value)}
                 className={cn(
-                  'flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition',
+                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition',
                   (statusFilter ?? 'all') === value
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-[#0f0f0f] text-white shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 )}
               >
                 <Icon className="h-3.5 w-3.5" />
                 {label}
-                <span className="ml-0.5 rounded-full bg-gray-100 px-1.5 text-[10px]">
+                <span
+                  className={cn(
+                    'ml-0.5 rounded-full px-1.5 text-[10px]',
+                    (statusFilter ?? 'all') === value
+                      ? 'bg-white/20 text-white'
+                      : 'bg-gray-100 text-gray-500'
+                  )}
+                >
                   {counts[value]}
                 </span>
               </button>
@@ -159,11 +203,11 @@ function TasksPage() {
 
         {/* Task list */}
         {filteredTasks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center rounded-xl border border-gray-200 bg-white py-16 text-center">
-            <div className="p-3 rounded-xl bg-gray-100 mb-3">
-              <ClipboardDocumentCheckIcon className="h-8 w-8 text-gray-400" />
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-16 text-center shadow-sm">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
+              <ClipboardDocumentCheckIcon className="h-6 w-6 text-gray-300" />
             </div>
-            <p className="text-sm font-medium text-gray-700">No tasks yet</p>
+            <p className="text-sm font-semibold text-gray-700">No tasks yet</p>
             <p className="mt-1 text-xs text-gray-400">
               Action items from meetings will appear here.
             </p>
@@ -222,7 +266,7 @@ function TaskCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
-      className="group/card flex cursor-pointer items-start gap-4 rounded-xl border bg-card px-5 py-4 transition hover:border-violet-500/30 hover:shadow-sm"
+      className="group/card flex cursor-pointer items-start gap-4 rounded-2xl border border-white/60 bg-white px-5 py-4 shadow-sm transition hover:shadow-md hover:border-[#3730a3]/20"
     >
       {/* Status checkbox */}
       <button
@@ -234,7 +278,7 @@ function TaskCard({
           'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition',
           task.status === 'completed'
             ? 'border-emerald-500 bg-emerald-500 text-white'
-            : 'border-border hover:border-violet-500'
+            : 'border-gray-300 hover:border-[#3730a3]'
         )}
       >
         {task.status === 'completed' && <CheckCircleIcon className="h-3 w-3" />}
@@ -243,64 +287,54 @@ function TaskCard({
       <div className="min-w-0 flex-1">
         <p
           className={cn(
-            'text-sm font-medium',
-            task.status === 'completed' ? 'text-muted-foreground line-through' : 'text-foreground'
+            'text-sm font-semibold',
+            task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'
           )}
         >
           {task.title}
         </p>
-        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">{task.description}</p>
+        <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{task.description}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          {/* Priority */}
           <span
             className={cn(
-              'rounded-full px-2 py-0.5 text-[10px] font-medium',
+              'rounded-full px-2 py-0.5 text-[10px] font-semibold',
               PRIORITY_COLORS[task.priority]
             )}
           >
             {task.priority}
           </span>
-
-          {/* Type */}
-          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+          <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
             {TASK_TYPE_LABELS[task.task_type] ?? task.task_type}
           </span>
-
-          {/* Assigned */}
           {task.assigned_to && (
-            <span className="text-[11px] text-muted-foreground">→ {task.assigned_to}</span>
+            <span className="text-[11px] text-gray-400">→ {task.assigned_to}</span>
           )}
-
-          {/* AI execution badge */}
           {task.execution_status === 'completed' && (
-            <span className="flex items-center gap-0.5 rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400">
+            <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
               <BoltIcon className="h-2.5 w-2.5" />
               AI Result
             </span>
           )}
           {task.execution_status === 'running' && (
-            <span className="flex items-center gap-0.5 rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-medium text-blue-600 dark:bg-blue-900/40 dark:text-blue-400">
+            <span className="flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
               <ArrowPathIcon className="h-2.5 w-2.5 animate-spin" />
               Running
             </span>
           )}
-
-          {/* Due date */}
           {task.due_date && (
-            <span className="text-[11px] text-muted-foreground">
+            <span className="text-[11px] text-gray-400">
               Due {new Date(task.due_date).toLocaleDateString()}
             </span>
           )}
         </div>
       </div>
 
-      {/* Delete */}
       <button
         onClick={(e) => {
           e.stopPropagation()
           onDelete()
         }}
-        className="mt-0.5 shrink-0 rounded p-1 text-muted-foreground opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover/card:opacity-100"
+        className="mt-0.5 shrink-0 rounded-xl p-1.5 text-gray-300 opacity-0 transition hover:bg-red-50 hover:text-red-500 group-hover/card:opacity-100"
         title="Delete task"
       >
         <TrashIcon className="h-4 w-4" />
@@ -351,32 +385,32 @@ function CreateTaskForm({
   }
 
   return (
-    <div className="rounded-xl border bg-card p-6">
-      <h3 className="mb-4 text-base font-semibold text-foreground">Create Task</h3>
+    <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
+      <h3 className="mb-4 text-base font-bold text-gray-900">Create Task</h3>
       <div className="space-y-4">
         <div>
-          <label htmlFor="task-title" className="mb-1.5 block text-sm font-medium text-foreground">
+          <label htmlFor="task-title" className="mb-1.5 block text-sm font-medium text-gray-700">
             Title <span className="text-red-500">*</span>
           </label>
           <input
             id="task-title"
-            className="input-field"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. PaperAirplaneIcon Q4 report to stakeholders"
+            placeholder="e.g. Send Q4 report to stakeholders"
             maxLength={200}
           />
         </div>
         <div>
           <label
             htmlFor="task-description"
-            className="mb-1.5 block text-sm font-medium text-foreground"
+            className="mb-1.5 block text-sm font-medium text-gray-700"
           >
             Description <span className="text-red-500">*</span>
           </label>
           <textarea
             id="task-description"
-            className="input-field min-h-[80px] resize-y"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20 min-h-[80px] resize-y"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="Describe the task in detail…"
@@ -387,13 +421,13 @@ function CreateTaskForm({
           <div>
             <label
               htmlFor="task-assigned-to"
-              className="mb-1.5 block text-sm font-medium text-foreground"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
             >
               Assigned To
             </label>
             <input
               id="task-assigned-to"
-              className="input-field"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
               value={assignedTo}
               onChange={(e) => setAssignedTo(e.target.value)}
               placeholder="Person name"
@@ -403,14 +437,14 @@ function CreateTaskForm({
           <div>
             <label
               htmlFor="task-due-date"
-              className="mb-1.5 block text-sm font-medium text-foreground"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
             >
               Due Date
             </label>
             <input
               id="task-due-date"
               type="date"
-              className="input-field"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
             />
@@ -418,13 +452,13 @@ function CreateTaskForm({
           <div>
             <label
               htmlFor="task-priority"
-              className="mb-1.5 block text-sm font-medium text-foreground"
+              className="mb-1.5 block text-sm font-medium text-gray-700"
             >
               Priority
             </label>
             <select
               id="task-priority"
-              className="input-field"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
               value={priority}
               onChange={(e) => setPriority(e.target.value as TaskPriority)}
             >
@@ -435,12 +469,12 @@ function CreateTaskForm({
             </select>
           </div>
           <div>
-            <label htmlFor="task-type" className="mb-1.5 block text-sm font-medium text-foreground">
+            <label htmlFor="task-type" className="mb-1.5 block text-sm font-medium text-gray-700">
               Type
             </label>
             <select
               id="task-type"
-              className="input-field"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
               value={taskType}
               onChange={(e) => setTaskType(e.target.value as TaskType)}
             >
@@ -456,14 +490,14 @@ function CreateTaskForm({
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="rounded-lg border px-4 py-2 text-sm font-medium hover:bg-muted"
+            className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={creating || !title.trim() || !description.trim()}
-            className="flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
+            className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:opacity-50"
           >
             {creating && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
             Create

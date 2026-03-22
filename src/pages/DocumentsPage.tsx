@@ -165,113 +165,145 @@ function DocumentsPage() {
 
   if (loading && documents.length === 0) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+      <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+        <div className="mx-auto max-w-4xl space-y-4">
+          <div className="h-5 w-24 animate-pulse rounded-lg bg-gray-300/40" />
+          <div className="h-8 w-40 animate-pulse rounded-lg bg-gray-300/60" />
+          <div className="grid grid-cols-2 gap-3">
+            {[0, 1].map((i) => (
+              <div key={i} className="h-20 animate-pulse rounded-2xl bg-gray-300/60" />
+            ))}
+          </div>
+          <div className="h-40 animate-pulse rounded-2xl bg-gray-300/40" />
+          <div className="space-y-2">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="h-16 animate-pulse rounded-2xl bg-gray-300/60" />
+            ))}
+          </div>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Page header */}
-      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-violet-100">
-            <DocumentTextIcon className="w-5 h-5 text-violet-600" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-gray-900">Documents</h1>
-            <p className="text-sm text-gray-500">
-              ArrowUpTrayIcon documents to enrich Lira’s knowledge
-            </p>
-          </div>
+    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+      <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <div className="mb-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Settings</p>
+          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Documents</h1>
+          <p className="mt-1 text-sm text-gray-400">
+            Upload files to enrich Lira’s knowledge base.
+          </p>
         </div>
-      </div>
 
-      <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8">
+        {/* Stat strip */}
+        <div className="mb-5 grid grid-cols-2 gap-3">
+          {[
+            { label: 'Total Files', count: documents.length },
+            { label: 'Indexed', count: documents.filter((d) => d.status === 'indexed').length },
+          ].map(({ label, count }) => (
+            <div
+              key={label}
+              className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1c1c1e] via-[#141414] to-[#0a0a0a] p-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+            >
+              <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-white/[0.04] to-transparent" />
+              <div className="pointer-events-none absolute inset-[1px] rounded-[15px] border border-white/[0.06]" />
+              <div className="relative">
+                <p className="text-2xl font-bold text-white">{count}</p>
+                <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/40">
+                  {label}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Connection lost banner */}
         {connectionLost && (
-          <div className="flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-400">
+          <div className="mb-4 flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             <ExclamationCircleIcon className="h-4 w-4 shrink-0" />
             Connection lost — document status updates paused. Refresh to retry.
           </div>
         )}
 
-        {/* ArrowUpTrayIcon area */}
-        <div
-          onDragOver={(e) => {
-            e.preventDefault()
-            setDragging(true)
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={onDrop}
-          className={cn(
-            'rounded-xl border-2 border-dashed bg-card p-8 text-center transition',
-            dragging
-              ? 'border-violet-500 bg-violet-50/50 dark:bg-violet-950/20'
-              : 'border-border hover:border-violet-500/50'
-          )}
-        >
-          <ArrowUpTrayIcon className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-3 text-sm text-foreground">
-            Drag & drop files here, or{' '}
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="font-medium text-violet-600 underline-offset-2 hover:underline dark:text-violet-400"
-            >
-              browse
-            </button>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            PDF, DOCX, TXT, MD, CSV, XLSX — max 25 MB
-          </p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept={ACCEPTED_TYPES}
-            className="hidden"
-            onChange={(e) => e.target.files && handleUpload(e.target.files)}
-          />
-          {uploading && (
-            <div className="mt-4 flex items-center justify-center gap-2 text-sm text-violet-600">
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
-              Uploading…
-            </div>
-          )}
+        {/* Upload zone */}
+        <div className="mb-5 rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
+          <div
+            onDragOver={(e) => {
+              e.preventDefault()
+              setDragging(true)
+            }}
+            onDragLeave={() => setDragging(false)}
+            onDrop={onDrop}
+            className={cn(
+              'rounded-xl border-2 border-dashed p-8 text-center transition',
+              dragging
+                ? 'border-[#3730a3] bg-[#3730a3]/5'
+                : 'border-gray-200 bg-gray-50/50 hover:border-[#3730a3]/40'
+            )}
+          >
+            <ArrowUpTrayIcon className="mx-auto h-9 w-9 text-gray-300" />
+            <p className="mt-3 text-sm font-medium text-gray-700">
+              Drag & drop files here, or{' '}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="font-semibold text-[#3730a3] underline-offset-2 hover:underline"
+              >
+                browse
+              </button>
+            </p>
+            <p className="mt-1 text-xs text-gray-400">PDF, DOCX, TXT, MD, CSV, XLSX — max 25 MB</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept={ACCEPTED_TYPES}
+              className="hidden"
+              onChange={(e) => e.target.files && handleUpload(e.target.files)}
+            />
+            {uploading && (
+              <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#3730a3]">
+                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                Uploading…
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Documents list */}
-        <section className="rounded-xl border bg-card">
-          <div className="flex items-center justify-between border-b px-6 py-4">
-            <h2 className="text-base font-semibold text-foreground">
+        <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+            <h2 className="text-sm font-bold text-gray-900">
               Uploaded Documents ({documents.length})
             </h2>
             <button
               onClick={loadDocs}
-              className="rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted"
+              className="rounded-xl border border-gray-200 p-1.5 text-gray-400 transition hover:bg-gray-50"
+              title="Refresh"
             >
               <ArrowPathIcon className="h-3.5 w-3.5" />
             </button>
           </div>
 
           {documents.length === 0 ? (
-            <div className="px-6 py-12 text-center">
-              <DocumentTextIcon className="mx-auto h-10 w-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm text-muted-foreground">
+            <div className="px-6 py-14 text-center">
+              <DocumentTextIcon className="mx-auto h-10 w-10 text-gray-200" />
+              <p className="mt-3 text-sm text-gray-400">
                 No documents uploaded yet. Drop files above to get started.
               </p>
             </div>
           ) : (
-            <div className="divide-y">
+            <div className="divide-y divide-gray-100">
               {documents.map((doc) => {
                 const statusCfg = STATUS_CONFIG[doc.status]
                 const StatusIcon = statusCfg.icon
                 return (
                   <div key={doc.doc_id} className="flex items-center gap-3 px-4 sm:px-6 py-4">
-                    <DocumentIcon className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <DocumentIcon className="h-5 w-5 shrink-0 text-gray-300" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-foreground">{doc.filename}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+                      <p className="truncate text-sm font-semibold text-gray-900">{doc.filename}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-gray-400">
                         <span>{formatBytes(doc.file_size)}</span>
                         {doc.chunk_count != null && <span>· {doc.chunk_count} chunks</span>}
                         {doc.embedding_count != null && (
@@ -280,15 +312,15 @@ function DocumentsPage() {
                         <span>· {new Date(doc.created_at).toLocaleDateString()}</span>
                       </div>
                       {doc.summary && (
-                        <p className="mt-1 text-xs text-muted-foreground line-clamp-1">
-                          {doc.summary}
-                        </p>
+                        <p className="mt-1 text-xs text-gray-400 line-clamp-1">{doc.summary}</p>
                       )}
                     </div>
 
-                    {/* Status badge */}
                     <span
-                      className={cn('flex items-center gap-1 text-xs font-medium', statusCfg.color)}
+                      className={cn(
+                        'flex items-center gap-1 text-xs font-semibold',
+                        statusCfg.color
+                      )}
                     >
                       <StatusIcon
                         className={cn('h-3.5 w-3.5', doc.status === 'processing' && 'animate-spin')}
@@ -296,19 +328,18 @@ function DocumentsPage() {
                       {statusCfg.label}
                     </span>
 
-                    {/* Actions */}
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleDownload(doc)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
-                        title="ArrowDownTrayIcon"
+                        className="rounded-xl p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                        title="Download"
                       >
                         <ArrowDownTrayIcon className="h-4 w-4" />
                       </button>
                       {doc.status === 'failed' && (
                         <button
                           onClick={() => handleReprocess(doc.doc_id)}
-                          className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted"
+                          className="rounded-xl p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
                           title="Reprocess"
                         >
                           <ArrowPathIcon className="h-4 w-4" />
@@ -316,7 +347,7 @@ function DocumentsPage() {
                       )}
                       <button
                         onClick={() => handleDelete(doc.doc_id)}
-                        className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/30"
+                        className="rounded-xl p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
                         title="Delete"
                       >
                         <TrashIcon className="h-4 w-4" />
@@ -327,7 +358,7 @@ function DocumentsPage() {
               })}
             </div>
           )}
-        </section>
+        </div>
       </div>
     </div>
   )
