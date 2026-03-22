@@ -68,11 +68,11 @@ function CelebrationGraphic() {
       aria-hidden="true"
     >
       {/* Outer ring */}
-      <circle cx="80" cy="80" r="56" stroke="#DDD6FE" strokeWidth="3" />
+      <circle cx="80" cy="80" r="56" stroke="#c7d2fe" strokeWidth="3" />
       {/* Inner fill circle */}
-      <circle cx="80" cy="80" r="44" fill="#EDE9FE" />
+      <circle cx="80" cy="80" r="44" fill="#e0e7ff" />
       {/* CheckIcon circle */}
-      <circle cx="80" cy="80" r="32" fill="#7C3AED" />
+      <circle cx="80" cy="80" r="32" fill="#3730a3" />
       {/* Checkmark */}
       <polyline
         points="64,80 75,91 97,68"
@@ -82,14 +82,14 @@ function CelebrationGraphic() {
         strokeLinejoin="round"
       />
       {/* Sparkle dots */}
-      <circle cx="80" cy="16" r="4" fill="#A78BFA" />
-      <circle cx="80" cy="144" r="4" fill="#7C3AED" />
-      <circle cx="16" cy="80" r="4" fill="#C4B5FD" />
-      <circle cx="144" cy="80" r="4" fill="#5B21B6" />
-      <circle cx="37" cy="37" r="3" fill="#DDD6FE" />
-      <circle cx="123" cy="37" r="3" fill="#8B5CF6" />
-      <circle cx="37" cy="123" r="3" fill="#6D28D9" />
-      <circle cx="123" cy="123" r="3" fill="#A78BFA" />
+      <circle cx="80" cy="16" r="4" fill="#4338ca" />
+      <circle cx="80" cy="144" r="4" fill="#3730a3" />
+      <circle cx="16" cy="80" r="4" fill="#a5b4fc" />
+      <circle cx="144" cy="80" r="4" fill="#312e81" />
+      <circle cx="37" cy="37" r="3" fill="#c7d2fe" />
+      <circle cx="123" cy="37" r="3" fill="#4f46e5" />
+      <circle cx="37" cy="123" r="3" fill="#3730a3" />
+      <circle cx="123" cy="123" r="3" fill="#4338ca" />
     </svg>
   )
 }
@@ -104,13 +104,13 @@ function SparkleGraphic() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <circle cx="80" cy="80" r="8" fill="#7C3AED" />
+      <circle cx="80" cy="80" r="8" fill="#3730a3" />
       <line
         x1="80"
         y1="80"
         x2="80"
         y2="18"
-        stroke="#7C3AED"
+        stroke="#3730a3"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -119,7 +119,7 @@ function SparkleGraphic() {
         y1="80"
         x2="80"
         y2="142"
-        stroke="#A78BFA"
+        stroke="#4338ca"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -128,7 +128,7 @@ function SparkleGraphic() {
         y1="80"
         x2="18"
         y2="80"
-        stroke="#DDD6FE"
+        stroke="#c7d2fe"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -137,7 +137,7 @@ function SparkleGraphic() {
         y1="80"
         x2="142"
         y2="80"
-        stroke="#7C3AED"
+        stroke="#3730a3"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -146,7 +146,7 @@ function SparkleGraphic() {
         y1="80"
         x2="35"
         y2="35"
-        stroke="#C4B5FD"
+        stroke="#a5b4fc"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -155,7 +155,7 @@ function SparkleGraphic() {
         y1="80"
         x2="125"
         y2="35"
-        stroke="#5B21B6"
+        stroke="#312e81"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -164,7 +164,7 @@ function SparkleGraphic() {
         y1="80"
         x2="35"
         y2="125"
-        stroke="#4C1D95"
+        stroke="#1e1b4b"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -173,7 +173,7 @@ function SparkleGraphic() {
         y1="80"
         x2="125"
         y2="125"
-        stroke="#8B5CF6"
+        stroke="#4f46e5"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -182,7 +182,7 @@ function SparkleGraphic() {
         y1="80"
         x2="52"
         y2="22"
-        stroke="#EDE9FE"
+        stroke="#e0e7ff"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -191,7 +191,7 @@ function SparkleGraphic() {
         y1="80"
         x2="108"
         y2="22"
-        stroke="#DDD6FE"
+        stroke="#c7d2fe"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -200,7 +200,7 @@ function SparkleGraphic() {
         y1="80"
         x2="22"
         y2="52"
-        stroke="#7C3AED"
+        stroke="#3730a3"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -209,7 +209,7 @@ function SparkleGraphic() {
         y1="80"
         x2="138"
         y2="52"
-        stroke="#A78BFA"
+        stroke="#4338ca"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -218,7 +218,7 @@ function SparkleGraphic() {
         y1="80"
         x2="22"
         y2="108"
-        stroke="#C4B5FD"
+        stroke="#a5b4fc"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -227,7 +227,7 @@ function SparkleGraphic() {
         y1="80"
         x2="138"
         y2="108"
-        stroke="#6D28D9"
+        stroke="#3730a3"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -236,7 +236,7 @@ function SparkleGraphic() {
         y1="80"
         x2="52"
         y2="138"
-        stroke="#8B5CF6"
+        stroke="#4f46e5"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -245,7 +245,7 @@ function SparkleGraphic() {
         y1="80"
         x2="108"
         y2="138"
-        stroke="#4C1D95"
+        stroke="#1e1b4b"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -405,7 +405,7 @@ function OnboardingPage() {
   return (
     <div className="flex min-h-screen">
       {/* ── Left panel ── */}
-      <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 px-10 py-10">
+      <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-white via-gray-50 to-[#3730a3]/10 px-10 py-10">
         <LiraLogo size="md" />
         <div className="flex flex-1 flex-col justify-center gap-6">
           {step === 'choose' ? (
@@ -434,7 +434,7 @@ function OnboardingPage() {
       <main className="flex flex-1 flex-col bg-white">
         {/* Mobile logo — only visible when aside is hidden */}
         <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
-          <LiraLogo size="sm" />
+          <LiraLogo size="md" />
         </div>
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
@@ -443,7 +443,7 @@ function OnboardingPage() {
             {step === 'success' && (
               <div className="space-y-8">
                 <div className="space-y-3">
-                  <p className="text-sm font-semibold uppercase tracking-widest text-violet-500">
+                  <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
                     Workspace created
                   </p>
                   <h1 className="text-4xl font-bold tracking-tight text-gray-900">
@@ -456,11 +456,11 @@ function OnboardingPage() {
                     Lira get to work.
                   </p>
                 </div>
-                <div className="rounded-2xl border border-violet-200 bg-violet-50 px-6 py-5">
-                  <p className="text-xs font-medium uppercase tracking-widest text-violet-400">
+                <div className="rounded-2xl border border-[#3730a3]/20 bg-[#3730a3]/5 px-6 py-5">
+                  <p className="text-xs font-medium uppercase tracking-widest text-[#3730a3]/70">
                     Organization
                   </p>
-                  <p className="mt-1 text-2xl font-bold text-violet-700">{createdOrgName}</p>
+                  <p className="mt-1 text-2xl font-bold text-[#3730a3]">{createdOrgName}</p>
                 </div>
                 <ul className="space-y-3">
                   {[
@@ -469,8 +469,8 @@ function OnboardingPage() {
                     'Build a shared knowledge base for your team',
                   ].map((feat) => (
                     <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-100">
-                        <CheckIcon className="h-3 w-3 text-violet-600" />
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10">
+                        <CheckIcon className="h-3 w-3 text-[#3730a3]" />
                       </span>
                       {feat}
                     </li>
@@ -493,10 +493,10 @@ function OnboardingPage() {
                 <div className="space-y-3">
                   <button
                     onClick={() => setStep('org-name')}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-violet-400 hover:bg-violet-50/50"
+                    className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-[#3730a3]/40 hover:bg-[#3730a3]/5"
                   >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-violet-100 transition group-hover:bg-violet-200">
-                      <PlusIcon className="h-5 w-5 text-violet-600" />
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10 transition group-hover:bg-[#3730a3]/20">
+                      <PlusIcon className="h-5 w-5 text-[#3730a3]" />
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-gray-900">Create an organization</p>
@@ -541,7 +541,7 @@ function OnboardingPage() {
                   <input
                     id="ob-org-name"
                     type="text"
-                    className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                    className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition"
                     placeholder="Acme Corp"
                     value={orgName}
                     onChange={(e) => setOrgName(e.target.value)}
@@ -569,7 +569,7 @@ function OnboardingPage() {
                       onClick={() => setIndustry(ind === industry ? '' : ind)}
                       className={`rounded-xl border px-3 py-4 text-center text-sm font-medium transition ${
                         industry === ind
-                          ? 'border-violet-500 bg-violet-50 text-violet-700'
+                          ? 'border-[#3730a3] bg-[#3730a3]/5 text-[#3730a3]'
                           : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
                       }`}
                     >
@@ -581,7 +581,7 @@ function OnboardingPage() {
                   Industry not listed?{' '}
                   <button
                     onClick={() => setIndustry('Other')}
-                    className="text-violet-600 underline underline-offset-2 hover:text-violet-500"
+                    className="text-[#3730a3] underline underline-offset-2 hover:text-[#312e81]"
                   >
                     Enter custom
                   </button>
@@ -597,7 +597,7 @@ function OnboardingPage() {
                     <input
                       id="ob-industry-custom"
                       type="text"
-                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition"
                       placeholder="Describe your industry"
                       value={industryCustom}
                       onChange={(e) => setIndustryCustom(e.target.value)}
@@ -631,7 +631,7 @@ function OnboardingPage() {
                       className={`w-full rounded-lg border px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:ring-2 transition ${
                         looksLikePartialUrl(website)
                           ? 'border-amber-400 focus:border-amber-400 focus:ring-amber-400/20'
-                          : 'border-gray-300 focus:border-violet-500 focus:ring-violet-500/20'
+                          : 'border-gray-300 focus:border-[#3730a3] focus:ring-[#3730a3]/20'
                       }`}
                       placeholder="https://example.com"
                       value={website}
@@ -669,7 +669,7 @@ function OnboardingPage() {
                         }}
                         className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium transition ${
                           autoDescribe
-                            ? 'bg-violet-100 text-violet-700'
+                            ? 'bg-[#3730a3]/10 text-[#3730a3]'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         } disabled:cursor-not-allowed disabled:opacity-40`}
                       >
@@ -678,7 +678,7 @@ function OnboardingPage() {
                       </button>
                     </div>
                     {describingUrl && (
-                      <div className="flex items-center gap-2 text-xs text-violet-600">
+                      <div className="flex items-center gap-2 text-xs text-[#3730a3]">
                         <ArrowPathIcon className="h-3 w-3 animate-spin" />
                         Lira is reading your website…
                       </div>
@@ -687,7 +687,7 @@ function OnboardingPage() {
                       <>
                         <textarea
                           id="ob-description"
-                          className="w-full resize-none rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                          className="w-full resize-none rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition"
                           rows={4}
                           placeholder="What does your organization do? This helps Lira understand your business."
                           value={description}
@@ -698,7 +698,7 @@ function OnboardingPage() {
                           <button
                             type="button"
                             onClick={() => setEditingDescription(false)}
-                            className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500"
+                            className="flex items-center gap-1.5 text-xs font-medium text-[#3730a3] hover:text-[#312e81]"
                           >
                             <CheckIcon className="h-3 w-3" />
                             Done editing
@@ -713,7 +713,7 @@ function OnboardingPage() {
                         <button
                           type="button"
                           onClick={() => setEditingDescription(true)}
-                          className="flex items-center gap-1.5 text-xs font-medium text-violet-600 hover:text-violet-500"
+                          className="flex items-center gap-1.5 text-xs font-medium text-[#3730a3] hover:text-[#312e81]"
                         >
                           <PencilIcon className="h-3 w-3" />
                           Edit description
@@ -744,7 +744,7 @@ function OnboardingPage() {
                     <input
                       id="ob-invite"
                       type="text"
-                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 font-mono text-sm uppercase tracking-widest text-gray-900 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition"
+                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 font-mono text-sm uppercase tracking-widest text-gray-900 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition"
                       placeholder="LRA-XXXX"
                       value={inviteCode}
                       onChange={(e) => {
@@ -821,7 +821,7 @@ function OnboardingPage() {
             {step === 'success' && (
               <button
                 onClick={() => navigate('/dashboard')}
-                className="rounded-lg bg-violet-600 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
+                className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
               >
                 Enter workspace
               </button>

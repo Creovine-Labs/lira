@@ -32,13 +32,13 @@ function AuthSparkle() {
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
     >
-      <circle cx="80" cy="80" r="8" fill="#7C3AED" />
+      <circle cx="80" cy="80" r="8" fill="#3730a3" />
       <line
         x1="80"
         y1="80"
         x2="80"
         y2="18"
-        stroke="#7C3AED"
+        stroke="#3730a3"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -47,7 +47,7 @@ function AuthSparkle() {
         y1="80"
         x2="80"
         y2="142"
-        stroke="#A78BFA"
+        stroke="#4338ca"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -56,7 +56,7 @@ function AuthSparkle() {
         y1="80"
         x2="18"
         y2="80"
-        stroke="#DDD6FE"
+        stroke="#c7d2fe"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -65,7 +65,7 @@ function AuthSparkle() {
         y1="80"
         x2="142"
         y2="80"
-        stroke="#7C3AED"
+        stroke="#3730a3"
         strokeWidth="3.5"
         strokeLinecap="round"
       />
@@ -74,7 +74,7 @@ function AuthSparkle() {
         y1="80"
         x2="35"
         y2="35"
-        stroke="#C4B5FD"
+        stroke="#a5b4fc"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -83,7 +83,7 @@ function AuthSparkle() {
         y1="80"
         x2="125"
         y2="35"
-        stroke="#5B21B6"
+        stroke="#312e81"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -92,7 +92,7 @@ function AuthSparkle() {
         y1="80"
         x2="35"
         y2="125"
-        stroke="#4C1D95"
+        stroke="#1e1b4b"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -101,7 +101,7 @@ function AuthSparkle() {
         y1="80"
         x2="125"
         y2="125"
-        stroke="#8B5CF6"
+        stroke="#4f46e5"
         strokeWidth="3"
         strokeLinecap="round"
       />
@@ -110,7 +110,7 @@ function AuthSparkle() {
         y1="80"
         x2="52"
         y2="22"
-        stroke="#EDE9FE"
+        stroke="#e0e7ff"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -119,7 +119,7 @@ function AuthSparkle() {
         y1="80"
         x2="108"
         y2="22"
-        stroke="#DDD6FE"
+        stroke="#c7d2fe"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -128,7 +128,7 @@ function AuthSparkle() {
         y1="80"
         x2="22"
         y2="52"
-        stroke="#7C3AED"
+        stroke="#3730a3"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -137,7 +137,7 @@ function AuthSparkle() {
         y1="80"
         x2="138"
         y2="52"
-        stroke="#A78BFA"
+        stroke="#4338ca"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -146,7 +146,7 @@ function AuthSparkle() {
         y1="80"
         x2="22"
         y2="108"
-        stroke="#C4B5FD"
+        stroke="#a5b4fc"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -155,7 +155,7 @@ function AuthSparkle() {
         y1="80"
         x2="138"
         y2="108"
-        stroke="#6D28D9"
+        stroke="#3730a3"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -164,7 +164,7 @@ function AuthSparkle() {
         y1="80"
         x2="52"
         y2="138"
-        stroke="#8B5CF6"
+        stroke="#4f46e5"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -173,7 +173,7 @@ function AuthSparkle() {
         y1="80"
         x2="108"
         y2="138"
-        stroke="#4C1D95"
+        stroke="#1e1b4b"
         strokeWidth="2"
         strokeLinecap="round"
       />
@@ -324,7 +324,7 @@ function LoginForm({
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── Left panel ── */}
-      <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-100 px-10 py-10">
+      <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-white via-gray-50 to-[#3730a3]/10 px-10 py-10">
         <LiraLogo size="md" />
         <div className="flex flex-1 flex-col justify-center gap-6">
           {authView === 'landing' ? (
@@ -346,11 +346,11 @@ function LoginForm({
       <main className="flex flex-1 flex-col bg-white">
         {/* Mobile logo — only visible when aside is hidden */}
         <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
-          <LiraLogo size="sm" />
+          <LiraLogo size="md" />
         </div>
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center overflow-y-auto px-5 py-8 sm:px-10 sm:py-12 md:px-16">
-          <div className="w-full max-w-[480px]">
+          <div className="mx-auto w-full max-w-[420px]">
             {/* ── Landing ── */}
             {authView === 'landing' && (
               <div className="space-y-8">
@@ -366,7 +366,7 @@ function LoginForm({
                       <button
                         type="button"
                         disabled={loading}
-                        className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+                        className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
                       >
                         <GoogleIcon />
                         Continue with Google
@@ -392,7 +392,7 @@ function LoginForm({
                   </div>
                   <button
                     onClick={() => goTo('signup')}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
+                    className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
                   >
                     Continue with email
                   </button>
@@ -404,7 +404,7 @@ function LoginForm({
                   Already have an account?{' '}
                   <button
                     onClick={() => goTo('login')}
-                    className="font-semibold text-violet-600 hover:text-violet-700"
+                    className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                   >
                     Sign in
                   </button>
@@ -430,7 +430,7 @@ function LoginForm({
                         <button
                           type="button"
                           disabled={loading}
-                          className="flex w-full items-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
+                          className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
                         >
                           <GoogleIcon />
                           Continue with Google
@@ -471,7 +471,7 @@ function LoginForm({
                           id="login-email"
                           type="email"
                           autoComplete="email"
-                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition disabled:opacity-50"
                           placeholder="you@example.com"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
@@ -489,7 +489,7 @@ function LoginForm({
                           id="login-password"
                           type={showPassword ? 'text' : 'password'}
                           autoComplete="current-password"
-                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                          className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition disabled:opacity-50"
                           placeholder="Your password"
                           value={password}
                           onChange={(e) => setPassword(e.target.value)}
@@ -517,7 +517,7 @@ function LoginForm({
                     Don&apos;t have an account?{' '}
                     <button
                       onClick={() => goTo('landing')}
-                      className="font-semibold text-violet-600 hover:text-violet-700"
+                      className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                     >
                       Sign up
                     </button>
@@ -551,7 +551,7 @@ function LoginForm({
                         id="signup-fullname"
                         type="text"
                         autoComplete="name"
-                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition disabled:opacity-50"
                         placeholder="Ada Lovelace"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
@@ -572,7 +572,7 @@ function LoginForm({
                         id="signup-email-field"
                         type="email"
                         autoComplete="email"
-                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-4 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition disabled:opacity-50"
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
@@ -593,7 +593,7 @@ function LoginForm({
                         id="signup-password-field"
                         type={showPassword ? 'text' : 'password'}
                         autoComplete="new-password"
-                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 transition disabled:opacity-50"
+                        className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-10 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition disabled:opacity-50"
                         placeholder="Min 8 characters"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
@@ -655,7 +655,7 @@ function LoginForm({
                   Already have an account?{' '}
                   <button
                     onClick={() => goTo('login')}
-                    className="font-semibold text-violet-600 hover:text-violet-700"
+                    className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                   >
                     Sign in
                   </button>
@@ -668,7 +668,7 @@ function LoginForm({
         {/* ── Footer nav (login only) ── */}
         {authView === 'login' && (
           <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
-            <div className="flex w-full max-w-[480px] items-center justify-between">
+            <div className="flex w-full max-w-[420px] items-center justify-between">
               <button
                 onClick={goBack}
                 className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
@@ -711,7 +711,7 @@ function LoginForm({
         {/* ── Footer nav (signup back only) ── */}
         {authView === 'signup' && (
           <footer className="shrink-0 border-t border-gray-200 px-5 py-4 sm:px-10 md:px-16">
-            <div className="flex w-full max-w-[480px] items-center">
+            <div className="flex w-full max-w-[420px] items-center">
               <button
                 onClick={goBack}
                 className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
