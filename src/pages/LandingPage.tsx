@@ -125,7 +125,7 @@ function MeetingDemo() {
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <div className="mx-auto mt-10 max-w-6xl px-2 sm:px-4 md:px-6">
+    <div className="mx-auto mt-16 sm:mt-24 max-w-6xl px-2 sm:px-4 md:px-6">
       <style>{MEETING_DEMO_STYLES}</style>
 
       {/* ── Tab bar ── */}
@@ -1097,7 +1097,7 @@ function MeetingDemo() {
 
 function Hero() {
   return (
-    <section className="relative overflow-hidden pt-28 pb-0 px-6 text-center">
+    <section className="relative overflow-hidden pt-36 sm:pt-44 pb-0 px-6 text-center">
       {/* Headline */}
       <h1 className="mx-auto max-w-2xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
         The{' '}
@@ -1116,7 +1116,7 @@ function Hero() {
       </h1>
 
       {/* Join meeting widget */}
-      <div className="mx-auto mt-7 max-w-lg">
+      <div className="mx-auto mt-12 sm:mt-16 max-w-lg">
         <div className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 shadow-md px-5 py-3.5">
           <VideoCameraIcon className="h-4 w-4 shrink-0 text-gray-400" />
           <input
