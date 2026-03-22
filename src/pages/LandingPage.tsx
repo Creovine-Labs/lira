@@ -29,6 +29,8 @@ const MEETING_DEMO_STYLES = `
   @keyframes tabProgress{from{width:0}to{width:100%}}
   @keyframes demoFadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   .demo-fade-in{animation:demoFadeIn .3s ease-out}
+  @keyframes aiBounce{0%{transform:rotate(-1.8deg) translateY(-14px) scale(0.82);opacity:0}55%{transform:rotate(-1.8deg) translateY(7px) scale(1.07);opacity:1}72%{transform:rotate(-1.8deg) translateY(1px) scale(0.97)}87%{transform:rotate(-1.8deg) translateY(5px) scale(1.02)}100%{transform:rotate(-1.8deg) translateY(4px) scale(1)}}
+  .ai-badge{animation:aiBounce 0.7s cubic-bezier(0.36,0.07,0.19,0.97) 0.25s both}
 `
 
 function WaveBars() {
@@ -74,6 +76,8 @@ function MeetingDemo() {
   const [phase, setPhase] = useState(0)
   const [userClicked, setUserClicked] = useState(false)
   const pauseRef = useRef<ReturnType<typeof setTimeout>>(undefined)
+  const touchStartX = useRef<number | null>(null)
+  const touchStartY = useRef<number | null>(null)
 
   // Auto-rotate tabs
   useEffect(() => {
@@ -108,6 +112,26 @@ function MeetingDemo() {
     setUserClicked(true)
   }
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+    touchStartY.current = e.touches[0].clientY
+  }
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null || touchStartY.current === null) return
+    const deltaX = e.changedTouches[0].clientX - touchStartX.current
+    const deltaY = e.changedTouches[0].clientY - touchStartY.current
+    touchStartX.current = null
+    touchStartY.current = null
+    if (Math.abs(deltaX) < 50 || Math.abs(deltaY) > Math.abs(deltaX)) return
+    const currentIndex = DEMO_MODES.indexOf(mode)
+    if (deltaX < 0 && currentIndex < DEMO_MODES.length - 1) {
+      handleTab(DEMO_MODES[currentIndex + 1])
+    } else if (deltaX > 0 && currentIndex > 0) {
+      handleTab(DEMO_MODES[currentIndex - 1])
+    }
+  }
+
   const meetActive = (['adaeze', 'lira', 'kwame', 'lira'] as const)[phase]
   const ivActive = (['lira', 'candidate', 'lira', 'candidate'] as const)[phase]
   const salesSpeaker = (['prospect', 'none', 'seller', 'none'] as const)[phase]
@@ -126,7 +150,11 @@ function MeetingDemo() {
     `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
   return (
-    <div className="mx-auto mt-16 sm:mt-24 max-w-6xl px-2 sm:px-4 md:px-6">
+    <div
+      className="mx-auto mt-16 sm:mt-24 max-w-6xl px-2 sm:px-4 md:px-6"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <style>{MEETING_DEMO_STYLES}</style>
 
       {/* ── Tab bar ── */}
@@ -1151,7 +1179,7 @@ function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
 
         {/* Body */}
         <p className="text-sm text-gray-500 leading-relaxed mb-7">
-          Create a free account and Lira will be deployed to this meeting immediately after sign-up.
+          Create your account and Lira will join this meeting immediately after sign-up.
         </p>
 
         {/* Primary CTA */}
@@ -1198,7 +1226,7 @@ function Hero() {
         <h1 className="mx-auto max-w-2xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
           The{' '}
           <span
-            className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg"
+            className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg ai-badge"
             style={{
               background: '#1a3a5c',
               boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
@@ -1244,18 +1272,11 @@ function Hero() {
 function MidCTA() {
   return (
     <section className="py-20 px-6 text-center">
-      <p className="mx-auto max-w-lg text-base text-gray-500 leading-relaxed mb-7">
+      <p className="mx-auto max-w-lg text-base text-gray-500 leading-relaxed">
         One AI. Every conversation that matters. Meetings, interviews, sales calls, customer
         support. Lira is already in the room, taking notes, answering questions, and keeping your
         team moving. No setup. No plugins. Just paste a link.
       </p>
-      <Link
-        to="/signup"
-        className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
-      >
-        <ComputerDesktopIcon className="h-3.5 w-3.5" />
-        Get a demo
-      </Link>
     </section>
   )
 }
@@ -1692,7 +1713,7 @@ function FinalCTA() {
           className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
         >
           <ComputerDesktopIcon className="h-3.5 w-3.5" />
-          Get a demo — it's free
+          Get a demo · it's free
         </Link>
         <a
           href="mailto:hello@creovine.com"
