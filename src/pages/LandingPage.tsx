@@ -1265,7 +1265,7 @@ function Hero() {
               onClick={handleJoin}
               className="shrink-0 rounded-xl bg-[#3730a3] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#312e81] transition"
             >
-              Join meeting
+              Add Learner
             </button>
           </div>
           <p className="mt-4 text-xs text-gray-400 tracking-wide">

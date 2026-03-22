@@ -675,7 +675,7 @@ function DeployHeroBar() {
         <button
           onClick={handleDeploy}
           disabled={deploying || !meetingLink.trim()}
-          className="flex shrink-0 items-center gap-2 rounded-xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex shrink-0 items-center gap-2 rounded-xl bg-[#3730a3] px-5 py-3 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {deploying ? (
             <>
