@@ -54,11 +54,11 @@ const STATE_LABELS: Record<BotState, string> = {
 }
 
 const STATE_COLORS: Record<BotState, string> = {
-  launching: 'text-amber-400',
-  navigating: 'text-amber-400',
-  in_lobby: 'text-sky-400',
-  joining: 'text-sky-400',
-  active: 'text-emerald-400',
+  launching: 'text-[#3730a3]',
+  navigating: 'text-[#3730a3]',
+  in_lobby: 'text-[#3730a3]',
+  joining: 'text-[#3730a3]',
+  active: 'text-[#3730a3]',
   leaving: 'text-slate-400',
   terminated: 'text-slate-400',
   error: 'text-red-400',
@@ -324,13 +324,11 @@ function BotDeployPanel() {
         <div
           className={cn(
             'rounded-xl border px-5 py-4',
-            botState === 'active'
-              ? 'border-emerald-500/30 bg-emerald-500/5'
-              : botState === 'error'
-                ? 'border-red-500/30 bg-red-500/5'
-                : isTerminal
-                  ? 'border-white/10 bg-white/5'
-                  : 'border-amber-500/20 bg-amber-500/5'
+            botState === 'error'
+              ? 'border-red-500/30 bg-red-500/5'
+              : isTerminal
+                ? 'border-white/10 bg-white/5'
+                : 'border-[#3730a3]/30 bg-[#3730a3]/5'
           )}
         >
           <div className="flex items-center gap-3">
@@ -338,19 +336,19 @@ function BotDeployPanel() {
             <div
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-full',
-                botState === 'active'
-                  ? 'bg-emerald-500/20'
-                  : botState === 'error'
-                    ? 'bg-red-500/20'
-                    : isTerminal
-                      ? 'bg-slate-500/20'
-                      : 'bg-amber-500/20'
+                botState === 'error'
+                  ? 'bg-red-500/20'
+                  : isTerminal
+                    ? 'bg-slate-500/20'
+                    : 'bg-[#3730a3]/15'
               )}
             >
               {isInProgress ? (
-                <ArrowPathIcon className="cn('h-5 w-5 animate-spin', STATE_COLORS[botState])" />
+                <ArrowPathIcon className={cn('h-5 w-5 animate-spin', STATE_COLORS[botState])} />
               ) : botState === 'active' ? (
-                <RadioIcon className="h-5 w-5 text-emerald-400 animate-pulse" />
+                <RadioIcon className="h-5 w-5 text-[#3730a3] animate-pulse" />
+              ) : botState === 'error' ? (
+                <ExclamationTriangleIcon className="h-5 w-5 text-red-400" />
               ) : (
                 <StopIcon className="h-5 w-5 text-slate-400" />
               )}
@@ -381,12 +379,12 @@ function BotDeployPanel() {
 
         {/* Live hint */}
         {botState === 'active' && (
-          <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-slate-300 leading-relaxed">
-            <span className="font-medium text-white">Lira is in the meeting.</span> Open your
-            meeting — you'll see Lira as a participant. Say{' '}
-            <span className="font-medium text-violet-400">"Lira"</span> to get her attention.
+          <div className="rounded-xl border border-[#3730a3]/25 bg-[#3730a3]/5 px-4 py-3 text-sm text-[#3730a3] leading-relaxed">
+            <span className="font-semibold">Lira is in the meeting.</span> Open your meeting —
+            you'll see Lira as a participant. Say <span className="font-semibold">"Lira"</span> to
+            get her attention.
             {selectedOrgId && (
-              <span className="mt-1 block text-xs text-slate-400">
+              <span className="mt-1 block text-xs text-[#3730a3]/60">
                 Using context from:{' '}
                 {organizations.find((o) => o.org_id === selectedOrgId)?.name ?? 'organization'}
               </span>
@@ -395,9 +393,9 @@ function BotDeployPanel() {
         )}
 
         {botState === 'in_lobby' && (
-          <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 px-4 py-3 text-sm text-sky-300 leading-relaxed">
-            Lira is waiting in the lobby. <span className="font-medium text-white">Admit her</span>{' '}
-            from your meeting to let her join.
+          <div className="rounded-xl border border-[#3730a3]/25 bg-[#3730a3]/5 px-4 py-3 text-sm text-[#3730a3] leading-relaxed">
+            <span className="font-semibold">Lira is waiting in the lobby.</span> Admit her from your
+            meeting to let her join.
           </div>
         )}
 

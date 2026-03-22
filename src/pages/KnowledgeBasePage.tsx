@@ -269,7 +269,7 @@ function KnowledgeBasePage() {
             <div className="flex flex-col gap-3 sm:flex-row">
               <input
                 type="url"
-                className="flex-1 rounded-xl border border-white/10 bg-white/8 px-4 py-2.5 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
+                className="flex-1 rounded-xl border border-white/20 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
                 placeholder="https://example.com"
                 value={crawlUrl}
                 onChange={(e) => {
@@ -288,7 +288,7 @@ function KnowledgeBasePage() {
                 <input
                   id="crawl-max-pages"
                   type="number"
-                  className="w-20 rounded-xl border border-white/10 bg-white/8 px-3 py-2.5 text-sm text-white outline-none transition focus:border-[#3730a3] disabled:opacity-40"
+                  className="w-20 rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] disabled:opacity-40"
                   min={1}
                   max={50}
                   value={maxPages}
