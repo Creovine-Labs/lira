@@ -1151,7 +1151,7 @@ function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
 
         {/* Body */}
         <p className="text-sm text-gray-500 leading-relaxed mb-7">
-          Create a free account and Lira will be deployed to this meeting — takes 60 seconds.
+          Create a free account and Lira will be deployed to this meeting immediately after sign-up.
         </p>
 
         {/* Primary CTA */}
@@ -1245,9 +1245,9 @@ function MidCTA() {
   return (
     <section className="py-20 px-6 text-center">
       <p className="mx-auto max-w-lg text-base text-gray-500 leading-relaxed mb-7">
-        Every insight from your meetings — decisions, action items, interview outcomes — is
-        scattered across recordings, docs, and people's heads. Ask Lira — the one AI that was
-        actually in the room.
+        One AI. Every conversation that matters. Meetings, interviews, sales calls, customer
+        support. Lira is already in the room, taking notes, answering questions, and keeping your
+        team moving. No setup. No plugins. Just paste a link.
       </p>
       <Link
         to="/signup"
