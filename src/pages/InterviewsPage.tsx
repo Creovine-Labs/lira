@@ -13,6 +13,7 @@ import { toast } from 'sonner'
 import { useOrgStore, useInterviewStore } from '@/app/store'
 import { deleteInterviewRecord, listInterviews } from '@/services/api'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
+import { PageLoader } from '@/components/ui/page-loader'
 
 function InterviewsPage() {
   const navigate = useNavigate()
@@ -156,11 +157,7 @@ function InterviewsPage() {
         </div>
 
         {/* ── Loading ── */}
-        {loading && (
-          <div className="flex items-center justify-center py-20">
-            <ArrowPathIcon className="h-6 w-6 animate-spin text-[#3730a3]" />
-          </div>
-        )}
+        {loading && <PageLoader />}
 
         {/* ── Empty state ── */}
         {!loading && sortedRoles.length === 0 && (

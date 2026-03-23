@@ -11,6 +11,7 @@ import {
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { listOrganizations, type Organization } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
+import { PageLoader } from '@/components/ui/page-loader'
 
 function OrganizationsPage() {
   const navigate = useNavigate()
@@ -88,9 +89,7 @@ function OrganizationsPage() {
 
         {/* List */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
+          <PageLoader />
         ) : organizations.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <BuildingOffice2Icon className="h-10 w-10 text-muted-foreground/30" />

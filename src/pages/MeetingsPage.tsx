@@ -16,6 +16,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useOrgStore, useBotStore, useUserPrefsStore } from '@/app/store'
+import { PageLoader } from '@/components/ui/page-loader'
 import {
   listMeetings,
   deleteMeeting,
@@ -592,12 +593,7 @@ function MeetingsPage() {
         )}
 
         {/* ── States ── */}
-        {loading && (
-          <div className="flex flex-col items-center justify-center gap-3 py-20">
-            <ArrowPathIcon className="h-7 w-7 animate-spin text-[#3730a3]" />
-            <p className="text-sm text-gray-400">Loading meetings…</p>
-          </div>
-        )}
+        {loading && <PageLoader label="Loading meetings…" />}
 
         {error && (
           <div className="rounded-2xl border border-red-200 bg-white px-5 py-4 text-sm text-red-600 shadow-sm">

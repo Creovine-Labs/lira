@@ -7,6 +7,7 @@ import {
 import { toast } from 'sonner'
 
 import { useOrgStore } from '@/app/store'
+import { PageLoader } from '@/components/ui/page-loader'
 import {
   getWebhookConfig,
   updateWebhookConfig,
@@ -103,11 +104,7 @@ function WebhooksPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <PageLoader />
   }
 
   return (

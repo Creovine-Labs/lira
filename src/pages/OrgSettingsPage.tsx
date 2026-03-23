@@ -10,6 +10,7 @@ import {
 import { toast } from 'sonner'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
+import { PageLoader } from '@/components/ui/page-loader'
 import {
   getOrganization,
   listOrgMembers,
@@ -153,11 +154,7 @@ function OrgSettingsPage() {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
-    )
+    return <PageLoader />
   }
 
   const canEdit = currentRole === 'owner' || currentRole === 'admin'

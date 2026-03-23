@@ -12,6 +12,7 @@ import {
 import { toast } from 'sonner'
 
 import { useOrgStore, useInterviewStore } from '@/app/store'
+import { PageLoader } from '@/components/ui/page-loader'
 import { deleteInterviewRecord, listInterviews, type Interview } from '@/services/api'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { cn } from '@/lib'
@@ -247,9 +248,7 @@ function InterviewRolePage() {
       {/* List */}
       <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4">
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
-          </div>
+          <PageLoader />
         ) : (
           <div className="space-y-2">
             {candidateGroups.map((group) => {
