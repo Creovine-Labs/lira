@@ -550,12 +550,12 @@ function DeployHeroBar() {
             </div>
           </div>
 
-          {isActive && botState !== 'leaving' && (
+          {isActive && (
             <button
               onClick={handleTerminate}
               className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
             >
-              Remove from call
+              {botState === 'leaving' ? 'Force remove' : 'Remove from call'}
             </button>
           )}
           {botState === 'error' && (
