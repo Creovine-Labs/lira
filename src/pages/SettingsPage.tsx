@@ -184,7 +184,7 @@ function AiConfigSection() {
               className="gap-1.5 rounded-xl"
             >
               <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
-              {saved ? 'Saved!' : 'ArrowDownOnSquareIcon'}
+              {saved ? 'Saved!' : 'Save'}
             </Button>
           </div>
           {/* Name quick-picks */}
@@ -283,7 +283,7 @@ function SettingsPage() {
       {/* Page header */}
       <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
         <div>
-          <h1 className="text-xl font-bold text-gray-900">Cog6ToothIcon</h1>
+          <h1 className="text-xl font-bold text-gray-900">Settings</h1>
           <p className="text-sm text-gray-500">Manage your Lira configuration and workspace</p>
         </div>
       </div>

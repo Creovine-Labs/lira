@@ -200,7 +200,7 @@ function WebhooksPage() {
           ) : (
             <ArrowDownOnSquareIcon className="h-4 w-4" />
           )}
-          ArrowDownOnSquareIcon Cog6ToothIcon
+          Save
         </button>
       </div>
     </div>
