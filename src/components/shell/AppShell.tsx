@@ -17,6 +17,7 @@ import {
   EnvelopeIcon,
   MicrophoneIcon,
   PlusIcon,
+  PuzzlePieceIcon,
   Squares2X2Icon,
   UserIcon,
   UsersIcon,
@@ -110,6 +111,7 @@ const NAV = [
       { to: '/org/documents', icon: DocumentTextIcon, label: 'Documents' },
       { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
       { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
+      { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
     ],
   },
   {

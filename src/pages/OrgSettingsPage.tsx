@@ -61,6 +61,7 @@ function OrgSettingsPage() {
   // Profile fields
   const [name, setName] = useState('')
   const [companyName, setCompanyName] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
   const [industry, setIndustry] = useState('')
   const [industryCustom, setIndustryCustom] = useState('')
   const [description, setDescription] = useState('')
@@ -94,6 +95,7 @@ function OrgSettingsPage() {
       setName(org.name)
       const p = org.profile || {}
       setCompanyName(p.company_name ?? '')
+      setLogoUrl(p.logo_url ?? '')
       // Resolve industry: if stored value matches a known option use it; otherwise use 'Other' + custom
       const storedIndustry = p.industry ?? ''
       if (!storedIndustry || INDUSTRIES.includes(storedIndustry)) {
@@ -129,6 +131,7 @@ function OrgSettingsPage() {
     try {
       const profile: Partial<OrganizationProfile> = {
         company_name: companyName.trim() || undefined,
+        logo_url: logoUrl.trim() || undefined,
         industry: (industry === 'Other' ? industryCustom.trim() : industry) || undefined,
         description: description.trim() || undefined,
         website: website.trim() || '',
@@ -203,6 +206,31 @@ function OrgSettingsPage() {
               onChange={(e) => setCompanyName(e.target.value)}
               maxLength={100}
             />
+          </Field>
+          <Field label="Organization Logo URL" span2>
+            <input
+              type="url"
+              className="input-field"
+              value={logoUrl}
+              onChange={(e) => setLogoUrl(e.target.value)}
+              placeholder="https://example.com/logo.png"
+              maxLength={500}
+            />
+            {logoUrl && (
+              <div className="mt-2 flex items-center gap-3">
+                <img
+                  src={logoUrl}
+                  alt="Logo preview"
+                  className="h-10 w-10 rounded-lg object-contain border bg-muted"
+                  onError={(e) => {
+                    ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+                  }}
+                />
+                <span className="text-xs text-muted-foreground">
+                  Used in outgoing emails and other branded communications.
+                </span>
+              </div>
+            )}
           </Field>
           <Field label="Industry">
             <select

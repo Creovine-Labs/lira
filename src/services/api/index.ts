@@ -386,6 +386,7 @@ export interface OrganizationProfile {
   website?: string
   websites?: OrgWebsite[]
   size?: string
+  logo_url?: string
   culture?: OrgCulture
   products?: OrgProduct[]
   terminology?: OrgTerminology[]
@@ -825,7 +826,7 @@ export async function executeTask(
 export async function liraReviewTask(orgId: string, taskId: string): Promise<TaskRecord> {
   return apiFetch(
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/tasks/${encodeURIComponent(taskId)}/lira-review`,
-    { method: 'POST' }
+    { method: 'POST', body: '{}' }
   )
 }
 
@@ -1368,6 +1369,7 @@ export interface OrgEmailConfig {
   from_name?: string
   email_notifications_enabled: boolean
   notify_on: string[]
+  ai_reply_enabled: boolean
   dns_records?: EmailDnsRecord[]
   updated_at: string
 }
@@ -1384,6 +1386,7 @@ export async function updateEmailConfig(
     from_name?: string
     email_notifications_enabled?: boolean
     notify_on?: string[]
+    ai_reply_enabled?: boolean
   }
 ): Promise<OrgEmailConfig> {
   return apiFetch<OrgEmailConfig>(`/lira/v1/email/config?orgId=${encodeURIComponent(orgId)}`, {
@@ -1415,5 +1418,132 @@ export async function checkEmailDomainStatus(
 ): Promise<{ status: string; verified: boolean }> {
   return apiFetch<{ status: string; verified: boolean }>(
     `/lira/v1/email/domain/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+// ── Email Threads (inbox) ─────────────────────────────────────────────────────
+
+export interface ThreadMessage {
+  role: 'lira' | 'member'
+  body: string
+  timestamp: string
+}
+
+export interface EmailThread {
+  threadId: string
+  orgId: string
+  memberId: string
+  contextType: string
+  contextId: string
+  subject?: string
+  recipient?: string
+  messages: ThreadMessage[]
+  status: 'open' | 'escalated' | 'closed'
+  created_at: string
+  updated_at: string
+}
+
+export async function listEmailThreads(orgId: string): Promise<EmailThread[]> {
+  return apiFetch<EmailThread[]>(`/lira/v1/email/threads?orgId=${encodeURIComponent(orgId)}`)
+}
+
+export async function getEmailThread(orgId: string, threadId: string): Promise<EmailThread> {
+  return apiFetch<EmailThread>(
+    `/lira/v1/email/threads/${encodeURIComponent(threadId)}?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+// ── Linear Integration API ────────────────────────────────────────────────────
+
+export interface LinearStatus {
+  connected: boolean
+  sync_enabled?: boolean
+  workspace_id?: string
+  default_team_id?: string
+  connected_at?: string
+}
+
+export interface LinearTeam {
+  id: string
+  name: string
+  key?: string
+}
+
+export interface LinearMember {
+  id: string
+  name: string
+  email?: string
+  displayName?: string
+}
+
+export interface MemberMapping {
+  userId: string
+  orgId: string
+  provider: 'linear'
+  external_id: string
+  external_email?: string
+  status: 'resolved' | 'unresolved'
+  created_at: string
+  updated_at: string
+}
+
+export function getLinearAuthUrl(orgId: string): string {
+  return `/lira/v1/integrations/linear/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getLinearStatus(orgId: string): Promise<LinearStatus> {
+  return apiFetch<LinearStatus>(
+    `/lira/v1/integrations/linear/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectLinear(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/linear?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listLinearTeams(orgId: string): Promise<LinearTeam[]> {
+  const data = await apiFetch<{ teams: LinearTeam[] }>(
+    `/lira/v1/integrations/linear/teams?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.teams
+}
+
+export async function listLinearMembers(orgId: string): Promise<LinearMember[]> {
+  const data = await apiFetch<{ members: LinearMember[] }>(
+    `/lira/v1/integrations/linear/members?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.members
+}
+
+export async function setLinearDefaultTeam(orgId: string, teamId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/linear/team?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ teamId }),
+  })
+}
+
+export async function listMemberMappings(orgId: string): Promise<MemberMapping[]> {
+  const data = await apiFetch<{ mappings: MemberMapping[] }>(
+    `/lira/v1/integrations/linear/member-map?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.mappings
+}
+
+export async function saveMemberMapping(
+  orgId: string,
+  userId: string,
+  externalId: string,
+  externalEmail?: string
+): Promise<void> {
+  await apiFetch<void>(
+    `/lira/v1/integrations/linear/member-map?orgId=${encodeURIComponent(orgId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, externalId, externalEmail }),
+    }
   )
 }

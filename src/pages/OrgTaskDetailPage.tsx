@@ -4,11 +4,10 @@ import {
   ArrowLeftIcon,
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
-  BoltIcon,
   CheckCircleIcon,
   CheckIcon,
   ClockIcon,
-  DocumentDuplicateIcon,
+  EnvelopeIcon,
   PencilIcon,
   PlayCircleIcon,
   TrashIcon,
@@ -17,7 +16,6 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
-import ReactMarkdown from 'react-markdown'
 
 import { useOrgStore, useTaskStore, useNotifStore } from '@/app/store'
 import {
@@ -26,7 +24,6 @@ import {
   listOrgMembers,
   updateTask,
   deleteTask,
-  executeTask,
   liraReviewTask,
   type OrgMembership,
   type TaskRecord,
@@ -92,14 +89,16 @@ function TaskDetailPage() {
   const navigate = useNavigate()
   const { currentOrgId } = useOrgStore()
   const { updateTask: updateTaskInStore, removeTask } = useTaskStore()
-  const { markTaskRead } = useNotifStore()
+  const { markTaskRead, removeNotif, entries: notifEntries } = useNotifStore()
 
   const [task, setTask] = useState<TaskRecord | null>(null)
   const [loading, setLoading] = useState(true)
-  const [executing, setExecuting] = useState(false)
-  const [executionResult, setExecutionResult] = useState<string | null>(null)
+  const [taskNotFound, setTaskNotFound] = useState(false)
   const [deleting, setDeleting] = useState(false)
-  const [liraReviewing, setLiraReviewing] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [editDescOpen, setEditDescOpen] = useState(false)
+  const [descDraft, setDescDraft] = useState('')
+  const [savingDesc, setSavingDesc] = useState(false)
 
   // Meeting title lookup
   const [sourceMeeting, setSourceMeeting] = useState<Meeting | null>(null)
@@ -115,6 +114,7 @@ function TaskDetailPage() {
   const [editDueDate, setEditDueDate] = useState(false)
   const [dueDateDraft, setDueDateDraft] = useState('')
   const [savingDueDate, setSavingDueDate] = useState(false)
+  const [emailModalOpen, setEmailModalOpen] = useState(false)
 
   const loadTask = useCallback(async () => {
     if (!currentOrgId || !taskId) return
@@ -126,9 +126,6 @@ function TaskDetailPage() {
       ])
       setTask(t)
       setOrgMembers(members)
-      if (t.execution_status === 'completed' && t.execution_result) {
-        setExecutionResult(t.execution_result)
-      }
       // Mark this task's notification as read (clears sidebar badge)
       markTaskRead(`task-${taskId}`)
       // Fetch the source meeting if present
@@ -137,8 +134,17 @@ function TaskDetailPage() {
           .then((m) => setSourceMeeting(m))
           .catch(() => {})
       }
-    } catch {
-      toast.error('Failed to load task')
+    } catch (err) {
+      const is404 = err instanceof Error && err.message.startsWith('404:')
+      if (is404) {
+        setTaskNotFound(true)
+        // Remove all in-memory notifications pointing to this task
+        notifEntries
+          .filter((e) => e.link === `/org/tasks/${taskId}`)
+          .forEach((e) => removeNotif(e.id))
+      } else {
+        toast.error('Failed to load task')
+      }
     } finally {
       setLoading(false)
     }
@@ -147,6 +153,23 @@ function TaskDetailPage() {
   useEffect(() => {
     loadTask()
   }, [loadTask])
+
+  // Poll for updates while Lira is reviewing or executing
+  useEffect(() => {
+    if (!task) return
+    const shouldPoll =
+      task.lira_review_status === 'reviewing' || task.execution_status === 'running'
+    if (!shouldPoll) return
+    const interval = setInterval(() => loadTask(), 4000)
+    return () => clearInterval(interval)
+  }, [task?.lira_review_status, task?.execution_status, loadTask])
+
+  // Auto-redirect when task was deleted
+  useEffect(() => {
+    if (!taskNotFound) return
+    const timer = setTimeout(() => navigate('/org/tasks'), 3000)
+    return () => clearTimeout(timer)
+  }, [taskNotFound, navigate])
 
   async function handleStatusChange(status: TaskStatus) {
     if (!currentOrgId || !taskId || !task) return
@@ -195,28 +218,36 @@ function TaskDetailPage() {
     }
   }
 
-  async function handleExecute() {
+  async function handleSaveDescription() {
     if (!currentOrgId || !taskId) return
-    setExecuting(true)
+    setSavingDesc(true)
     try {
-      const res = await executeTask(currentOrgId, taskId)
-      setExecutionResult(res.result)
-      setTask((prev) =>
-        prev ? { ...prev, execution_status: 'completed', execution_result: res.result } : prev
-      )
-      updateTaskInStore(taskId, { execution_status: 'completed', execution_result: res.result })
-      toast.success('Task executed!')
+      const updated = await updateTask(currentOrgId, taskId, { description: descDraft.trim() })
+      setTask(updated)
+      updateTaskInStore(taskId, { description: updated.description })
+      setEditDescOpen(false)
+      // Automatically trigger Lira re-review with the updated description
+      const reviewed = await liraReviewTask(currentOrgId, taskId)
+      if (reviewed) {
+        setTask(reviewed)
+        if (reviewed.lira_review_status === 'approved') {
+          toast.success('Lira is ready to take on this task!')
+        }
+      }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Execution failed')
-      setTask((prev) => (prev ? { ...prev, execution_status: 'failed' } : prev))
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
     } finally {
-      setExecuting(false)
+      setSavingDesc(false)
     }
   }
 
-  async function handleDelete() {
+  function handleDelete() {
     if (!currentOrgId || !taskId) return
-    if (!window.confirm('Delete this task? This cannot be undone.')) return
+    setShowDeleteConfirm(true)
+  }
+
+  async function handleConfirmDelete() {
+    if (!currentOrgId || !taskId) return
     setDeleting(true)
     try {
       await deleteTask(currentOrgId, taskId)
@@ -226,31 +257,8 @@ function TaskDetailPage() {
     } catch {
       toast.error('Failed to delete task')
       setDeleting(false)
-    }
-  }
-
-  async function handleLiraReview() {
-    if (!currentOrgId || !taskId) return
-    setLiraReviewing(true)
-    try {
-      const reviewed = await liraReviewTask(currentOrgId, taskId)
-      setTask(reviewed)
-      if (reviewed.lira_review_status === 'approved') {
-        toast.success('Lira is ready to take on this task!')
-      } else {
-        toast.info('Lira needs a bit more detail — see her notes below.')
-      }
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Review failed')
     } finally {
-      setLiraReviewing(false)
-    }
-  }
-
-  function copyResult() {
-    if (executionResult) {
-      navigator.clipboard.writeText(executionResult)
-      toast.success('Copied to clipboard')
+      setShowDeleteConfirm(false)
     }
   }
 
@@ -258,6 +266,28 @@ function TaskDetailPage() {
     return (
       <div className="min-h-full bg-[#ebebeb]">
         <PageLoader />
+      </div>
+    )
+  }
+
+  if (taskNotFound) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-[#ebebeb] py-20">
+        <div className="mx-auto max-w-sm rounded-2xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+            <TrashIcon className="h-6 w-6 text-gray-400" />
+          </div>
+          <h2 className="text-base font-semibold text-gray-900">Task no longer exists</h2>
+          <p className="mt-2 text-sm text-gray-500">
+            This task has been deleted. You'll be redirected to your tasks list in a moment.
+          </p>
+          <button
+            onClick={() => navigate('/org/tasks')}
+            className="mt-6 rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
+          >
+            Go to Tasks
+          </button>
+        </div>
       </div>
     )
   }
@@ -290,11 +320,6 @@ function TaskDetailPage() {
     const q = assigneeDraft.toLowerCase()
     return (m.name ?? '').toLowerCase().includes(q) || (m.email ?? '').toLowerCase().includes(q)
   })
-
-  const canExecute =
-    ['action_item', 'draft_document', 'follow_up_email', 'research', 'summary'].includes(
-      task.task_type
-    ) && task.execution_status !== 'running'
 
   return (
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
@@ -356,17 +381,45 @@ function TaskDetailPage() {
             )}
           >
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-sm font-bold text-white">
-                L
-              </div>
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt="Lira"
+                className="h-8 w-8 shrink-0 rounded-full object-contain border border-gray-200"
+              />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-semibold text-gray-900 mb-1">
                   {task.lira_review_status === 'reviewing' && 'Lira is reviewing this task…'}
                   {task.lira_review_status === 'needs_info' && 'Lira needs more information'}
-                  {task.lira_review_status === 'approved' && 'Lira has this covered'}
+                  {task.lira_review_status === 'approved' &&
+                    (task.execution_status === 'completed'
+                      ? 'Lira completed this task'
+                      : task.execution_status === 'running'
+                        ? 'Lira is working on this…'
+                        : 'Lira has this covered')}
                 </p>
-                {task.lira_message && (
-                  <p className="text-sm text-gray-700 mb-3">{task.lira_message}</p>
+                {/* Show View Sent Email button when email task is completed */}
+                {task.lira_review_status === 'approved' &&
+                task.execution_status === 'completed' &&
+                task.execution_result &&
+                task.task_type === 'follow_up_email' ? (
+                  <button
+                    onClick={() => setEmailModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+                  >
+                    <EnvelopeIcon className="h-4 w-4" />
+                    View Sent Email
+                  </button>
+                ) : task.lira_review_status === 'approved' &&
+                  task.execution_status === 'running' ? (
+                  <div className="flex items-center gap-2 text-sm text-amber-700">
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    Working on it…
+                  </div>
+                ) : (
+                  task.lira_message &&
+                  task.lira_review_status !== 'approved' && (
+                    <p className="text-sm text-gray-700 mb-3">{task.lira_message}</p>
+                  )
                 )}
                 {task.lira_review_status === 'needs_info' &&
                   task.lira_needs &&
@@ -381,24 +434,15 @@ function TaskDetailPage() {
                     </ul>
                   )}
                 {task.lira_review_status === 'needs_info' && (
-                  <p className="mb-3 text-xs text-gray-500">
-                    Edit the task description above with the missing details, then ask Lira to
-                    review again.
-                  </p>
-                )}
-                {(task.lira_review_status === 'needs_info' ||
-                  task.lira_review_status === 'reviewing') && (
                   <button
-                    onClick={handleLiraReview}
-                    disabled={liraReviewing}
-                    className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                    onClick={() => {
+                      setDescDraft(task.description)
+                      setEditDescOpen(true)
+                    }}
+                    className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700"
                   >
-                    {liraReviewing ? (
-                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <BoltIcon className="h-4 w-4" />
-                    )}
-                    {liraReviewing ? 'Lira is reviewing…' : 'Ask Lira to Review Again'}
+                    <PencilIcon className="h-4 w-4" />
+                    Edit Description
                   </button>
                 )}
               </div>
@@ -463,9 +507,7 @@ function TaskDetailPage() {
                     'lira'.includes(assigneeDraft.toLowerCase())) && (
                     <div className="absolute left-0 top-8 z-20 w-full max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
                       {/* Lira — always first */}
-                      {(!assigneeDraft.trim() ||
-                        'lira'.includes(assigneeDraft.toLowerCase()) ||
-                        'lira (ai)'.includes(assigneeDraft.toLowerCase())) && (
+                      {(!assigneeDraft.trim() || 'lira'.includes(assigneeDraft.toLowerCase())) && (
                         <button
                           type="button"
                           onMouseDown={(e) => {
@@ -474,13 +516,13 @@ function TaskDetailPage() {
                           }}
                           className="flex w-full items-center gap-2 border-b border-gray-100 px-3 py-2.5 text-left text-sm hover:bg-violet-50"
                         >
-                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[10px] font-bold text-white">
-                            L
-                          </div>
+                          <img
+                            src="/lira_black_with_white_backgound.png"
+                            alt="Lira"
+                            className="h-6 w-6 shrink-0 rounded-full object-contain border border-gray-200"
+                          />
                           <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-semibold text-violet-700">
-                              Lira (AI)
-                            </p>
+                            <p className="truncate text-sm font-semibold text-violet-700">Lira</p>
                             <p className="truncate text-xs text-gray-500">
                               Lira will review and complete this automatically
                             </p>
@@ -523,10 +565,12 @@ function TaskDetailPage() {
                 <dd className="flex items-center gap-1 group">
                   {task.assigned_to === 'lira' ? (
                     <span className="flex items-center gap-1.5 text-sm font-semibold text-violet-700">
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[9px] font-bold text-white">
-                        L
-                      </span>
-                      Lira (AI)
+                      <img
+                        src="/lira_black_with_white_backgound.png"
+                        alt="Lira"
+                        className="h-5 w-5 rounded-full object-contain border border-gray-200"
+                      />
+                      Lira
                     </span>
                   ) : assignedMember ? (
                     <Link
@@ -655,158 +699,153 @@ function TaskDetailPage() {
           </div>
         </section>
 
-        {/* Lira Execution */}
-        <section className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BoltIcon className="h-5 w-5 text-violet-500" />
-              <h2 className="text-sm font-semibold text-gray-900">Lira Execution</h2>
-            </div>
-            {canExecute && (
-              <div className="flex flex-col items-end gap-1">
-                <button
-                  onClick={handleExecute}
-                  disabled={executing}
-                  className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
-                >
-                  {executing ? (
-                    <>
-                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                      Executing…
-                    </>
-                  ) : (
-                    <>
-                      <BoltIcon className="h-4 w-4" />
-                      {executionResult ? 'Re-run with Lira' : 'Run with Lira'}
-                    </>
-                  )}
-                </button>
-                {executing && (
-                  <p className="text-xs text-gray-400">
-                    Lira is generating — this may take a few seconds
-                  </p>
-                )}
+        {/* Delete confirmation modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
+              <div className="px-6 py-5">
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                  <TrashIcon className="h-5 w-5 text-red-500" />
+                </div>
+                <h3 className="text-base font-semibold text-gray-900">Delete this task?</h3>
+                <p className="mt-1.5 text-sm text-gray-500">
+                  This action cannot be undone. The task will be permanently removed.
+                </p>
               </div>
-            )}
+              <div className="flex justify-end gap-2 border-t border-gray-100 px-6 py-4">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={deleting}
+                  className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+                >
+                  {deleting && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
+                  {deleting ? 'Deleting…' : 'Delete'}
+                </button>
+              </div>
+            </div>
           </div>
+        )}
 
-          {/* Email execution toggle for follow_up_email tasks */}
-          {task.task_type === 'follow_up_email' && (
-            <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">Auto-send email via Lira</p>
-                  <p className="mt-0.5 text-xs text-gray-500">
-                    When enabled, Lira will actually send this email to the assignee — not just
-                    draft it.
-                  </p>
-                </div>
+        {/* Description edit modal */}
+        {editDescOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+                <h3 className="text-sm font-semibold text-gray-900">Update Description</h3>
                 <button
-                  onClick={async () => {
-                    if (!currentOrgId || !taskId) return
-                    const newVal = !task.email_execution_enabled
-                    try {
-                      const updated = await updateTask(currentOrgId, taskId, {
-                        email_execution_enabled: newVal,
-                      })
-                      if (updated) setTask(updated)
-                      updateTaskInStore(taskId, { email_execution_enabled: newVal })
-                    } catch {
-                      toast.error('Failed to update')
-                    }
-                  }}
-                  className={cn(
-                    'relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200',
-                    task.email_execution_enabled ? 'bg-violet-600' : 'bg-gray-300'
-                  )}
+                  onClick={() => setEditDescOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <span
-                    className={cn(
-                      'pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow ring-0 transition-transform duration-200',
-                      task.email_execution_enabled ? 'translate-x-5' : 'translate-x-0'
-                    )}
-                  />
+                  <XMarkIcon className="h-5 w-5" />
                 </button>
               </div>
-
-              {/* Missing fields warning */}
-              {task.missing_fields && task.missing_fields.length > 0 && (
-                <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2">
-                  <p className="mb-1 text-xs font-semibold text-amber-700">
-                    Required before Lira can send:
-                  </p>
-                  <ul className="space-y-0.5">
-                    {task.missing_fields.includes('assignee') && (
-                      <li className="flex items-center gap-1.5 text-xs text-amber-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                        Assignee email not resolved — edit the Assigned To field with a member name
-                      </li>
-                    )}
-                    {task.missing_fields.includes('due_date') && (
-                      <li className="flex items-center gap-1.5 text-xs text-amber-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                        Due date is not set
-                      </li>
-                    )}
-                    {task.missing_fields.includes('email_config') && (
-                      <li className="flex items-center gap-1.5 text-xs text-amber-700">
-                        <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
-                        Email not configured — go to{' '}
-                        <a href="/org/email" className="underline">
-                          Email Settings
-                        </a>
-                      </li>
-                    )}
-                  </ul>
-                </div>
-              )}
-
-              {/* Resolved assignee confirmation */}
-              {task.assignee_email && task.missing_fields?.length === 0 && (
-                <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-700">
-                  <CheckCircleIcon className="h-3.5 w-3.5" />
-                  Ready to send to {task.assignee_email}
-                </div>
-              )}
-            </div>
-          )}
-
-          {executionResult ? (
-            <div>
-              <div className="mb-2 flex items-center justify-between">
-                <span className="flex items-center gap-1 text-xs font-medium text-emerald-600">
-                  <CheckCircleIcon className="h-3.5 w-3.5" />
-                  Lira Result
-                </span>
+              <div className="space-y-4 px-6 py-4">
+                {task?.lira_needs && task.lira_needs.length > 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+                    <p className="mb-2 text-xs font-semibold text-amber-700">
+                      Add to your description:
+                    </p>
+                    <ul className="space-y-1">
+                      {task.lira_needs.map((item, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-xs text-amber-700">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <textarea
+                  value={descDraft}
+                  onChange={(e) => setDescDraft(e.target.value)}
+                  rows={6}
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm text-gray-900 focus:border-violet-400 focus:outline-none focus:ring-1 focus:ring-violet-400"
+                  placeholder="Describe what Lira needs to do…"
+                />
+              </div>
+              <div className="flex justify-end gap-2 border-t border-gray-100 px-6 py-4">
                 <button
-                  onClick={copyResult}
-                  className="flex items-center gap-1 rounded-xl border border-gray-200 px-2.5 py-1 text-xs text-gray-600 hover:bg-gray-100"
+                  onClick={() => setEditDescOpen(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
                 >
-                  <DocumentDuplicateIcon className="h-3 w-3" />
-                  Copy
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveDescription}
+                  disabled={savingDesc || !descDraft.trim()}
+                  className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                >
+                  {savingDesc && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
+                  {savingDesc ? 'Saving…' : 'Save & Ask Lira to Review'}
                 </button>
               </div>
-              <div className="prose prose-sm max-w-none rounded-2xl border border-gray-100 bg-gray-50 p-4">
-                <ReactMarkdown>{executionResult}</ReactMarkdown>
+            </div>
+          </div>
+        )}
+
+        {/* View Sent Email modal */}
+        {emailModalOpen && task?.execution_result && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+            <div className="w-full max-w-lg rounded-2xl bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <EnvelopeIcon className="h-4 w-4 text-emerald-600" />
+                  Sent Email
+                </h3>
+                <button
+                  onClick={() => setEmailModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="max-h-[60vh] overflow-y-auto px-6 py-4">
+                {(() => {
+                  const result = task.execution_result ?? ''
+                  const subjectMatch = result.match(/^Subject:\s*(.+)$/m)
+                  const subject = subjectMatch ? subjectMatch[1].trim() : null
+                  const body =
+                    subject && subjectMatch
+                      ? result
+                          .slice(result.indexOf(subjectMatch[0]) + subjectMatch[0].length)
+                          .trim()
+                      : result
+                  return (
+                    <div className="space-y-3">
+                      {subject && (
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">Subject</p>
+                          <p className="mt-0.5 text-sm font-semibold text-gray-900">{subject}</p>
+                        </div>
+                      )}
+                      <div>
+                        <p className="text-xs font-medium text-gray-500">Body</p>
+                        <div className="mt-1 whitespace-pre-wrap rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm leading-relaxed text-gray-800">
+                          {body}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })()}
+              </div>
+              <div className="flex justify-end border-t border-gray-100 px-6 py-4">
+                <button
+                  onClick={() => setEmailModalOpen(false)}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50"
+                >
+                  Close
+                </button>
               </div>
             </div>
-          ) : task.execution_status === 'running' ? (
-            <div className="flex items-center gap-3 rounded-xl bg-blue-50 px-4 py-3">
-              <ArrowPathIcon className="h-5 w-5 animate-spin text-blue-500" />
-              <p className="text-sm text-blue-600">Lira is processing this task…</p>
-            </div>
-          ) : task.execution_status === 'failed' ? (
-            <div className="flex items-center gap-3 rounded-xl bg-red-50 px-4 py-3">
-              <XCircleIcon className="h-5 w-5 text-red-500" />
-              <p className="text-sm text-red-500">Execution failed. Try again.</p>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500">
-              Click "Run with Lira" to generate a result for this task. Available for action items,
-              drafts, emails, research, and summaries.
-            </p>
-          )}
-        </section>
+          </div>
+        )}
       </div>
     </div>
   )

@@ -20,6 +20,7 @@ export const ROUTES = {
   orgMemberProfile: '/org/members/:userId',
   orgWebhooks: '/org/webhooks',
   orgEmail: '/org/email',
+  orgIntegrations: '/org/integrations',
   orgInterviews: '/org/roles',
   orgInterviewRole: '/org/roles/:roleSlug',
   orgInterviewCreate: '/org/roles/new',

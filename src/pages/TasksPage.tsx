@@ -84,6 +84,8 @@ function TasksPage() {
     useTaskStore()
 
   const [showCreate, setShowCreate] = useState(false)
+  const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null)
+  const [deletingTask, setDeletingTask] = useState(false)
 
   const loadTasks = useCallback(async () => {
     if (!currentOrgId) return
@@ -260,21 +262,76 @@ function TasksPage() {
                     toast.error('Failed to update status')
                   }
                 }}
-                onDelete={async () => {
-                  if (!currentOrgId) return
-                  try {
-                    await deleteTask(currentOrgId, task.task_id)
-                    useTaskStore.getState().removeTask(task.task_id)
-                    toast.success('Task deleted')
-                  } catch {
-                    toast.error('Failed to delete task')
-                  }
-                }}
+                onDelete={() => setPendingDeleteTask(task)}
               />
             ))}
           </div>
         )}
       </div>
+
+      {/* Delete confirmation modal */}
+      {pendingDeleteTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-xl">
+            <div className="px-6 py-5">
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
+                <TrashIcon className="h-5 w-5 text-red-500" />
+              </div>
+              <h3 className="text-base font-semibold text-gray-900">Delete this task?</h3>
+              <p className="mt-1.5 text-sm text-gray-500">
+                "<span className="font-medium text-gray-700">{pendingDeleteTask.title}</span>" will
+                be permanently removed. This cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-2 border-t border-gray-100 px-6 py-4">
+              <button
+                onClick={() => setPendingDeleteTask(null)}
+                disabled={deletingTask}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!currentOrgId) return
+                  setDeletingTask(true)
+                  try {
+                    await deleteTask(currentOrgId, pendingDeleteTask.task_id)
+                    useTaskStore.getState().removeTask(pendingDeleteTask.task_id)
+                    toast.success('Task deleted')
+                    setPendingDeleteTask(null)
+                  } catch {
+                    toast.error('Failed to delete task')
+                  } finally {
+                    setDeletingTask(false)
+                  }
+                }}
+                disabled={deletingTask}
+                className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingTask && (
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 00-8 8h4z"
+                    />
+                  </svg>
+                )}
+                {deletingTask ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -368,7 +425,7 @@ function TaskCard({
           {task.assigned_to && task.assigned_to === 'lira' ? (
             <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
               <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
-              Lira (AI)
+              Lira
             </span>
           ) : task.assigned_to ? (
             <span className="text-[11px] text-gray-400">→ {task.assigned_to}</span>
@@ -432,7 +489,6 @@ function CreateTaskForm({
   const [description, setDescription] = useState('')
   const [assignedTo, setAssignedTo] = useState('')
   const [priority, setPriority] = useState<TaskPriority>('medium')
-  const [taskType, setTaskType] = useState<TaskType>('action_item')
   const [dueDate, setDueDate] = useState('')
   const [creating, setCreating] = useState(false)
   const [orgMembers, setOrgMembers] = useState<OrgMembership[]>([])
@@ -470,7 +526,6 @@ function CreateTaskForm({
         description: description.trim(),
         assigned_to: assignedTo.trim() || undefined,
         priority,
-        task_type: taskType,
         due_date: dueDate || undefined,
       }
       const task = await createTask(orgId, input)
@@ -528,10 +583,10 @@ function CreateTaskForm({
               <input
                 id="task-assigned-to"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
-                value={assignedTo === 'lira' ? 'Lira (AI)' : assignedTo}
+                value={assignedTo === 'lira' ? 'Lira' : assignedTo}
                 onChange={(e) => {
                   const val = e.target.value
-                  if (val !== 'Lira (AI)') setAssignedTo(val)
+                  if (val !== 'Lira') setAssignedTo(val)
                 }}
                 onFocus={() => setShowSuggestions(true)}
                 placeholder="Search members or assign to Lira…"
@@ -541,9 +596,7 @@ function CreateTaskForm({
               {showSuggestions && (
                 <div className="absolute left-0 top-full z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
                   {/* Lira — always first */}
-                  {(!assignedTo.trim() ||
-                    'lira'.includes(assignedTo.toLowerCase()) ||
-                    'lira (ai)'.includes(assignedTo.toLowerCase())) && (
+                  {(!assignedTo.trim() || 'lira'.includes(assignedTo.toLowerCase())) && (
                     <button
                       type="button"
                       onMouseDown={(e) => {
@@ -553,11 +606,13 @@ function CreateTaskForm({
                       }}
                       className="flex w-full items-center gap-2 border-b border-gray-100 px-3 py-2.5 text-left text-sm hover:bg-violet-50"
                     >
-                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[10px] font-bold text-white">
-                        L
-                      </div>
+                      <img
+                        src="/lira_black_with_white_backgound.png"
+                        alt="Lira"
+                        className="h-6 w-6 shrink-0 rounded-full object-contain border border-gray-200"
+                      />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-violet-700">Lira (AI)</p>
+                        <p className="truncate text-sm font-semibold text-violet-700">Lira</p>
                         <p className="truncate text-xs text-gray-500">
                           Lira will review and complete this automatically
                         </p>
@@ -630,24 +685,6 @@ function CreateTaskForm({
               <option value="medium">Medium</option>
               <option value="high">High</option>
               <option value="urgent">Urgent</option>
-            </select>
-          </div>
-          <div>
-            <label htmlFor="task-type" className="mb-1.5 block text-sm font-medium text-gray-700">
-              Type
-            </label>
-            <select
-              id="task-type"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
-              value={taskType}
-              onChange={(e) => setTaskType(e.target.value as TaskType)}
-            >
-              <option value="action_item">Action Item</option>
-              <option value="draft_document">Draft Document</option>
-              <option value="follow_up_email">Follow-up Email</option>
-              <option value="research">Research</option>
-              <option value="summary">Summary</option>
-              <option value="decision">Decision</option>
             </select>
           </div>
         </div>
