@@ -282,7 +282,7 @@ function CompactInviteBar() {
           <div className="relative flex-1">
             <input
               type="url"
-              className="w-full rounded-xl border border-white/10 bg-white/8 px-4 py-2.5 pr-16 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
+              className="w-full rounded-xl border border-white/10 bg-white/10 px-4 py-2.5 pr-16 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
               placeholder="Paste Google Meet or Zoom link…"
               value={meetingLink}
               onChange={(e) => {
