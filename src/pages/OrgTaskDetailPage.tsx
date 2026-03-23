@@ -27,6 +27,7 @@ import {
   updateTask,
   deleteTask,
   executeTask,
+  liraReviewTask,
   type OrgMembership,
   type TaskRecord,
   type TaskStatus,
@@ -98,6 +99,7 @@ function TaskDetailPage() {
   const [executing, setExecuting] = useState(false)
   const [executionResult, setExecutionResult] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [liraReviewing, setLiraReviewing] = useState(false)
 
   // Meeting title lookup
   const [sourceMeeting, setSourceMeeting] = useState<Meeting | null>(null)
@@ -227,6 +229,24 @@ function TaskDetailPage() {
     }
   }
 
+  async function handleLiraReview() {
+    if (!currentOrgId || !taskId) return
+    setLiraReviewing(true)
+    try {
+      const reviewed = await liraReviewTask(currentOrgId, taskId)
+      setTask(reviewed)
+      if (reviewed.lira_review_status === 'approved') {
+        toast.success('Lira is ready to take on this task!')
+      } else {
+        toast.info('Lira needs a bit more detail — see her notes below.')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Review failed')
+    } finally {
+      setLiraReviewing(false)
+    }
+  }
+
   function copyResult() {
     if (executionResult) {
       navigator.clipboard.writeText(executionResult)
@@ -325,11 +345,71 @@ function TaskDetailPage() {
           </button>
         </div>
 
+        {/* Lira Review Banner */}
+        {task.assigned_to === 'lira' && task.lira_review_status && (
+          <section
+            className={cn(
+              'rounded-2xl border p-5 shadow-sm',
+              task.lira_review_status === 'reviewing' && 'border-amber-200 bg-amber-50',
+              task.lira_review_status === 'needs_info' && 'border-red-200 bg-red-50',
+              task.lira_review_status === 'approved' && 'border-emerald-200 bg-emerald-50'
+            )}
+          >
+            <div className="flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-sm font-bold text-white">
+                L
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-gray-900 mb-1">
+                  {task.lira_review_status === 'reviewing' && 'Lira is reviewing this task…'}
+                  {task.lira_review_status === 'needs_info' && 'Lira needs more information'}
+                  {task.lira_review_status === 'approved' && 'Lira has this covered'}
+                </p>
+                {task.lira_message && (
+                  <p className="text-sm text-gray-700 mb-3">{task.lira_message}</p>
+                )}
+                {task.lira_review_status === 'needs_info' &&
+                  task.lira_needs &&
+                  task.lira_needs.length > 0 && (
+                    <ul className="mb-3 space-y-1">
+                      {task.lira_needs.map((item, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-sm text-red-700">
+                          <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-red-500" />
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                {task.lira_review_status === 'needs_info' && (
+                  <p className="mb-3 text-xs text-gray-500">
+                    Edit the task description above with the missing details, then ask Lira to
+                    review again.
+                  </p>
+                )}
+                {(task.lira_review_status === 'needs_info' ||
+                  task.lira_review_status === 'reviewing') && (
+                  <button
+                    onClick={handleLiraReview}
+                    disabled={liraReviewing}
+                    className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                  >
+                    {liraReviewing ? (
+                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <BoltIcon className="h-4 w-4" />
+                    )}
+                    {liraReviewing ? 'Lira is reviewing…' : 'Ask Lira to Review Again'}
+                  </button>
+                )}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Description */}
         <section className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-gray-900">Description</h2>
           <p className="text-sm leading-relaxed text-gray-900">{task.description}</p>
-
           {task.source_quote && (
             <div className="mt-4 rounded-xl border-l-4 border-violet-500 bg-violet-50/50 py-3 pl-4">
               <p className="mb-1 text-xs font-medium text-gray-500">From meeting transcript:</p>
@@ -378,8 +458,38 @@ function TaskDetailPage() {
                       <XMarkIcon className="h-4 w-4" />
                     </button>
                   </div>
-                  {memberSuggestions.length > 0 && (
-                    <div className="absolute left-0 top-8 z-20 w-full max-h-44 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                  {(memberSuggestions.length > 0 ||
+                    !assigneeDraft.trim() ||
+                    'lira'.includes(assigneeDraft.toLowerCase())) && (
+                    <div className="absolute left-0 top-8 z-20 w-full max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                      {/* Lira — always first */}
+                      {(!assigneeDraft.trim() ||
+                        'lira'.includes(assigneeDraft.toLowerCase()) ||
+                        'lira (ai)'.includes(assigneeDraft.toLowerCase())) && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => {
+                            e.preventDefault()
+                            handleSaveAssignee('lira')
+                          }}
+                          className="flex w-full items-center gap-2 border-b border-gray-100 px-3 py-2.5 text-left text-sm hover:bg-violet-50"
+                        >
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[10px] font-bold text-white">
+                            L
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold text-violet-700">
+                              Lira (AI)
+                            </p>
+                            <p className="truncate text-xs text-gray-500">
+                              Lira will review and complete this automatically
+                            </p>
+                          </div>
+                          <span className="ml-auto shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">
+                            AI
+                          </span>
+                        </button>
+                      )}
                       {memberSuggestions.map((m) => (
                         <button
                           key={m.user_id}
@@ -411,7 +521,14 @@ function TaskDetailPage() {
                 </dd>
               ) : (
                 <dd className="flex items-center gap-1 group">
-                  {assignedMember ? (
+                  {task.assigned_to === 'lira' ? (
+                    <span className="flex items-center gap-1.5 text-sm font-semibold text-violet-700">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[9px] font-bold text-white">
+                        L
+                      </span>
+                      Lira (AI)
+                    </span>
+                  ) : assignedMember ? (
                     <Link
                       to={`/org/members/${assignedMember.user_id}`}
                       className="flex items-center gap-1 text-sm text-violet-600 hover:underline"

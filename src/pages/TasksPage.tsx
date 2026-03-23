@@ -365,8 +365,23 @@ function TaskCard({
           <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
             {TASK_TYPE_LABELS[task.task_type] ?? task.task_type}
           </span>
-          {task.assigned_to && (
+          {task.assigned_to && task.assigned_to === 'lira' ? (
+            <span className="flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-[10px] font-semibold text-violet-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-violet-500" />
+              Lira (AI)
+            </span>
+          ) : task.assigned_to ? (
             <span className="text-[11px] text-gray-400">→ {task.assigned_to}</span>
+          ) : null}
+          {task.lira_review_status === 'needs_info' && (
+            <span className="flex items-center gap-0.5 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-semibold text-red-600">
+              Lira needs info
+            </span>
+          )}
+          {task.lira_review_status === 'approved' && (
+            <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+              Lira approved
+            </span>
           )}
           {task.execution_status === 'completed' && (
             <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
@@ -513,15 +528,45 @@ function CreateTaskForm({
               <input
                 id="task-assigned-to"
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
+                value={assignedTo === 'lira' ? 'Lira (AI)' : assignedTo}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val !== 'Lira (AI)') setAssignedTo(val)
+                }}
                 onFocus={() => setShowSuggestions(true)}
-                placeholder="Search members…"
+                placeholder="Search members or assign to Lira…"
                 maxLength={100}
                 autoComplete="off"
               />
-              {showSuggestions && memberSuggestions.length > 0 && (
-                <div className="absolute left-0 top-full z-20 mt-1 w-full max-h-44 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+              {showSuggestions && (
+                <div className="absolute left-0 top-full z-20 mt-1 w-full max-h-52 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                  {/* Lira — always first */}
+                  {(!assignedTo.trim() ||
+                    'lira'.includes(assignedTo.toLowerCase()) ||
+                    'lira (ai)'.includes(assignedTo.toLowerCase())) && (
+                    <button
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setAssignedTo('lira')
+                        setShowSuggestions(false)
+                      }}
+                      className="flex w-full items-center gap-2 border-b border-gray-100 px-3 py-2.5 text-left text-sm hover:bg-violet-50"
+                    >
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 text-[10px] font-bold text-white">
+                        L
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold text-violet-700">Lira (AI)</p>
+                        <p className="truncate text-xs text-gray-500">
+                          Lira will review and complete this automatically
+                        </p>
+                      </div>
+                      <span className="ml-auto shrink-0 rounded-full bg-violet-100 px-1.5 py-0.5 text-[10px] font-medium text-violet-700">
+                        AI
+                      </span>
+                    </button>
+                  )}
                   {memberSuggestions.map((m) => (
                     <button
                       key={m.user_id}

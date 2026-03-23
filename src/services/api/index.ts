@@ -489,6 +489,10 @@ export interface TaskRecord {
   execution_result?: string
   execution_s3_key?: string
   executed_at?: string
+  // Lira autonomous review
+  lira_review_status?: 'reviewing' | 'needs_info' | 'approved'
+  lira_needs?: string[]
+  lira_message?: string
   created_at: string
   updated_at: string
 }
@@ -814,6 +818,13 @@ export async function executeTask(
 ): Promise<{ success: boolean; result: string }> {
   return apiFetch(
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/tasks/${encodeURIComponent(taskId)}/execute`,
+    { method: 'POST' }
+  )
+}
+
+export async function liraReviewTask(orgId: string, taskId: string): Promise<TaskRecord> {
+  return apiFetch(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/tasks/${encodeURIComponent(taskId)}/lira-review`,
     { method: 'POST' }
   )
 }
