@@ -185,7 +185,7 @@ function OrgSwitcher() {
 
 // ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
-  const { userName, userEmail, userPicture, userId } = useAuthStore()
+  const { userName, userEmail, userPicture } = useAuthStore()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -228,7 +228,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
           <button
             onClick={() => {
               setOpen(false)
-              if (userId) navigate(`/org/members/${userId}`)
+              navigate('/profile')
             }}
             className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
           >

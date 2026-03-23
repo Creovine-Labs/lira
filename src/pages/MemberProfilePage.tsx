@@ -149,10 +149,12 @@ function StatCard({
 type ProfileTab = 'profile' | 'tasks' | 'contributions'
 
 function MemberProfilePage() {
-  const { userId } = useParams<{ userId: string }>()
+  const { userId: paramUserId } = useParams<{ userId: string }>()
   const navigate = useNavigate()
   const { currentOrgId, organizations } = useOrgStore()
   const { userId: myUserId } = useAuthStore()
+  // When accessed via /profile (no param), default to the logged-in user
+  const userId = paramUserId ?? myUserId
   const isOwnProfile = myUserId === userId
 
   // Org selector: null = current org, 'all' = aggregate

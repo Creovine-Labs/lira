@@ -5,6 +5,7 @@ import {
   ArrowRightIcon,
   BookOpenIcon,
   BriefcaseIcon,
+  ChevronDownIcon,
   ClipboardDocumentCheckIcon,
   ClockIcon,
   ExclamationCircleIcon,
@@ -13,7 +14,7 @@ import {
   RadioIcon,
   VideoCameraIcon,
 } from '@heroicons/react/24/outline'
-import { useAuthStore, useBotStore, useOrgStore, useUserPrefsStore } from '@/app/store'
+import { useAuthStore, useBotStore, useOrgStore, useKBStore, useDocumentStore, useInterviewStore, useTaskStore, useUserPrefsStore } from '@/app/store'
 import {
   deployBot,
   getBotStatus,
@@ -344,6 +345,94 @@ function ActivityPanel({
           </div>
         )}
       </div>
+    </div>
+  )
+}
+
+// ── Dashboard inline org switcher ───────────────────────────────────────────
+function DashboardOrgSwitcher() {
+  const navigate = useNavigate()
+  const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
+  const clearKB = useKBStore((s) => s.clear)
+  const clearDocuments = useDocumentStore((s) => s.clear)
+  const clearInterviews = useInterviewStore((s) => s.clear)
+  const clearTasks = useTaskStore((s) => s.clear)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', outside)
+    return () => document.removeEventListener('mousedown', outside)
+  }, [])
+
+  if (!currentOrg) return null
+
+  return (
+    <div className="relative mt-0.5" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-md border border-gray-400/60 px-2 py-0.5 text-sm text-gray-400 transition hover:border-gray-500 hover:text-gray-500"
+      >
+        <span className="max-w-[180px] truncate">{currentOrg.name}</span>
+        <ChevronDownIcon
+          className={cn('h-3 w-3 shrink-0 transition-transform duration-200', open && 'rotate-180')}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+          {organizations.length > 0 && (
+            <>
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                Your organizations
+              </p>
+              {organizations.map((org) => (
+                <button
+                  key={org.org_id}
+                  onClick={() => {
+                    if (org.org_id !== currentOrgId) {
+                      clearKB()
+                      clearDocuments()
+                      clearInterviews()
+                      clearTasks()
+                    }
+                    setCurrentOrg(org.org_id)
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
+                    org.org_id === currentOrgId ? 'font-semibold text-violet-700' : 'text-gray-700'
+                  )}
+                >
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
+                    {org.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="truncate">{org.name}</span>
+                  {org.org_id === currentOrgId && (
+                    <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                  )}
+                </button>
+              ))}
+              <div className="my-1 border-t border-gray-100" />
+            </>
+          )}
+          <button
+            onClick={() => {
+              setOpen(false)
+              navigate('/onboarding')
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
+          >
+            <PlusIcon className="h-4 w-4 text-gray-400" />
+            New organization
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -710,7 +799,7 @@ function DeployHeroBar() {
 function DashboardPage() {
   const navigate = useNavigate()
   const { token, userName } = useAuthStore()
-  const { currentOrgId, organizations } = useOrgStore()
+  const { currentOrgId } = useOrgStore()
   const lastTerminatedAt = useBotStore((s) => s.lastTerminatedAt)
 
   const [meetings, setMeetings] = useState<Meeting[]>([])
@@ -718,8 +807,6 @@ function DashboardPage() {
   const [interviews, setInterviews] = useState<Interview[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
-
-  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
 
   const greeting = (() => {
     const h = new Date().getHours()
@@ -846,7 +933,7 @@ function DashboardPage() {
               {greeting}
               {firstName ? `, ${firstName}` : ''}
             </h1>
-            {currentOrg && <p className="mt-0.5 text-sm text-gray-400">{currentOrg.name}</p>}
+            <DashboardOrgSwitcher />
           </div>
         </div>
 

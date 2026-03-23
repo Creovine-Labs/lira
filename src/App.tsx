@@ -78,6 +78,7 @@ function App() {
 
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>
+          <Route path="/profile" element={<MemberProfilePage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/meeting" element={<MeetingPage />} />
           <Route path="/meetings" element={<MeetingsPage />} />
