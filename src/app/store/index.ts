@@ -17,7 +17,13 @@ interface AuthSlice {
   userEmail: string | null
   userName: string | null
   userPicture: string | null
-  setCredentials: (token: string, email?: string, name?: string, picture?: string, id?: string) => void
+  setCredentials: (
+    token: string,
+    email?: string,
+    name?: string,
+    picture?: string,
+    id?: string
+  ) => void
   clearCredentials: () => void
 }
 
@@ -170,7 +176,11 @@ export const useBotStore = create<BotSlice>()((set) => ({
       deployedAt: new Date().toISOString(),
     }),
   setBotState: (state) =>
-    set({ botState: state, error: null, ...(state === 'terminated' ? { lastTerminatedAt: Date.now() } : {}) }),
+    set({
+      botState: state,
+      error: null,
+      ...(state === 'terminated' ? { lastTerminatedAt: Date.now() } : {}),
+    }),
   setBotError: (error) => set({ botState: 'error', error }),
   clearBot: () =>
     set({
@@ -361,6 +371,7 @@ export interface NotifEntry {
   kind: 'task' | 'meeting_ended' | 'interview'
   title: string
   subtitle?: string
+  orgId?: string
   link: string
   createdAt: number
 }

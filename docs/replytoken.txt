@@ -1,0 +1,2 @@
+apple@apples-MacBook-Pro lira_ai % openssl rand -base64 32
+NpgyAfnP+ndAg0Zh6XCTIs46hv2B5PZzFwZCtfs64Lw

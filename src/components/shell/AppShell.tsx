@@ -14,6 +14,7 @@ import {
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
   DocumentTextIcon,
+  EnvelopeIcon,
   MicrophoneIcon,
   PlusIcon,
   Squares2X2Icon,
@@ -45,13 +46,34 @@ function NavBadge({ count }: { count: number }) {
   )
 }
 
+// Task-specific 2-dot badge: red dot = pending, yellow dot = in_progress
+function TaskNavBadge({ pending, inProgress }: { pending: number; inProgress: number }) {
+  if (pending === 0 && inProgress === 0) return null
+  return (
+    <span className="ml-auto flex items-center gap-1">
+      {pending > 0 && (
+        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+          {pending > 9 ? '9+' : pending}
+        </span>
+      )}
+      {inProgress > 0 && (
+        <span className="flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-400 px-1 text-[9px] font-bold text-white">
+          {inProgress > 9 ? '9+' : inProgress}
+        </span>
+      )}
+    </span>
+  )
+}
+
 // ── useSidebarBadges — derive per-section unread counts ───────────────────────
 function useSidebarBadges() {
-  const { entries, readTaskNotifIds, meetingSeenAt, interviewSeenAt } = useNotifStore()
-  // Task badge: unread = task entries NOT individually marked read via detail view
-  const taskBadge = entries.filter(
-    (e) => e.kind === 'task' && !readTaskNotifIds.includes(e.id)
-  ).length
+  const { entries, meetingSeenAt, interviewSeenAt } = useNotifStore()
+  const { tasks } = useTaskStore()
+
+  // Task status counts for the tri-color badge
+  const taskPending = tasks.filter((t) => t.status === 'pending').length
+  const taskInProgress = tasks.filter((t) => t.status === 'in_progress').length
+
   const meetingBadge = entries.filter(
     (e) => e.kind === 'meeting_ended' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt)
   ).length
@@ -59,10 +81,13 @@ function useSidebarBadges() {
     (e) => e.kind === 'interview' && (interviewSeenAt === 0 || e.createdAt > interviewSeenAt)
   ).length
   return {
-    '/org/tasks': taskBadge,
-    '/meetings': meetingBadge,
-    '/org/roles': interviewBadge,
-  } as Record<string, number>
+    badges: {
+      '/meetings': meetingBadge,
+      '/org/roles': interviewBadge,
+    } as Record<string, number>,
+    taskPending,
+    taskInProgress,
+  }
 }
 
 // ── Sidebar nav structure ─────────────────────────────────────────────────────
@@ -84,6 +109,7 @@ const NAV = [
       { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
       { to: '/org/documents', icon: DocumentTextIcon, label: 'Documents' },
       { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
+      { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
     ],
   },
   {
@@ -132,6 +158,94 @@ function OrgSwitcher() {
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+          {organizations.length > 0 && (
+            <>
+              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                Your organizations
+              </p>
+              {organizations.map((org) => (
+                <button
+                  key={org.org_id}
+                  onClick={() => {
+                    if (org.org_id !== currentOrgId) {
+                      clearKB()
+                      clearDocuments()
+                      clearInterviews()
+                      clearTasks()
+                    }
+                    setCurrentOrg(org.org_id)
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
+                    org.org_id === currentOrgId ? 'font-semibold text-violet-700' : 'text-gray-700'
+                  )}
+                >
+                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
+                    {org.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="truncate">{org.name}</span>
+                  {org.org_id === currentOrgId && (
+                    <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                  )}
+                </button>
+              ))}
+              <div className="my-1 border-t border-gray-100" />
+            </>
+          )}
+          <button
+            onClick={() => {
+              setOpen(false)
+              navigate('/onboarding')
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
+          >
+            <PlusIcon className="h-4 w-4 text-gray-400" />
+            New organization
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Topbar org switcher — always-visible clickable org pill in the header ────
+function TopbarOrgSwitcher() {
+  const navigate = useNavigate()
+  const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
+  const clearKB = useKBStore((s) => s.clear)
+  const clearDocuments = useDocumentStore((s) => s.clear)
+  const clearInterviews = useInterviewStore((s) => s.clear)
+  const clearTasks = useTaskStore((s) => s.clear)
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', outside)
+    return () => document.removeEventListener('mousedown', outside)
+  }, [])
+
+  if (!currentOrg) return null
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="flex items-center gap-1.5 rounded-md border border-gray-400/60 px-2 py-0.5 text-sm text-gray-400 transition hover:border-gray-500 hover:text-gray-500"
+      >
+        <span className="max-w-[140px] truncate sm:max-w-[200px]">{currentOrg.name}</span>
+        <ChevronDownIcon
+          className={cn('h-3 w-3 shrink-0 transition-transform duration-200', open && 'rotate-180')}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
           {organizations.length > 0 && (
             <>
               <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
@@ -256,7 +370,11 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
 function NotificationBell() {
   const navigate = useNavigate()
   const { token, userEmail, userName } = useAuthStore()
-  const { currentOrgId } = useOrgStore()
+  const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
+  const clearKB = useKBStore((s) => s.clear)
+  const clearDocuments = useDocumentStore((s) => s.clear)
+  const clearInterviews = useInterviewStore((s) => s.clear)
+  const clearTasks = useTaskStore((s) => s.clear)
   const lastTerminatedAt = useBotStore((s) => s.lastTerminatedAt)
   const { entries, addNotif, removeNotif, readTaskNotifIds, meetingSeenAt, markMeetingsSeen } =
     useNotifStore()
@@ -278,6 +396,7 @@ function NotificationBell() {
                 kind: 'task',
                 title: n.task_title,
                 subtitle: `Assigned to you by ${n.assigned_by}`,
+                orgId: n.org_id,
                 link: `/org/tasks/${n.task_id}`,
               })
             )
@@ -298,6 +417,7 @@ function NotificationBell() {
                 kind: 'task',
                 title: t.title,
                 subtitle: t.session_id ? 'Assigned to you · from meeting' : 'Assigned to you',
+                orgId: currentOrgId ?? undefined,
                 link: `/org/tasks/${t.task_id}`,
               })
             )
@@ -319,9 +439,10 @@ function NotificationBell() {
       kind: 'meeting_ended',
       title: 'Meeting just ended',
       subtitle: 'Review the transcript and generate a summary',
+      orgId: currentOrgId ?? undefined,
       link: '/meetings',
     })
-  }, [lastTerminatedAt, addNotif])
+  }, [lastTerminatedAt, addNotif, currentOrgId])
 
   // ── Outside click ──
   useEffect(() => {
@@ -387,6 +508,13 @@ function NotificationBell() {
                     <button
                       onClick={() => {
                         setOpen(false)
+                        if (entry.orgId && entry.orgId !== currentOrgId) {
+                          clearKB()
+                          clearDocuments()
+                          clearInterviews()
+                          clearTasks()
+                          setCurrentOrg(entry.orgId)
+                        }
                         navigate(entry.link)
                       }}
                       className="flex flex-1 items-start gap-3 text-left transition hover:opacity-75"
@@ -397,6 +525,18 @@ function NotificationBell() {
                         {entry.subtitle && (
                           <p className="mt-0.5 text-xs text-gray-400">{entry.subtitle}</p>
                         )}
+                        {entry.orgId &&
+                          (() => {
+                            const orgName = organizations.find(
+                              (o) => o.org_id === entry.orgId
+                            )?.name
+                            return orgName ? (
+                              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-600">
+                                <BuildingOffice2Icon className="h-2.5 w-2.5 shrink-0" />
+                                {orgName}
+                              </span>
+                            ) : null
+                          })()}
                       </div>
                     </button>
                     <button
@@ -454,7 +594,7 @@ function AppShell() {
       .finally(() => setOrgLoading(false))
   }, [token, setOrganizations])
 
-  const badges = useSidebarBadges()
+  const { badges, taskPending, taskInProgress } = useSidebarBadges()
   const { markMeetingsSeen, markInterviewsSeen } = useNotifStore()
   const location = useLocation()
 
@@ -564,7 +704,11 @@ function AppShell() {
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         {label}
-                        <NavBadge count={badges[to] ?? 0} />
+                        {to === '/org/tasks' ? (
+                          <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                        ) : (
+                          <NavBadge count={badges[to] ?? 0} />
+                        )}
                       </NavLink>
                     ))}
                   </div>
@@ -655,7 +799,12 @@ function AppShell() {
                   >
                     <Icon className="h-4 w-4 shrink-0" />
                     {!sidebarCollapsed && label}
-                    {!sidebarCollapsed && <NavBadge count={badges[to] ?? 0} />}
+                    {!sidebarCollapsed &&
+                      (to === '/org/tasks' ? (
+                        <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                      ) : (
+                        <NavBadge count={badges[to] ?? 0} />
+                      ))}
                   </NavLink>
                 ))}
               </div>
@@ -690,8 +839,8 @@ function AppShell() {
       {/* ── Right side: topbar + content ── */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="flex h-14 shrink-0 items-center justify-between bg-[#ebebeb] px-4 sm:px-6">
-          {/* Left — hamburger on mobile, empty on desktop */}
+        <header className="flex h-14 shrink-0 items-center gap-2 bg-[#ebebeb] px-4 sm:px-6">
+          {/* Left — hamburger on mobile */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(true)}
@@ -702,6 +851,11 @@ function AppShell() {
             <NavLink to="/dashboard" className="md:hidden">
               <LiraLogo size="sm" />
             </NavLink>
+          </div>
+
+          {/* Center — persistent org switcher (always visible) */}
+          <div className="flex flex-1 items-center">
+            <TopbarOrgSwitcher />
           </div>
 
           {/* Right — notifications + user */}

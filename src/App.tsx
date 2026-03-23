@@ -21,6 +21,7 @@ import {
   DocumentsPage,
   TasksPage,
   OrgTaskDetailPage,
+  OrgEmailPage,
   WebhooksPage,
   InterviewsPage,
   InterviewRolePage,
@@ -93,6 +94,7 @@ function App() {
             <Route path="tasks/:taskId" element={<OrgTaskDetailPage />} />
             <Route path="members" element={<OrgMembersPage />} />
             <Route path="members/:userId" element={<MemberProfilePage />} />
+            <Route path="email" element={<OrgEmailPage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
             <Route path="roles" element={<InterviewsPage />} />
             <Route path="roles/new" element={<InterviewCreatePage />} />

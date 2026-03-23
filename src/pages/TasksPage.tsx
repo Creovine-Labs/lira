@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowPathIcon,
@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { useOrgStore, useTaskStore } from '@/app/store'
 import {
   listTasks,
+  listOrgMembers,
   createTask,
   updateTask,
   deleteTask,
@@ -24,6 +25,7 @@ import {
   type TaskPriority,
   type TaskType,
   type CreateTaskInput,
+  type OrgMembership,
 } from '@/services/api'
 import { cn } from '@/lib'
 
@@ -34,6 +36,30 @@ const STATUS_TABS: { value: TaskStatus | 'all'; label: string; icon: React.Eleme
   { value: 'completed', label: 'Completed', icon: CheckCircleIcon },
   { value: 'cancelled', label: 'Cancelled', icon: XCircleIcon },
 ]
+
+// Status colors: red = pending, yellow = in_progress, green = completed
+const STATUS_COLORS: Record<TaskStatus, { dot: string; badge: string; text: string }> = {
+  pending: {
+    dot: 'bg-red-500',
+    badge: 'bg-red-100 text-red-600 border border-red-200',
+    text: 'text-red-600',
+  },
+  in_progress: {
+    dot: 'bg-amber-400',
+    badge: 'bg-amber-100 text-amber-700 border border-amber-200',
+    text: 'text-amber-700',
+  },
+  completed: {
+    dot: 'bg-emerald-500',
+    badge: 'bg-emerald-50 text-emerald-600 border border-emerald-200',
+    text: 'text-emerald-600',
+  },
+  cancelled: {
+    dot: 'bg-slate-400',
+    badge: 'bg-slate-100 text-slate-500 border border-slate-200',
+    text: 'text-slate-500',
+  },
+}
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   low: 'text-slate-500 bg-slate-100 dark:bg-slate-800',
@@ -173,31 +199,37 @@ function TasksPage() {
         {/* Status tabs */}
         <div className="mb-4 overflow-x-auto pb-0.5">
           <div className="flex gap-1 rounded-2xl border border-white/60 bg-white p-1 shadow-sm min-w-max">
-            {STATUS_TABS.map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => setStatusFilter(value === 'all' ? null : value)}
-                className={cn(
-                  'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition',
-                  (statusFilter ?? 'all') === value
-                    ? 'bg-[#0f0f0f] text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-700'
-                )}
-              >
-                <Icon className="h-3.5 w-3.5" />
-                {label}
-                <span
+            {STATUS_TABS.map(({ value, label, icon: Icon }) => {
+              const isActive = (statusFilter ?? 'all') === value
+              const statusColor = value !== 'all' ? STATUS_COLORS[value as TaskStatus] : null
+              return (
+                <button
+                  key={value}
+                  onClick={() => setStatusFilter(value === 'all' ? null : value)}
                   className={cn(
-                    'ml-0.5 rounded-full px-1.5 text-[10px]',
-                    (statusFilter ?? 'all') === value
-                      ? 'bg-white/20 text-white'
-                      : 'bg-gray-100 text-gray-500'
+                    'flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium transition',
+                    isActive
+                      ? 'bg-[#0f0f0f] text-white shadow-sm'
+                      : 'text-gray-500 hover:text-gray-700'
                   )}
                 >
-                  {counts[value]}
-                </span>
-              </button>
-            ))}
+                  {statusColor && !isActive ? (
+                    <span className={cn('h-2 w-2 rounded-full', statusColor.dot)} />
+                  ) : (
+                    <Icon className="h-3.5 w-3.5" />
+                  )}
+                  {label}
+                  <span
+                    className={cn(
+                      'ml-0.5 rounded-full px-1.5 text-[10px]',
+                      isActive ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    )}
+                  >
+                    {counts[value]}
+                  </span>
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -268,31 +300,58 @@ function TaskCard({
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
       className="group/card flex cursor-pointer items-start gap-4 rounded-2xl border border-white/60 bg-white px-5 py-4 shadow-sm transition hover:shadow-md hover:border-[#3730a3]/20"
     >
-      {/* Status checkbox */}
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          onStatusChange(task.status === 'completed' ? 'pending' : 'completed')
-        }}
-        className={cn(
-          'mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition',
-          task.status === 'completed'
-            ? 'border-emerald-500 bg-emerald-500 text-white'
-            : 'border-gray-300 hover:border-[#3730a3]'
-        )}
-      >
-        {task.status === 'completed' && <CheckCircleIcon className="h-3 w-3" />}
-      </button>
-
-      <div className="min-w-0 flex-1">
-        <p
+      {/* Status dot */}
+      <div className="mt-1.5 flex shrink-0 flex-col items-center gap-1">
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            onStatusChange(task.status === 'completed' ? 'pending' : 'completed')
+          }}
           className={cn(
-            'text-sm font-semibold',
-            task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'
+            'flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition',
+            task.status === 'completed'
+              ? 'border-emerald-500 bg-emerald-500 text-white'
+              : task.status === 'in_progress'
+                ? 'border-amber-400 hover:border-amber-500'
+                : 'border-red-300 hover:border-red-500'
           )}
         >
-          {task.title}
-        </p>
+          {task.status === 'completed' && <CheckCircleIcon className="h-3 w-3" />}
+        </button>
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start gap-2">
+          <p
+            className={cn(
+              'text-sm font-semibold',
+              task.status === 'completed' ? 'text-gray-400 line-through' : 'text-gray-900'
+            )}
+          >
+            {task.title}
+          </p>
+          {/* Colored status badge */}
+          <span
+            className={cn(
+              'ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+              STATUS_COLORS[task.status].badge
+            )}
+          >
+            <span
+              className={cn(
+                'mr-1 inline-block h-1.5 w-1.5 rounded-full align-middle',
+                STATUS_COLORS[task.status].dot
+              )}
+            />
+            {task.status === 'pending'
+              ? 'Pending'
+              : task.status === 'in_progress'
+                ? 'In Progress'
+                : task.status === 'completed'
+                  ? 'Completed'
+                  : 'Cancelled'}
+          </span>
+        </div>
         <p className="mt-0.5 text-xs text-gray-400 line-clamp-1">{task.description}</p>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <span
@@ -361,6 +420,31 @@ function CreateTaskForm({
   const [taskType, setTaskType] = useState<TaskType>('action_item')
   const [dueDate, setDueDate] = useState('')
   const [creating, setCreating] = useState(false)
+  const [orgMembers, setOrgMembers] = useState<OrgMembership[]>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const assigneeRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    listOrgMembers(orgId)
+      .then(setOrgMembers)
+      .catch(() => {})
+  }, [orgId])
+
+  useEffect(() => {
+    function outside(e: MouseEvent) {
+      if (assigneeRef.current && !assigneeRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+    document.addEventListener('mousedown', outside)
+    return () => document.removeEventListener('mousedown', outside)
+  }, [])
+
+  const memberSuggestions = orgMembers.filter((m) => {
+    if (!assignedTo.trim()) return true
+    const q = assignedTo.toLowerCase()
+    return (m.name ?? '').toLowerCase().includes(q) || (m.email ?? '').toLowerCase().includes(q)
+  })
 
   async function handleSubmit() {
     if (!title.trim() || !description.trim()) return
@@ -425,14 +509,49 @@ function CreateTaskForm({
             >
               Assigned To
             </label>
-            <input
-              id="task-assigned-to"
-              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
-              value={assignedTo}
-              onChange={(e) => setAssignedTo(e.target.value)}
-              placeholder="Person name"
-              maxLength={100}
-            />
+            <div ref={assigneeRef} className="relative">
+              <input
+                id="task-assigned-to"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:bg-white focus:ring-2 focus:ring-[#3730a3]/20"
+                value={assignedTo}
+                onChange={(e) => setAssignedTo(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                placeholder="Search members…"
+                maxLength={100}
+                autoComplete="off"
+              />
+              {showSuggestions && memberSuggestions.length > 0 && (
+                <div className="absolute left-0 top-full z-20 mt-1 w-full max-h-44 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+                  {memberSuggestions.map((m) => (
+                    <button
+                      key={m.user_id}
+                      type="button"
+                      onMouseDown={(e) => {
+                        e.preventDefault()
+                        setAssignedTo(m.name ?? m.email ?? '')
+                        setShowSuggestions(false)
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm hover:bg-gray-50"
+                    >
+                      <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-100 text-[10px] font-bold text-violet-700">
+                        {(m.name ?? m.email ?? '?')[0].toUpperCase()}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">
+                          {m.name ?? m.email}
+                        </p>
+                        {m.name && m.email && (
+                          <p className="truncate text-xs text-gray-500">{m.email}</p>
+                        )}
+                      </div>
+                      <span className="ml-auto shrink-0 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] capitalize text-slate-600">
+                        {m.role}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
           <div>
             <label

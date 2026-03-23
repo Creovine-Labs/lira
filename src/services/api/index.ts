@@ -271,7 +271,14 @@ export interface DeployBotResponse {
   display_name: string
 }
 
-export type MeetingType = 'meeting' | 'interview' | 'standup' | 'one_on_one' | 'technical' | 'brainstorming' | 'sales'
+export type MeetingType =
+  | 'meeting'
+  | 'interview'
+  | 'standup'
+  | 'one_on_one'
+  | 'technical'
+  | 'brainstorming'
+  | 'sales'
 
 /** Deploy a bot to a Google Meet / Zoom meeting */
 export async function deployBot(
@@ -468,12 +475,16 @@ export interface TaskRecord {
   title: string
   description: string
   assigned_to?: string
+  assignee_user_id?: string
+  assignee_email?: string
   priority: TaskPriority
   task_type: TaskType
   status: TaskStatus
   source_quote?: string
   due_date?: string
   created_by: string
+  email_execution_enabled?: boolean
+  missing_fields?: string[]
   execution_status: TaskExecutionStatus
   execution_result?: string
   execution_s3_key?: string
@@ -552,12 +563,21 @@ export async function listOrgMembers(orgId: string): Promise<OrgMembership[]> {
   return data.members ?? []
 }
 
-export async function getMe(): Promise<{ id: string; name: string | null; email: string | null; picture: string | null }> {
+export async function getMe(): Promise<{
+  id: string
+  name: string | null
+  email: string | null
+  picture: string | null
+}> {
   return apiFetch('/lira/v1/me')
 }
 
 export async function updateMyPicture(picture: string): Promise<void> {
-  await apiFetch('/lira/v1/me/picture', { method: 'PUT', body: JSON.stringify({ picture }), headers: { 'Content-Type': 'application/json' } })
+  await apiFetch('/lira/v1/me/picture', {
+    method: 'PUT',
+    body: JSON.stringify({ picture }),
+    headers: { 'Content-Type': 'application/json' },
+  })
 }
 
 export async function updateMemberRole(
@@ -763,7 +783,17 @@ export async function updateTask(
   orgId: string,
   taskId: string,
   updates: Partial<
-    Pick<TaskRecord, 'status' | 'assigned_to' | 'priority' | 'title' | 'description' | 'due_date'>
+    Pick<
+      TaskRecord,
+      | 'status'
+      | 'assigned_to'
+      | 'assignee_email'
+      | 'priority'
+      | 'title'
+      | 'description'
+      | 'due_date'
+      | 'email_execution_enabled'
+    >
   >
 ): Promise<TaskRecord> {
   return apiFetch(
@@ -839,7 +869,7 @@ export interface UserBackendNotif {
 
 export async function listMyNotifications(): Promise<UserBackendNotif[]> {
   const data = await apiFetch<{ notifications: UserBackendNotif[]; count: number }>(
-    '/lira/v1/me/notifications',
+    '/lira/v1/me/notifications'
   )
   return data.notifications ?? []
 }
@@ -870,10 +900,10 @@ export interface MemberContributionsResponse {
 
 export async function getMemberContributions(
   orgId: string,
-  userId: string,
+  userId: string
 ): Promise<MemberContributionsResponse> {
   return apiFetch(
-    `/lira/v1/orgs/${encodeURIComponent(orgId)}/members/${encodeURIComponent(userId)}/contributions`,
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/members/${encodeURIComponent(userId)}/contributions`
   )
 }
 
@@ -1315,4 +1345,64 @@ export async function generateInterviewQuestions(
     { method: 'POST', body: JSON.stringify(input) }
   )
   return data.questions ?? []
+}
+
+// ── Email config ──────────────────────────────────────────────────────────────
+
+export interface OrgEmailConfig {
+  org_id: string
+  mode: 'platform' | 'custom'
+  custom_domain?: string
+  domain_verified: boolean
+  from_name?: string
+  email_notifications_enabled: boolean
+  notify_on: string[]
+  dns_records?: EmailDnsRecord[]
+  updated_at: string
+}
+
+export type EmailNotifyEvent = 'task_created' | 'task_completed' | 'meeting_ended' | 'summary_ready'
+
+export async function getEmailConfig(orgId: string): Promise<OrgEmailConfig> {
+  return apiFetch<OrgEmailConfig>(`/lira/v1/email/config?orgId=${encodeURIComponent(orgId)}`)
+}
+
+export async function updateEmailConfig(
+  orgId: string,
+  updates: {
+    from_name?: string
+    email_notifications_enabled?: boolean
+    notify_on?: string[]
+  }
+): Promise<OrgEmailConfig> {
+  return apiFetch<OrgEmailConfig>(`/lira/v1/email/config?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    body: JSON.stringify(updates),
+  })
+}
+
+export interface EmailDnsRecord {
+  type: string
+  name: string
+  value: string
+  ttl?: string
+  priority?: number
+}
+
+export async function registerEmailDomain(
+  orgId: string,
+  domain: string
+): Promise<{ resendDomainId: string; dnsRecords: EmailDnsRecord[] }> {
+  return apiFetch<{ resendDomainId: string; dnsRecords: EmailDnsRecord[] }>(
+    `/lira/v1/email/domain?orgId=${encodeURIComponent(orgId)}`,
+    { method: 'POST', body: JSON.stringify({ domain }) }
+  )
+}
+
+export async function checkEmailDomainStatus(
+  orgId: string
+): Promise<{ status: string; verified: boolean }> {
+  return apiFetch<{ status: string; verified: boolean }>(
+    `/lira/v1/email/domain/status?orgId=${encodeURIComponent(orgId)}`
+  )
 }
