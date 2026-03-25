@@ -1296,672 +1296,138 @@ function MidCTA() {
 const FLOW_DEMO_STYLES = `
   @keyframes flowFadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
   @keyframes flowSlideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-  @keyframes flowRipple{0%{transform:scale(0);opacity:.45}100%{transform:scale(2.8);opacity:0}}
-  @keyframes flowCheck{from{stroke-dashoffset:20}to{stroke-dashoffset:0}}
   @keyframes flowPulseGreen{0%,100%{box-shadow:0 0 0 0 rgba(74,222,128,.5)}50%{box-shadow:0 0 0 6px rgba(74,222,128,0)}}
-  @keyframes flowTypeWidth{from{width:0}to{width:100%}}
   @keyframes flowProgressBar{from{width:0%}to{width:100%}}
+  @keyframes flowGlow{0%,100%{box-shadow:0 0 0 0 rgba(55,48,163,.3)}50%{box-shadow:0 0 0 8px rgba(55,48,163,0)}}
+  @keyframes flowPulseAmber{0%,100%{opacity:.6}50%{opacity:1}}
+  @keyframes flowTypeCursor{0%,100%{border-color:transparent}50%{border-color:#3730a3}}
   .flow-fade{animation:flowFadeIn .35s ease-out both}
   .flow-slide{animation:flowSlideUp .4s ease-out both}
-  .flow-check{animation:flowCheck .5s ease-out .15s both;stroke-dasharray:20;stroke-dashoffset:20}
   .flow-pulse-green{animation:flowPulseGreen 1.3s ease-in-out infinite}
+  .flow-glow{animation:flowGlow 1.3s ease-in-out infinite}
+  .flow-pulse-amber{animation:flowPulseAmber 1s ease-in-out infinite}
+  .flow-type-cursor{border-right:2px solid;animation:flowTypeCursor .8s step-end infinite}
 `
 
 type FlowTab = 'meetings' | 'interviews' | 'tasks' | 'integrations'
 
-const FLOW_TABS: { id: FlowTab; label: string }[] = [
-  { id: 'meetings', label: 'Meetings' },
-  { id: 'interviews', label: 'Interviews' },
-  { id: 'tasks', label: 'Tasks' },
-  { id: 'integrations', label: 'Integrations' },
+const FLOW_NAV: { id: FlowTab; label: string; desc: string }[] = [
+  { id: 'meetings', label: 'Meetings', desc: 'Send Lira to any meeting' },
+  { id: 'interviews', label: 'Interviews', desc: 'AI-powered first rounds' },
+  { id: 'tasks', label: 'Tasks', desc: 'Automated follow-through' },
+  { id: 'integrations', label: 'Integrations', desc: 'Connect your tools' },
 ]
 
-const FLOW_STEP_LABELS: Record<FlowTab, string[]> = {
-  meetings: [
-    'Paste your meeting link',
-    'Invite Lira to join',
-    'Lira joins the meeting',
-    'Remove Lira when done',
-    'Lira has left the meeting',
-  ],
-  interviews: [
-    'Create an interview role',
-    'Configure role details',
-    'Role added to dashboard',
-    'Review generated questions',
-    'Start the AI interview',
-  ],
-  tasks: [
-    'Create a new task',
-    'Assign Lira to follow up',
-    'Task is being tracked',
-    'Task completed automatically',
-  ],
-  integrations: [
-    'Browse available integrations',
-    'Connect Linear',
-    'Connect Slack',
-    'Lira syncs across platforms',
-  ],
-}
-
 const FLOW_DURATIONS: Record<FlowTab, number[]> = {
-  meetings: [2800, 2500, 3200, 2500, 3000],
-  interviews: [2800, 3000, 2800, 3000, 3200],
-  tasks: [2800, 2800, 3000, 3500],
-  integrations: [2800, 2800, 2800, 3500],
+  meetings: [3500, 3500, 3500],
+  interviews: [3500, 3500, 3500],
+  tasks: [3500, 3500, 3500],
+  integrations: [3500, 3500, 3500],
 }
 
-// Cursor positions [x%, y%] per step per tab
-const CURSOR_POS: Record<FlowTab, [number, number][]> = {
-  meetings: [
-    [54, 40],
-    [54, 55],
-    [50, 50],
-    [68, 82],
-    [50, 50],
-  ],
-  interviews: [
-    [82, 18],
-    [55, 52],
-    [40, 52],
-    [62, 58],
-    [72, 82],
-  ],
-  tasks: [
-    [82, 18],
-    [58, 52],
-    [45, 55],
-    [45, 50],
-  ],
-  integrations: [
-    [35, 50],
-    [27, 68],
-    [60, 68],
-    [50, 50],
-  ],
-}
-
-function FlowCursor({ x, y, clicking }: { x: number; y: number; clicking: boolean }) {
-  return (
-    <div
-      className="absolute z-30 pointer-events-none"
-      style={{
-        left: `${x}%`,
-        top: `${y}%`,
-        transition: 'left 0.75s cubic-bezier(0.4,0,0.2,1), top 0.75s cubic-bezier(0.4,0,0.2,1)',
-      }}
-    >
-      <svg
-        width="20"
-        height="24"
-        viewBox="0 0 20 24"
-        fill="none"
-        className="drop-shadow-md relative z-10"
-      >
-        <path
-          d="M2 1L2 18.5L6.8 13.7L11 21.5L14 20L9.8 12.2L16 12.2L2 1Z"
-          fill="#111"
-          stroke="white"
-          strokeWidth="1.5"
-          strokeLinejoin="round"
-        />
-      </svg>
-      {clicking && (
-        <div
-          className="absolute top-0 left-0 w-5 h-5 rounded-full bg-violet-400/40 -translate-x-1/2 -translate-y-1/2"
-          style={{ animation: 'flowRipple .45s ease-out forwards' }}
-        />
-      )}
-    </div>
-  )
-}
-
-/* ── Meetings flow ── */
+/* ── Meetings Flow ── */
 function MeetingsFlow({ step }: { step: number }) {
   return (
-    <div className="flex items-center justify-center" style={{ minHeight: 340 }}>
-      <div className="w-full max-w-md">
-        {/* Steps 0-1: Meeting link input */}
-        {step <= 1 && (
-          <div key="link" className="flow-fade space-y-5">
-            <div className="flex items-center gap-2.5 mb-1">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                <VideoCameraIcon className="w-4 h-4 text-violet-600" />
-              </div>
-              <span className="text-sm font-bold text-gray-800">Meeting Room</span>
-            </div>
+    <div className="space-y-4 flow-fade" key={step}>
+      {/* Step 0: Paste link + deploy */}
+      {step === 0 && (
+        <div className="space-y-5">
+          {/* Dark deploy card — matches actual dashboard */}
+          <div className="rounded-2xl bg-[#0f0f0f] p-6">
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+              Meeting
+            </p>
+            <h3 className="mb-5 text-lg font-bold text-white">Invite Lira to a meeting</h3>
 
-            <div>
-              <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">
-                Meeting Link
-              </span>
-              <div
-                className={`flex items-center rounded-xl border-2 px-4 py-3 transition-all duration-500 ${
-                  step >= 1
-                    ? 'border-violet-300 bg-white ring-4 ring-violet-50'
-                    : 'border-gray-200 bg-gray-50'
-                }`}
-              >
+            {/* Meeting type chips */}
+            <div className="mb-4 flex flex-wrap gap-2">
+              {['General', 'Stand-up', '1:1', 'Technical'].map((t, i) => (
                 <span
-                  className={`text-sm transition-colors duration-500 ${step >= 1 ? 'text-gray-800' : 'text-gray-300'}`}
+                  key={t}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold ${i === 0 ? 'bg-[#3730a3] text-white shadow-sm shadow-[#3730a3]/40' : 'bg-white/10 text-white/50'}`}
                 >
-                  {step >= 1
-                    ? 'https://meet.google.com/abc-defg-hij'
-                    : 'Paste your meeting link here…'}
+                  {t}
                 </span>
-              </div>
+              ))}
             </div>
 
-            <button
-              className={`w-full py-3 rounded-xl text-sm font-semibold transition-all duration-500 flex items-center justify-center gap-2 ${
-                step >= 1
-                  ? 'bg-gray-900 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-400 cursor-default'
-              }`}
-            >
+            {/* Link input */}
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
+                  <VideoCameraIcon className="h-4 w-4 text-white/25" />
+                </div>
+                <div className="w-full rounded-xl border border-white/10 bg-white/10 py-3 pl-10 pr-16 text-sm text-white">
+                  <span className="flow-type-cursor text-white/90">
+                    https://meet.google.com/abc-defg-hij
+                  </span>
+                </div>
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-emerald-400">
+                    Meet
+                  </span>
+                </div>
+              </div>
+              <button className="flex shrink-0 items-center gap-2 rounded-xl bg-[#3730a3] px-5 py-3 text-sm font-semibold text-white flow-glow">
+                Add Lira
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 1: Lira is in the meeting */}
+      {step === 1 && (
+        <div className="space-y-5">
+          <div className="rounded-2xl bg-[#0f0f0f] p-6">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
+                  <div className="h-3 w-3 rounded-full bg-emerald-400 animate-pulse" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-emerald-400">Lira is in the meeting</p>
+                  <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/40">
+                    <VideoCameraIcon className="h-3 w-3" />
+                    Google Meet
+                  </p>
+                </div>
+              </div>
+              <button className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10 flow-glow">
+                Remove from call
+              </button>
+            </div>
+          </div>
+
+          {/* Live insight preview */}
+          <div
+            className="rounded-xl border border-gray-200 bg-white p-4 flow-slide"
+            style={{ animationDelay: '.2s' }}
+          >
+            <div className="flex items-center gap-2 mb-2">
               <img
                 src="/lira_black_with_white_backgound.png"
                 alt=""
-                className="w-5 h-5 rounded-full"
+                className="h-5 w-5 rounded-full"
               />
-              Invite Lira
-            </button>
+              <span className="text-xs font-semibold text-gray-700">Lira is listening…</span>
+              <span className="ml-auto text-[10px] text-gray-400">Live</span>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              3 action items captured · 1 decision logged · Summary will be ready when the meeting
+              ends.
+            </p>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Steps 2-4: Lira in the meeting */}
-        {step >= 2 && (
-          <div key="inmeeting" className="flow-fade space-y-4">
-            <div className="flex items-center justify-between mb-1">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center">
-                  <VideoCameraIcon className="w-4 h-4 text-green-600" />
-                </div>
-                <span className="text-sm font-bold text-gray-800">Meeting in Progress</span>
-              </div>
-              <span className="text-[11px] font-semibold text-green-600 bg-green-50 border border-green-200 px-2.5 py-0.5 rounded-full">
-                ● Live
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              {[
-                { name: 'You', img: null, isLira: false },
-                {
-                  name: 'Lira',
-                  img: '/lira_black_with_white_backgound.png',
-                  isLira: true,
-                },
-                { name: 'Kwame M.', img: '/participants/kwame.jpg', isLira: false },
-              ].map((p) => (
-                <div
-                  key={p.name}
-                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-500 ${
-                    p.isLira && step === 4
-                      ? 'border-gray-200 bg-gray-50 opacity-50'
-                      : p.isLira
-                        ? 'border-violet-200 bg-violet-50/50'
-                        : 'border-gray-100 bg-white'
-                  }`}
-                >
-                  {p.img ? (
-                    <img
-                      src={p.img}
-                      alt=""
-                      className={`w-8 h-8 rounded-full object-cover ${p.isLira && step < 4 ? 'flow-pulse-green' : ''}`}
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-500">
-                      Y
-                    </div>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-gray-800">{p.name}</span>
-                    {p.isLira && (
-                      <span className="ml-2 text-[10px] font-bold text-violet-500 bg-violet-100 px-1.5 py-0.5 rounded">
-                        AI
-                      </span>
-                    )}
-                  </div>
-                  {p.isLira && step === 4 ? (
-                    <span className="text-xs text-gray-400 font-medium">Left</span>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      {p.isLira && step < 4 && (
-                        <div className="flex items-end gap-[2px] h-3">
-                          {[0, 1, 2, 3].map((i) => (
-                            <div
-                              key={i}
-                              className="meet-wave w-[2.5px] h-full rounded-full bg-green-400 origin-bottom"
-                              style={{ animationDelay: `${i * 0.12}s` }}
-                            />
-                          ))}
-                        </div>
-                      )}
-                      <span className="w-2 h-2 rounded-full bg-green-400" />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {step < 4 && (
-              <div className="flex items-center gap-2 mt-2">
-                <button className="flex-1 py-2.5 rounded-xl bg-red-50 border border-red-200 text-sm font-semibold text-red-500">
-                  End Meeting
-                </button>
-                <button
-                  className={`flex-1 py-2.5 rounded-xl border text-sm font-semibold transition-all duration-500 ${
-                    step === 3
-                      ? 'bg-gray-900 text-white border-gray-900 shadow-md'
-                      : 'bg-white text-gray-600 border-gray-200'
-                  }`}
-                >
-                  Remove Lira
-                </button>
-              </div>
-            )}
-
-            {step === 4 && (
-              <div className="mt-3 flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-4 py-2.5 flow-fade">
-                <svg className="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                <span className="text-sm text-gray-500 font-medium">
-                  Lira left the meeting. Summary is being generated…
-                </span>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ── Interviews flow ── */
-function InterviewsFlow({ step }: { step: number }) {
-  return (
-    <div className="flex items-center justify-center" style={{ minHeight: 340 }}>
-      <div className="w-full max-w-lg">
-        {/* Step 0: Create role button */}
-        {step === 0 && (
-          <div key="empty" className="flow-fade">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <CheckBadgeIcon className="w-4 h-4 text-violet-600" />
-                </div>
-                <span className="text-sm font-bold text-gray-800">Interview Roles</span>
-              </div>
-              <button className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-sm">
-                + Create Role
-              </button>
-            </div>
-            <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white py-12 text-center">
-              <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
-                <CheckBadgeIcon className="w-6 h-6 text-gray-300" />
-              </div>
-              <p className="text-sm text-gray-400 font-medium">
-                No roles yet. Create your first role to start interviewing.
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 1: Form filling */}
-        {step === 1 && (
-          <div key="form" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                <CheckBadgeIcon className="w-4 h-4 text-violet-600" />
-              </div>
-              <span className="text-sm font-bold text-gray-800">Create New Role</span>
-            </div>
-            <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5">
-              <div>
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">
-                  Role Title
-                </span>
-                <div className="rounded-xl border-2 border-violet-300 bg-white ring-4 ring-violet-50 px-4 py-2.5">
-                  <span className="text-sm text-gray-800">Senior Software Engineer</span>
-                </div>
-              </div>
-              <div>
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">
-                  Department
-                </span>
-                <div className="rounded-xl border border-gray-200 bg-white px-4 py-2.5">
-                  <span className="text-sm text-gray-800">Engineering</span>
-                </div>
-              </div>
-              <button className="w-full py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-sm">
-                Create Role
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Roles dashboard */}
-        {step === 2 && (
-          <div key="dashboard" className="flow-fade">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                  <CheckBadgeIcon className="w-4 h-4 text-violet-600" />
-                </div>
-                <span className="text-sm font-bold text-gray-800">Interview Roles</span>
-              </div>
-              <button className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-sm">
-                + Create Role
-              </button>
-            </div>
-            <div className="space-y-2.5">
-              {[
-                {
-                  title: 'Senior Software Engineer',
-                  dept: 'Engineering',
-                  qs: 12,
-                  active: true,
-                },
-                {
-                  title: 'Product Manager',
-                  dept: 'Product',
-                  qs: 8,
-                  active: false,
-                },
-                {
-                  title: 'UX Designer',
-                  dept: 'Design',
-                  qs: 10,
-                  active: false,
-                },
-              ].map((role) => (
-                <div
-                  key={role.title}
-                  className={`flex items-center gap-4 rounded-xl border px-4 py-3.5 transition-all ${
-                    role.active
-                      ? 'border-violet-200 bg-violet-50/60 shadow-sm'
-                      : 'border-gray-100 bg-white'
-                  }`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-semibold text-gray-800 block">{role.title}</span>
-                    <span className="text-xs text-gray-400">{role.dept}</span>
-                  </div>
-                  <span className="text-[11px] font-semibold text-violet-500 bg-violet-100 px-2 py-0.5 rounded-full">
-                    {role.qs} questions
-                  </span>
-                  <ChevronRightIcon className="w-4 h-4 text-gray-300" />
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Questions panel */}
-        {step === 3 && (
-          <div key="questions" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                <CheckBadgeIcon className="w-4 h-4 text-violet-600" />
-              </div>
-              <span className="text-sm font-bold text-gray-800">
-                Senior Software Engineer — Questions
-              </span>
-            </div>
-            <div className="space-y-2">
-              {[
-                'Describe your experience with distributed systems.',
-                'Walk me through a complex technical decision you made.',
-                'How do you approach code reviews?',
-                'Tell me about a time you improved system performance.',
-              ].map((q, i) => (
-                <div
-                  key={i}
-                  className="flex items-start gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3"
-                  style={{ animationDelay: `${i * 0.08}s` }}
-                >
-                  <span className="w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-[11px] font-bold text-gray-500 shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span className="text-sm text-gray-700 leading-relaxed">{q}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Start interview */}
-        {step === 4 && (
-          <div key="start" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center">
-                <CheckBadgeIcon className="w-4 h-4 text-violet-600" />
-              </div>
-              <span className="text-sm font-bold text-gray-800">
-                Senior Software Engineer — Ready
-              </span>
-            </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
-              <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-3 border-2 border-violet-200 flow-pulse-green">
-                <img
-                  src="/lira_black_with_white_backgound.png"
-                  alt=""
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <p className="text-sm font-bold text-gray-800 mb-1">Lira is ready to interview</p>
-              <p className="text-xs text-gray-400 mb-5">
-                12 questions · System Design, Problem Solving, Leadership
-              </p>
-              <button className="px-8 py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-md">
-                Start Interview
-              </button>
-              <div className="mt-4 flex items-center justify-center gap-4 text-[11px] text-gray-400">
-                <span>Voice: Natural</span>
-                <span className="w-px h-3 bg-gray-200" />
-                <span>Duration: ~35 min</span>
-                <span className="w-px h-3 bg-gray-200" />
-                <span>Scoring: Rubric-based</span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ── Tasks flow ── */
-function TasksFlow({ step }: { step: number }) {
-  return (
-    <div className="flex items-center justify-center" style={{ minHeight: 340 }}>
-      <div className="w-full max-w-md">
-        {/* Step 0: Create task */}
-        {step === 0 && (
-          <div key="empty" className="flow-fade">
-            <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
-                  <svg className="w-4 h-4 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-bold text-gray-800">Tasks</span>
-              </div>
-              <button className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-sm">
-                + Create Task
-              </button>
-            </div>
-            <div className="space-y-2">
-              {[
-                { title: 'Update pricing page copy', assignee: 'Miriam L.', status: 'Done' },
-                {
-                  title: 'Send Q1 report to investors',
-                  assignee: 'Fatai O.',
-                  status: 'In Progress',
-                },
-              ].map((t) => (
-                <div
-                  key={t.title}
-                  className="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-4 py-3"
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
-                      t.status === 'Done' ? 'border-green-400 bg-green-400' : 'border-gray-300'
-                    }`}
-                  >
-                    {t.status === 'Done' && (
-                      <svg className="w-3 h-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                        <path
-                          fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-gray-700 block">{t.title}</span>
-                    <span className="text-xs text-gray-400">{t.assignee}</span>
-                  </div>
-                  <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                      t.status === 'Done'
-                        ? 'bg-green-50 text-green-600'
-                        : 'bg-orange-50 text-orange-500'
-                    }`}
-                  >
-                    {t.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Step 1: Assign Lira */}
-        {step === 1 && (
-          <div key="create" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
-                <svg className="w-4 h-4 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6z" />
-                </svg>
-              </div>
-              <span className="text-sm font-bold text-gray-800">New Task</span>
-            </div>
-            <div className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5">
-              <div>
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">
-                  Task
-                </span>
-                <div className="rounded-xl border border-gray-200 bg-white px-4 py-2.5">
-                  <span className="text-sm text-gray-800">
-                    Follow up with client on proposal feedback
-                  </span>
-                </div>
-              </div>
-              <div>
-                <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1.5 block">
-                  Assigned To
-                </span>
-                <div className="rounded-xl border-2 border-violet-300 bg-white ring-4 ring-violet-50 px-4 py-2.5 flex items-center gap-2">
-                  <img
-                    src="/lira_black_with_white_backgound.png"
-                    alt=""
-                    className="w-5 h-5 rounded-full"
-                  />
-                  <span className="text-sm text-gray-800 font-medium">Lira</span>
-                  <span className="text-[10px] font-bold text-violet-500 bg-violet-100 px-1.5 py-0.5 rounded ml-1">
-                    AI
-                  </span>
-                </div>
-              </div>
-              <button className="w-full py-2.5 rounded-xl bg-gray-900 text-white text-sm font-semibold shadow-sm">
-                Create Task
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Task pending */}
-        {step === 2 && (
-          <div key="pending" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
-                <svg className="w-4 h-4 text-orange-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6z" />
-                </svg>
-              </div>
-              <span className="text-sm font-bold text-gray-800">Tasks</span>
-            </div>
-            <div className="rounded-xl border border-orange-200 bg-orange-50/50 px-4 py-3.5 flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full border-2 border-orange-400 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-semibold text-gray-800 block">
-                  Follow up with client on proposal feedback
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <img
-                    src="/lira_black_with_white_backgound.png"
-                    alt=""
-                    className="w-4 h-4 rounded-full"
-                  />
-                  <span className="text-xs text-gray-500">Lira · AI Follow-up</span>
-                </div>
-              </div>
-              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-600">
-                Pending
-              </span>
-            </div>
-            <div className="mt-4 rounded-xl border border-gray-100 bg-white px-4 py-3">
-              <div className="flex items-center gap-2 mb-2">
-                <img
-                  src="/lira_black_with_white_backgound.png"
-                  alt=""
-                  className="w-5 h-5 rounded-full"
-                />
-                <span className="text-xs font-semibold text-gray-700">Lira is working…</span>
-                <span className="ml-auto text-[10px] text-gray-400">Just now</span>
-              </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Drafting follow-up email to sarah@acme.co with proposal summary and next steps…
-              </p>
-              <div className="mt-2 w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-violet-400"
-                  style={{ animation: 'flowProgressBar 2.5s ease-out forwards' }}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Task complete */}
-        {step === 3 && (
-          <div key="done" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center">
-                <svg className="w-4 h-4 text-green-600" viewBox="0 0 20 20" fill="currentColor">
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <span className="text-sm font-bold text-gray-800">Tasks</span>
-            </div>
-            <div className="rounded-xl border border-green-200 bg-green-50/50 px-4 py-3.5 flex items-center gap-3">
-              <div className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center shrink-0">
-                <svg className="w-3 h-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+      {/* Step 2: Meeting ended */}
+      {step === 2 && (
+        <div className="space-y-5">
+          <div className="rounded-2xl bg-[#0f0f0f] p-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20">
+                <svg className="h-5 w-5 text-emerald-400" viewBox="0 0 20 20" fill="currentColor">
                   <path
                     fillRule="evenodd"
                     d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
@@ -1969,62 +1435,402 @@ function TasksFlow({ step }: { step: number }) {
                   />
                 </svg>
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="text-sm font-semibold text-gray-800 block">
-                  Follow up with client on proposal feedback
-                </span>
-                <div className="flex items-center gap-2 mt-1">
-                  <img
-                    src="/lira_black_with_white_backgound.png"
-                    alt=""
-                    className="w-4 h-4 rounded-full"
-                  />
-                  <span className="text-xs text-gray-500">Completed by Lira</span>
-                </div>
+              <div>
+                <p className="text-sm font-semibold text-emerald-400">Lira has left the meeting</p>
+                <p className="mt-0.5 text-xs text-white/40">Meeting summary is ready</p>
               </div>
-              <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-600">
-                Complete
-              </span>
             </div>
-            <div className="mt-4 rounded-xl border border-gray-100 bg-white px-4 py-3 flow-slide">
-              <div className="flex items-center gap-2 mb-2">
-                <img
-                  src="/lira_black_with_white_backgound.png"
-                  alt=""
-                  className="w-5 h-5 rounded-full"
-                />
-                <span className="text-xs font-semibold text-green-600">
-                  Lira completed this task
-                </span>
-                <span className="ml-auto text-[10px] text-gray-400">2 min ago</span>
+
+            {/* Progress bar */}
+            <div className="mt-4 h-1 w-full rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-emerald-400"
+                style={{ animation: 'flowProgressBar 3s ease-out forwards' }}
+              />
+            </div>
+          </div>
+
+          <div
+            className="rounded-xl border border-gray-200 bg-white p-4 flow-slide"
+            style={{ animationDelay: '.15s' }}
+          >
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">
+              Meeting Summary
+            </p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                API rate limit issue — assigned to Kwame, due Thursday
               </div>
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Sent follow-up email to sarah@acme.co with proposal recap, pricing comparison, and a
-                suggested meeting for Thursday at 2pm.
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+                Design approval pending — product lead sign-off needed
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />2 tasks pushed
+                to Slack #engineering
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Interviews Flow ── */
+function InterviewsFlow({ step }: { step: number }) {
+  return (
+    <div className="space-y-4 flow-fade" key={step}>
+      {/* Step 0: Create a role */}
+      {step === 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800">Interview Roles</h3>
+            <button className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-sm flow-glow">
+              + Create Role
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {[
+              {
+                title: 'Senior Software Engineer',
+                dept: 'Engineering',
+                candidates: 8,
+                active: true,
+              },
+              { title: 'Product Manager', dept: 'Product', candidates: 3, active: false },
+            ].map((role) => (
+              <div
+                key={role.title}
+                className={`flex items-center gap-4 rounded-xl border px-4 py-3.5 ${role.active ? 'border-[#3730a3]/20 bg-violet-50/60' : 'border-gray-100 bg-white'}`}
+              >
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-violet-100 shrink-0">
+                  <CheckBadgeIcon className="h-4 w-4 text-violet-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-semibold text-gray-800 block">{role.title}</span>
+                  <span className="text-xs text-gray-400">
+                    {role.dept} · {role.candidates} candidates
+                  </span>
+                </div>
+                <ChevronRightIcon className="w-4 h-4 text-gray-300 shrink-0" />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 1: Inside a role — questions + scoring */}
+      {step === 1 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <span>Roles</span>
+            <ChevronRightIcon className="w-3 h-3" />
+            <span className="font-semibold text-gray-800">Senior Software Engineer</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* Questions card */}
+            <div className="rounded-xl border border-gray-100 bg-white p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                Questions · 12
+              </p>
+              {['System design approach', 'Code review process', 'Distributed systems'].map(
+                (q, i) => (
+                  <div
+                    key={q}
+                    className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0"
+                  >
+                    <span className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-[10px] font-bold text-gray-500 shrink-0">
+                      {i + 1}
+                    </span>
+                    <span className="text-xs text-gray-600 truncate">{q}</span>
+                  </div>
+                )
+              )}
+              <p className="text-[10px] text-gray-400 mt-2">+9 more questions</p>
+            </div>
+
+            {/* Scoring card */}
+            <div className="rounded-xl border border-gray-100 bg-white p-4">
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">
+                Top Candidates
+              </p>
+              {[
+                { name: 'Adaeze O.', score: 4.7, status: 'Excellent' },
+                { name: 'Jordan B.', score: 4.2, status: 'Good' },
+                { name: 'Alex K.', score: 3.8, status: 'Good' },
+              ].map((c) => (
+                <div
+                  key={c.name}
+                  className="flex items-center gap-2 py-1.5 border-b border-gray-50 last:border-0"
+                >
+                  <div className="w-6 h-6 rounded-full bg-violet-100 flex items-center justify-center text-[10px] font-bold text-violet-600 shrink-0">
+                    {c.name.charAt(0)}
+                  </div>
+                  <span className="text-xs text-gray-700 flex-1">{c.name}</span>
+                  <span className="text-[10px] font-bold text-violet-500">{c.score}/5</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Start interview */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-center">
+            <div className="w-14 h-14 rounded-full overflow-hidden mx-auto mb-3 border-2 border-violet-200 flow-pulse-green">
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt=""
+                className="w-full h-full object-cover"
+              />
+            </div>
+            <p className="text-sm font-bold text-gray-800 mb-1">Lira is interviewing Alex K.</p>
+            <p className="text-xs text-gray-400 mb-4">
+              Senior Software Engineer · Question 3 of 12
+            </p>
+
+            <div className="max-w-xs mx-auto mb-4">
+              <div className="h-1.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-[#3730a3]"
+                  style={{ width: '25%', transition: 'width 1s ease' }}
+                />
+              </div>
+              <div className="flex justify-between mt-1 text-[10px] text-gray-400">
+                <span>In progress</span>
+                <span>~25 min remaining</span>
+              </div>
+            </div>
+
+            <div
+              className="rounded-xl bg-gray-50 border border-gray-100 p-3 text-left flow-slide"
+              style={{ animationDelay: '.2s' }}
+            >
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">
+                Current question
+              </p>
+              <p className="text-xs text-gray-600">
+                &ldquo;Walk me through how you&apos;d design a rate limiter for a distributed
+                API.&rdquo;
               </p>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   )
 }
 
-/* ── Integrations flow ── */
-
-function IntegrationIcon({ children }: { children: React.ReactNode }) {
+/* ── Tasks Flow ── */
+function TasksFlow({ step }: { step: number }) {
   return (
-    <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center shrink-0">
-      {children}
+    <div className="space-y-4 flow-fade" key={step}>
+      {/* Step 0: Task list with a new task */}
+      {step === 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-gray-800">Tasks</h3>
+            <button className="px-4 py-2 rounded-xl bg-gray-900 text-white text-xs font-semibold shadow-sm flow-glow">
+              + Create Task
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            {[
+              {
+                title: 'Follow up with client on proposal',
+                assignee: 'Lira',
+                status: 'pending',
+                isAI: true,
+              },
+              {
+                title: 'Update pricing page copy',
+                assignee: 'Miriam L.',
+                status: 'done',
+                isAI: false,
+              },
+              { title: 'Send Q1 report', assignee: 'Fatai O.', status: 'in_progress', isAI: false },
+            ].map((t) => (
+              <div
+                key={t.title}
+                className={`flex items-center gap-3 rounded-xl border px-4 py-3 ${t.isAI ? 'border-[#3730a3]/20 bg-violet-50/40' : 'border-gray-100 bg-white'}`}
+              >
+                <div
+                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                    t.status === 'done'
+                      ? 'border-green-400 bg-green-400'
+                      : t.status === 'in_progress'
+                        ? 'border-orange-400'
+                        : 'border-violet-400'
+                  }`}
+                >
+                  {t.status === 'done' && (
+                    <svg className="w-3 h-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <span className="text-sm font-medium text-gray-700 block truncate">
+                    {t.title}
+                  </span>
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    {t.isAI && (
+                      <img
+                        src="/lira_black_with_white_backgound.png"
+                        alt=""
+                        className="w-3.5 h-3.5 rounded-full"
+                      />
+                    )}
+                    {t.assignee}
+                    {t.isAI && (
+                      <span className="text-[9px] font-bold text-violet-500 bg-violet-100 px-1 py-px rounded">
+                        AI
+                      </span>
+                    )}
+                  </span>
+                </div>
+                <span
+                  className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                    t.status === 'done'
+                      ? 'bg-green-50 text-green-600'
+                      : t.status === 'in_progress'
+                        ? 'bg-orange-50 text-orange-500'
+                        : 'bg-violet-50 text-violet-500'
+                  }`}
+                >
+                  {t.status === 'done'
+                    ? 'Done'
+                    : t.status === 'in_progress'
+                      ? 'In Progress'
+                      : 'Pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Step 1: Lira working on the task */}
+      {step === 1 && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-[#3730a3]/20 bg-violet-50/40 px-4 py-3.5 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full border-2 border-violet-400 shrink-0 flow-pulse-amber" />
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-semibold text-gray-800 block">
+                Follow up with client on proposal
+              </span>
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <img
+                  src="/lira_black_with_white_backgound.png"
+                  alt=""
+                  className="w-3.5 h-3.5 rounded-full"
+                />
+                Lira · AI Follow-up
+              </span>
+            </div>
+            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-100 text-orange-600">
+              Pending
+            </span>
+          </div>
+
+          <div
+            className="rounded-xl border border-gray-200 bg-white p-4 flow-slide"
+            style={{ animationDelay: '.15s' }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt=""
+                className="w-5 h-5 rounded-full"
+              />
+              <span className="text-xs font-semibold text-gray-700">Lira is working…</span>
+              <span className="ml-auto text-[10px] text-gray-400">Just now</span>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Drafting follow-up email to sarah@acme.co with proposal summary and next steps…
+            </p>
+            <div className="mt-3 w-full h-1.5 rounded-full bg-gray-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-violet-400"
+                style={{ animation: 'flowProgressBar 3s ease-out forwards' }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: Task completed */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <div className="rounded-xl border border-green-200 bg-green-50/40 px-4 py-3.5 flex items-center gap-3">
+            <div className="w-5 h-5 rounded-full bg-green-400 flex items-center justify-center shrink-0">
+              <svg className="w-3 h-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                <path
+                  fillRule="evenodd"
+                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-sm font-semibold text-gray-800 block">
+                Follow up with client on proposal
+              </span>
+              <span className="text-xs text-gray-400 flex items-center gap-1">
+                <img
+                  src="/lira_black_with_white_backgound.png"
+                  alt=""
+                  className="w-3.5 h-3.5 rounded-full"
+                />
+                Completed by Lira
+              </span>
+            </div>
+            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-green-100 text-green-600">
+              Complete
+            </span>
+          </div>
+
+          <div
+            className="rounded-xl border border-gray-200 bg-white p-4 flow-slide"
+            style={{ animationDelay: '.1s' }}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt=""
+                className="w-5 h-5 rounded-full"
+              />
+              <span className="text-xs font-semibold text-green-600">Task completed</span>
+              <span className="ml-auto text-[10px] text-gray-400">2 min ago</span>
+            </div>
+            <p className="text-xs text-gray-500 leading-relaxed">
+              Sent follow-up email to sarah@acme.co with proposal recap, pricing comparison, and
+              suggested meeting for Thursday at 2pm.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
+/* ── Integrations Flow ── */
 function IntegrationsFlow({ step }: { step: number }) {
   const integrations = [
     {
       name: 'Linear',
-      desc: 'Project tracking & issues',
+      desc: 'Project tracking',
       logo: (
         <img
           src="/linear-app-icon-logo.png"
@@ -2036,13 +1842,9 @@ function IntegrationsFlow({ step }: { step: number }) {
     },
     {
       name: 'Slack',
-      desc: 'Team messaging & alerts',
+      desc: 'Team messaging',
       logo: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52zM6.313 15.165a2.527 2.527 0 012.521-2.52 2.527 2.527 0 012.521 2.52v6.313A2.528 2.528 0 018.834 24a2.528 2.528 0 01-2.521-2.522v-6.313zM8.834 5.042a2.528 2.528 0 01-2.521-2.52A2.528 2.528 0 018.834 0a2.528 2.528 0 012.521 2.522v2.52H8.834zM8.834 6.313a2.528 2.528 0 012.521 2.521 2.528 2.528 0 01-2.521 2.521H2.522A2.528 2.528 0 010 8.834a2.528 2.528 0 012.522-2.521h6.312zM18.956 8.834a2.528 2.528 0 012.522-2.521A2.528 2.528 0 0124 8.834a2.528 2.528 0 01-2.522 2.521h-2.522V8.834zM17.688 8.834a2.528 2.528 0 01-2.523 2.521 2.527 2.527 0 01-2.52-2.521V2.522A2.527 2.527 0 0115.165 0a2.528 2.528 0 012.523 2.522v6.312zM15.165 18.956a2.528 2.528 0 012.523 2.522A2.528 2.528 0 0115.165 24a2.527 2.527 0 01-2.52-2.522v-2.522h2.52zM15.165 17.688a2.527 2.527 0 01-2.52-2.523 2.526 2.526 0 012.52-2.52h6.313A2.527 2.527 0 0124 15.165a2.528 2.528 0 01-2.522 2.523h-6.313z"
-            fill="#E01E5A"
-          />
           <path
             d="M5.042 15.165a2.528 2.528 0 01-2.52 2.523A2.528 2.528 0 010 15.165a2.527 2.527 0 012.522-2.52h2.52v2.52z"
             fill="#E01E5A"
@@ -2081,7 +1883,7 @@ function IntegrationsFlow({ step }: { step: number }) {
     },
     {
       name: 'Google Drive',
-      desc: 'Documents & file storage',
+      desc: 'Documents & files',
       logo: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
           <path d="M4.433 22l3.477-6h12.656l-3.477 6H4.433z" fill="#3777E3" />
@@ -2093,7 +1895,7 @@ function IntegrationsFlow({ step }: { step: number }) {
     },
     {
       name: 'GitHub',
-      desc: 'Code repos & pull requests',
+      desc: 'Code & PRs',
       logo: (
         <svg className="w-5 h-5" viewBox="0 0 24 24" fill="#24292f">
           <path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z" />
@@ -2104,115 +1906,103 @@ function IntegrationsFlow({ step }: { step: number }) {
   ]
 
   return (
-    <div className="flex items-center justify-center" style={{ minHeight: 340 }}>
-      <div className="w-full max-w-lg">
-        {/* Steps 0-2: Integration cards */}
-        {step <= 2 && (
-          <div key="cards" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
-                <CodeBracketIcon className="w-4 h-4 text-blue-600" />
-              </div>
-              <span className="text-sm font-bold text-gray-800">Integrations</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {integrations.map((ig) => {
-                const connected = step >= ig.connectedAt && ig.connectedAt > 0
-                return (
-                  <div
-                    key={ig.name}
-                    className={`rounded-xl border px-4 py-3.5 transition-all duration-500 ${
-                      connected ? 'border-green-200 bg-green-50/50' : 'border-gray-100 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <IntegrationIcon>{ig.logo}</IntegrationIcon>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-semibold text-gray-800 block">{ig.name}</span>
-                        <span className="text-[11px] text-gray-400">{ig.desc}</span>
-                      </div>
+    <div className="space-y-4 flow-fade" key={step}>
+      {/* Steps 0-1: Integration cards */}
+      {step <= 1 && (
+        <div className="space-y-4">
+          <h3 className="text-sm font-bold text-gray-800">Connect your tools</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {integrations.map((ig) => {
+              const connected = step >= ig.connectedAt && ig.connectedAt > 0
+              return (
+                <div
+                  key={ig.name}
+                  className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all duration-500 ${connected ? 'border-green-200 bg-green-50/50' : 'border-gray-100 bg-white'}`}
+                >
+                  <div className="w-9 h-9 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center shrink-0">
+                    {ig.logo}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm font-semibold text-gray-800">{ig.name}</span>
+                    <span className="text-[11px] text-gray-400 block">{ig.desc}</span>
+                  </div>
+                  {connected ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-400" />
+                      <span className="text-[11px] font-semibold text-green-600">Connected</span>
                     </div>
-                    {connected ? (
-                      <div className="flex items-center gap-1.5 flow-fade">
-                        <span className="w-2 h-2 rounded-full bg-green-400" />
-                        <span className="text-xs font-semibold text-green-600">Connected</span>
-                      </div>
-                    ) : (
-                      <button className="text-xs font-semibold text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1 transition">
-                        Connect
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3: Lira syncing */}
-        {step === 3 && (
-          <div key="syncing" className="flow-fade">
-            <div className="flex items-center gap-2.5 mb-5">
-              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center">
-                <CodeBracketIcon className="w-4 h-4 text-green-600" />
-              </div>
-              <span className="text-sm font-bold text-gray-800">All Connected</span>
-            </div>
-            <div className="rounded-2xl border border-gray-200 bg-white p-5">
-              <div className="flex items-center justify-center gap-3 mb-5">
-                {integrations.slice(0, 2).map((ig) => (
-                  <div key={ig.name} className="flex items-center gap-2">
-                    <IntegrationIcon>{ig.logo}</IntegrationIcon>
-                    <span className="text-xs font-semibold text-gray-600">{ig.name}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="flex items-center justify-center mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="h-px w-8 bg-gray-200" />
-                  <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-violet-200 flow-pulse-green">
-                    <img
-                      src="/lira_black_with_white_backgound.png"
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="h-px w-8 bg-gray-200" />
+                  ) : (
+                    <span className="text-xs font-semibold text-gray-400 border border-gray-200 rounded-lg px-2.5 py-1">
+                      Connect
+                    </span>
+                  )}
                 </div>
-              </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
-              <div className="space-y-2">
-                {[
-                  {
-                    platform: 'Linear',
-                    action: 'Created issue LIR-142: Update onboarding flow',
-                    time: 'Just now',
-                  },
-                  {
-                    platform: 'Slack',
-                    action: 'Posted summary to #product-updates',
-                    time: '1 min ago',
-                  },
-                ].map((activity) => (
-                  <div
-                    key={activity.action}
-                    className="flex items-center gap-3 rounded-lg bg-gray-50 px-3 py-2 flow-slide"
-                  >
-                    <span className="text-[10px] font-bold text-violet-500 bg-violet-100 px-1.5 py-0.5 rounded shrink-0">
-                      {activity.platform}
-                    </span>
-                    <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">
-                      {activity.action}
-                    </span>
-                    <span className="text-[10px] text-gray-400 shrink-0">{activity.time}</span>
-                  </div>
-                ))}
+      {/* Step 2: Lira syncing */}
+      {step === 2 && (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-bold text-gray-800">Lira is syncing</h3>
+            <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-semibold">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Live
+            </span>
+          </div>
+
+          <div className="flex items-center justify-center gap-4 py-3">
+            {integrations.slice(0, 2).map((ig) => (
+              <div key={ig.name} className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-white border border-gray-100 shadow-sm flex items-center justify-center">
+                  {ig.logo}
+                </div>
+                <span className="text-xs font-medium text-gray-600">{ig.name}</span>
               </div>
+            ))}
+            <div className="flex items-center gap-2">
+              <div className="h-px w-4 bg-gray-200" />
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-violet-200 flow-pulse-green">
+                <img
+                  src="/lira_black_with_white_backgound.png"
+                  alt=""
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <div className="h-px w-4 bg-gray-200" />
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="space-y-2 flow-slide" style={{ animationDelay: '.1s' }}>
+            {[
+              {
+                platform: 'Linear',
+                action: 'Created issue LIR-142: Update onboarding flow',
+                time: 'Just now',
+              },
+              {
+                platform: 'Slack',
+                action: 'Posted summary to #product-updates',
+                time: '1 min ago',
+              },
+            ].map((a) => (
+              <div
+                key={a.action}
+                className="flex items-center gap-3 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2"
+              >
+                <span className="text-[10px] font-bold text-violet-500 bg-violet-100 px-1.5 py-0.5 rounded shrink-0">
+                  {a.platform}
+                </span>
+                <span className="text-xs text-gray-600 flex-1 min-w-0 truncate">{a.action}</span>
+                <span className="text-[10px] text-gray-400 shrink-0">{a.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -2221,120 +2011,123 @@ function IntegrationsFlow({ step }: { step: number }) {
 function Features() {
   const [tab, setTab] = useState<FlowTab>('meetings')
   const [step, setStep] = useState(0)
-  const [clicking, setClicking] = useState(false)
   const [userPaused, setUserPaused] = useState(false)
   const pauseRef = useRef<ReturnType<typeof setTimeout>>(undefined)
 
-  const maxSteps = FLOW_STEP_LABELS[tab].length
+  const maxSteps = FLOW_DURATIONS[tab].length
 
   // Auto-advance steps
   useEffect(() => {
     if (userPaused) return
-    const duration = FLOW_DURATIONS[tab][step] ?? 3000
+    const duration = FLOW_DURATIONS[tab][step] ?? 3500
     const timer = setTimeout(() => {
-      setStep((s) => (s + 1) % maxSteps)
+      setStep((s) => {
+        const next = s + 1
+        if (next >= maxSteps) {
+          // Move to next tab
+          const tabs: FlowTab[] = ['meetings', 'interviews', 'tasks', 'integrations']
+          const idx = tabs.indexOf(tab)
+          const nextTab = tabs[(idx + 1) % tabs.length]
+          setTimeout(() => {
+            setTab(nextTab)
+            setStep(0)
+          }, 0)
+          return s
+        }
+        return next
+      })
     }, duration)
     return () => clearTimeout(timer)
   }, [step, tab, maxSteps, userPaused])
-
-  // Cursor click effect
-  useEffect(() => {
-    const clickTimer = setTimeout(() => {
-      setClicking(true)
-      const resetTimer = setTimeout(() => setClicking(false), 350)
-      return () => clearTimeout(resetTimer)
-    }, 800)
-    return () => {
-      setClicking(false)
-      clearTimeout(clickTimer)
-    }
-  }, [step, tab])
 
   // Resume auto-play after manual interaction
   useEffect(() => {
     if (!userPaused) return
     clearTimeout(pauseRef.current)
-    pauseRef.current = setTimeout(() => setUserPaused(false), 15000)
+    pauseRef.current = setTimeout(() => setUserPaused(false), 20000)
     return () => clearTimeout(pauseRef.current)
   }, [userPaused])
 
-  const handleTab = (id: FlowTab) => {
+  const handleNav = (id: FlowTab) => {
     setTab(id)
     setStep(0)
     setUserPaused(true)
   }
 
-  const cursorPos = CURSOR_POS[tab][step] ?? [50, 50]
-  const stepLabel = FLOW_STEP_LABELS[tab][step]
-
   return (
     <section id="features" className="py-16 px-6 pb-24">
       <style>{FLOW_DEMO_STYLES}</style>
-      <div className="mx-auto max-w-5xl">
-        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2 text-center">
+      <div className="mx-auto max-w-6xl">
+        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
           See how Lira works
         </h2>
-        <p className="text-gray-500 max-w-lg mb-10 leading-relaxed text-center mx-auto">
+        <p className="text-gray-500 max-w-lg mb-10 leading-relaxed">
           From meetings to integrations — watch how Lira handles every step, automatically.
         </p>
 
-        {/* Tab bar */}
-        <div className="flex items-center justify-center mb-6">
-          <div className="inline-flex items-center gap-1 bg-gray-100 rounded-full p-1">
-            {FLOW_TABS.map((t) => (
+        <div className="flex flex-col md:flex-row gap-6 md:gap-10">
+          {/* Left: sidebar nav */}
+          <nav className="md:w-56 shrink-0 flex md:flex-col overflow-x-auto md:overflow-x-visible gap-x-4 gap-y-1 md:gap-1 -mx-6 px-6 md:mx-0 md:px-0 pb-1 md:pb-0 scrollbar-none">
+            {FLOW_NAV.map((item) => (
               <button
-                key={t.id}
-                onClick={() => handleTab(t.id)}
-                className={`relative px-3.5 sm:px-5 py-1.5 rounded-full text-[11px] sm:text-xs font-semibold transition-all duration-200 ${
-                  tab === t.id
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'text-gray-500 hover:text-gray-800'
+                key={item.id}
+                onClick={() => handleNav(item.id)}
+                className={`shrink-0 text-left px-0 py-2.5 md:py-3.5 transition-all border-b-2 md:border-b-0 md:border-l-[3px] md:pl-4 ${
+                  tab === item.id
+                    ? 'text-gray-900 border-gray-900'
+                    : 'text-gray-400 hover:text-gray-700 border-transparent'
                 }`}
               >
-                {t.label}
-                {tab === t.id && !userPaused && (
-                  <div
-                    key={`${tab}-${step}`}
-                    className="absolute bottom-0 left-0 h-[2px] bg-white/20 rounded-full"
-                    style={{
-                      animation: `flowProgressBar ${FLOW_DURATIONS[tab][step] ?? 3000}ms linear forwards`,
-                    }}
-                  />
+                <span
+                  className={`text-sm font-semibold block ${tab === item.id ? 'text-gray-900' : ''}`}
+                >
+                  {item.label}
+                </span>
+                <span className="text-xs text-gray-400 hidden md:block mt-0.5">{item.desc}</span>
+                {/* Progress indicator for auto-play */}
+                {tab === item.id && !userPaused && (
+                  <div className="hidden md:block mt-2 h-0.5 w-full rounded-full bg-gray-100 overflow-hidden">
+                    <div
+                      key={`${tab}-${step}`}
+                      className="h-full rounded-full bg-gray-900"
+                      style={{
+                        animation: `flowProgressBar ${FLOW_DURATIONS[tab][step] ?? 3500}ms linear forwards`,
+                      }}
+                    />
+                  </div>
                 )}
               </button>
             ))}
-          </div>
-        </div>
+          </nav>
 
-        {/* Demo card */}
-        <div className="relative rounded-2xl border border-gray-200 bg-white shadow-lg overflow-hidden">
-          {/* Content area with cursor */}
-          <div className="relative px-5 py-6 sm:px-8 sm:py-8" style={{ minHeight: 380 }}>
-            {tab === 'meetings' && <MeetingsFlow step={step} />}
-            {tab === 'interviews' && <InterviewsFlow step={step} />}
-            {tab === 'tasks' && <TasksFlow step={step} />}
-            {tab === 'integrations' && <IntegrationsFlow step={step} />}
+          {/* Right: demo panel */}
+          <div className="flex-1 min-w-0">
+            <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+              <div className="px-5 py-5 sm:px-7 sm:py-6" style={{ minHeight: 340 }}>
+                {tab === 'meetings' && <MeetingsFlow step={step} />}
+                {tab === 'interviews' && <InterviewsFlow step={step} />}
+                {tab === 'tasks' && <TasksFlow step={step} />}
+                {tab === 'integrations' && <IntegrationsFlow step={step} />}
+              </div>
 
-            {/* Animated cursor */}
-            <div className="hidden sm:block">
-              <FlowCursor x={cursorPos[0]} y={cursorPos[1]} clicking={clicking} />
-            </div>
-          </div>
-
-          {/* Bottom bar */}
-          <div className="border-t border-gray-100 px-5 sm:px-8 py-3 flex items-center justify-between bg-gray-50/60">
-            <span className="text-sm text-gray-600 font-medium">{stepLabel}</span>
-            <div className="flex items-center gap-1.5">
-              {Array.from({ length: maxSteps }).map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => {
-                    setStep(i)
-                    setUserPaused(true)
-                  }}
-                  className={`w-2 h-2 rounded-full transition-all duration-300 ${i === step ? 'bg-gray-900 scale-125' : i < step ? 'bg-gray-400' : 'bg-gray-200'}`}
-                />
-              ))}
+              {/* Step dots */}
+              <div className="border-t border-gray-100 px-5 sm:px-7 py-3 flex items-center justify-between bg-gray-50/60">
+                <span className="text-xs text-gray-400">
+                  Step {step + 1} of {maxSteps}
+                </span>
+                <div className="flex items-center gap-1.5">
+                  {Array.from({ length: maxSteps }).map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setStep(i)
+                        setUserPaused(true)
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all duration-300 ${i === step ? 'bg-gray-900 scale-125' : i < step ? 'bg-gray-400' : 'bg-gray-200'}`}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
