@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
   ArrowTrendingUpIcon,
   BoltIcon,
   BuildingOffice2Icon,
@@ -422,7 +421,12 @@ function MemberProfilePage() {
                         title="Change photo"
                       >
                         {uploadingPic ? (
-                          <ArrowPathIcon className="h-3 w-3 animate-spin text-white" />
+                          <img
+                            src="/lira_black.png"
+                            alt="Loading"
+                            className="h-3 w-3 animate-spin opacity-50"
+                            style={{ animationDuration: '1.2s' }}
+                          />
                         ) : (
                           <CameraIcon className="h-3 w-3 text-white" />
                         )}

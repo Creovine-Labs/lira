@@ -2,7 +2,6 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
   CheckIcon,
   ExclamationCircleIcon,
   PencilIcon,
@@ -718,7 +717,12 @@ function OnboardingPage() {
                     </div>
                     {describingUrl && (
                       <div className="flex items-center gap-2 text-xs text-[#3730a3]">
-                        <ArrowPathIcon className="h-3 w-3 animate-spin" />
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-3 w-3 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
                         Lira is reading your website…
                       </div>
                     )}
@@ -776,7 +780,12 @@ function OnboardingPage() {
                   >
                     {creating ? (
                       <span className="flex items-center gap-2">
-                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-4 w-4 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
                         Creating…
                       </span>
                     ) : (
@@ -841,12 +850,22 @@ function OnboardingPage() {
                   >
                     {joining ? (
                       <span className="flex items-center gap-2">
-                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-4 w-4 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
                         Joining…
                       </span>
                     ) : validating ? (
                       <span className="flex items-center gap-2">
-                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-4 w-4 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
                         Validating…
                       </span>
                     ) : validatedOrg ? (

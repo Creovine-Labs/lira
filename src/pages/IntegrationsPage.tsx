@@ -3,7 +3,6 @@ import {
   ArrowPathIcon,
   CheckCircleIcon,
   LinkIcon,
-  ArrowTopRightOnSquareIcon,
   ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
@@ -512,41 +511,76 @@ export default function IntegrationsPage() {
           </p>
         </div>
 
-        {/* Task management section */}
+        {/* Task Management */}
         <section>
           <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
             Task Management
           </h2>
           <div className="space-y-3">
             <LinearCard orgId={orgId} />
+          </div>
+        </section>
 
+        {/* Communication & Collaboration */}
+        <section>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+            Communication &amp; Collaboration
+          </h2>
+          <div className="space-y-3">
             <ComingSoonCard
-              name="Jira"
-              description="Sync tasks to Jira issues in your project"
+              name="Slack"
+              description="Post meeting summaries and task updates to any channel"
               logo={
-                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                <svg width="20" height="20" viewBox="0 0 54 54" fill="none">
                   <path
-                    d="M15.999 0C7.163 0 0 7.163 0 16s7.163 16 15.999 16C24.836 32 32 24.837 32 16S24.836 0 15.999 0z"
-                    fill="#2684FF"
+                    d="M19.712 33.442c0 2.215-1.808 4.023-4.023 4.023s-4.023-1.808-4.023-4.023 1.808-4.023 4.023-4.023h4.023v4.023z"
+                    fill="#E01E5A"
                   />
-                  <path d="M16 4.5L8 16l8 7.5V4.5z" fill="white" opacity=".6" />
-                  <path d="M16 4.5l8 11.5-8 7.5 8-11.5-8-7.5z" fill="white" />
+                  <path
+                    d="M21.735 33.442c0-2.215 1.808-4.023 4.023-4.023s4.023 1.808 4.023 4.023v10.057c0 2.215-1.808 4.023-4.023 4.023s-4.023-1.808-4.023-4.023V33.442z"
+                    fill="#E01E5A"
+                  />
+                  <path
+                    d="M25.758 19.712c-2.215 0-4.023-1.808-4.023-4.023s1.808-4.023 4.023-4.023 4.023 1.808 4.023 4.023v4.023h-4.023z"
+                    fill="#36C5F0"
+                  />
+                  <path
+                    d="M25.758 21.735c2.215 0 4.023 1.808 4.023 4.023s-1.808 4.023-4.023 4.023H15.7c-2.215 0-4.023-1.808-4.023-4.023s1.808-4.023 4.023-4.023h10.058z"
+                    fill="#36C5F0"
+                  />
+                  <path
+                    d="M39.488 25.758c0-2.215 1.808-4.023 4.023-4.023s4.023 1.808 4.023 4.023-1.808 4.023-4.023 4.023h-4.023v-4.023z"
+                    fill="#2EB67D"
+                  />
+                  <path
+                    d="M37.465 25.758c0 2.215-1.808 4.023-4.023 4.023s-4.023-1.808-4.023-4.023V15.7c0-2.215 1.808-4.023 4.023-4.023s4.023 1.808 4.023 4.023v10.058z"
+                    fill="#2EB67D"
+                  />
+                  <path
+                    d="M33.442 39.488c2.215 0 4.023 1.808 4.023 4.023s-1.808 4.023-4.023 4.023-4.023-1.808-4.023-4.023v-4.023h4.023z"
+                    fill="#ECB22E"
+                  />
+                  <path
+                    d="M33.442 37.465c-2.215 0-4.023-1.808-4.023-4.023s1.808-4.023 4.023-4.023h10.057c2.215 0 4.023 1.808 4.023 4.023s-1.808 4.023-4.023 4.023H33.442z"
+                    fill="#ECB22E"
+                  />
                 </svg>
               }
             />
-
             <ComingSoonCard
-              name="ClickUp"
-              description="Create ClickUp tasks from meeting action items"
+              name="Microsoft Teams"
+              description="Share summaries and action items directly in Teams channels"
               logo={
-                <svg width="20" height="20" viewBox="0 0 32 32" fill="none">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M14.5 7.5a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" fill="#5059C9" />
                   <path
-                    d="M4 22.667l3.333-2.667C9.333 22.667 12.333 24 16 24s6.667-1.333 8.667-4L28 22.667C25.333 26.667 21 29.333 16 29.333S6.667 26.667 4 22.667z"
-                    fill="#8930FD"
+                    d="M18.5 9h-7A1.5 1.5 0 0 0 10 10.5V17a5 5 0 0 0 10 0v-6.5A1.5 1.5 0 0 0 18.5 9z"
+                    fill="#5059C9"
                   />
+                  <path d="M9.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z" fill="#7B83EB" />
                   <path
-                    d="M4 9.333L16 2.667l12 6.666-2.667 2.667L16 8l-9.333 3.333L4 9.333z"
-                    fill="#49CCF9"
+                    d="M4 10.5A1.5 1.5 0 0 1 5.5 9h8A1.5 1.5 0 0 1 15 10.5v6a4.5 4.5 0 0 1-9 0v-6z"
+                    fill="#7B83EB"
                   />
                 </svg>
               }
@@ -554,24 +588,119 @@ export default function IntegrationsPage() {
           </div>
         </section>
 
-        {/* How it works */}
-        <section className="rounded-2xl border border-violet-100 bg-violet-50 p-5">
-          <h3 className="text-sm font-semibold text-violet-900 mb-2">How task sync works</h3>
-          <ol className="text-sm text-violet-800 space-y-1.5 list-decimal list-inside">
-            <li>Lira extracts action items from meeting transcripts using GPT-4o</li>
-            <li>Each task is automatically created as an issue in your connected workspace</li>
-            <li>Members are matched by email — or you can map them manually above</li>
-            <li>Issue status syncs back to Lira when updated in Linear</li>
-          </ol>
-          <a
-            href="https://liraintelligence.com/docs/integrations"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 mt-3"
-          >
-            Learn more
-            <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-          </a>
+        {/* Productivity */}
+        <section>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+            Productivity
+          </h2>
+          <div className="space-y-3">
+            <ComingSoonCard
+              name="Notion"
+              description="Save meeting notes and summaries to Notion pages automatically"
+              logo={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect width="24" height="24" rx="4" fill="#fff" />
+                  <path
+                    d="M4.5 4.5h6.75l8.25 11.25V4.5H21v15h-6.75L6 8.25V19.5H4.5V4.5z"
+                    fill="#000"
+                  />
+                </svg>
+              }
+            />
+            <ComingSoonCard
+              name="Google Calendar"
+              description="Auto-schedule follow-ups and sync meeting events with your calendar"
+              logo={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <rect
+                    x="2"
+                    y="4"
+                    width="20"
+                    height="18"
+                    rx="2"
+                    fill="#fff"
+                    stroke="#DADCE0"
+                    strokeWidth="1.5"
+                  />
+                  <path
+                    d="M7 2v4M17 2v4M2 10h20"
+                    stroke="#DADCE0"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                  <rect x="8" y="13" width="8" height="5" rx="1" fill="#4285F4" />
+                  <path
+                    d="M7 2v4M17 2v4"
+                    stroke="#1967D2"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            />
+            <ComingSoonCard
+              name="Google Drive"
+              description="Attach meeting recordings and transcripts to Drive folders"
+              logo={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M8 3L2 13h6l6-10H8z" fill="#0F9D58" />
+                  <path d="M14 3l6 10h-6l-6-10h6z" fill="#4285F4" />
+                  <path d="M2 13l4 8h12l4-8H2z" fill="#FBBC05" />
+                </svg>
+              }
+            />
+          </div>
+        </section>
+
+        {/* Developer & CRM */}
+        <section>
+          <h2 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
+            Developer &amp; CRM
+          </h2>
+          <div className="space-y-3">
+            <ComingSoonCard
+              name="GitHub"
+              description="Link tasks to GitHub issues and pull requests automatically"
+              logo={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    fillRule="evenodd"
+                    clipRule="evenodd"
+                    d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.154-1.11-1.461-1.11-1.461-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"
+                    fill="#24292F"
+                  />
+                </svg>
+              }
+            />
+            <ComingSoonCard
+              name="HubSpot"
+              description="Log meeting outcomes and tasks directly into your CRM"
+              logo={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" fill="#FF7A59" />
+                  <circle cx="12" cy="9" r="2.5" fill="white" />
+                  <path
+                    d="M7 16.5c0-2.761 2.239-5 5-5s5 2.239 5 5"
+                    stroke="white"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              }
+            />
+            <ComingSoonCard
+              name="Salesforce"
+              description="Sync action items and contacts from sales call recordings"
+              logo={
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path
+                    d="M9.5 5.5C10.3 3.7 12.1 2.5 14 2.5c2.5 0 4.5 1.8 4.9 4.2.5-.2 1-.3 1.6-.3 2.2 0 4 1.8 4 4s-1.8 4-4 4H5.5c-1.9 0-3.5-1.6-3.5-3.5 0-1.8 1.4-3.3 3.1-3.5C5.5 6.2 7.3 5.5 9.5 5.5z"
+                    fill="#00A1E0"
+                  />
+                </svg>
+              }
+            />
+          </div>
         </section>
       </div>
     </div>

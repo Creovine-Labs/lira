@@ -205,7 +205,12 @@ function KnowledgeBasePage() {
             {/* Crawl status banners */}
             {isCrawling && (
               <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-400">
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-4 w-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 <div>
                   <p className="font-semibold">Crawling in progress…</p>
                   {crawlStatus.pages_crawled != null && (
@@ -302,7 +307,12 @@ function KnowledgeBasePage() {
                 className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {crawling ? (
-                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="h-4 w-4 animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
                 ) : (
                   <MagnifyingGlassIcon className="h-4 w-4" />
                 )}
@@ -341,7 +351,12 @@ function KnowledgeBasePage() {
                   className="flex items-center gap-1.5 rounded-xl border border-red-200 px-3 py-1.5 text-xs font-medium text-red-500 transition hover:bg-red-50 disabled:opacity-50"
                 >
                   {clearing ? (
-                    <ArrowPathIcon className="h-3 w-3 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-3 w-3 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                   ) : (
                     <TrashIcon className="h-3 w-3" />
                   )}

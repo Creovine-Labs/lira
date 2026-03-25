@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, Link, useNavigate } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import {
   ArrowLeftIcon,
@@ -238,6 +238,7 @@ function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
 
   function goTo(view: AuthView) {
     setError(null)
@@ -251,6 +252,10 @@ function LoginForm({
 
   async function handleGoogleSuccess(response: CredentialResponse) {
     if (!response.credential) return
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy before continuing.')
+      return
+    }
     setError(null)
     setLoading(true)
     try {
@@ -282,6 +287,10 @@ function LoginForm({
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault()
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms of Service and Privacy Policy before signing in.')
+      return
+    }
     if (!email.trim() || !password.trim()) {
       setError('Please enter your email and password.')
       return
@@ -303,6 +312,12 @@ function LoginForm({
 
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
+    if (!agreedToTerms) {
+      setError(
+        'Please agree to the Terms of Service and Privacy Policy before creating your account.'
+      )
+      return
+    }
     if (!name.trim() || !email.trim() || !password.trim()) {
       setError('Please fill in your name, email, and password.')
       return
@@ -365,7 +380,7 @@ function LoginForm({
                     <div className="relative">
                       <button
                         type="button"
-                        disabled={loading}
+                        disabled={loading || !agreedToTerms}
                         className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
                       >
                         <GoogleIcon />
@@ -373,7 +388,7 @@ function LoginForm({
                       </button>
                       <div
                         className="absolute inset-0 z-10 overflow-hidden opacity-0"
-                        style={loading ? { pointerEvents: 'none' } : undefined}
+                        style={loading || !agreedToTerms ? { pointerEvents: 'none' } : undefined}
                         aria-hidden="true"
                       >
                         <GoogleLogin
@@ -397,6 +412,42 @@ function LoginForm({
                     Continue with email
                   </button>
                 </div>
+                {/* Terms consent checkbox */}
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={agreedToTerms}
+                    onChange={(e) => setAgreedToTerms(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#3730a3] focus:ring-[#3730a3]/30"
+                  />
+                  <span className="text-xs leading-relaxed text-gray-500">
+                    I agree to the{' '}
+                    <Link
+                      to="/terms"
+                      target="_blank"
+                      className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                    >
+                      Terms of Service
+                    </Link>
+                    ,{' '}
+                    <Link
+                      to="/privacy"
+                      target="_blank"
+                      className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                    >
+                      Privacy Policy
+                    </Link>
+                    , and{' '}
+                    <Link
+                      to="/acceptable-use"
+                      target="_blank"
+                      className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                    >
+                      Acceptable Use Policy
+                    </Link>
+                    .
+                  </span>
+                </label>
                 {error && (
                   <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
                 )}
@@ -429,7 +480,7 @@ function LoginForm({
                       <div className="relative">
                         <button
                           type="button"
-                          disabled={loading}
+                          disabled={loading || !agreedToTerms}
                           className="flex w-full items-center justify-center gap-3 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100 disabled:opacity-50"
                         >
                           <GoogleIcon />
@@ -437,7 +488,7 @@ function LoginForm({
                         </button>
                         <div
                           className="absolute inset-0 z-10 overflow-hidden opacity-0"
-                          style={loading ? { pointerEvents: 'none' } : undefined}
+                          style={loading || !agreedToTerms ? { pointerEvents: 'none' } : undefined}
                           aria-hidden="true"
                         >
                           <GoogleLogin
@@ -513,6 +564,34 @@ function LoginForm({
                       <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
                     )}
                   </form>
+                  {/* Terms consent checkbox */}
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#3730a3] focus:ring-[#3730a3]/30"
+                    />
+                    <span className="text-xs leading-relaxed text-gray-500">
+                      I agree to the{' '}
+                      <Link
+                        to="/terms"
+                        target="_blank"
+                        className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                      >
+                        Terms of Service
+                      </Link>{' '}
+                      and{' '}
+                      <Link
+                        to="/privacy"
+                        target="_blank"
+                        className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                      >
+                        Privacy Policy
+                      </Link>
+                      .
+                    </span>
+                  </label>
                   <p className="text-sm text-gray-500">
                     Don&apos;t have an account?{' '}
                     <button
@@ -534,7 +613,7 @@ function LoginForm({
                   <button
                     type="submit"
                     form="auth-login-form"
-                    disabled={loading || !email.trim() || !password.trim()}
+                    disabled={loading || !email.trim() || !password.trim() || !agreedToTerms}
                     className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
                   >
                     {loading ? (
@@ -654,6 +733,42 @@ function LoginForm({
                   {error && (
                     <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
                   )}
+                  {/* Terms consent checkbox */}
+                  <label className="flex items-start gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={agreedToTerms}
+                      onChange={(e) => setAgreedToTerms(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-gray-300 text-[#3730a3] focus:ring-[#3730a3]/30"
+                    />
+                    <span className="text-xs leading-relaxed text-gray-500">
+                      I agree to the{' '}
+                      <Link
+                        to="/terms"
+                        target="_blank"
+                        className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                      >
+                        Terms of Service
+                      </Link>
+                      ,{' '}
+                      <Link
+                        to="/privacy"
+                        target="_blank"
+                        className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                      >
+                        Privacy Policy
+                      </Link>
+                      , and{' '}
+                      <Link
+                        to="/acceptable-use"
+                        target="_blank"
+                        className="font-medium text-[#3730a3] hover:text-[#312e81] underline"
+                      >
+                        Acceptable Use Policy
+                      </Link>
+                      .
+                    </span>
+                  </label>
                   <button
                     type="submit"
                     disabled={
@@ -661,7 +776,8 @@ function LoginForm({
                       !name.trim() ||
                       !email.trim() ||
                       !password.trim() ||
-                      password.trim().length < 8
+                      password.trim().length < 8 ||
+                      !agreedToTerms
                     }
                     className="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
                   >

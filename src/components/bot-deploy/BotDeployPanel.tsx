@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
@@ -344,7 +343,12 @@ function BotDeployPanel() {
               )}
             >
               {isInProgress ? (
-                <ArrowPathIcon className={cn('h-5 w-5 animate-spin', STATE_COLORS[botState])} />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-5 w-5 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               ) : botState === 'active' ? (
                 <RadioIcon className="h-5 w-5 text-[#3730a3] animate-pulse" />
               ) : botState === 'error' ? (
@@ -532,7 +536,13 @@ function BotDeployPanel() {
                 >
                   {terminatingAll ? (
                     <span className="flex items-center gap-1.5">
-                      <ArrowPathIcon className="h-3 w-3 animate-spin" /> Terminating…
+                      <img
+                        src="/lira_black.png"
+                        alt="Loading"
+                        className="h-3 w-3 animate-spin opacity-50"
+                        style={{ animationDuration: '1.2s' }}
+                      />{' '}
+                      Terminating…
                     </span>
                   ) : (
                     'Terminate All Active Bots'
@@ -550,7 +560,12 @@ function BotDeployPanel() {
       >
         {deploying ? (
           <span className="flex items-center justify-center gap-2">
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            <img
+              src="/lira_black.png"
+              alt="Loading"
+              className="h-4 w-4 animate-spin opacity-50"
+              style={{ animationDuration: '1.2s' }}
+            />
             Deploying Lira…
           </span>
         ) : (

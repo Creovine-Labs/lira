@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import {
-  ArrowPathIcon,
   ArrowRightOnRectangleIcon,
   ArrowsRightLeftIcon,
   DocumentDuplicateIcon,
@@ -199,7 +198,12 @@ function OrgMembersPage() {
                 className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
                 title="Regenerate invite code"
               >
-                <ArrowPathIcon className={cn('h-4 w-4', regenerating && 'animate-spin')} />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className={cn('h-4 w-4 opacity-50', regenerating && 'animate-spin')}
+                  style={regenerating ? { animationDuration: '1.2s' } : undefined}
+                />
                 Regenerate
               </button>
             )}
@@ -381,7 +385,16 @@ function OrgMembersPage() {
                   disabled={transferring}
                   className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50"
                 >
-                  {transferring ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : 'Transfer'}
+                  {transferring ? (
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-4 w-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
+                  ) : (
+                    'Transfer'
+                  )}
                 </button>
               </div>
             </div>

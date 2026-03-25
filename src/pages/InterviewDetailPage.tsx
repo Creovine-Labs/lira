@@ -444,7 +444,12 @@ function InterviewDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
-        <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="w-6 h-6 animate-spin opacity-50"
+          style={{ animationDuration: '1.2s' }}
+        />
       </div>
     )
   }
@@ -532,7 +537,12 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
             >
               {actionLoading ? (
-                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="w-4 h-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               ) : (
                 <ArrowPathIcon className="w-4 h-4" />
               )}
@@ -555,7 +565,12 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
             >
               {followUpCreating ? (
-                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="w-4 h-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               ) : (
                 <CalendarDaysIcon className="w-4 h-4" />
               )}
@@ -586,7 +601,12 @@ function InterviewDetailPage() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               {actionLoading ? (
-                <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="w-4 h-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               ) : (
                 <PlayIcon className="w-4 h-4" />
               )}
@@ -713,7 +733,12 @@ function InterviewDetailPage() {
                     className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {actionLoading ? (
-                      <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                      <img
+                        src="/lira_black.png"
+                        alt="Loading"
+                        className="w-4 h-4 animate-spin opacity-50"
+                        style={{ animationDuration: '1.2s' }}
+                      />
                     ) : (
                       <PlayIcon className="w-4 h-4" />
                     )}
@@ -760,7 +785,12 @@ function InterviewDetailPage() {
             {/* In-progress / evaluating status cards (no tabs yet) */}
             {(interview.status === 'in_progress' || interview.status === 'bot_deployed') && (
               <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10">
-                <ArrowPathIcon className="w-8 h-8 animate-spin text-amber-500" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="w-8 h-8 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 <p className="font-medium text-amber-700 dark:text-amber-400">
                   Interview in progress
                 </p>
@@ -771,7 +801,12 @@ function InterviewDetailPage() {
             )}
             {interview.status === 'evaluating' && !hasEval && (
               <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/10">
-                <ArrowPathIcon className="w-8 h-8 animate-spin text-purple-500" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="w-8 h-8 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 <p className="font-medium text-purple-700 dark:text-purple-400">
                   Generating evaluation...
                 </p>
@@ -797,7 +832,12 @@ function InterviewDetailPage() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm transition-colors disabled:opacity-50"
                 >
                   {actionLoading ? (
-                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="w-4 h-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                   ) : (
                     <ArrowPathIcon className="w-4 h-4" />
                   )}
@@ -1173,7 +1213,12 @@ function InterviewDetailPage() {
                 className="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {actionLoading ? (
-                  <ArrowPathIcon className="w-4 h-4 animate-spin mx-auto" />
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="w-4 h-4  mx-auto animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
                 ) : (
                   'Start Interview'
                 )}
@@ -1241,7 +1286,12 @@ function InterviewDetailPage() {
                 className="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {actionLoading ? (
-                  <ArrowPathIcon className="w-4 h-4 animate-spin mx-auto" />
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="w-4 h-4  mx-auto animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
                 ) : (
                   'ArrowDownOnSquareIcon Decision'
                 )}

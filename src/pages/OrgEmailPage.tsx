@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  ArrowPathIcon,
   BellIcon,
   CheckCircleIcon,
   ClipboardDocumentIcon,
@@ -202,7 +201,12 @@ function OrgEmailPage() {
               className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#1a1a1a] disabled:opacity-40"
             >
               {saving ? (
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-4 w-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               ) : (
                 <CheckCircleIcon className="h-4 w-4" />
               )}
@@ -381,7 +385,14 @@ function OrgEmailPage() {
                       disabled={registering || !domainInput.trim() || domainStatus === 'verified'}
                       className="flex items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a1a1a] disabled:opacity-40"
                     >
-                      {registering ? <ArrowPathIcon className="h-4 w-4 animate-spin" /> : null}
+                      {registering ? (
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-4 w-4 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
+                      ) : null}
                       {registering
                         ? 'Registering…'
                         : dnsRecords.length
@@ -466,7 +477,12 @@ function OrgEmailPage() {
                         className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a1a1a] disabled:opacity-40"
                       >
                         {verifying ? (
-                          <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                          <img
+                            src="/lira_black.png"
+                            alt="Loading"
+                            className="h-4 w-4 animate-spin opacity-50"
+                            style={{ animationDuration: '1.2s' }}
+                          />
                         ) : (
                           <ShieldCheckIcon className="h-4 w-4" />
                         )}
@@ -724,7 +740,13 @@ function InboxPanel({ orgId }: { orgId: string }) {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20 text-gray-400">
-        <ArrowPathIcon className="mr-2 h-4 w-4 animate-spin" /> Loading inbox…
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="mr-2 h-4 w-4 animate-spin opacity-50"
+          style={{ animationDuration: '1.2s' }}
+        />{' '}
+        Loading inbox…
       </div>
     )
   }
@@ -760,7 +782,12 @@ function InboxPanel({ orgId }: { orgId: string }) {
         </div>
         {loadingThread ? (
           <div className="flex justify-center py-10 text-gray-400">
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            <img
+              src="/lira_black.png"
+              alt="Loading"
+              className="h-4 w-4 animate-spin opacity-50"
+              style={{ animationDuration: '1.2s' }}
+            />
           </div>
         ) : (
           <div className="divide-y divide-gray-50 px-5 py-4 space-y-3">

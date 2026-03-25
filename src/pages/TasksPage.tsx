@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowPathIcon,
   BoltIcon,
   CheckCircleIcon,
   ClipboardDocumentCheckIcon,
@@ -448,7 +447,12 @@ function TaskCard({
           )}
           {task.execution_status === 'running' && (
             <span className="flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
-              <ArrowPathIcon className="h-2.5 w-2.5 animate-spin" />
+              <img
+                src="/lira_black.png"
+                alt="Loading"
+                className="h-2.5 w-2.5 animate-spin opacity-50"
+                style={{ animationDuration: '1.2s' }}
+              />
               Running
             </span>
           )}
@@ -700,7 +704,14 @@ function CreateTaskForm({
             disabled={creating || !title.trim() || !description.trim()}
             className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-5 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:opacity-50"
           >
-            {creating && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
+            {creating && (
+              <img
+                src="/lira_black.png"
+                alt="Loading"
+                className="h-4 w-4 animate-spin opacity-50"
+                style={{ animationDuration: '1.2s' }}
+              />
+            )}
             Create
           </button>
         </div>

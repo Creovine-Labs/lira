@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowPathIcon,
   ArrowRightIcon,
   BookOpenIcon,
   BriefcaseIcon,
@@ -523,7 +522,12 @@ function DeployHeroBar() {
               )}
             >
               {isInProgress ? (
-                <ArrowPathIcon className="h-5 w-5 animate-spin text-amber-400" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-5 w-5 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               ) : botState === 'active' ? (
                 <RadioIcon className="h-5 w-5 animate-pulse text-emerald-400" />
               ) : (
@@ -660,7 +664,12 @@ function DeployHeroBar() {
         >
           {deploying ? (
             <>
-              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              <img
+                src="/lira_black.png"
+                alt="Loading"
+                className="h-4 w-4 animate-spin opacity-50"
+                style={{ animationDuration: '1.2s' }}
+              />
               Sending…
             </>
           ) : (

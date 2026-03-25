@@ -1488,7 +1488,7 @@ export interface MemberMapping {
 }
 
 export function getLinearAuthUrl(orgId: string): string {
-  return `/lira/v1/integrations/linear/auth?orgId=${encodeURIComponent(orgId)}`
+  return `${env.VITE_API_URL}/lira/v1/integrations/linear/auth?orgId=${encodeURIComponent(orgId)}`
 }
 
 export async function getLinearStatus(orgId: string): Promise<LinearStatus> {
@@ -1546,4 +1546,941 @@ export async function saveMemberMapping(
       body: JSON.stringify({ userId, externalId, externalEmail }),
     }
   )
+}
+
+// ── Slack Integration API ─────────────────────────────────────────────────────
+
+export interface SlackStatus {
+  connected: boolean
+  sync_enabled?: boolean
+  workspace_id?: string
+  default_channel_id?: string
+  connected_at?: string
+}
+
+export interface SlackChannel {
+  id: string
+  name: string
+  is_private: boolean
+  num_members?: number
+}
+
+export interface SlackMember {
+  id: string
+  name: string
+  real_name: string
+  email?: string
+  display_name?: string
+}
+
+export interface SlackMemberMapping {
+  userId: string
+  orgId: string
+  provider: 'slack'
+  external_id: string
+  external_email?: string
+  status: 'resolved' | 'unresolved'
+  created_at: string
+  updated_at: string
+}
+
+export function getSlackAuthUrl(orgId: string): string {
+  return `${env.VITE_API_URL}/lira/v1/integrations/slack/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getSlackStatus(orgId: string): Promise<SlackStatus> {
+  return apiFetch<SlackStatus>(
+    `/lira/v1/integrations/slack/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectSlack(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/slack?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listSlackChannels(orgId: string): Promise<SlackChannel[]> {
+  const data = await apiFetch<{ channels: SlackChannel[] }>(
+    `/lira/v1/integrations/slack/channels?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.channels
+}
+
+export async function setSlackDefaultChannel(orgId: string, channelId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/slack/channel?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelId }),
+  })
+}
+
+export async function listSlackMembers(orgId: string): Promise<SlackMember[]> {
+  const data = await apiFetch<{ members: SlackMember[] }>(
+    `/lira/v1/integrations/slack/members?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.members
+}
+
+export async function listSlackMemberMappings(orgId: string): Promise<SlackMemberMapping[]> {
+  const data = await apiFetch<{ mappings: SlackMemberMapping[] }>(
+    `/lira/v1/integrations/slack/member-map?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.mappings
+}
+
+export async function saveSlackMemberMapping(
+  orgId: string,
+  userId: string,
+  externalId: string,
+  externalEmail?: string
+): Promise<void> {
+  await apiFetch<void>(
+    `/lira/v1/integrations/slack/member-map?orgId=${encodeURIComponent(orgId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, externalId, externalEmail }),
+    }
+  )
+}
+
+// ── Microsoft Teams Integration API ───────────────────────────────────────────
+
+export interface TeamsStatus {
+  connected: boolean
+  sync_enabled?: boolean
+  default_team_id?: string
+  default_channel_id?: string
+  connected_at?: string
+}
+
+export interface TeamsTeam {
+  id: string
+  displayName: string
+  description?: string
+}
+
+export interface TeamsChannel {
+  id: string
+  displayName: string
+  description?: string
+  membershipType: string
+}
+
+export interface TeamsMember {
+  id: string
+  displayName: string
+  mail?: string
+  userPrincipalName: string
+}
+
+export interface TeamsMemberMapping {
+  userId: string
+  orgId: string
+  provider: 'teams'
+  external_id: string
+  external_email?: string
+  status: 'resolved' | 'unresolved'
+  created_at: string
+  updated_at: string
+}
+
+export function getTeamsAuthUrl(orgId: string): string {
+  return `${env.VITE_API_URL}/lira/v1/integrations/teams/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getTeamsStatus(orgId: string): Promise<TeamsStatus> {
+  return apiFetch<TeamsStatus>(
+    `/lira/v1/integrations/teams/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectTeams(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/teams?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listTeamsTeams(orgId: string): Promise<TeamsTeam[]> {
+  const data = await apiFetch<{ teams: TeamsTeam[] }>(
+    `/lira/v1/integrations/teams/teams?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.teams
+}
+
+export async function listTeamsChannels(orgId: string, teamId: string): Promise<TeamsChannel[]> {
+  const data = await apiFetch<{ channels: TeamsChannel[] }>(
+    `/lira/v1/integrations/teams/channels?orgId=${encodeURIComponent(orgId)}&teamId=${encodeURIComponent(teamId)}`
+  )
+  return data.channels
+}
+
+export async function setTeamsDefaultTeam(orgId: string, teamId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/teams/team?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ teamId }),
+  })
+}
+
+export async function setTeamsDefaultChannel(orgId: string, channelId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/teams/channel?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelId }),
+  })
+}
+
+export async function listTeamsMembers(orgId: string, teamId: string): Promise<TeamsMember[]> {
+  const data = await apiFetch<{ members: TeamsMember[] }>(
+    `/lira/v1/integrations/teams/members?orgId=${encodeURIComponent(orgId)}&teamId=${encodeURIComponent(teamId)}`
+  )
+  return data.members
+}
+
+export async function listTeamsMemberMappings(orgId: string): Promise<TeamsMemberMapping[]> {
+  const data = await apiFetch<{ mappings: TeamsMemberMapping[] }>(
+    `/lira/v1/integrations/teams/member-map?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.mappings
+}
+
+export async function saveTeamsMemberMapping(
+  orgId: string,
+  userId: string,
+  externalId: string,
+  externalEmail?: string
+): Promise<void> {
+  await apiFetch<void>(
+    `/lira/v1/integrations/teams/member-map?orgId=${encodeURIComponent(orgId)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId, externalId, externalEmail }),
+    }
+  )
+}
+
+// ── Google Calendar + Drive ──────────────────────────────────────────────────
+
+export interface GoogleStatus {
+  connected: boolean
+  default_calendar_id?: string
+  default_folder_id?: string
+  connected_at?: string
+}
+
+export interface GoogleCalendar {
+  id: string
+  summary: string
+  primary?: boolean
+}
+
+export interface GoogleCalendarEvent {
+  id: string
+  summary: string
+  start: { dateTime?: string; date?: string }
+  end: { dateTime?: string; date?: string }
+  htmlLink: string
+  attendees?: { email: string; responseStatus?: string }[]
+}
+
+export interface GoogleDriveFolder {
+  id: string
+  name: string
+  mimeType: string
+}
+
+export interface GoogleDriveFile {
+  id: string
+  name: string
+  mimeType: string
+  webViewLink?: string
+  createdTime?: string
+  size?: string
+  modifiedTime?: string
+}
+
+export interface GoogleFileContent {
+  content: string
+  mimeType: string
+}
+
+export interface GoogleSheetData {
+  values: string[][]
+  spreadsheetId: string
+  range: string
+}
+
+export interface GoogleDocContent {
+  title: string
+  body: string
+}
+
+export function getGoogleAuthUrl(orgId: string): string {
+  return `${env.VITE_API_URL}/lira/v1/integrations/google/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getGoogleStatus(orgId: string): Promise<GoogleStatus> {
+  return apiFetch<GoogleStatus>(
+    `/lira/v1/integrations/google/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectGoogle(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/google?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listGoogleCalendars(orgId: string): Promise<GoogleCalendar[]> {
+  const data = await apiFetch<{ calendars: GoogleCalendar[] }>(
+    `/lira/v1/integrations/google/calendars?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.calendars
+}
+
+export async function setGoogleDefaultCalendar(orgId: string, calendarId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/google/calendar?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ calendarId }),
+  })
+}
+
+export async function listGoogleEvents(orgId: string): Promise<GoogleCalendarEvent[]> {
+  const data = await apiFetch<{ events: GoogleCalendarEvent[] }>(
+    `/lira/v1/integrations/google/events?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.events
+}
+
+export async function createGoogleEvent(
+  orgId: string,
+  event: { summary: string; description?: string; start: string; end: string; attendees?: string[] }
+): Promise<GoogleCalendarEvent> {
+  return apiFetch<{ event: GoogleCalendarEvent }>(
+    `/lira/v1/integrations/google/events?orgId=${encodeURIComponent(orgId)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event),
+    }
+  ).then((r) => r.event)
+}
+
+export async function listGoogleDriveFolders(
+  orgId: string,
+  parentId?: string
+): Promise<GoogleDriveFolder[]> {
+  let url = `/lira/v1/integrations/google/folders?orgId=${encodeURIComponent(orgId)}`
+  if (parentId) url += `&parentId=${encodeURIComponent(parentId)}`
+  const data = await apiFetch<{ folders: GoogleDriveFolder[] }>(url)
+  return data.folders
+}
+
+export async function setGoogleDefaultFolder(orgId: string, folderId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/google/folder?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ folderId }),
+  })
+}
+
+export async function createGoogleDriveFolder(
+  orgId: string,
+  name: string,
+  parentId?: string
+): Promise<GoogleDriveFolder> {
+  return apiFetch<{ folder: GoogleDriveFolder }>(
+    `/lira/v1/integrations/google/folders?orgId=${encodeURIComponent(orgId)}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, parentId }),
+    }
+  ).then((r) => r.folder)
+}
+
+// ── Google Drive file operations ─────────────────────────────────────────────
+
+export async function listGoogleDriveFiles(
+  orgId: string,
+  folderId?: string
+): Promise<GoogleDriveFile[]> {
+  let url = `/lira/v1/integrations/google/files?orgId=${encodeURIComponent(orgId)}`
+  if (folderId) url += `&folderId=${encodeURIComponent(folderId)}`
+  const data = await apiFetch<{ files: GoogleDriveFile[] }>(url)
+  return data.files
+}
+
+export async function searchGoogleDriveFiles(
+  orgId: string,
+  query: string
+): Promise<GoogleDriveFile[]> {
+  const url = `/lira/v1/integrations/google/files/search?orgId=${encodeURIComponent(orgId)}&q=${encodeURIComponent(query)}`
+  const data = await apiFetch<{ files: GoogleDriveFile[] }>(url)
+  return data.files
+}
+
+export async function getGoogleDriveFileMetadata(
+  orgId: string,
+  fileId: string
+): Promise<GoogleDriveFile> {
+  const data = await apiFetch<{ file: GoogleDriveFile }>(
+    `/lira/v1/integrations/google/files/${encodeURIComponent(fileId)}?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.file
+}
+
+export async function readGoogleDriveFileContent(
+  orgId: string,
+  fileId: string,
+  mimeType: string
+): Promise<GoogleFileContent> {
+  return apiFetch<GoogleFileContent>(
+    `/lira/v1/integrations/google/files/${encodeURIComponent(fileId)}/content?orgId=${encodeURIComponent(orgId)}&mimeType=${encodeURIComponent(mimeType)}`
+  )
+}
+
+export async function readGoogleSheetData(
+  orgId: string,
+  spreadsheetId: string,
+  range?: string
+): Promise<GoogleSheetData> {
+  let url = `/lira/v1/integrations/google/sheets/${encodeURIComponent(spreadsheetId)}?orgId=${encodeURIComponent(orgId)}`
+  if (range) url += `&range=${encodeURIComponent(range)}`
+  return apiFetch<GoogleSheetData>(url)
+}
+
+export async function readGoogleDocContent(
+  orgId: string,
+  documentId: string
+): Promise<GoogleDocContent> {
+  return apiFetch<GoogleDocContent>(
+    `/lira/v1/integrations/google/docs/${encodeURIComponent(documentId)}?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+// ── GitHub Integration Types ───────────────────────────────────────────────────
+
+export interface GitHubStatus {
+  connected: boolean
+  username?: string
+  connected_at?: string
+}
+
+export interface GitHubRepo {
+  id: number
+  name: string
+  full_name: string
+  private: boolean
+  description: string | null
+  html_url: string
+  default_branch: string
+  language: string | null
+  updated_at: string
+}
+
+export interface GitHubBranch {
+  name: string
+  commit: { sha: string }
+  protected: boolean
+}
+
+export interface GitHubFile {
+  name: string
+  path: string
+  sha: string
+  size: number
+  type: 'file' | 'dir' | 'submodule' | 'symlink'
+  html_url: string
+  download_url: string | null
+}
+
+export interface GitHubFileContent {
+  name: string
+  path: string
+  sha: string
+  content: string
+  size: number
+  html_url: string
+}
+
+export interface GitHubIssue {
+  id: number
+  number: number
+  title: string
+  body: string | null
+  state: 'open' | 'closed'
+  html_url: string
+  labels: { name: string; color: string }[]
+  assignees: { login: string; avatar_url: string }[]
+  created_at: string
+  updated_at: string
+}
+
+export interface GitHubPullRequest {
+  id: number
+  number: number
+  title: string
+  body: string | null
+  state: 'open' | 'closed' | 'merged'
+  html_url: string
+  head: { ref: string; sha: string }
+  base: { ref: string }
+  created_at: string
+  updated_at: string
+  merged: boolean
+}
+
+// ── GitHub Integration API ─────────────────────────────────────────────────────
+
+export function getGitHubAuthUrl(orgId: string): string {
+  return `${env.VITE_API_URL}/lira/v1/integrations/github/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getGitHubStatus(orgId: string): Promise<GitHubStatus> {
+  return apiFetch<GitHubStatus>(
+    `/lira/v1/integrations/github/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectGitHub(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/github?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listGitHubRepos(orgId: string): Promise<GitHubRepo[]> {
+  const data = await apiFetch<{ repos: GitHubRepo[] }>(
+    `/lira/v1/integrations/github/repos?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.repos
+}
+
+export async function listGitHubBranches(
+  orgId: string,
+  owner: string,
+  repo: string
+): Promise<GitHubBranch[]> {
+  const data = await apiFetch<{ branches: GitHubBranch[] }>(
+    `/lira/v1/integrations/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/branches?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.branches
+}
+
+export async function listGitHubFiles(
+  orgId: string,
+  owner: string,
+  repo: string,
+  path?: string,
+  ref?: string
+): Promise<GitHubFile[]> {
+  let url = `/lira/v1/integrations/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/files?orgId=${encodeURIComponent(orgId)}`
+  if (path) url += `&path=${encodeURIComponent(path)}`
+  if (ref) url += `&ref=${encodeURIComponent(ref)}`
+  const data = await apiFetch<{ files: GitHubFile[] }>(url)
+  return data.files
+}
+
+export async function readGitHubFile(
+  orgId: string,
+  owner: string,
+  repo: string,
+  path: string,
+  ref?: string
+): Promise<GitHubFileContent> {
+  let url = `/lira/v1/integrations/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/file?orgId=${encodeURIComponent(orgId)}&path=${encodeURIComponent(path)}`
+  if (ref) url += `&ref=${encodeURIComponent(ref)}`
+  const data = await apiFetch<{ file: GitHubFileContent }>(url)
+  return data.file
+}
+
+export async function listGitHubIssues(
+  orgId: string,
+  owner: string,
+  repo: string,
+  state?: string
+): Promise<GitHubIssue[]> {
+  let url = `/lira/v1/integrations/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/issues?orgId=${encodeURIComponent(orgId)}`
+  if (state) url += `&state=${encodeURIComponent(state)}`
+  const data = await apiFetch<{ issues: GitHubIssue[] }>(url)
+  return data.issues
+}
+
+export async function listGitHubPullRequests(
+  orgId: string,
+  owner: string,
+  repo: string,
+  state?: string
+): Promise<GitHubPullRequest[]> {
+  let url = `/lira/v1/integrations/github/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/pulls?orgId=${encodeURIComponent(orgId)}`
+  if (state) url += `&state=${encodeURIComponent(state)}`
+  const data = await apiFetch<{ pulls: GitHubPullRequest[] }>(url)
+  return data.pulls
+}
+
+// ── Greenhouse Integration Types ───────────────────────────────────────────────
+
+export interface GreenhouseStatus {
+  connected: boolean
+  connected_at?: string
+}
+
+export interface GreenhouseJob {
+  id: number
+  name: string
+  status: 'open' | 'closed' | 'draft'
+  departments: { id: number; name: string }[]
+  offices: { id: number; name: string }[]
+  opened_at: string | null
+  closed_at: string | null
+  updated_at: string
+}
+
+export interface GreenhouseCandidate {
+  id: number
+  first_name: string
+  last_name: string
+  company: string | null
+  title: string | null
+  emails: { value: string; type: string }[]
+  applications: { id: number; job: { id: number; name: string } | null; status: string }[]
+  tags: string[]
+  created_at: string
+  updated_at: string
+}
+
+export interface GreenhouseApplication {
+  id: number
+  candidate_id: number
+  job_id: number | null
+  status: string
+  current_stage: { id: number; name: string } | null
+  source: { id: number; public_name: string } | null
+  applied_at: string
+  last_activity_at: string
+}
+
+export interface GreenhouseOffer {
+  id: number
+  application_id: number
+  status: 'unresolved' | 'accepted' | 'rejected' | 'deprecated'
+  created_at: string
+  sent_at: string | null
+  resolved_at: string | null
+  starts_at: string | null
+}
+
+// ── Greenhouse Integration API ─────────────────────────────────────────────────
+
+export async function connectGreenhouse(
+  orgId: string,
+  apiKey: string
+): Promise<{ success: boolean }> {
+  return apiFetch<{ success: boolean }>(
+    `/lira/v1/integrations/greenhouse/connect?orgId=${encodeURIComponent(orgId)}`,
+    { method: 'POST', body: JSON.stringify({ apiKey }) }
+  )
+}
+
+export async function getGreenhouseStatus(orgId: string): Promise<GreenhouseStatus> {
+  return apiFetch<GreenhouseStatus>(
+    `/lira/v1/integrations/greenhouse/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectGreenhouse(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/greenhouse?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listGreenhouseJobs(orgId: string, status?: string): Promise<GreenhouseJob[]> {
+  let url = `/lira/v1/integrations/greenhouse/jobs?orgId=${encodeURIComponent(orgId)}`
+  if (status) url += `&status=${encodeURIComponent(status)}`
+  const data = await apiFetch<{ jobs: GreenhouseJob[] }>(url)
+  return data.jobs
+}
+
+export async function listGreenhouseCandidates(
+  orgId: string,
+  query?: string
+): Promise<GreenhouseCandidate[]> {
+  let url = `/lira/v1/integrations/greenhouse/candidates?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  const data = await apiFetch<{ candidates: GreenhouseCandidate[] }>(url)
+  return data.candidates
+}
+
+export async function listGreenhouseApplications(
+  orgId: string,
+  jobId?: number
+): Promise<GreenhouseApplication[]> {
+  let url = `/lira/v1/integrations/greenhouse/applications?orgId=${encodeURIComponent(orgId)}`
+  if (jobId) url += `&jobId=${encodeURIComponent(String(jobId))}`
+  const data = await apiFetch<{ applications: GreenhouseApplication[] }>(url)
+  return data.applications
+}
+
+export async function listGreenhouseOffers(orgId: string): Promise<GreenhouseOffer[]> {
+  const data = await apiFetch<{ offers: GreenhouseOffer[] }>(
+    `/lira/v1/integrations/greenhouse/offers?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.offers
+}
+
+// ── HubSpot Integration Types ────────────────────────────────────────────────
+
+export interface HubSpotStatus {
+  connected: boolean
+  connected_at?: string
+  connected_by?: string
+}
+
+export interface HubSpotContact {
+  id: string
+  properties: {
+    firstname?: string
+    lastname?: string
+    email?: string
+    phone?: string
+    company?: string
+    jobtitle?: string
+    lifecyclestage?: string
+    hs_lead_status?: string
+    createdate?: string
+    lastmodifieddate?: string
+    [key: string]: string | undefined
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HubSpotCompany {
+  id: string
+  properties: {
+    name?: string
+    domain?: string
+    industry?: string
+    phone?: string
+    city?: string
+    state?: string
+    country?: string
+    numberofemployees?: string
+    annualrevenue?: string
+    description?: string
+    createdate?: string
+    lastmodifieddate?: string
+    [key: string]: string | undefined
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HubSpotDeal {
+  id: string
+  properties: {
+    dealname?: string
+    dealstage?: string
+    pipeline?: string
+    amount?: string
+    closedate?: string
+    hs_lastmodifieddate?: string
+    createdate?: string
+    hubspot_owner_id?: string
+    [key: string]: string | undefined
+  }
+  createdAt: string
+  updatedAt: string
+}
+
+export interface HubSpotPipeline {
+  id: string
+  label: string
+  displayOrder: number
+  stages: { id: string; label: string; displayOrder: number }[]
+}
+
+export interface HubSpotOwner {
+  id: string
+  email: string
+  firstName: string
+  lastName: string
+}
+
+// ── HubSpot Integration API ─────────────────────────────────────────────────
+
+export function getHubSpotAuthUrl(orgId: string): string {
+  return `${env.VITE_API_URL}/lira/v1/integrations/hubspot/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getHubSpotStatus(orgId: string): Promise<HubSpotStatus> {
+  return apiFetch<HubSpotStatus>(
+    `/lira/v1/integrations/hubspot/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectHubSpot(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/hubspot?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listHubSpotContacts(
+  orgId: string,
+  query?: string,
+  after?: string
+): Promise<{ contacts: HubSpotContact[]; paging?: { next?: { after: string } } }> {
+  let url = `/lira/v1/integrations/hubspot/contacts?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  if (after) url += `&after=${encodeURIComponent(after)}`
+  return apiFetch(url)
+}
+
+export async function listHubSpotCompanies(
+  orgId: string,
+  query?: string,
+  after?: string
+): Promise<{ companies: HubSpotCompany[]; paging?: { next?: { after: string } } }> {
+  let url = `/lira/v1/integrations/hubspot/companies?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  if (after) url += `&after=${encodeURIComponent(after)}`
+  return apiFetch(url)
+}
+
+export async function listHubSpotDeals(
+  orgId: string,
+  query?: string,
+  after?: string
+): Promise<{ deals: HubSpotDeal[]; paging?: { next?: { after: string } } }> {
+  let url = `/lira/v1/integrations/hubspot/deals?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  if (after) url += `&after=${encodeURIComponent(after)}`
+  return apiFetch(url)
+}
+
+export async function listHubSpotPipelines(orgId: string): Promise<HubSpotPipeline[]> {
+  const data = await apiFetch<{ pipelines: HubSpotPipeline[] }>(
+    `/lira/v1/integrations/hubspot/pipelines?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.pipelines
+}
+
+export async function listHubSpotOwners(orgId: string): Promise<HubSpotOwner[]> {
+  const data = await apiFetch<{ owners: HubSpotOwner[] }>(
+    `/lira/v1/integrations/hubspot/owners?orgId=${encodeURIComponent(orgId)}`
+  )
+  return data.owners
+}
+
+// ── Salesforce Types ─────────────────────────────────────────────────────────
+
+export interface SalesforceStatus {
+  connected: boolean
+  connected_at?: string
+  connected_by?: string
+}
+
+export interface SalesforceContact {
+  Id: string
+  FirstName: string | null
+  LastName: string
+  Email: string | null
+  Phone: string | null
+  AccountId: string | null
+  Title: string | null
+  Department: string | null
+}
+
+export interface SalesforceAccount {
+  Id: string
+  Name: string
+  Industry: string | null
+  Type: string | null
+  Phone: string | null
+  Website: string | null
+  BillingCity: string | null
+  BillingState: string | null
+}
+
+export interface SalesforceOpportunity {
+  Id: string
+  Name: string
+  StageName: string
+  Amount: number | null
+  CloseDate: string
+  AccountId: string | null
+  OwnerId: string | null
+  Probability: number | null
+  IsClosed: boolean
+  IsWon: boolean
+}
+
+export interface SalesforceLead {
+  Id: string
+  FirstName: string | null
+  LastName: string
+  Email: string | null
+  Company: string
+  Phone: string | null
+  Status: string
+  Title: string | null
+  LeadSource: string | null
+}
+
+// ── Salesforce Integration API ───────────────────────────────────────────────
+
+export function getSalesforceAuthUrl(orgId: string): string {
+  return `${env.VITE_API_URL}/lira/v1/integrations/salesforce/auth?orgId=${encodeURIComponent(orgId)}`
+}
+
+export async function getSalesforceStatus(orgId: string): Promise<SalesforceStatus> {
+  return apiFetch<SalesforceStatus>(
+    `/lira/v1/integrations/salesforce/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function disconnectSalesforce(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/salesforce?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function listSalesforceContacts(
+  orgId: string,
+  query?: string
+): Promise<{ contacts: SalesforceContact[] }> {
+  let url = `/lira/v1/integrations/salesforce/contacts?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  return apiFetch(url)
+}
+
+export async function listSalesforceAccounts(
+  orgId: string,
+  query?: string
+): Promise<{ accounts: SalesforceAccount[] }> {
+  let url = `/lira/v1/integrations/salesforce/accounts?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  return apiFetch(url)
+}
+
+export async function listSalesforceOpportunities(
+  orgId: string,
+  query?: string
+): Promise<{ opportunities: SalesforceOpportunity[] }> {
+  let url = `/lira/v1/integrations/salesforce/opportunities?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  return apiFetch(url)
+}
+
+export async function listSalesforceLeads(
+  orgId: string,
+  query?: string
+): Promise<{ leads: SalesforceLead[] }> {
+  let url = `/lira/v1/integrations/salesforce/leads?orgId=${encodeURIComponent(orgId)}`
+  if (query) url += `&q=${encodeURIComponent(query)}`
+  return apiFetch(url)
 }

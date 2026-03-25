@@ -34,6 +34,11 @@ import {
   ResourcesPage,
   BlogPage,
   BlogPostPage,
+  PrivacyPolicyPage,
+  TermsOfServicePage,
+  CookiePolicyPage,
+  AcceptableUsePolicyPage,
+  SecurityPage,
 } from '@/pages'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -77,6 +82,11 @@ function App() {
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
+        <Route path="/privacy" element={<PrivacyPolicyPage />} />
+        <Route path="/terms" element={<TermsOfServicePage />} />
+        <Route path="/cookies" element={<CookiePolicyPage />} />
+        <Route path="/acceptable-use" element={<AcceptableUsePolicyPage />} />
+        <Route path="/security" element={<SecurityPage />} />
 
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>

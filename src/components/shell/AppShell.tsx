@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
-  ArrowPathIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
   BellIcon,
@@ -623,7 +622,12 @@ function AppShell() {
   if (orgLoading && organizations.length === 0) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="h-8 w-8 animate-spin opacity-60"
+          style={{ animationDuration: '1.2s' }}
+        />
       </div>
     )
   }

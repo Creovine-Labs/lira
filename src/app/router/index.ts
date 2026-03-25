@@ -32,6 +32,11 @@ export const ROUTES = {
   resources: '/resources',
   blog: '/blog',
   blogPost: '/blog/:slug',
+  privacy: '/privacy',
+  terms: '/terms',
+  cookies: '/cookies',
+  acceptableUse: '/acceptable-use',
+  security: '/security',
 } as const
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES]

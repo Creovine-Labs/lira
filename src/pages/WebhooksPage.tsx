@@ -1,9 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import {
-  ArrowDownOnSquareIcon,
-  ArrowPathIcon,
-  PaperAirplaneIcon,
-} from '@heroicons/react/24/outline'
+import { ArrowDownOnSquareIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useOrgStore } from '@/app/store'
@@ -184,7 +180,12 @@ function WebhooksPage() {
           title="PaperAirplaneIcon a test event to verify your webhook configuration"
         >
           {testing ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            <img
+              src="/lira_black.png"
+              alt="Loading"
+              className="h-4 w-4 animate-spin opacity-50"
+              style={{ animationDuration: '1.2s' }}
+            />
           ) : (
             <PaperAirplaneIcon className="h-4 w-4" />
           )}
@@ -196,7 +197,12 @@ function WebhooksPage() {
           className="flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
         >
           {saving ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            <img
+              src="/lira_black.png"
+              alt="Loading"
+              className="h-4 w-4 animate-spin opacity-50"
+              style={{ animationDuration: '1.2s' }}
+            />
           ) : (
             <ArrowDownOnSquareIcon className="h-4 w-4" />
           )}

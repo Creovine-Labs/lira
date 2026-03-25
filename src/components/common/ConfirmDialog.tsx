@@ -1,4 +1,4 @@
-import { ArrowPathIcon, ExclamationTriangleIcon } from '@heroicons/react/24/outline'
+import { ExclamationTriangleIcon } from '@heroicons/react/24/outline'
 import { useState } from 'react'
 
 import {
@@ -75,7 +75,14 @@ function ConfirmDialog({
               destructive ? 'bg-red-500 hover:bg-red-600' : 'bg-violet-600 hover:bg-violet-700'
             }`}
           >
-            {busy && <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />}
+            {busy && (
+              <img
+                src="/lira_black.png"
+                alt="Loading"
+                className="w-3.5 h-3.5 animate-spin opacity-50"
+                style={{ animationDuration: '1.2s' }}
+              />
+            )}
             {confirmLabel}
           </button>
         </DialogFooter>

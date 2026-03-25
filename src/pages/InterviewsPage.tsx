@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowPathIcon,
   BriefcaseIcon,
   ChevronRightIcon,
   MagnifyingGlassIcon,
@@ -223,7 +222,12 @@ function InterviewsPage() {
                     title="Delete role"
                   >
                     {deletingRole === role ? (
-                      <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                      <img
+                        src="/lira_black.png"
+                        alt="Loading"
+                        className="h-3.5 w-3.5 animate-spin opacity-50"
+                        style={{ animationDuration: '1.2s' }}
+                      />
                     ) : (
                       <TrashIcon className="h-3.5 w-3.5" />
                     )}

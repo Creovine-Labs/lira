@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
   ArrowUpTrayIcon,
   BriefcaseIcon,
   ChevronDownIcon,
@@ -679,7 +678,12 @@ function InterviewCreatePage() {
   if (loadingEdit) {
     return (
       <div className="flex items-center justify-center h-full">
-        <ArrowPathIcon className="w-6 h-6 animate-spin text-violet-500" />
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="w-6 h-6 animate-spin opacity-50"
+          style={{ animationDuration: '1.2s' }}
+        />
       </div>
     )
   }
@@ -757,7 +761,12 @@ function InterviewCreatePage() {
             >
               {drafting ? (
                 <>
-                  <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="w-4 h-4 animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
                   Setting up your role…
                 </>
               ) : (
@@ -1155,7 +1164,12 @@ function InterviewCreatePage() {
                   className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors disabled:opacity-50"
                 >
                   {generatingQuestions ? (
-                    <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="w-3.5 h-3.5 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                   ) : (
                     <SparklesIcon className="w-3.5 h-3.5" />
                   )}
@@ -1187,7 +1201,12 @@ function InterviewCreatePage() {
             )}
             {generatingQuestions && review.questions.length === 0 && (
               <div className="px-5 py-6 flex items-center justify-center gap-2">
-                <ArrowPathIcon className="w-5 h-5 animate-spin text-violet-500" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="w-5 h-5 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 <p className="text-sm text-slate-500">Generating questions...</p>
               </div>
             )}
@@ -1298,7 +1317,12 @@ function InterviewCreatePage() {
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
           >
             {creating ? (
-              <ArrowPathIcon className="w-4 h-4 animate-spin" />
+              <img
+                src="/lira_black.png"
+                alt="Loading"
+                className="w-4 h-4 animate-spin opacity-50"
+                style={{ animationDuration: '1.2s' }}
+              />
             ) : (
               <BriefcaseIcon className="w-4 h-4" />
             )}

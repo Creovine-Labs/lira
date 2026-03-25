@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   CalendarIcon,
   ChatBubbleLeftIcon,
@@ -219,7 +218,12 @@ function CompactInviteBar() {
               {botState === 'active' ? (
                 <RadioIcon className="h-4 w-4 animate-pulse" />
               ) : (
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-4 w-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
               )}
               <span className="font-semibold">{STATE_LABELS[botState]}</span>
               <span className="text-xs opacity-60">
@@ -319,7 +323,12 @@ function CompactInviteBar() {
           >
             {deploying ? (
               <>
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-4 w-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 Sending…
               </>
             ) : (
@@ -536,7 +545,12 @@ function MeetingsPage() {
                   className="flex items-center gap-1.5 rounded-xl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
                 >
                   {bulkDeleting ? (
-                    <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-3.5 w-3.5 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                   ) : (
                     <TrashIcon className="h-3.5 w-3.5" />
                   )}
@@ -691,7 +705,12 @@ function MeetingsPage() {
                           className="shrink-0 rounded-lg p-1 text-emerald-600 transition hover:bg-emerald-50"
                         >
                           {savingTitleId === m.session_id ? (
-                            <ArrowPathIcon className="h-3.5 w-3.5 animate-spin" />
+                            <img
+                              src="/lira_black.png"
+                              alt="Loading"
+                              className="h-3.5 w-3.5 animate-spin opacity-50"
+                              style={{ animationDuration: '1.2s' }}
+                            />
                           ) : (
                             <CheckIcon className="h-3.5 w-3.5" />
                           )}
@@ -761,7 +780,12 @@ function MeetingsPage() {
                   title="Delete meeting"
                 >
                   {deletingId === m.session_id ? (
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-4 w-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                   ) : (
                     <TrashIcon className="h-4 w-4" />
                   )}

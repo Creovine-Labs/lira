@@ -264,7 +264,12 @@ function DocumentsPage() {
             />
             {uploading && (
               <div className="mt-4 flex items-center justify-center gap-2 text-sm text-[#3730a3]">
-                <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-4 w-4 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 Uploading…
               </div>
             )}

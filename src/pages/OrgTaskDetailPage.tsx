@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
   CheckIcon,
@@ -412,7 +411,12 @@ function TaskDetailPage() {
                 ) : task.lira_review_status === 'approved' &&
                   task.execution_status === 'running' ? (
                   <div className="flex items-center gap-2 text-sm text-amber-700">
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-4 w-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                     Working on it…
                   </div>
                 ) : (
@@ -490,7 +494,12 @@ function TaskDetailPage() {
                       className="rounded p-0.5 text-green-600 hover:bg-green-50"
                     >
                       {savingAssignee ? (
-                        <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-4 w-4 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
                       ) : (
                         <CheckIcon className="h-4 w-4" />
                       )}
@@ -621,7 +630,12 @@ function TaskDetailPage() {
                     className="rounded p-0.5 text-green-600 hover:bg-green-50"
                   >
                     {savingDueDate ? (
-                      <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                      <img
+                        src="/lira_black.png"
+                        alt="Loading"
+                        className="h-4 w-4 animate-spin opacity-50"
+                        style={{ animationDuration: '1.2s' }}
+                      />
                     ) : (
                       <CheckIcon className="h-4 w-4" />
                     )}
@@ -725,7 +739,14 @@ function TaskDetailPage() {
                   disabled={deleting}
                   className="flex items-center gap-1.5 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white hover:bg-red-700 disabled:opacity-50"
                 >
-                  {deleting && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
+                  {deleting && (
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-4 w-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
+                  )}
                   {deleting ? 'Deleting…' : 'Delete'}
                 </button>
               </div>
@@ -782,7 +803,14 @@ function TaskDetailPage() {
                   disabled={savingDesc || !descDraft.trim()}
                   className="flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
                 >
-                  {savingDesc && <ArrowPathIcon className="h-4 w-4 animate-spin" />}
+                  {savingDesc && (
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-4 w-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
+                  )}
                   {savingDesc ? 'Saving…' : 'Save & Ask Lira to Review'}
                 </button>
               </div>

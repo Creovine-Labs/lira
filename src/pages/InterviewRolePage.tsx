@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
-  ArrowPathIcon,
   BriefcaseIcon,
   ChevronRightIcon,
   TrashIcon,
@@ -98,7 +97,12 @@ function CandidateRow({
         title="Delete candidate"
       >
         {deleting === latest.interview_id ? (
-          <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+          <img
+            src="/lira_black.png"
+            alt="Loading"
+            className="w-3.5 h-3.5 animate-spin opacity-50"
+            style={{ animationDuration: '1.2s' }}
+          />
         ) : (
           <TrashIcon className="w-3.5 h-3.5" />
         )}
@@ -237,7 +241,12 @@ function InterviewRolePage() {
           className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 border border-red-200 dark:border-red-800 transition-colors disabled:opacity-40"
         >
           {deletingRole ? (
-            <ArrowPathIcon className="w-3.5 h-3.5 animate-spin" />
+            <img
+              src="/lira_black.png"
+              alt="Loading"
+              className="w-3.5 h-3.5 animate-spin opacity-50"
+              style={{ animationDuration: '1.2s' }}
+            />
           ) : (
             <TrashIcon className="w-3.5 h-3.5" />
           )}

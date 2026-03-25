@@ -151,7 +151,12 @@ export function AuthStatusCard() {
           >
             {refreshing ? (
               <span className="flex items-center gap-1.5">
-                <ArrowPathIcon className="h-3 w-3 animate-spin" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-3 w-3 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 Refreshing…
               </span>
             ) : (

@@ -311,7 +311,12 @@ function MeetingDetailPage() {
     return (
       <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background via-background to-violet-50/30 dark:to-violet-950/20">
         <div className="flex flex-col items-center gap-3">
-          <ArrowPathIcon className="h-8 w-8 animate-spin text-violet-500" />
+          <img
+            src="/lira_black.png"
+            alt="Loading"
+            className="h-8 w-8 animate-spin opacity-50"
+            style={{ animationDuration: '1.2s' }}
+          />
           <p className="text-sm text-muted-foreground">Loading meeting…</p>
         </div>
       </main>
@@ -382,7 +387,12 @@ function MeetingDetailPage() {
                   title="ArrowDownOnSquareIcon"
                 >
                   {savingTitle ? (
-                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    <img
+                      src="/lira_black.png"
+                      alt="Loading"
+                      className="h-4 w-4 animate-spin opacity-50"
+                      style={{ animationDuration: '1.2s' }}
+                    />
                   ) : (
                     <CheckIcon className="h-4 w-4" />
                   )}
@@ -485,7 +495,12 @@ function MeetingDetailPage() {
 
             {summaryLoading && (
               <div className="flex items-center gap-3 py-4">
-                <ArrowPathIcon className="h-5 w-5 animate-spin text-violet-500" />
+                <img
+                  src="/lira_black.png"
+                  alt="Loading"
+                  className="h-5 w-5 animate-spin opacity-50"
+                  style={{ animationDuration: '1.2s' }}
+                />
                 <p className="text-sm text-muted-foreground">
                   Generating {summaryMode} summary from {msgCount} messages…
                 </p>

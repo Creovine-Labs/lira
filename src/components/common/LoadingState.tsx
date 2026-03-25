@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react'
 
-import { ArrowPathIcon } from '@heroicons/react/24/outline'
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib'
 
@@ -30,7 +29,12 @@ function LoadingState({
       aria-busy="true"
       aria-live="polite"
     >
-      <ArrowPathIcon className="h-6 w-6 animate-spin text-muted-foreground" />
+      <img
+        src="/lira_black.png"
+        alt="Loading"
+        className="h-6 w-6 animate-spin opacity-50"
+        style={{ animationDuration: '1.2s' }}
+      />
       <div className="space-y-1 text-center">
         <p className="text-sm font-medium">{title}</p>
         {description ? <p className="text-sm text-muted-foreground">{description}</p> : null}
