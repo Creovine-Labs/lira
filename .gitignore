@@ -35,4 +35,5 @@ test-results
 public/participants/*.mov
 docs/microsoft_secrets.txt
 docs/salesforce_secrets.txt
+docs/replytoken.txt
 *.bak
