@@ -80,6 +80,7 @@ type DropdownId = 'products' | 'resources' | null
 export function MarketingNavbar() {
   const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [mobileExpanded, setMobileExpanded] = useState<'solutions' | 'resources' | null>(null)
   const [scrolled, setScrolled] = useState(false)
   const navRef = useRef<HTMLDivElement>(null)
 
@@ -236,36 +237,66 @@ export function MarketingNavbar() {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="md:hidden bg-[#ebebeb] border-t border-gray-200 px-6 py-5 space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 px-1 pb-1">
+          <div className="md:hidden bg-[#ebebeb] border-t border-gray-200 px-6 py-4 space-y-1">
+            {/* Solutions accordion */}
+            <button
+              onClick={() => setMobileExpanded((v) => (v === 'solutions' ? null : 'solutions'))}
+              className="flex w-full items-center justify-between py-2.5 text-sm font-black text-gray-900"
+            >
               Solutions
-            </p>
-            {PRODUCTS.map(({ label, href }) => (
-              <Link
-                key={label}
-                to={href}
-                className="block py-2.5 text-sm font-black text-gray-700 border-b border-gray-100 hover:text-gray-900"
-                onClick={() => setMobileOpen(false)}
-              >
-                {label}
-              </Link>
-            ))}
-            <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 px-1 pt-3 pb-1">
+              <ChevronDownIcon
+                className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+                  mobileExpanded === 'solutions' ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {mobileExpanded === 'solutions' && (
+              <div className="pl-3 pb-1 space-y-0.5">
+                {PRODUCTS.map(({ Icon, label, href }) => (
+                  <Link
+                    key={label}
+                    to={href}
+                    className="flex items-center gap-2.5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-gray-100 last:border-0"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/* Resources accordion */}
+            <button
+              onClick={() => setMobileExpanded((v) => (v === 'resources' ? null : 'resources'))}
+              className="flex w-full items-center justify-between py-2.5 text-sm font-black text-gray-900 border-t border-gray-100"
+            >
               Resources
-            </p>
-            {RESOURCES.map(({ label, href }) => (
-              <Link
-                key={label}
-                to={href}
-                className="block py-2.5 text-sm font-black text-gray-700 border-b border-gray-100 hover:text-gray-900"
-                onClick={() => setMobileOpen(false)}
-              >
-                {label}
-              </Link>
-            ))}
+              <ChevronDownIcon
+                className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+                  mobileExpanded === 'resources' ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            {mobileExpanded === 'resources' && (
+              <div className="pl-3 pb-1 space-y-0.5">
+                {RESOURCES.map(({ Icon, label, href }) => (
+                  <Link
+                    key={label}
+                    to={href}
+                    className="flex items-center gap-2.5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-gray-100 last:border-0"
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+                    {label}
+                  </Link>
+                ))}
+              </div>
+            )}
+
             <Link
               to="/blog"
-              className="block py-2.5 text-sm font-black text-gray-700 hover:text-gray-900"
+              className="block border-t border-gray-100 py-2.5 text-sm font-black text-gray-900 hover:text-gray-700"
               onClick={() => setMobileOpen(false)}
             >
               Blog
