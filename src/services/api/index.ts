@@ -103,6 +103,13 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       // ignore
     }
+    // Beta limit interceptor — show modal and throw
+    if (res.status === 403 && errBody['code'] === 'BETA_LIMIT_REACHED') {
+      const { useUsageStore } = await import('@/app/store')
+      useUsageStore.getState().showLimitModal(errBody['feature'] ?? 'unknown', errBody['message'])
+      throw new Error('Beta limit reached')
+    }
+
     const msg = errBody['message'] ?? errBody['error'] ?? res.statusText
     const details = errBody['details']
     const fullMsg = details
@@ -2483,4 +2490,39 @@ export async function listSalesforceLeads(
   let url = `/lira/v1/integrations/salesforce/leads?orgId=${encodeURIComponent(orgId)}`
   if (query) url += `&q=${encodeURIComponent(query)}`
   return apiFetch(url)
+}
+
+// ── Beta Usage ────────────────────────────────────────────────────────────────
+
+export interface BetaLimits {
+  meetings: number
+  meeting_minutes: number
+  interviews: number
+  interview_evaluations: number
+  ai_tasks: number
+  documents: number
+  knowledge_pages: number
+}
+
+export interface OrgUsage {
+  meetings: number
+  meeting_minutes: number
+  interviews: number
+  interview_evaluations: number
+  ai_tasks: number
+  documents: number
+  knowledge_pages: number
+}
+
+export interface UsageSummary {
+  usage: OrgUsage
+  limits: BetaLimits
+}
+
+export async function getOrgUsage(orgId: string): Promise<UsageSummary> {
+  return apiFetch(`/lira/v1/usage/orgs/${encodeURIComponent(orgId)}`)
+}
+
+export function isBetaLimitError(err: unknown): boolean {
+  return err instanceof Error && err.message === 'Beta limit reached'
 }

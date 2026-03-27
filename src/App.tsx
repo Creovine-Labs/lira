@@ -39,6 +39,7 @@ import {
   CookiePolicyPage,
   AcceptableUsePolicyPage,
   SecurityPage,
+  UsagePage,
 } from '@/pages'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -107,6 +108,7 @@ function App() {
             <Route path="members/:userId" element={<MemberProfilePage />} />
             <Route path="email" element={<OrgEmailPage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
+            <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
             <Route path="roles" element={<InterviewsPage />} />
             <Route path="roles/new" element={<InterviewCreatePage />} />

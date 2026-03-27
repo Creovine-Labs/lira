@@ -9,6 +9,7 @@ import type {
   CrawlStatus,
   Interview,
   InterviewStatus,
+  UsageSummary,
 } from '@/services/api'
 
 interface AuthSlice {
@@ -418,3 +419,28 @@ export const useNotifStore = create<NotifSlice>()(
     { name: 'lira-notif' }
   )
 )
+
+// ── Usage store (beta limits) ─────────────────────────────────────────────────
+
+interface UsageSlice {
+  summary: UsageSummary | null
+  loading: boolean
+  limitFeature: string | null
+  limitMessage: string | null
+  setSummary: (s: UsageSummary) => void
+  setLoading: (v: boolean) => void
+  showLimitModal: (feature: string, message?: string) => void
+  dismissLimitModal: () => void
+}
+
+export const useUsageStore = create<UsageSlice>()((set) => ({
+  summary: null,
+  loading: false,
+  limitFeature: null,
+  limitMessage: null,
+  setSummary: (summary) => set({ summary }),
+  setLoading: (loading) => set({ loading }),
+  showLimitModal: (feature, message) =>
+    set({ limitFeature: feature, limitMessage: message ?? null }),
+  dismissLimitModal: () => set({ limitFeature: null, limitMessage: null }),
+}))

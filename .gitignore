@@ -33,3 +33,6 @@ test-results
 .env.*.local
 .vercel
 public/participants/*.mov
+docs/microsoft_secrets.txt
+docs/salesforce_secrets.txt
+*.bak

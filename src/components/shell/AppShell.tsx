@@ -16,6 +16,7 @@ import {
   EnvelopeIcon,
   MicrophoneIcon,
   PlusIcon,
+  ChartBarIcon,
   PuzzlePieceIcon,
   Squares2X2Icon,
   UserIcon,
@@ -31,8 +32,16 @@ import {
   useTaskStore,
   useNotifStore,
   useBotStore,
+  useUsageStore,
 } from '@/app/store'
-import { listOrganizations, listMyNotifications, listTasks, type TaskRecord } from '@/services/api'
+import {
+  listOrganizations,
+  listMyNotifications,
+  listTasks,
+  getOrgUsage,
+  type TaskRecord,
+} from '@/services/api'
+import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { cn } from '@/lib'
 
@@ -111,6 +120,7 @@ const NAV = [
       { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
       { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
       { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
+      { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
     ],
   },
   {
@@ -597,6 +607,15 @@ function AppShell() {
 
   const { badges, taskPending, taskInProgress } = useSidebarBadges()
   const { markMeetingsSeen, markInterviewsSeen } = useNotifStore()
+  const setSummary = useUsageStore((s) => s.setSummary)
+
+  // Fetch usage summary when org changes
+  useEffect(() => {
+    if (!currentOrgId) return
+    getOrgUsage(currentOrgId)
+      .then(setSummary)
+      .catch(() => {})
+  }, [currentOrgId, setSummary])
   const location = useLocation()
 
   // Clear sidebar badge when user navigates to the relevant section
@@ -876,6 +895,9 @@ function AppShell() {
           <Outlet />
         </main>
       </div>
+
+      {/* Beta limit modal (global) */}
+      <BetaLimitModal />
     </div>
   )
 }
