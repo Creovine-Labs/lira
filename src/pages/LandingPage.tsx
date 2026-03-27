@@ -2302,7 +2302,7 @@ function FinalCTA() {
           className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
         >
           <ComputerDesktopIcon className="h-3.5 w-3.5" />
-          Get a demo · it's free
+          Try the Beta — it's free
         </Link>
         <a
           href="mailto:hello@creovine.com"

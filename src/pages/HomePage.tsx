@@ -340,7 +340,9 @@ function LoginForm({
     <div className="flex h-screen overflow-hidden">
       {/* ── Left panel ── */}
       <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-white via-gray-50 to-[#3730a3]/10 px-10 py-10">
-        <LiraLogo size="md" />
+        <Link to="/" className="inline-block">
+          <LiraLogo size="md" />
+        </Link>
         <div className="flex flex-1 flex-col justify-center gap-6">
           {authView === 'landing' ? (
             <>
@@ -361,7 +363,9 @@ function LoginForm({
       <main className="flex flex-1 flex-col overflow-y-auto bg-white">
         {/* Mobile logo — only visible when aside is hidden */}
         <div className="flex items-center px-5 pt-6 pb-2 md:hidden">
-          <LiraLogo size="md" />
+          <Link to="/">
+            <LiraLogo size="md" />
+          </Link>
         </div>
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">

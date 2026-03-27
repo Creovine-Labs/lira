@@ -213,7 +213,7 @@ export function MarketingNavbar() {
               className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
             >
               <ComputerDesktopIcon className="h-3.5 w-3.5" />
-              Get a demo
+              Try Beta
             </Link>
             <Link
               to="/login"
@@ -276,7 +276,7 @@ export function MarketingNavbar() {
                 className="inline-flex justify-center items-center gap-2 rounded-full bg-gray-900 px-4 py-2.5 text-sm font-medium text-white"
               >
                 <ComputerDesktopIcon className="h-3.5 w-3.5" />
-                Get a demo
+                Try Beta
               </Link>
               <Link
                 to="/login"
