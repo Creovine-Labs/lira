@@ -2132,6 +2132,7 @@ const TESTIMONIALS = [
 function Testimonials() {
   const [active, setActive] = useState(0)
   const n = TESTIMONIALS.length
+  const touchX = useRef<number | null>(null)
 
   return (
     <section className="py-20 px-6 border-t border-gray-200 overflow-hidden">
@@ -2141,7 +2142,19 @@ function Testimonials() {
         </h2>
 
         {/* Arc carousel */}
-        <div className="relative h-[300px] flex items-end justify-center">
+        <div
+          className="relative h-[300px] flex items-end justify-center"
+          onTouchStart={(e) => {
+            touchX.current = e.touches[0].clientX
+          }}
+          onTouchEnd={(e) => {
+            if (touchX.current === null) return
+            const dx = e.changedTouches[0].clientX - touchX.current
+            touchX.current = null
+            if (Math.abs(dx) < 40) return
+            setActive((a) => (dx < 0 ? (a + 1) % n : (a - 1 + n) % n))
+          }}
+        >
           {TESTIMONIALS.map((t, i) => {
             const offset = (i - active + n) % n
             const isCenter = offset === 0
