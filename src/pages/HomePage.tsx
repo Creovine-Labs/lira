@@ -380,7 +380,7 @@ function LoginForm({
                   <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
                 </div>
                 <div className="space-y-3">
-                  {env.VITE_GOOGLE_CLIENT_ID && (
+                  {env.VITE_GOOGLE_LOGIN_CLIENT_ID && (
                     <div className="relative">
                       <button
                         type="button"
@@ -479,7 +479,7 @@ function LoginForm({
                   </p>
                 </div>
                 <div className="space-y-4">
-                  {env.VITE_GOOGLE_CLIENT_ID && (
+                  {env.VITE_GOOGLE_LOGIN_CLIENT_ID && (
                     <>
                       <div className="relative">
                         <button

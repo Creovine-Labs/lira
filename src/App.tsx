@@ -69,7 +69,7 @@ function AuthExpiryGuard() {
 
 function App() {
   return (
-    <GoogleOAuthProvider clientId={env.VITE_GOOGLE_CLIENT_ID}>
+    <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
       <Routes>
         {/* Public routes — no shell */}
         <Route path="/" element={<LandingPage />} />
