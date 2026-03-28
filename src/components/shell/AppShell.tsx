@@ -333,19 +333,18 @@ function BetaProgressBar() {
   }, 0)
   const pct = Math.round((total / BETA_KEYS.length) * 100)
 
-  const color = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-violet-600'
-
   return (
     <button
       onClick={() => navigate('/usage')}
       title={`Beta usage: ${pct}%`}
-      className="group relative ml-3 flex h-5 w-28 items-center overflow-hidden rounded-full bg-gray-300/60 transition hover:ring-2 hover:ring-violet-400/40 sm:w-36"
+      className="relative ml-3 flex h-[26px] w-28 items-center overflow-hidden rounded-md border border-gray-400/60 bg-transparent transition hover:border-gray-500 sm:w-36"
     >
+      {/* fill — dark gray, grows with usage */}
       <div
-        className={cn('absolute inset-y-0 left-0 transition-all duration-500', color)}
+        className="absolute inset-y-0 left-0 bg-gray-400/40 transition-all duration-500"
         style={{ width: `${Math.max(pct, 2)}%` }}
       />
-      <span className="relative z-10 w-full text-center text-[10px] font-extrabold tracking-widest text-white mix-blend-difference">
+      <span className="relative z-10 w-full text-center text-[10px] font-semibold tracking-widest text-gray-400">
         BETA {pct}%
       </span>
     </button>
