@@ -308,6 +308,50 @@ function TopbarOrgSwitcher() {
   )
 }
 
+// ── Beta progress bar — aggregate usage across all 7 features ─────────────────
+const BETA_KEYS = [
+  'meetings',
+  'meeting_minutes',
+  'interviews',
+  'interview_evaluations',
+  'ai_tasks',
+  'documents',
+  'knowledge_pages',
+] as const
+
+function BetaProgressBar() {
+  const navigate = useNavigate()
+  const summary = useUsageStore((s) => s.summary)
+
+  if (!summary) return null
+
+  // average percentage across all 7 features, each capped at 100%
+  const total = BETA_KEYS.reduce((sum, k) => {
+    const used = summary.usage[k] ?? 0
+    const limit = summary.limits[k] ?? 0
+    return sum + (limit > 0 ? Math.min(used / limit, 1) : 0)
+  }, 0)
+  const pct = Math.round((total / BETA_KEYS.length) * 100)
+
+  const color = pct >= 100 ? 'bg-red-500' : pct >= 80 ? 'bg-amber-500' : 'bg-violet-600'
+
+  return (
+    <button
+      onClick={() => navigate('/usage')}
+      title={`Beta usage: ${pct}%`}
+      className="group relative ml-3 flex h-5 w-28 items-center overflow-hidden rounded-full bg-gray-300/60 transition hover:ring-2 hover:ring-violet-400/40 sm:w-36"
+    >
+      <div
+        className={cn('absolute inset-y-0 left-0 transition-all duration-500', color)}
+        style={{ width: `${Math.max(pct, 2)}%` }}
+      />
+      <span className="relative z-10 w-full text-center text-[10px] font-extrabold tracking-widest text-white mix-blend-difference">
+        BETA {pct}%
+      </span>
+    </button>
+  )
+}
+
 // ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
   const { userName, userEmail, userPicture } = useAuthStore()
@@ -881,6 +925,7 @@ function AppShell() {
           {/* Center — persistent org switcher (always visible) */}
           <div className="flex flex-1 items-center">
             <TopbarOrgSwitcher />
+            <BetaProgressBar />
           </div>
 
           {/* Right — notifications + user */}
