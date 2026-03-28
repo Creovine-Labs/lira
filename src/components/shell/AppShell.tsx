@@ -335,7 +335,7 @@ function BetaProgressBar() {
 
   return (
     <button
-      onClick={() => navigate('/usage')}
+      onClick={() => navigate('/org/usage')}
       title={`Beta usage: ${pct}%`}
       className="relative ml-3 flex h-[26px] w-28 items-center overflow-hidden rounded-md border border-gray-400/60 bg-transparent transition hover:border-gray-500 sm:w-36"
     >
