@@ -115,8 +115,11 @@ export function MarketingNavbar() {
       <div ref={navRef}>
         <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           {/* Logo */}
-          <Link to="/" aria-label="Lira AI home">
+          <Link to="/" aria-label="Lira AI home" className="flex items-center gap-2">
             <LiraLogo size="md" />
+            <span className="rounded-md border border-gray-700 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-gray-700">
+              BETA
+            </span>
           </Link>
 
           {/* Desktop center nav */}
