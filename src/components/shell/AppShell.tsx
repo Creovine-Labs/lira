@@ -249,7 +249,7 @@ function TopbarOrgSwitcher() {
         onClick={() => setOpen((v) => !v)}
         className="flex items-center gap-1.5 rounded-md border border-gray-400/60 px-2 py-0.5 text-sm text-gray-400 transition hover:border-gray-500 hover:text-gray-500"
       >
-        <span className="max-w-[140px] truncate sm:max-w-[200px]">{currentOrg.name}</span>
+        <span className="max-w-[72px] truncate sm:max-w-[120px]">{currentOrg.name}</span>
         <ChevronDownIcon
           className={cn('h-3 w-3 shrink-0 transition-transform duration-200', open && 'rotate-180')}
         />
@@ -337,7 +337,7 @@ function BetaProgressBar() {
     <button
       onClick={() => navigate('/org/usage')}
       title={`Beta usage: ${pct}%`}
-      className="relative ml-3 flex h-[26px] w-28 items-center overflow-hidden rounded-md border border-gray-400/60 bg-transparent transition hover:border-gray-500 sm:w-36"
+      className="relative ml-2 flex h-[22px] w-20 items-center overflow-hidden rounded-md border border-gray-400/60 bg-transparent transition hover:border-gray-500 sm:w-28"
     >
       {/* fill — dark gray, grows with usage */}
       <div
@@ -385,14 +385,25 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             {firstLetter}
           </div>
         )}
-        <span className="text-sm font-medium text-gray-700">
+        <span className="hidden text-sm font-medium text-gray-700 sm:inline">
           {userName?.split(' ')[0] ?? 'Account'}
         </span>
         <ChevronDownIcon className="h-3.5 w-3.5 text-gray-400" />
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1 w-44 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+        <div className="absolute right-0 top-full z-50 mt-1 w-48 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+          {/* Name header — shown on mobile where name is hidden in button */}
+          {(userName || userEmail) && (
+            <div className="border-b border-gray-100 px-3 py-2 sm:hidden">
+              <p className="truncate text-sm font-semibold text-gray-900">
+                {userName ?? userEmail}
+              </p>
+              {userName && userEmail && (
+                <p className="truncate text-xs text-gray-400">{userEmail}</p>
+              )}
+            </div>
+          )}
           <button
             onClick={() => {
               setOpen(false)
