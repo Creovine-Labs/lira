@@ -318,6 +318,7 @@ export async function getBotStatus(botId: string): Promise<BotStatusResponse> {
 export async function terminateBot(botId: string): Promise<{ success: boolean }> {
   return apiFetch<{ success: boolean }>(`/lira/v1/bot/${botId}/terminate`, {
     method: 'POST',
+    body: JSON.stringify({}),
   })
 }
 
@@ -329,7 +330,7 @@ export async function listActiveBots(): Promise<BotStatusResponse[]> {
 
 /** Terminate all active bots for the current user */
 export async function terminateAllBots(): Promise<{ message: string; terminated_count: number }> {
-  return apiFetch('/lira/v1/bot/terminate-all', { method: 'POST' })
+  return apiFetch('/lira/v1/bot/terminate-all', { method: 'POST', body: JSON.stringify({}) })
 }
 
 // ── Bot Auth Status API ───────────────────────────────────────────────────────
@@ -1139,6 +1140,7 @@ export interface Interview {
   decision_notes?: string
   decision_made_by?: string
   decision_made_at?: string
+  language?: string
   created_at: string
   updated_at: string
 }
@@ -1168,6 +1170,7 @@ export interface CreateInterviewInput {
   questions?: Omit<InterviewQuestion, 'id' | 'ai_generated' | 'asked'>[]
   question_generation: QuestionGenMethod
   evaluation_criteria?: Omit<EvaluationCriterion, 'id'>[]
+  language?: string
 }
 
 export type UpdateInterviewInput = Partial<Omit<CreateInterviewInput, 'candidate_email'>>
@@ -1185,6 +1188,7 @@ export interface InterviewDraft {
   questions: Omit<InterviewQuestion, 'id' | 'ai_generated' | 'asked'>[]
   meeting_link: ''
   scheduled_at: ''
+  language?: string
 }
 
 export interface GenerateQuestionsInput {
@@ -1195,6 +1199,7 @@ export interface GenerateQuestionsInput {
   resume_text?: string
   question_count?: number
   categories: QuestionCategory[]
+  language?: string
 }
 
 // ── Interview API ─────────────────────────────────────────────────────────────
@@ -1260,11 +1265,12 @@ export async function deleteInterviewRecord(orgId: string, interviewId: string):
 export async function startInterviewSession(
   orgId: string,
   interviewId: string,
-  options?: { meeting_link?: string; candidate_name?: string }
+  options?: { meeting_link?: string; candidate_name?: string; language?: string }
 ): Promise<{ bot_id: string; session_id: string; interview: Interview }> {
   const body: Record<string, string> = {}
   if (options?.meeting_link) body.meeting_link = options.meeting_link
   if (options?.candidate_name) body.candidate_name = options.candidate_name
+  if (options?.language) body.language = options.language
   return apiFetch(
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/interviews/${encodeURIComponent(interviewId)}/start`,
     {

@@ -54,6 +54,7 @@ import {
   listGoogleCalendars,
   setGoogleDefaultCalendar,
   listGoogleEvents,
+  createGoogleEvent,
   listGoogleDriveFolders,
   setGoogleDefaultFolder,
   createGoogleDriveFolder,
@@ -2035,6 +2036,16 @@ function GoogleCalendarCard({ orgId }: { orgId: string }) {
   const [selectedCalendar, setSelectedCalendar] = useState('')
   const [events, setEvents] = useState<GoogleCalendarEvent[]>([])
   const [loadingEvents, setLoadingEvents] = useState(false)
+  const [creatingEvent, setCreatingEvent] = useState(false)
+  const [eventTitle, setEventTitle] = useState('Lira follow-up sync')
+  const [eventStartLocal, setEventStartLocal] = useState(() => {
+    const d = new Date(Date.now() + 60 * 60 * 1000)
+    d.setMinutes(Math.ceil(d.getMinutes() / 15) * 15, 0, 0)
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  })
+  const [eventDurationMin, setEventDurationMin] = useState('30')
+  const [lastCreatedEventLink, setLastCreatedEventLink] = useState<string | null>(null)
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -2122,6 +2133,43 @@ function GoogleCalendarCard({ orgId }: { orgId: string }) {
       toast.error('Failed to save calendar')
     } finally {
       setSavingCalendar(false)
+    }
+  }
+
+  const handleCreateDemoEvent = async () => {
+    if (!status?.default_calendar_id) {
+      toast.error('Set and save a default calendar first')
+      return
+    }
+    if (selectedCalendar && selectedCalendar !== status.default_calendar_id) {
+      toast.error('Save your selected calendar before creating an event')
+      return
+    }
+
+    const start = new Date(eventStartLocal)
+    if (Number.isNaN(start.getTime())) {
+      toast.error('Choose a valid start date/time')
+      return
+    }
+
+    const durationMin = Math.max(15, Number(eventDurationMin) || 30)
+    const end = new Date(start.getTime() + durationMin * 60 * 1000)
+
+    setCreatingEvent(true)
+    try {
+      const created = await createGoogleEvent(orgId, {
+        summary: eventTitle.trim() || 'Lira follow-up',
+        description: 'Created from Lira Integrations to schedule a follow-up after a meeting.',
+        start: start.toISOString(),
+        end: end.toISOString(),
+      })
+      setLastCreatedEventLink(created.htmlLink || null)
+      toast.success('Follow-up event created')
+      await fetchEvents()
+    } catch {
+      toast.error('Failed to create event')
+    } finally {
+      setCreatingEvent(false)
     }
   }
 
@@ -2253,6 +2301,55 @@ function GoogleCalendarCard({ orgId }: { orgId: string }) {
                 </button>
               </div>
             )}
+          </div>
+
+          <div>
+            <h4 className="text-xs font-semibold text-gray-700 mb-2">Create follow-up event</h4>
+            <div className="space-y-2 rounded-xl border border-gray-100 bg-white p-3">
+              <input
+                value={eventTitle}
+                onChange={(e) => setEventTitle(e.target.value)}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                placeholder="Event title"
+              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <input
+                  type="datetime-local"
+                  value={eventStartLocal}
+                  onChange={(e) => setEventStartLocal(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                />
+                <select
+                  value={eventDurationMin}
+                  onChange={(e) => setEventDurationMin(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 focus:border-gray-400"
+                >
+                  <option value="15">15 minutes</option>
+                  <option value="30">30 minutes</option>
+                  <option value="45">45 minutes</option>
+                  <option value="60">60 minutes</option>
+                </select>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleCreateDemoEvent}
+                  disabled={creatingEvent || !status.default_calendar_id}
+                  className="px-3 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors disabled:opacity-40"
+                >
+                  {creatingEvent ? 'Creating…' : 'Create event'}
+                </button>
+                {lastCreatedEventLink && (
+                  <a
+                    href={lastCreatedEventLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-medium text-blue-600 hover:text-blue-700"
+                  >
+                    Open created event
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Upcoming events preview */}

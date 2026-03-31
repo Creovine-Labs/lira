@@ -73,6 +73,12 @@ const EXAMPLE_PROMPTS = [
   'DevOps engineer experienced with Kubernetes and CI/CD pipelines',
 ]
 
+const LANGUAGES: { value: string; label: string }[] = [
+  { value: 'en', label: 'English' },
+  { value: 'fr', label: 'French' },
+  { value: 'rw', label: 'Kinyarwanda' },
+]
+
 const CURRENCIES: { value: string; label: string; symbol: string }[] = [
   { value: 'USD', label: 'USD — US Dollar', symbol: '$' },
   { value: 'EUR', label: 'EUR — Euro', symbol: '€' },
@@ -277,6 +283,7 @@ interface ReviewState {
   parent_interview_id?: string
   interview_purpose: InterviewPurpose
   custom_purpose: string
+  language: string
 }
 
 function draftToReview(draft: InterviewDraft): ReviewState {
@@ -299,6 +306,7 @@ function draftToReview(draft: InterviewDraft): ReviewState {
     scheduled_at: '',
     interview_purpose: 'introduction',
     custom_purpose: '',
+    language: draft.language ?? 'en',
   }
 }
 
@@ -337,6 +345,7 @@ function interviewToReview(interview: Interview): ReviewState {
     parent_interview_id: interview.parent_interview_id,
     interview_purpose: interview.interview_purpose ?? 'introduction',
     custom_purpose: interview.custom_purpose ?? '',
+    language: interview.language ?? 'en',
   }
 }
 
@@ -370,6 +379,7 @@ function interviewToTemplate(interview: Interview): ReviewState {
     scheduled_at: '',
     interview_purpose: 'introduction',
     custom_purpose: '',
+    language: interview.language ?? 'en',
   }
 }
 
@@ -488,6 +498,7 @@ function InterviewCreatePage() {
         resume_text: resumeText,
         question_count: 8,
         categories: ['warm_up', 'behavioral', 'technical', 'situational'],
+        language: review.language !== 'en' ? review.language : undefined,
       }
       const questions = await generateInterviewQuestions(currentOrgId, input)
       if (questions.length > 0) {
@@ -557,6 +568,7 @@ function InterviewCreatePage() {
           review.interview_purpose === 'custom'
             ? review.custom_purpose.trim() || undefined
             : undefined,
+        language: review.language !== 'en' ? review.language : undefined,
       }
 
       if (editMode && editId) {
@@ -803,6 +815,7 @@ function InterviewCreatePage() {
                       scheduled_at: '',
                       interview_purpose: 'introduction',
                       custom_purpose: '',
+                      language: 'en',
                     })
                     setDraftError(null)
                     setPhase('review')
@@ -1068,6 +1081,19 @@ function InterviewCreatePage() {
                   value={review.personality}
                   onChange={(v) => setR('personality', v as InterviewPersonality)}
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <Label>Interview Language</Label>
+                <Select
+                  options={LANGUAGES}
+                  value={review.language}
+                  onChange={(v) => setR('language', v)}
+                />
+                <p className="mt-1 text-[11px] text-slate-400">
+                  Lira will conduct the interview in this language.
+                </p>
               </div>
             </div>
           </SectionCard>

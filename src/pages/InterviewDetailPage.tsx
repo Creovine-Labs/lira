@@ -275,9 +275,10 @@ function InterviewDetailPage() {
     try {
       const link = (linkOverride ?? immediateLink.trim()) || undefined
       const candidateName = nameOverride?.trim() || undefined
-      const opts: { meeting_link?: string; candidate_name?: string } = {}
+      const opts: { meeting_link?: string; candidate_name?: string; language?: string } = {}
       if (link) opts.meeting_link = link
       if (candidateName) opts.candidate_name = candidateName
+      if (interview?.language) opts.language = interview.language
       const result = await startInterviewSession(
         currentOrgId,
         interviewId,

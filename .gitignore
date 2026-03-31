@@ -37,3 +37,4 @@ docs/microsoft_secrets.txt
 docs/salesforce_secrets.txt
 docs/replytoken.txt
 *.bak
+docs/aws_secrets.txt

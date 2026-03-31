@@ -103,8 +103,11 @@ function TasksPage() {
     loadTasks()
   }, [loadTasks])
 
-  const filteredTasks =
-    statusFilter && statusFilter !== 'all' ? tasks.filter((t) => t.status === statusFilter) : tasks
+  const filteredTasks = (
+    statusFilter && statusFilter !== 'all'
+      ? tasks.filter((t) => t.status === statusFilter)
+      : [...tasks]
+  ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
 
   const counts = {
     all: tasks.length,
@@ -459,6 +462,18 @@ function TaskCard({
           {task.due_date && (
             <span className="text-[11px] text-gray-400">
               Due {new Date(task.due_date).toLocaleDateString()}
+            </span>
+          )}
+          {task.created_at && (
+            <span className="text-[11px] text-gray-400">
+              {new Date(task.created_at).toLocaleDateString(undefined, {
+                month: 'short',
+                day: 'numeric',
+              })}{' '}
+              {new Date(task.created_at).toLocaleTimeString(undefined, {
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
             </span>
           )}
         </div>
