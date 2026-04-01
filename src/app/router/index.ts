@@ -9,6 +9,7 @@ export const ROUTES = {
   settings: '/settings',
   uiLab: '/ui-lab',
   onboarding: '/onboarding',
+  verifyEmail: '/verify-email',
   organizations: '/organizations',
   orgSettings: '/org/settings',
   orgKnowledge: '/org/knowledge',

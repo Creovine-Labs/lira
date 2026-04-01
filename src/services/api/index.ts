@@ -56,6 +56,7 @@ export interface LoginResponse {
     email: string
     tenantId: string
     role: string
+    emailVerified?: boolean
   }
 }
 
@@ -189,6 +190,23 @@ export async function login(email: string, password: string): Promise<LoginRespo
   }
   const data = (await res.json()) as { accessToken: string; user: LoginResponse['user'] }
   return { token: data.accessToken, user: data.user }
+}
+
+// ── OTP / Email verification ──────────────────────────────────────────────────
+
+/** Request a new OTP code for the currently-authenticated user's email. */
+export async function sendOtp(): Promise<{ message: string }> {
+  return apiFetch('/v1/auth/send-otp', { method: 'POST' })
+}
+
+/** Verify the 6-digit OTP code. Returns { verified, emailVerified }. */
+export async function verifyOtp(
+  code: string
+): Promise<{ verified: boolean; emailVerified: boolean }> {
+  return apiFetch('/v1/auth/verify-otp', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+  })
 }
 
 // ── Meetings ──────────────────────────────────────────────────────────────────

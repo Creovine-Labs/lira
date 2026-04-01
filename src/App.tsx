@@ -41,6 +41,7 @@ import {
   SecurityPage,
   UsagePage,
   LaunchDemoPage,
+  VerifyEmailPage,
 } from '@/pages'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -77,6 +78,7 @@ function App() {
         <Route path="/login" element={<HomePage defaultView="login" />} />
         <Route path="/signup" element={<HomePage defaultView="signup" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/launch-demo" element={<LaunchDemoPage />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />

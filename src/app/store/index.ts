@@ -18,13 +18,16 @@ interface AuthSlice {
   userEmail: string | null
   userName: string | null
   userPicture: string | null
+  emailVerified: boolean | null
   setCredentials: (
     token: string,
     email?: string,
     name?: string,
     picture?: string,
-    id?: string
+    id?: string,
+    emailVerified?: boolean
   ) => void
+  setEmailVerified: (v: boolean) => void
   clearCredentials: () => void
 }
 
@@ -36,16 +39,26 @@ export const useAuthStore = create<AuthSlice>()(
       userEmail: null,
       userName: null,
       userPicture: null,
-      setCredentials: (token, email, name, picture, id) =>
+      emailVerified: null,
+      setCredentials: (token, email, name, picture, id, emailVerified) =>
         set({
           token,
           userId: id ?? null,
           userEmail: email ?? null,
           userName: name ?? null,
           userPicture: picture ?? null,
+          emailVerified: emailVerified ?? null,
         }),
+      setEmailVerified: (v) => set({ emailVerified: v }),
       clearCredentials: () =>
-        set({ token: null, userId: null, userEmail: null, userName: null, userPicture: null }),
+        set({
+          token: null,
+          userId: null,
+          userEmail: null,
+          userName: null,
+          userPicture: null,
+          emailVerified: null,
+        }),
     }),
     { name: 'lira-auth' }
   )

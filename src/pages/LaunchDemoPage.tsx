@@ -92,10 +92,48 @@ const GLOBAL_STYLES = `
     100%{transform:perspective(800px) rotateY(0deg)}
   }
   .ld-tilt{animation:ldPerspTilt 6s ease-in-out infinite}
+
+  @keyframes ldSpin{from{transform:rotate(0deg)}to{transform:rotate(720deg)}}
+  .ld-spin{animation:ldSpin 2s cubic-bezier(.4,0,.2,1) both}
+
+  @keyframes ldBlurReveal{from{opacity:0;filter:blur(20px);transform:translateY(10px)}to{opacity:1;filter:blur(0);transform:translateY(0)}}
+  .ld-blur-reveal{animation:ldBlurReveal 1.2s cubic-bezier(.22,1,.36,1) both}
+
+  @keyframes ldWordSlideUp{from{transform:translateY(115%);opacity:0}to{transform:translateY(0);opacity:1}}
+  .ld-word-slide-up{animation:ldWordSlideUp .55s cubic-bezier(.22,1,.36,1) both}
+
+  @keyframes ldScaleIn{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:scale(1)}}
+  .ld-scale-in{animation:ldScaleIn .65s cubic-bezier(.22,1,.36,1) both}
+
+  @keyframes ldLetterSpread{from{opacity:0;letter-spacing:0.5em;transform:translateY(6px)}to{opacity:1;letter-spacing:0.18em;transform:translateY(0)}}
+  .ld-letter-spread{animation:ldLetterSpread .8s cubic-bezier(.22,1,.36,1) both}
+
+  @keyframes ldUnderline{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+  .ld-underline{animation:ldUnderline .5s cubic-bezier(.22,1,.36,1) both;transform-origin:left}
+
+  @keyframes ldExitLeft{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:0;transform:translateX(-4%) scale(.98)}}
+  .ld-exit-left{animation:ldExitLeft .26s cubic-bezier(.4,0,1,1) both}
+
+  @keyframes ldExitRight{from{opacity:1;transform:translateX(0) scale(1)}to{opacity:0;transform:translateX(4%) scale(.98)}}
+  .ld-exit-right{animation:ldExitRight .26s cubic-bezier(.4,0,1,1) both}
+
+  @keyframes ldEnterRight{from{opacity:0;transform:translateX(5%) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}
+  .ld-enter-right{animation:ldEnterRight .55s cubic-bezier(.22,1,.36,1) both}
+
+  @keyframes ldEnterLeft{from{opacity:0;transform:translateX(-5%) scale(.97)}to{opacity:1;transform:translateX(0) scale(1)}}
+  .ld-enter-left{animation:ldEnterLeft .55s cubic-bezier(.22,1,.36,1) both}
+
+  @keyframes ldOrbFloat{0%,100%{transform:translate(0,0)}33%{transform:translate(25px,-18px)}66%{transform:translate(-12px,12px)}}
+  .ld-orb-float{animation:ldOrbFloat 12s ease-in-out infinite}
+
+  @keyframes ldArrowBounce{0%{opacity:0;transform:scale(0.4) translateY(-8px)}60%{transform:scale(1.15) translateY(2px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+  .ld-arrow-bounce{animation:ldArrowBounce .5s cubic-bezier(.34,1.56,.64,1) both}
 `
 
 /* ─── Scene List ─────────────────────────────────────────────────────────── */
 const SCENES = [
+  { id: 'logo-intro', label: 'Logo Intro', desc: 'Logo spin + name reveal' },
+  { id: 'subtitle-slides', label: 'Subtitle Slides', desc: 'Lyric-style text cards' },
   { id: 'dashboard', label: 'Dashboard', desc: 'Stats + recent meetings' },
   { id: 'deploy-animated', label: 'Deploy (Animated)', desc: 'Typing link + zoom to button' },
   { id: 'deploy', label: 'Bot Deploy', desc: 'Status bar progression' },
@@ -110,6 +148,61 @@ const SCENES = [
   { id: 'support-mobile', label: 'Support (Mobile)', desc: 'Mobile chat view' },
 ] as const
 type SceneId = (typeof SCENES)[number]['id']
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* SCENE 0 — LOGO INTRO (spin + name blur‐reveal)                           */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+function LogoIntroScene({ restart }: { restart: number }) {
+  const [showLogo, setShowLogo] = useState(false)
+  const [spin, setSpin] = useState(false)
+  const [showName, setShowName] = useState(false)
+
+  useEffect(() => {
+    // Reset animation state on restart — use requestAnimationFrame to avoid sync setState in effect
+    requestAnimationFrame(() => {
+      setShowLogo(false)
+      setSpin(false)
+      setShowName(false)
+    })
+    const timers = [
+      setTimeout(() => setShowLogo(true), 400),
+      setTimeout(() => setSpin(true), 1200),
+      setTimeout(() => setShowName(true), 3500),
+    ]
+    return () => timers.forEach(clearTimeout)
+  }, [restart])
+
+  return (
+    <div
+      key={restart}
+      className="w-full h-full bg-[#ebebeb] rounded-2xl flex items-center justify-center"
+    >
+      <div className="flex flex-col items-center gap-8">
+        {/* Logo mark */}
+        <div
+          className={`transition-all duration-700 ${
+            showLogo ? 'opacity-100 scale-100' : 'opacity-0 scale-75'
+          }`}
+        >
+          <img
+            src="/lira_black.png"
+            alt="Lira AI"
+            className={`w-32 h-32 object-contain ${spin ? 'ld-spin' : ''}`}
+          />
+        </div>
+        {/* App name */}
+        <span
+          className={`text-6xl font-bold tracking-tight text-gray-900 ${
+            showName ? 'ld-blur-reveal' : 'opacity-0'
+          }`}
+        >
+          Lira
+        </span>
+      </div>
+    </div>
+  )
+}
 
 /* ─── Reusable small components ──────────────────────────────────────────── */
 
@@ -660,112 +753,111 @@ function MeetingScene({ restart }: { restart: number }) {
   }, [restart])
 
   return (
-    <div
-      key={restart}
-      className="w-full h-full bg-[#202124] rounded-2xl overflow-hidden flex flex-col"
-    >
-      {/* Google Meet header bar */}
-      <div className="ld-fade flex items-center justify-between px-4 py-2 bg-[#202124]">
-        <div className="flex items-center gap-3">
-          <span className="text-white/70 text-sm font-medium">Team Standup</span>
-          <span className="text-white/30 text-xs">|</span>
-          <span className="text-white/40 text-xs">12:04 PM</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <PeopleIcon className="w-4 h-4 text-white/50" />
-            <span className="text-white/50 text-xs">3</span>
+    <div key={restart} className="w-full h-full bg-[#ebebeb] rounded-2xl p-4">
+      <div className="w-full h-full bg-[#202124] rounded-2xl overflow-hidden flex flex-col">
+        {/* Google Meet header bar */}
+        <div className="ld-fade flex items-center justify-between px-4 py-2 bg-[#202124]">
+          <div className="flex items-center gap-3">
+            <span className="text-white/70 text-sm font-medium">Team Standup</span>
+            <span className="text-white/30 text-xs">|</span>
+            <span className="text-white/40 text-xs">12:04 PM</span>
           </div>
-          <ChatIcon className="w-4 h-4 text-white/50" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <PeopleIcon className="w-4 h-4 text-white/50" />
+              <span className="text-white/50 text-xs">3</span>
+            </div>
+            <ChatIcon className="w-4 h-4 text-white/50" />
+          </div>
         </div>
-      </div>
 
-      {/* Participant grid (Google Meet style — dark tiles with face images) */}
-      <div className="flex-1 p-3 grid grid-cols-3 grid-rows-1 gap-3 bg-[#202124]">
-        {/* Sarah Chen */}
+        {/* Participant grid (Google Meet style — dark tiles with face images) */}
+        <div className="flex-1 p-3 grid grid-cols-3 grid-rows-1 gap-3 bg-[#202124]">
+          {/* Sarah Chen */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'Sarah Chen' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
+            style={{ animationDelay: '.2s' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+            <FaceAvatar src={FACES.adaeze} name="Sarah Chen" size={80} />
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              {activeSpeaker === 'Sarah Chen' && <WaveBars color="bg-white" />}
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Sarah Chen
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-2">
+              <MicIcon className="w-3.5 h-3.5 text-white/70" />
+            </div>
+          </div>
+
+          {/* Marcus Johnson */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'Marcus Johnson' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
+            style={{ animationDelay: '.35s' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+            <FaceAvatar src={FACES.kwame} name="Marcus Johnson" size={80} />
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              {activeSpeaker === 'Marcus Johnson' && <WaveBars color="bg-white" />}
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Marcus Johnson
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-2">
+              <MicIcon className="w-3.5 h-3.5 text-white/70" />
+            </div>
+          </div>
+
+          {/* Lira — special tile */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden flex items-center justify-center transition-all duration-500 ${liraSpeaking ? 'ld-glow ring-2 ring-sky-400/60 bg-[#1a2332]' : 'bg-[#3c4043]'}`}
+            style={{ animationDelay: '.5s' }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div
+                className={`rounded-full transition-all duration-700 ${liraSpeaking ? 'w-28 h-28 bg-sky-400/10' : 'w-16 h-16 bg-sky-400/5'}`}
+                style={{ filter: 'blur(25px)' }}
+              />
+            </div>
+            <LiraAvatarImg size={80} speaking={liraSpeaking} whiteBg />
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              {liraSpeaking && <WaveBars color="bg-sky-400" />}
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Lira
+              </span>
+            </div>
+            <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-sky-400/20 border border-sky-400/30">
+              <span
+                className={`text-[9px] font-semibold ${liraSpeaking ? 'text-sky-300' : 'text-sky-400/50'}`}
+              >
+                {liraSpeaking ? 'Speaking' : 'Listening'}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Google Meet bottom control bar */}
         <div
-          className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'Sarah Chen' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
-          style={{ animationDelay: '.2s' }}
+          className="ld-fade flex items-center justify-center gap-2 py-3 bg-[#202124]"
+          style={{ animationDelay: '.4s' }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-          <FaceAvatar src={FACES.adaeze} name="Sarah Chen" size={80} />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            {activeSpeaker === 'Sarah Chen' && <WaveBars color="bg-white" />}
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Sarah Chen
-            </span>
-          </div>
-          <div className="absolute bottom-2 right-2">
-            <MicIcon className="w-3.5 h-3.5 text-white/70" />
-          </div>
-        </div>
-
-        {/* Marcus Johnson */}
-        <div
-          className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'Marcus Johnson' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
-          style={{ animationDelay: '.35s' }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-          <FaceAvatar src={FACES.kwame} name="Marcus Johnson" size={80} />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            {activeSpeaker === 'Marcus Johnson' && <WaveBars color="bg-white" />}
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Marcus Johnson
-            </span>
-          </div>
-          <div className="absolute bottom-2 right-2">
-            <MicIcon className="w-3.5 h-3.5 text-white/70" />
-          </div>
-        </div>
-
-        {/* Lira — special tile */}
-        <div
-          className={`ld-rise relative rounded-xl overflow-hidden flex items-center justify-center transition-all duration-500 ${liraSpeaking ? 'ld-glow ring-2 ring-sky-400/60 bg-[#1a2332]' : 'bg-[#3c4043]'}`}
-          style={{ animationDelay: '.5s' }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div
-              className={`rounded-full transition-all duration-700 ${liraSpeaking ? 'w-28 h-28 bg-sky-400/10' : 'w-16 h-16 bg-sky-400/5'}`}
-              style={{ filter: 'blur(25px)' }}
-            />
-          </div>
-          <LiraAvatarImg size={80} speaking={liraSpeaking} whiteBg />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            {liraSpeaking && <WaveBars color="bg-sky-400" />}
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Lira
-            </span>
-          </div>
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-sky-400/20 border border-sky-400/30">
-            <span
-              className={`text-[9px] font-semibold ${liraSpeaking ? 'text-sky-300' : 'text-sky-400/50'}`}
-            >
-              {liraSpeaking ? 'Speaking' : 'Listening'}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Google Meet bottom control bar */}
-      <div
-        className="ld-fade flex items-center justify-center gap-2 py-3 bg-[#202124]"
-        style={{ animationDelay: '.4s' }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <MicIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <CamIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <ScreenShareIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <HandIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#ea4335] hover:bg-[#d33828] flex items-center justify-center cursor-pointer transition">
-            <HangupIcon className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <MicIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <CamIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <ScreenShareIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <HandIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#ea4335] hover:bg-[#d33828] flex items-center justify-center cursor-pointer transition">
+              <HangupIcon className="w-5 h-5 text-white" />
+            </div>
           </div>
         </div>
       </div>
@@ -803,7 +895,7 @@ function MeetingMobileScene({ restart }: { restart: number }) {
   return (
     <div
       key={restart}
-      className="w-full h-full flex items-center justify-center bg-[#0a0a0a] rounded-2xl p-8"
+      className="w-full h-full flex items-center justify-center bg-[#ebebeb] rounded-2xl p-8"
     >
       {/* Phone frame */}
       <div className="relative w-[320px] h-[640px] rounded-[40px] bg-[#202124] border-[6px] border-[#1a1a1a] shadow-[0_30px_80px_rgba(0,0,0,.6)] overflow-hidden">
@@ -890,9 +982,9 @@ function IntegrationScene({ restart }: { restart: number }) {
   return (
     <div
       key={restart}
-      className="w-full h-full bg-[#0a0a0a] rounded-2xl flex items-center justify-center p-12"
+      className="w-full h-full bg-[#ebebeb] rounded-2xl flex items-center justify-center p-8"
     >
-      <div className="w-full max-w-2xl space-y-5">
+      <div className="w-full max-w-2xl bg-[#111] rounded-2xl p-8 shadow-lg space-y-5">
         <div className="ld-fade flex items-center gap-3 px-5 py-4 rounded-xl bg-white/[0.04] border border-white/[0.06]">
           <div className="h-8 w-8 rounded-lg bg-emerald-400/10 flex items-center justify-center text-emerald-400 text-sm">
             &#10003;
@@ -1645,133 +1737,132 @@ function SalesCoachingScene({ restart }: { restart: number }) {
     return () => timers.forEach(clearTimeout)
   }, [restart])
   return (
-    <div
-      key={restart}
-      className="w-full h-full bg-[#202124] rounded-2xl overflow-hidden flex flex-col relative"
-    >
-      {/* Header */}
-      <div className="ld-fade flex items-center justify-between px-4 py-2 bg-[#202124]">
-        <div className="flex items-center gap-3">
-          <span className="text-white/70 text-sm font-medium">Acme Corp — Discovery Call</span>
-          <span className="text-white/30 text-xs">|</span>
-          <span className="text-white/40 text-xs">15:42</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <PeopleIcon className="w-4 h-4 text-white/50" />
-            <span className="text-white/50 text-xs">2</span>
+    <div key={restart} className="w-full h-full bg-[#ebebeb] rounded-2xl p-4">
+      <div className="w-full h-full bg-[#202124] rounded-2xl overflow-hidden flex flex-col relative">
+        {/* Header */}
+        <div className="ld-fade flex items-center justify-between px-4 py-2 bg-[#202124]">
+          <div className="flex items-center gap-3">
+            <span className="text-white/70 text-sm font-medium">Acme Corp — Discovery Call</span>
+            <span className="text-white/30 text-xs">|</span>
+            <span className="text-white/40 text-xs">15:42</span>
           </div>
-          <ChatIcon className="w-4 h-4 text-white/50" />
-        </div>
-      </div>
-
-      {/* Video grid — 2 tiles */}
-      <div className="flex-1 p-3 grid grid-cols-2 gap-3">
-        {/* Prospect */}
-        <div
-          className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'prospect' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
-          style={{ animationDelay: '.2s' }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-          <FaceAvatar src={FACES.adaeze} name="Jennifer Hayes" size={80} />
-          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
-            {activeSpeaker === 'prospect' && <WaveBars color="bg-white" />}
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Jennifer Hayes
-            </span>
-          </div>
-          <div className="absolute bottom-2.5 right-2.5">
-            <MicIcon className="w-3.5 h-3.5 text-white/70" />
-          </div>
-        </div>
-        {/* You */}
-        <div
-          className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'you' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
-          style={{ animationDelay: '.35s' }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-          <FaceAvatar src={FACES.kwame} name="Alex Reid" size={80} />
-          <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
-            {activeSpeaker === 'you' && <WaveBars color="bg-white" />}
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              You
-            </span>
-          </div>
-          <div className="absolute bottom-2.5 right-2.5">
-            <MicIcon className="w-3.5 h-3.5 text-white/70" />
-          </div>
-        </div>
-      </div>
-
-      {/* Glassmorphic Lira coaching bar — bottom overlay */}
-      {showCoach && (
-        <div className="absolute bottom-16 left-3 right-3 ld-fade z-10">
-          <div
-            className="rounded-2xl border border-white/[0.08] overflow-hidden"
-            style={{
-              background: 'rgba(15, 20, 35, 0.65)',
-              backdropFilter: 'blur(24px) saturate(1.6)',
-            }}
-          >
-            <div className="flex items-center gap-2.5 px-4 py-2 border-b border-white/[0.06]">
-              <LiraAvatarImg size={22} speaking={showSuggestion} />
-              <span className="text-white text-[11px] font-bold">Lira Sales Coach</span>
-              <div className="ml-auto flex items-center gap-1">
-                <div className="h-1.5 w-1.5 rounded-full bg-sky-400 ld-dot-pulse" />
-                <span className="text-sky-400/70 text-[10px] font-medium">Live</span>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <PeopleIcon className="w-4 h-4 text-white/50" />
+              <span className="text-white/50 text-xs">2</span>
             </div>
-            <div className="px-4 py-3 flex gap-4">
-              {/* Detected */}
-              <div className="flex-1">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                  <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-                  <span className="text-amber-400 text-[10px] font-semibold uppercase tracking-wide">
-                    Detected
-                  </span>
+            <ChatIcon className="w-4 h-4 text-white/50" />
+          </div>
+        </div>
+
+        {/* Video grid — 2 tiles */}
+        <div className="flex-1 p-3 grid grid-cols-2 gap-3">
+          {/* Prospect */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'prospect' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
+            style={{ animationDelay: '.2s' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+            <FaceAvatar src={FACES.adaeze} name="Jennifer Hayes" size={80} />
+            <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
+              {activeSpeaker === 'prospect' && <WaveBars color="bg-white" />}
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Jennifer Hayes
+              </span>
+            </div>
+            <div className="absolute bottom-2.5 right-2.5">
+              <MicIcon className="w-3.5 h-3.5 text-white/70" />
+            </div>
+          </div>
+          {/* You */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center transition-all duration-300 ${activeSpeaker === 'you' ? 'ring-2 ring-[#8ab4f8]' : ''}`}
+            style={{ animationDelay: '.35s' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+            <FaceAvatar src={FACES.kwame} name="Alex Reid" size={80} />
+            <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5">
+              {activeSpeaker === 'you' && <WaveBars color="bg-white" />}
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                You
+              </span>
+            </div>
+            <div className="absolute bottom-2.5 right-2.5">
+              <MicIcon className="w-3.5 h-3.5 text-white/70" />
+            </div>
+          </div>
+        </div>
+
+        {/* Glassmorphic Lira coaching bar — bottom overlay */}
+        {showCoach && (
+          <div className="absolute bottom-16 left-3 right-3 ld-fade z-10">
+            <div
+              className="rounded-2xl border border-white/[0.08] overflow-hidden"
+              style={{
+                background: 'rgba(15, 20, 35, 0.65)',
+                backdropFilter: 'blur(24px) saturate(1.6)',
+              }}
+            >
+              <div className="flex items-center gap-2.5 px-4 py-2 border-b border-white/[0.06]">
+                <LiraAvatarImg size={22} speaking={showSuggestion} />
+                <span className="text-white text-[11px] font-bold">Lira Sales Coach</span>
+                <div className="ml-auto flex items-center gap-1">
+                  <div className="h-1.5 w-1.5 rounded-full bg-sky-400 ld-dot-pulse" />
+                  <span className="text-sky-400/70 text-[10px] font-medium">Live</span>
                 </div>
-                <p className="text-white/50 text-[11px] leading-relaxed">
-                  Prospect raised a{' '}
-                  <span className="text-amber-300 font-medium">pricing objection</span> — comparing
-                  to CompetitorX
-                </p>
               </div>
-              {/* Divider */}
-              <div className="w-px bg-white/[0.06]" />
-              {/* Suggested reply */}
-              {showSuggestion && (
-                <div className="flex-1 ld-fade">
+              <div className="px-4 py-3 flex gap-4">
+                {/* Detected */}
+                <div className="flex-1">
                   <div className="flex items-center gap-1.5 mb-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
-                    <span className="text-sky-400 text-[10px] font-semibold uppercase tracking-wide">
-                      Say This
+                    <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+                    <span className="text-amber-400 text-[10px] font-semibold uppercase tracking-wide">
+                      Detected
                     </span>
                   </div>
-                  <p className="text-white text-[11px] leading-relaxed">
-                    &quot;We help teams like yours eliminate 12+ hours per week of manual follow-up
-                    — that&apos;s $180K/year in recovered productivity.&quot;
+                  <p className="text-white/50 text-[11px] leading-relaxed">
+                    Prospect raised a{' '}
+                    <span className="text-amber-300 font-medium">pricing objection</span> —
+                    comparing to CompetitorX
                   </p>
                 </div>
-              )}
+                {/* Divider */}
+                <div className="w-px bg-white/[0.06]" />
+                {/* Suggested reply */}
+                {showSuggestion && (
+                  <div className="flex-1 ld-fade">
+                    <div className="flex items-center gap-1.5 mb-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-sky-400" />
+                      <span className="text-sky-400 text-[10px] font-semibold uppercase tracking-wide">
+                        Say This
+                      </span>
+                    </div>
+                    <p className="text-white text-[11px] leading-relaxed">
+                      &quot;We help teams like yours eliminate 12+ hours per week of manual
+                      follow-up — that&apos;s $180K/year in recovered productivity.&quot;
+                    </p>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Bottom controls */}
-      <div className="flex items-center justify-center gap-2 py-3 bg-[#202124]">
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <MicIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <CamIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <ScreenShareIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#ea4335] hover:bg-[#d33828] flex items-center justify-center cursor-pointer transition">
-            <HangupIcon className="w-5 h-5 text-white" />
+        {/* Bottom controls */}
+        <div className="flex items-center justify-center gap-2 py-3 bg-[#202124]">
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <MicIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <CamIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <ScreenShareIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#ea4335] hover:bg-[#d33828] flex items-center justify-center cursor-pointer transition">
+              <HangupIcon className="w-5 h-5 text-white" />
+            </div>
           </div>
         </div>
       </div>
@@ -1852,110 +1943,109 @@ function LiraSpeakingScene({ restart }: { restart: number }) {
     return () => clearTimeout(t)
   }, [restart])
   return (
-    <div
-      key={restart}
-      className="w-full h-full bg-[#202124] rounded-2xl overflow-hidden flex flex-col"
-    >
-      {/* Google Meet header bar */}
-      <div className="ld-fade flex items-center justify-between px-4 py-2 bg-[#202124]">
-        <div className="flex items-center gap-3">
-          <span className="text-white/70 text-sm font-medium">Lira Weekly Standup</span>
-          <span className="text-white/30 text-xs">|</span>
-          <span className="text-white/40 text-xs">08:32 AM</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-1.5">
-            <PeopleIcon className="w-4 h-4 text-white/50" />
-            <span className="text-white/50 text-xs">3</span>
+    <div key={restart} className="w-full h-full bg-[#ebebeb] rounded-2xl p-4">
+      <div className="w-full h-full bg-[#202124] rounded-2xl overflow-hidden flex flex-col">
+        {/* Google Meet header bar */}
+        <div className="ld-fade flex items-center justify-between px-4 py-2 bg-[#202124]">
+          <div className="flex items-center gap-3">
+            <span className="text-white/70 text-sm font-medium">Lira Weekly Standup</span>
+            <span className="text-white/30 text-xs">|</span>
+            <span className="text-white/40 text-xs">08:32 AM</span>
           </div>
-          <ChatIcon className="w-4 h-4 text-white/50" />
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <PeopleIcon className="w-4 h-4 text-white/50" />
+              <span className="text-white/50 text-xs">3</span>
+            </div>
+            <ChatIcon className="w-4 h-4 text-white/50" />
+          </div>
         </div>
-      </div>
 
-      {/* Participant grid — 3 tiles, same style as MeetingScene */}
-      <div className="flex-1 p-3 grid grid-cols-3 grid-rows-1 gap-3 bg-[#202124]">
-        {/* Adaeze Obi — left */}
+        {/* Participant grid — 3 tiles, same style as MeetingScene */}
+        <div className="flex-1 p-3 grid grid-cols-3 grid-rows-1 gap-3 bg-[#202124]">
+          {/* Adaeze Obi — left */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center`}
+            style={{ animationDelay: '.2s' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+            <FaceAvatar src={FACES.adaeze} name="Adaeze Obi" size={80} />
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Adaeze Obi
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-2">
+              <MicIcon className="w-3.5 h-3.5 text-white/70" />
+            </div>
+          </div>
+
+          {/* Lira — center, active speaker */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden flex items-center justify-center transition-all duration-500 ${liraSpeaking ? 'ld-glow ring-2 ring-sky-400/60 bg-[#1a2332]' : 'bg-[#3c4043]'}`}
+            style={{ animationDelay: '.35s' }}
+          >
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div
+                className={`rounded-full transition-all duration-700 ${liraSpeaking ? 'w-28 h-28 bg-sky-400/10' : 'w-16 h-16 bg-sky-400/5'}`}
+                style={{ filter: 'blur(25px)' }}
+              />
+            </div>
+            <LiraAvatarImg size={80} speaking={liraSpeaking} whiteBg />
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              {liraSpeaking && <WaveBars color="bg-sky-400" />}
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Lira
+              </span>
+            </div>
+            <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-sky-400/20 border border-sky-400/30">
+              <span
+                className={`text-[9px] font-semibold ${liraSpeaking ? 'text-sky-300' : 'text-sky-400/50'}`}
+              >
+                {liraSpeaking ? 'Speaking' : 'Listening'}
+              </span>
+            </div>
+          </div>
+
+          {/* Kwame Asante — right */}
+          <div
+            className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center`}
+            style={{ animationDelay: '.5s' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
+            <FaceAvatar src={FACES.kwame} name="Kwame Asante" size={80} />
+            <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
+              <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
+                Kwame Asante
+              </span>
+            </div>
+            <div className="absolute bottom-2 right-2">
+              <MicIcon className="w-3.5 h-3.5 text-white/70" />
+            </div>
+          </div>
+        </div>
+
+        {/* Google Meet bottom control bar */}
         <div
-          className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center`}
-          style={{ animationDelay: '.2s' }}
+          className="ld-fade flex items-center justify-center gap-2 py-3 bg-[#202124]"
+          style={{ animationDelay: '.4s' }}
         >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-          <FaceAvatar src={FACES.adaeze} name="Adaeze Obi" size={80} />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Adaeze Obi
-            </span>
-          </div>
-          <div className="absolute bottom-2 right-2">
-            <MicIcon className="w-3.5 h-3.5 text-white/70" />
-          </div>
-        </div>
-
-        {/* Lira — center, active speaker */}
-        <div
-          className={`ld-rise relative rounded-xl overflow-hidden flex items-center justify-center transition-all duration-500 ${liraSpeaking ? 'ld-glow ring-2 ring-sky-400/60 bg-[#1a2332]' : 'bg-[#3c4043]'}`}
-          style={{ animationDelay: '.35s' }}
-        >
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div
-              className={`rounded-full transition-all duration-700 ${liraSpeaking ? 'w-28 h-28 bg-sky-400/10' : 'w-16 h-16 bg-sky-400/5'}`}
-              style={{ filter: 'blur(25px)' }}
-            />
-          </div>
-          <LiraAvatarImg size={80} speaking={liraSpeaking} whiteBg />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            {liraSpeaking && <WaveBars color="bg-sky-400" />}
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Lira
-            </span>
-          </div>
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-sky-400/20 border border-sky-400/30">
-            <span
-              className={`text-[9px] font-semibold ${liraSpeaking ? 'text-sky-300' : 'text-sky-400/50'}`}
-            >
-              {liraSpeaking ? 'Speaking' : 'Listening'}
-            </span>
-          </div>
-        </div>
-
-        {/* Kwame Asante — right */}
-        <div
-          className={`ld-rise relative rounded-xl overflow-hidden bg-[#3c4043] flex items-center justify-center`}
-          style={{ animationDelay: '.5s' }}
-        >
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-          <FaceAvatar src={FACES.kwame} name="Kwame Asante" size={80} />
-          <div className="absolute bottom-2 left-2 flex items-center gap-1.5">
-            <span className="text-white text-xs font-medium bg-black/40 px-1.5 py-0.5 rounded">
-              Kwame Asante
-            </span>
-          </div>
-          <div className="absolute bottom-2 right-2">
-            <MicIcon className="w-3.5 h-3.5 text-white/70" />
-          </div>
-        </div>
-      </div>
-
-      {/* Google Meet bottom control bar */}
-      <div
-        className="ld-fade flex items-center justify-center gap-2 py-3 bg-[#202124]"
-        style={{ animationDelay: '.4s' }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <MicIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <CamIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <ScreenShareIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
-            <HandIcon className="w-5 h-5 text-white" />
-          </div>
-          <div className="h-10 w-10 rounded-full bg-[#ea4335] hover:bg-[#d33828] flex items-center justify-center cursor-pointer transition">
-            <HangupIcon className="w-5 h-5 text-white" />
+          <div className="flex items-center gap-2">
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <MicIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <CamIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <ScreenShareIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#3c4043] hover:bg-[#4a4d51] flex items-center justify-center cursor-pointer transition">
+              <HandIcon className="w-5 h-5 text-white" />
+            </div>
+            <div className="h-10 w-10 rounded-full bg-[#ea4335] hover:bg-[#d33828] flex items-center justify-center cursor-pointer transition">
+              <HangupIcon className="w-5 h-5 text-white" />
+            </div>
           </div>
         </div>
       </div>
@@ -2066,7 +2156,7 @@ function CustomerSupportMobileScene({ restart }: { restart: number }) {
   return (
     <div
       key={restart}
-      className="w-full h-full flex items-center justify-center bg-[#0a0a0a] rounded-2xl p-8"
+      className="w-full h-full flex items-center justify-center bg-[#ebebeb] rounded-2xl p-8"
     >
       <div className="relative w-[320px] h-[640px] rounded-[40px] bg-white border-[6px] border-[#1a1a1a] shadow-[0_30px_80px_rgba(0,0,0,.6)] overflow-hidden flex flex-col">
         {/* Status bar */}
@@ -2147,6 +2237,425 @@ function CustomerSupportMobileScene({ restart }: { restart: number }) {
 /* MAIN PAGE LAYOUT                                                          */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* SCENE — SUBTITLE SLIDES (lyric-video style)                               */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─── WordReveal: lyric-clip word-by-word animation ─────────────────────── */
+
+export function _WordReveal({
+  text,
+  baseDelay = 0,
+  wordDelay = 0.065,
+  className = '',
+  style = {},
+}: {
+  text: string
+  baseDelay?: number
+  wordDelay?: number
+  className?: string
+  style?: React.CSSProperties
+}) {
+  return (
+    <span
+      className={`inline-flex flex-wrap justify-center ${className}`}
+      style={{ gap: '0 0.28em', ...style }}
+    >
+      {text.split(' ').map((word, i) => (
+        <span key={i} style={{ overflow: 'hidden', display: 'inline-block' }}>
+          <span
+            className="inline-block ld-word-slide-up"
+            style={{ animationDelay: `${baseDelay + i * wordDelay}s`, animationFillMode: 'both' }}
+          >
+            {word}
+          </span>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+const SUBTITLE_SLIDES = [
+  { id: 'join' },
+  { id: 'what' },
+  { id: 'interview' },
+  { id: 'support' },
+  { id: 'integration' },
+  { id: 'sales' },
+  { id: 'tasks' },
+]
+
+function SubtitleSlidesScene({ restart }: { restart: number }) {
+  const [displayIdx, setDisplayIdx] = useState(0)
+  const [dir, setDir] = useState<1 | -1>(1)
+  const [contentKey, setContentKey] = useState(0)
+  const [isExiting, setIsExiting] = useState(false)
+  const nextIdxRef = useRef<number>(0)
+
+  useEffect(() => {
+    // Reset carousel state on restart — wrap in rAF to avoid sync setState in effect
+    requestAnimationFrame(() => {
+      setDisplayIdx(0)
+      setDir(1)
+      setIsExiting(false)
+      setContentKey((k) => k + 1)
+    })
+  }, [restart])
+
+  const goTo = useCallback(
+    (i: number) => {
+      if (isExiting || i === displayIdx) return
+      setDir(i > displayIdx ? 1 : -1)
+      setIsExiting(true)
+      nextIdxRef.current = i
+    },
+    [displayIdx, isExiting]
+  )
+
+  useEffect(() => {
+    if (!isExiting) return
+    const t = setTimeout(() => {
+      setDisplayIdx(nextIdxRef.current)
+      setContentKey((k) => k + 1)
+      setIsExiting(false)
+    }, 280)
+    return () => clearTimeout(t)
+  }, [isExiting])
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' && displayIdx < SUBTITLE_SLIDES.length - 1) goTo(displayIdx + 1)
+      else if (e.key === 'ArrowLeft' && displayIdx > 0) goTo(displayIdx - 1)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [displayIdx, goTo])
+
+  const slide = SUBTITLE_SLIDES[displayIdx]
+
+  const contentAnim = isExiting
+    ? dir === 1
+      ? 'ld-exit-left'
+      : 'ld-exit-right'
+    : dir === 1
+      ? 'ld-enter-right'
+      : 'ld-enter-left'
+
+  const renderContent = () => {
+    switch (slide.id) {
+      /* ── Slide 1: compact — verbs italic, "&" symbol, tight layout ── */
+      case 'join':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(5rem, 11vw, 8.5rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              Lira
+            </div>
+            <div
+              className="ld-scale-in font-extralight text-gray-900 text-center leading-snug"
+              style={{
+                fontSize: 'clamp(2rem, 4.2vw, 3.2rem)',
+                animationDelay: '0.3s',
+                display: 'inline-block',
+              }}
+            >
+              <span className="italic font-medium">joins</span> your calls,{' '}
+              <span className="italic font-medium">listens</span> &amp;{' '}
+              <span className="italic font-medium">speaks</span>
+            </div>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                letterSpacing: '-0.02em',
+                animationDelay: '0.6s',
+              }}
+            >
+              in real time
+            </div>
+          </div>
+        )
+
+      /* ── Slide 2: "What Lira Does" ── */
+      case 'what':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(5rem, 11vw, 8.5rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              What Lira
+            </div>
+            <div
+              className="ld-scale-in font-extralight italic text-gray-900 text-center"
+              style={{
+                fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                animationDelay: '0.35s',
+                display: 'inline-block',
+              }}
+            >
+              Does
+            </div>
+          </div>
+        )
+
+      /* ── Slide 3: "Evaluate & Conduct Interviews" ── */
+      case 'interview':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(4rem, 9vw, 7rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              Evaluate &amp; Conduct
+            </div>
+            <div
+              className="ld-scale-in font-extralight italic text-gray-900 text-center"
+              style={{
+                fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                animationDelay: '0.35s',
+                display: 'inline-block',
+              }}
+            >
+              Interviews
+            </div>
+          </div>
+        )
+
+      /* ── Slide 4: "Live Customer Support" ── */
+      case 'support':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(5rem, 11vw, 8.5rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              Live Customer
+            </div>
+            <div
+              className="ld-scale-in font-extralight italic text-gray-900 text-center"
+              style={{
+                fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                animationDelay: '0.35s',
+                display: 'inline-block',
+              }}
+            >
+              Support
+            </div>
+          </div>
+        )
+
+      /* ── Slide 5: "Integration Cascade → Connects Integrations" ── */
+      case 'integration':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(5rem, 11vw, 8.5rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              Integration
+            </div>
+            <div className="relative">
+              <span
+                className="ld-scale-in font-extralight italic text-gray-900 text-center"
+                style={{
+                  fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                  animationDelay: '0.35s',
+                  display: 'inline-block',
+                }}
+              >
+                Cascade
+              </span>
+            </div>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{ fontSize: 'clamp(2rem, 4.2vw, 3.2rem)', animationDelay: '0.7s' }}
+            >
+              → Connects Integrations
+            </div>
+          </div>
+        )
+
+      /* ── Slide 6: "Sales Intelligence" (reference style) ── */
+      case 'sales':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(5rem, 11vw, 8.5rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              Sales
+            </div>
+            <div className="relative">
+              <span
+                className="ld-scale-in font-extralight italic text-gray-900 text-center"
+                style={{
+                  fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                  animationDelay: '0.35s',
+                  display: 'inline-block',
+                }}
+              >
+                Intelligence
+              </span>
+              <span
+                className="ld-underline absolute left-0 bottom-[0.04em] w-full h-[0.05em] bg-gray-900 rounded-full"
+                style={{ animationDelay: '0.75s' }}
+              />
+            </div>
+          </div>
+        )
+
+      /* ── Slide 7: "Task Execution — Immediately After Meetings" ── */
+      case 'tasks':
+        return (
+          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
+            <div
+              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
+              style={{
+                fontSize: 'clamp(5rem, 11vw, 8.5rem)',
+                letterSpacing: '-0.03em',
+                animationDelay: '0s',
+              }}
+            >
+              Task
+            </div>
+            <div
+              className="ld-scale-in font-extralight italic text-gray-900 text-center"
+              style={{
+                fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
+                animationDelay: '0.35s',
+                display: 'inline-block',
+              }}
+            >
+              Execution
+            </div>
+            <div
+              className="ld-blur-reveal font-extralight text-gray-900 text-center"
+              style={{
+                fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)',
+                animationDelay: '0.65s',
+                letterSpacing: '0.06em',
+              }}
+            >
+              immediately after meetings
+            </div>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div
+      className="w-full h-full bg-[#ebebeb] rounded-2xl flex flex-col items-center justify-center relative overflow-hidden select-none"
+      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", sans-serif' }}
+    >
+      {/* Ambient background orbs */}
+      <div
+        className="ld-orb-float pointer-events-none absolute rounded-full"
+        style={{
+          width: 520,
+          height: 520,
+          top: '-18%',
+          left: '-12%',
+          background: 'radial-gradient(circle, rgba(200,210,255,0.18) 0%, transparent 70%)',
+          animationDuration: '13s',
+        }}
+      />
+      <div
+        className="ld-orb-float pointer-events-none absolute rounded-full"
+        style={{
+          width: 440,
+          height: 440,
+          bottom: '-14%',
+          right: '-10%',
+          background: 'radial-gradient(circle, rgba(255,215,170,0.14) 0%, transparent 70%)',
+          animationDuration: '16s',
+          animationDelay: '-6s',
+        }}
+      />
+
+      {/* Slide counter */}
+      <div className="absolute top-6 right-7 text-[11px] font-mono text-gray-400 tracking-[0.18em] tabular-nums">
+        {String(displayIdx + 1).padStart(2, '0')} /{' '}
+        {String(SUBTITLE_SLIDES.length).padStart(2, '0')}
+      </div>
+
+      {/* Main content */}
+      <div
+        key={contentKey}
+        className={`${contentAnim} flex flex-col items-center justify-center text-center px-16 max-w-4xl w-full`}
+      >
+        {renderContent()}
+      </div>
+
+      {/* Dot navigation */}
+      <div className="absolute bottom-8 flex items-center gap-2.5">
+        {SUBTITLE_SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => goTo(i)}
+            className={`rounded-full transition-all duration-300 ${
+              i === displayIdx
+                ? 'bg-gray-900 w-8 h-2'
+                : i < displayIdx
+                  ? 'bg-gray-500 w-2 h-2'
+                  : 'bg-gray-300 hover:bg-gray-500 w-2 h-2'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Left arrow */}
+      {displayIdx > 0 && (
+        <button
+          onClick={() => goTo(displayIdx - 1)}
+          className="absolute left-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/80 hover:bg-white shadow-sm hover:shadow-md flex items-center justify-center text-gray-600 transition-all"
+          style={{ fontSize: '1.5rem', fontWeight: 300 }}
+        >
+          ‹
+        </button>
+      )}
+
+      {/* Right arrow */}
+      {displayIdx < SUBTITLE_SLIDES.length - 1 && (
+        <button
+          onClick={() => goTo(displayIdx + 1)}
+          className="absolute right-5 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/80 hover:bg-white shadow-sm hover:shadow-md flex items-center justify-center text-gray-600 transition-all"
+          style={{ fontSize: '1.5rem', fontWeight: 300 }}
+        >
+          ›
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function LaunchDemoPage() {
   const [activeScene, setActiveScene] = useState<SceneId>('dashboard')
   const [restartKey, setRestartKey] = useState(0)
@@ -2159,6 +2668,10 @@ export function LaunchDemoPage() {
 
   const renderScene = () => {
     switch (activeScene) {
+      case 'logo-intro':
+        return <LogoIntroScene restart={restartKey} />
+      case 'subtitle-slides':
+        return <SubtitleSlidesScene restart={restartKey} />
       case 'dashboard':
         return <DashboardScene restart={restartKey} />
       case 'deploy-animated':

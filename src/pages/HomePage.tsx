@@ -226,7 +226,7 @@ function LoginForm({
   onLogin,
   initialView,
 }: {
-  onLogin: (isNew: boolean) => void
+  onLogin: (isNew: boolean, emailVerified?: boolean) => void
   initialView?: AuthView
 }) {
   const { setCredentials } = useAuthStore()
@@ -274,7 +274,14 @@ function LoginForm({
       }
 
       const res = await apiGoogleLogin(response.credential)
-      setCredentials(res.token, res.user.email, gName, gPicture, res.user.id)
+      setCredentials(
+        res.token,
+        res.user.email,
+        gName,
+        gPicture,
+        res.user.id,
+        res.user.emailVerified ?? true
+      )
       credentials.set(res.token)
       const orgs = await listOrganizations().catch(() => [])
       onLogin(orgs.length === 0)
@@ -299,8 +306,20 @@ function LoginForm({
     setError(null)
     try {
       const res = await apiLogin(email.trim(), password.trim())
-      setCredentials(res.token, res.user.email, undefined, undefined, res.user.id)
+      setCredentials(
+        res.token,
+        res.user.email,
+        undefined,
+        undefined,
+        res.user.id,
+        res.user.emailVerified
+      )
       credentials.set(res.token)
+      // If email not verified, redirect to OTP page
+      if (res.user.emailVerified === false) {
+        onLogin(false, false)
+        return
+      }
       const orgs = await listOrganizations().catch(() => [])
       onLogin(orgs.length === 0)
     } catch (err) {
@@ -326,9 +345,10 @@ function LoginForm({
     setError(null)
     try {
       const res = await apiSignup(name.trim(), email.trim(), password.trim())
-      setCredentials(res.token, res.user.email, undefined, undefined, res.user.id)
+      setCredentials(res.token, res.user.email, undefined, undefined, res.user.id, false)
       credentials.set(res.token)
-      onLogin(true)
+      // New users need to verify email first — OTP was already sent by the backend
+      onLogin(true, false)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.')
     } finally {
@@ -852,7 +872,12 @@ function HomePage({ defaultView }: HomePageProps) {
     return <Navigate to="/dashboard" replace />
   }
 
-  function handleLogin(isNew: boolean) {
+  function handleLogin(isNew: boolean, emailVerified?: boolean) {
+    // Unverified email → OTP screen
+    if (emailVerified === false) {
+      navigate('/verify-email', { replace: true })
+      return
+    }
     if (isNew) {
       navigate('/onboarding')
     } else {
