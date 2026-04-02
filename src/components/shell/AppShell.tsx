@@ -7,6 +7,7 @@ import {
   BookOpenIcon,
   BriefcaseIcon,
   BuildingOffice2Icon,
+  ChatBubbleLeftRightIcon,
   ChevronDownIcon,
   ChevronUpDownIcon,
   ClipboardDocumentCheckIcon,
@@ -14,6 +15,7 @@ import {
   Cog6ToothIcon,
   DocumentTextIcon,
   EnvelopeIcon,
+  FolderOpenIcon,
   MicrophoneIcon,
   PlusIcon,
   ChartBarIcon,
@@ -100,21 +102,35 @@ function useSidebarBadges() {
 }
 
 // ── Sidebar nav structure ─────────────────────────────────────────────────────
-const NAV = [
+type NavLeaf = {
+  to: string
+  icon: React.ComponentType<{ className?: string }>
+  label: string
+}
+type NavGroup = {
+  label: string
+  icon: React.ComponentType<{ className?: string }>
+  children: NavLeaf[]
+}
+type NavEntry = NavLeaf | NavGroup
+function isNavGroup(entry: NavEntry): entry is NavGroup {
+  return 'children' in entry
+}
+
+const NAV: NavEntry[] = [
+  { to: '/dashboard', icon: Squares2X2Icon, label: 'Home' },
   {
-    group: null,
-    items: [{ to: '/dashboard', icon: Squares2X2Icon, label: 'Home' }],
-  },
-  {
-    group: 'Conversations',
-    items: [
+    label: 'Conversations',
+    icon: ChatBubbleLeftRightIcon,
+    children: [
       { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
       { to: '/org/roles', icon: BriefcaseIcon, label: 'Interviews' },
     ],
   },
   {
-    group: 'Workspace',
-    items: [
+    label: 'Workspace',
+    icon: FolderOpenIcon,
+    children: [
       { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
       { to: '/org/documents', icon: DocumentTextIcon, label: 'Documents' },
       { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
@@ -123,10 +139,7 @@ const NAV = [
       { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
     ],
   },
-  {
-    group: 'Team',
-    items: [{ to: '/org/members', icon: UsersIcon, label: 'Members' }],
-  },
+  { to: '/org/members', icon: UsersIcon, label: 'Members' },
 ]
 
 const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
@@ -646,6 +659,8 @@ function AppShell() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(['Conversations', 'Workspace']))
+  const [flyoutOpen, setFlyoutOpen] = useState<string | null>(null)
   const { token, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
@@ -678,6 +693,12 @@ function AppShell() {
     const p = location.pathname
     if (p.startsWith('/meetings') || p.startsWith('/meeting')) markMeetingsSeen()
     else if (p.startsWith('/org/roles') || p.startsWith('/org/interviews')) markInterviewsSeen()
+    // Auto-expand the nav group that contains the active route
+    NAV.forEach((entry) => {
+      if (isNavGroup(entry) && entry.children.some((c) => p.startsWith(c.to))) {
+        setExpanded((prev) => new Set([...prev, entry.label]))
+      }
+    })
   }, [location.pathname, markMeetingsSeen, markInterviewsSeen])
 
   function handleSignOut() {
@@ -758,41 +779,81 @@ function AppShell() {
             <div className="mb-4">
               <OrgSwitcher />
             </div>
-            <nav className="flex flex-1 flex-col gap-4 overflow-y-auto">
-              {NAV.map((section, si) => (
-                <div key={si}>
-                  {section.group && (
-                    <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                      {section.group}
-                    </p>
-                  )}
-                  <div className="space-y-0.5">
-                    {section.items.map(({ to, icon: Icon, label }) => (
-                      <NavLink
-                        key={to}
-                        to={to}
-                        onClick={() => setSidebarOpen(false)}
-                        className={({ isActive }) =>
-                          cn(
-                            'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
-                            isActive
-                              ? 'bg-[#1A1A1A] text-white'
-                              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                          )
-                        }
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        {label}
-                        {to === '/org/tasks' ? (
-                          <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
-                        ) : (
-                          <NavBadge count={badges[to] ?? 0} />
+            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
+              {NAV.map((entry) => {
+                if (!isNavGroup(entry)) {
+                  return (
+                    <NavLink
+                      key={entry.to}
+                      to={entry.to}
+                      onClick={() => setSidebarOpen(false)}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
+                          isActive
+                            ? 'bg-[#1A1A1A] text-white'
+                            : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                        )
+                      }
+                    >
+                      <entry.icon className="h-4 w-4 shrink-0" />
+                      {entry.label}
+                    </NavLink>
+                  )
+                }
+                const isOpen = expanded.has(entry.label)
+                return (
+                  <div key={entry.label}>
+                    <button
+                      onClick={() =>
+                        setExpanded((prev) => {
+                          const next = new Set(prev)
+                          if (next.has(entry.label)) next.delete(entry.label)
+                          else next.add(entry.label)
+                          return next
+                        })
+                      }
+                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                    >
+                      <entry.icon className="h-4 w-4 shrink-0" />
+                      {entry.label}
+                      <ChevronDownIcon
+                        className={cn(
+                          'ml-auto h-3.5 w-3.5 transition-transform duration-200',
+                          isOpen && 'rotate-180'
                         )}
-                      </NavLink>
-                    ))}
+                      />
+                    </button>
+                    {isOpen && (
+                      <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
+                        {entry.children.map(({ to, icon: Icon, label }) => (
+                          <NavLink
+                            key={to}
+                            to={to}
+                            onClick={() => setSidebarOpen(false)}
+                            className={({ isActive }) =>
+                              cn(
+                                'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
+                                isActive
+                                  ? 'bg-[#1A1A1A] text-white'
+                                  : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                              )
+                            }
+                          >
+                            <Icon className="h-4 w-4 shrink-0" />
+                            {label}
+                            {to === '/org/tasks' ? (
+                              <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                            ) : (
+                              <NavBadge count={badges[to] ?? 0} />
+                            )}
+                          </NavLink>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </nav>
             <div className="mt-2 space-y-0.5 border-t border-gray-100 pt-3">
               {BOTTOM_NAV.map(({ to, icon: Icon, label }) => (
@@ -847,48 +908,129 @@ function AppShell() {
         )}
 
         {/* Nav groups */}
-        <nav
-          className={cn(
-            'flex flex-1 flex-col overflow-y-auto',
-            sidebarCollapsed ? 'gap-1' : 'gap-4'
-          )}
-        >
-          {NAV.map((section, si) => (
-            <div key={si}>
-              {!sidebarCollapsed && section.group && (
-                <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  {section.group}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {section.items.map(({ to, icon: Icon, label }) => (
-                  <NavLink
-                    key={to}
-                    to={to}
-                    title={sidebarCollapsed ? label : undefined}
-                    className={({ isActive }) =>
-                      cn(
-                        'flex items-center rounded-xl py-2 text-[13px] font-medium transition-colors',
-                        sidebarCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3',
-                        isActive
-                          ? 'bg-[#1A1A1A] text-white'
-                          : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                      )
-                    }
+        <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
+          {NAV.map((entry) => {
+            if (!isNavGroup(entry)) {
+              return (
+                <NavLink
+                  key={entry.to}
+                  to={entry.to}
+                  title={sidebarCollapsed ? entry.label : undefined}
+                  className={({ isActive }) =>
+                    cn(
+                      'flex items-center rounded-xl py-2 text-[13px] font-medium transition-colors',
+                      sidebarCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3',
+                      isActive
+                        ? 'bg-[#1A1A1A] text-white'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                    )
+                  }
+                >
+                  <entry.icon className="h-4 w-4 shrink-0" />
+                  {!sidebarCollapsed && entry.label}
+                </NavLink>
+              )
+            }
+            const isOpen = expanded.has(entry.label)
+            const hasActive = entry.children.some((c) => location.pathname.startsWith(c.to))
+            const isFlyoutOpen = flyoutOpen === entry.label
+            if (sidebarCollapsed) {
+              return (
+                <div key={entry.label} className="relative">
+                  <button
+                    title={entry.label}
+                    onClick={() => setFlyoutOpen(isFlyoutOpen ? null : entry.label)}
+                    className={cn(
+                      'flex w-full items-center justify-center rounded-xl px-2 py-2 text-[13px] font-medium transition-colors',
+                      hasActive || isFlyoutOpen
+                        ? 'bg-[#1A1A1A] text-white'
+                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                    )}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {!sidebarCollapsed && label}
-                    {!sidebarCollapsed &&
-                      (to === '/org/tasks' ? (
-                        <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
-                      ) : (
-                        <NavBadge count={badges[to] ?? 0} />
+                    <entry.icon className="h-4 w-4 shrink-0" />
+                  </button>
+                  {isFlyoutOpen && (
+                    <div className="absolute left-full top-0 z-50 ml-2 w-44 rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
+                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                        {entry.label}
+                      </p>
+                      {entry.children.map(({ to, icon: Icon, label }) => (
+                        <NavLink
+                          key={to}
+                          to={to}
+                          onClick={() => setFlyoutOpen(null)}
+                          className={({ isActive }) =>
+                            cn(
+                              'flex items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
+                              isActive ? 'font-semibold text-[#1A1A1A]' : 'text-gray-600'
+                            )
+                          }
+                        >
+                          <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+                          {label}
+                          {to === '/org/tasks' ? (
+                            <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                          ) : (
+                            <NavBadge count={badges[to] ?? 0} />
+                          )}
+                        </NavLink>
                       ))}
-                  </NavLink>
-                ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            return (
+              <div key={entry.label}>
+                <button
+                  onClick={() =>
+                    setExpanded((prev) => {
+                      const next = new Set(prev)
+                      if (next.has(entry.label)) next.delete(entry.label)
+                      else next.add(entry.label)
+                      return next
+                    })
+                  }
+                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
+                >
+                  <entry.icon className="h-4 w-4 shrink-0" />
+                  {entry.label}
+                  <ChevronDownIcon
+                    className={cn(
+                      'ml-auto h-3.5 w-3.5 transition-transform duration-200',
+                      isOpen && 'rotate-180'
+                    )}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
+                    {entry.children.map(({ to, icon: Icon, label }) => (
+                      <NavLink
+                        key={to}
+                        to={to}
+                        className={({ isActive }) =>
+                          cn(
+                            'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
+                            isActive
+                              ? 'bg-[#1A1A1A] text-white'
+                              : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                          )
+                        }
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {label}
+                        {to === '/org/tasks' ? (
+                          <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                        ) : (
+                          <NavBadge count={badges[to] ?? 0} />
+                        )}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </nav>
 
         {/* Bottom nav */}
