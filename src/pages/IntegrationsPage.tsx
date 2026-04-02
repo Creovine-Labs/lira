@@ -13,6 +13,7 @@ import {
   EyeIcon,
   TableCellsIcon,
   CodeBracketIcon,
+  ArrowTopRightOnSquareIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { toast } from 'sonner'
@@ -5038,13 +5039,26 @@ export default function IntegrationsPage() {
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-4xl space-y-8">
         {/* Header */}
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Workspace</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Integrations</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Connect your project management tools to automatically sync tasks extracted from
-            meetings.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Workspace
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Integrations</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Connect your project management tools to automatically sync tasks extracted from
+              meetings.
+            </p>
+          </div>
+          <a
+            href="https://docs.lyraintelligence.com/integrations"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
+          >
+            Docs
+            <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+          </a>
         </div>
 
         {/* Task Management */}
