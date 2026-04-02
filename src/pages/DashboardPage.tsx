@@ -48,24 +48,13 @@ function formatDate(iso: string): string {
   })
 }
 
-// ── Stat card (glassmorphism gradient) ───────────────────────────────────────
-const _DARK_CARD = {
-  bg: 'from-[#1c1c1e] via-[#141414] to-[#0a0a0a]',
-  glow: 'shadow-[0_8px_32px_rgba(0,0,0,0.5)]',
-} as const
-const STAT_PALETTES = {
-  purple: _DARK_CARD,
-  dark: _DARK_CARD,
-  indigo: _DARK_CARD,
-  slate: _DARK_CARD,
-} as const
-type StatAccent = keyof typeof STAT_PALETTES
+// ── Stat card ─────────────────────────────────────────────────────────────────
+type StatAccent = 'purple' | 'dark' | 'indigo' | 'slate'
 
 function StatCard({
   label,
   value,
   icon: Icon,
-  accent = 'purple',
   onClick,
 }: {
   label: string
@@ -74,32 +63,24 @@ function StatCard({
   accent?: StatAccent
   onClick?: () => void
 }) {
-  const { bg, glow } = STAT_PALETTES[accent]
   const Tag = onClick ? 'button' : 'div'
   return (
     <Tag
       {...(onClick ? { onClick } : {})}
-      className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${bg} ${glow} p-5 text-left transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110`}
+      className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
-      {/* Glass shimmer overlay */}
-      <div className="pointer-events-none absolute inset-0 bg-gradient-to-tr from-white/[0.12] to-transparent" />
-      {/* Inner border glow */}
-      <div className="pointer-events-none absolute inset-0 rounded-2xl border border-white/[0.08]" />
-
-      <div className="relative">
-        <div className="flex items-start justify-between">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white/10 text-white/60 backdrop-blur-sm">
-            <Icon className="h-[15px] w-[15px]" />
-          </div>
-          {onClick && (
-            <ArrowRightIcon className="h-3 w-3 text-white/20 opacity-0 transition group-hover:opacity-100 group-hover:text-white/60" />
-          )}
+      <div className="flex items-start justify-between">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
+          <Icon className="h-[15px] w-[15px]" />
         </div>
-        <p className="mt-4 text-2xl font-bold tracking-tight text-white">{value}</p>
-        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-white/40">
-          {label}
-        </p>
+        {onClick && (
+          <ArrowRightIcon className="h-3 w-3 text-gray-200 opacity-0 transition group-hover:opacity-100 group-hover:text-[#3730a3]" />
+        )}
       </div>
+      <p className="mt-4 text-2xl font-bold tracking-tight text-gray-900">{value}</p>
+      <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+        {label}
+      </p>
     </Tag>
   )
 }
