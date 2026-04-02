@@ -67,10 +67,10 @@ function StatCard({
   return (
     <Tag
       {...(onClick ? { onClick } : {})}
-      className="group relative overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50 p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="flex items-start justify-between">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-gray-500">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
           <Icon className="h-[15px] w-[15px]" />
         </div>
         {onClick && (
@@ -222,7 +222,7 @@ function ActivityPanel({
   ]
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border border-white/60 bg-white shadow-sm">
       {/* Underline tab bar — purple active */}
       <div className="flex items-center gap-0 border-b border-gray-100 px-4 pt-4">
         {tabs.map((t) => (
@@ -595,7 +595,7 @@ function DeployHeroBar() {
                 'rounded-full px-3.5 py-1 text-xs font-semibold transition-all duration-200',
                 selected
                   ? 'bg-[#3730a3] text-white shadow-sm shadow-[#3730a3]/40'
-                  : 'bg-white text-gray-500 hover:bg-indigo-100 hover:text-gray-700'
+                  : 'bg-indigo-100/60 text-gray-500 hover:bg-indigo-100 hover:text-gray-700'
               )}
             >
               {label}
@@ -876,7 +876,7 @@ function DashboardPage() {
         {/* ── Bento: Quick actions + Activity ── */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Quick actions sidebar */}
-          <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
             <div className="border-b border-gray-100 px-5 py-4">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                 Quick Actions
