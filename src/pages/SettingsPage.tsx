@@ -99,7 +99,7 @@ function Section({
   return (
     <div className={`rounded-xl border bg-card p-6 shadow-sm ${disabled ? 'opacity-50' : ''}`}>
       <div className="mb-4 flex items-center gap-2">
-        <Icon className="h-5 w-5 text-[#3730a3]" />
+        <Icon className="h-5 w-5 text-gray-500" />
         <h2 className="text-base font-semibold text-foreground">{title}</h2>
         {disabled && (
           <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
@@ -174,7 +174,7 @@ function AiConfigSection() {
               onChange={(e) => setLocalName(e.target.value)}
               maxLength={30}
               id="ai-name"
-              className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+              className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
               placeholder="e.g. Lira, Sarah, Max…"
             />
             <Button
@@ -196,8 +196,8 @@ function AiConfigSection() {
                 onClick={() => setLocalName(n)}
                 className={`rounded-full border px-2.5 py-0.5 text-xs transition ${
                   localName === n
-                    ? 'border-[#3730a3] bg-[#3730a3]/10 text-[#3730a3]'
-                    : 'border-border text-muted-foreground hover:border-[#3730a3]/40 hover:text-foreground'
+                    ? 'border-gray-900 bg-gray-900 text-white'
+                    : 'border-border text-muted-foreground hover:border-gray-400 hover:text-foreground'
                 }`}
               >
                 {n}
@@ -217,17 +217,17 @@ function AiConfigSection() {
                 onClick={() => handleVoiceChange(v.id)}
                 className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
                   voiceId === v.id
-                    ? 'border-[#3730a3] bg-[#3730a3]/5'
-                    : 'border-border hover:border-[#3730a3]/40'
+                    ? 'border-gray-900 bg-gray-50'
+                    : 'border-border hover:border-gray-300'
                 }`}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3730a3]/10 text-[#3730a3]">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gray-100 text-gray-600">
                   <MicrophoneIcon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{v.label}</span>
-                    <span className="rounded-full bg-[#3730a3]/10 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-[#3730a3]">
+                    <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-gray-600">
                       {v.gender}
                     </span>
                   </div>
@@ -249,8 +249,8 @@ function AiConfigSection() {
                 onClick={() => setPersonality(p.id)}
                 className={`flex flex-col gap-0.5 rounded-xl border p-3 text-left transition ${
                   personality === p.id
-                    ? 'border-[#3730a3] bg-[#3730a3]/5'
-                    : 'border-border hover:border-[#3730a3]/40'
+                    ? 'border-gray-900 bg-gray-50'
+                    : 'border-border hover:border-gray-300'
                 }`}
               >
                 <span className="text-sm font-medium text-foreground">{p.label}</span>

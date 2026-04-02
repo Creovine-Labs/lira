@@ -131,7 +131,7 @@ function Input({
     <input
       {...props}
       className={cn(
-        'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 disabled:opacity-50',
+        'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3730a3] disabled:opacity-50',
         className
       )}
     />
@@ -146,7 +146,7 @@ function Textarea({
     <textarea
       {...props}
       className={cn(
-        'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none disabled:opacity-50',
+        'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3730a3] resize-none disabled:opacity-50',
         className
       )}
     />
@@ -169,7 +169,7 @@ function Select({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       className={cn(
-        'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500',
+        'w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#3730a3]',
         className
       )}
     >
@@ -202,17 +202,13 @@ function SectionCard({
     <div
       className={cn(
         'rounded-2xl border overflow-hidden',
-        variant === 'primary'
-          ? 'border-violet-300 dark:border-violet-700 bg-violet-50/40 dark:bg-violet-900/10'
-          : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900'
+        variant === 'primary' ? 'border-[#3730a3]/30 bg-[#3730a3]/5' : 'border-slate-200 bg-white'
       )}
     >
       <div
         className={cn(
           'flex items-center justify-between px-5 py-4 border-b',
-          variant === 'primary'
-            ? 'border-violet-200 dark:border-violet-800/50'
-            : 'border-slate-100 dark:border-slate-800',
+          variant === 'primary' ? 'border-[#3730a3]/20' : 'border-slate-100',
           collapsible &&
             'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors'
         )}
@@ -230,15 +226,13 @@ function SectionCard({
           <h3
             className={cn(
               'text-sm font-semibold',
-              variant === 'primary'
-                ? 'text-violet-800 dark:text-violet-200'
-                : 'text-slate-800 dark:text-slate-200'
+              variant === 'primary' ? 'text-[#3730a3]' : 'text-slate-800'
             )}
           >
             {title}
           </h3>
           {badge && (
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#3730a3]/10 text-[#3730a3]">
               {badge}
             </span>
           )}
@@ -712,8 +706,8 @@ function InterviewCreatePage() {
             <ArrowLeftIcon className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-violet-100">
-              <BriefcaseIcon className="w-4 h-4 text-violet-600" />
+            <div className="p-2 rounded-lg bg-gray-100">
+              <BriefcaseIcon className="w-4 h-4 text-gray-600" />
             </div>
             <h1 className="text-xl font-bold text-gray-900">Create Role</h1>
           </div>
@@ -724,7 +718,7 @@ function InterviewCreatePage() {
           <div className="w-full max-w-xl space-y-5">
             {/* Icon + headline */}
             <div className="text-center space-y-2">
-              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 mb-2 shadow-lg">
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-[#0f0f0f] mb-2 shadow-lg">
                 <SparklesIcon className="w-7 h-7 text-white" />
               </div>
               <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
@@ -748,7 +742,7 @@ function InterviewCreatePage() {
                   }
                 }}
                 placeholder="e.g. Senior Backend Engineer with Node.js and AWS experience for our platform team"
-                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-violet-500 focus:ring-4 focus:ring-violet-500/10 resize-none transition-all"
+                className="w-full px-4 py-3.5 rounded-2xl border-2 border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:border-[#3730a3] focus:ring-4 focus:ring-[#3730a3]/10 resize-none transition-all"
               />
               <p className="absolute bottom-3 right-3 text-[11px] text-gray-400 pointer-events-none select-none">
                 ⌘↵
@@ -769,7 +763,7 @@ function InterviewCreatePage() {
             <button
               onClick={handleGenerate}
               disabled={!prompt.trim() || drafting}
-              className="w-full py-3.5 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 shadow-sm"
+              className="w-full py-3.5 rounded-xl bg-[#3730a3] hover:bg-[#312e81] text-white font-semibold text-sm flex items-center justify-center gap-2 transition-colors disabled:opacity-40 shadow-sm"
             >
               {drafting ? (
                 <>
@@ -820,7 +814,7 @@ function InterviewCreatePage() {
                     setDraftError(null)
                     setPhase('review')
                   }}
-                  className="text-xs text-violet-600 hover:underline mt-0.5"
+                  className="text-xs text-[#3730a3] hover:underline mt-0.5"
                 >
                   Set up manually instead →
                 </button>
@@ -836,7 +830,7 @@ function InterviewCreatePage() {
                     <button
                       key={ex}
                       onClick={() => setPrompt(ex)}
-                      className="text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-violet-400 hover:text-violet-600 hover:bg-violet-50 transition-colors"
+                      className="text-xs px-3 py-1.5 rounded-full border border-gray-200 bg-white text-gray-600 hover:border-[#3730a3]/60 hover:text-[#3730a3] hover:bg-[#3730a3]/5 transition-colors"
                     >
                       {ex}
                     </button>
@@ -886,6 +880,23 @@ function InterviewCreatePage() {
                   : 'Review and finalize your role details'}
           </p>
         </div>
+        <button
+          onClick={handleSubmit}
+          disabled={creating}
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3730a3] hover:bg-[#312e81] text-white text-sm font-semibold transition-colors disabled:opacity-50"
+        >
+          {creating ? (
+            <img
+              src="/lira_black.png"
+              alt="Loading"
+              className="w-4 h-4 animate-spin opacity-50"
+              style={{ animationDuration: '1.2s' }}
+            />
+          ) : (
+            <BriefcaseIcon className="w-4 h-4" />
+          )}
+          {editMode ? 'Save Changes' : templateMode ? 'Create Interview' : 'Create Role'}
+        </button>
       </div>
 
       {/* Content */}
@@ -902,7 +913,7 @@ function InterviewCreatePage() {
                 <select
                   value={review.interview_purpose}
                   onChange={(e) => setR('interview_purpose', e.target.value as InterviewPurpose)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#3730a3]"
                 >
                   {INTERVIEW_PURPOSES.map((o) => (
                     <option key={o.value} value={o.value}>
@@ -992,7 +1003,7 @@ function InterviewCreatePage() {
                 {review.required_skills.map((s) => (
                   <span
                     key={s}
-                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs font-medium"
+                    className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-[#3730a3]/10 text-[#3730a3] text-xs font-medium"
                   >
                     {s}
                     <button
@@ -1017,7 +1028,7 @@ function InterviewCreatePage() {
                   <select
                     value={review.salary_currency}
                     onChange={(e) => setR('salary_currency', e.target.value)}
-                    className="w-32 shrink-0 px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="w-32 shrink-0 px-2 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#3730a3]"
                   >
                     {CURRENCIES.map((c) => (
                       <option key={c.value} value={c.value}>
@@ -1104,8 +1115,8 @@ function InterviewCreatePage() {
           <SectionCard title="Candidate Resume">
             <p className="text-xs text-slate-500">
               {editMode && hasExistingResume
-                ? 'A resume is already on file. ArrowUpTrayIcon a new one to replace it.'
-                : "ArrowUpTrayIcon the candidate's resume. Lira will extract their details automatically."}
+                ? 'A resume is already on file. Upload a new one to replace it.'
+                : "Upload the candidate's resume. Lira will extract their details automatically."}
             </p>
             <div
               className={cn(
@@ -1114,7 +1125,7 @@ function InterviewCreatePage() {
                   ? 'border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/10'
                   : errors.resume
                     ? 'border-red-300 dark:border-red-700'
-                    : 'border-slate-200 dark:border-slate-700 hover:border-violet-400'
+                    : 'border-slate-200 dark:border-slate-700 hover:border-[#3730a3]/40'
               )}
               onClick={() => resumeRef.current?.click()}
               onKeyDown={(e) => {
@@ -1179,7 +1190,7 @@ function InterviewCreatePage() {
                 <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Interview Questions
                 </h3>
-                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#3730a3]/10 text-[#3730a3]">
                   {review.questions.length}
                 </span>
               </div>
@@ -1187,7 +1198,7 @@ function InterviewCreatePage() {
                 <button
                   onClick={handleGenerateQuestions}
                   disabled={generatingQuestions}
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:hover:text-violet-300 transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-[#3730a3] hover:text-[#312e81] transition-colors disabled:opacity-50"
                 >
                   {generatingQuestions ? (
                     <img
@@ -1250,7 +1261,7 @@ function InterviewCreatePage() {
                     key={idx}
                     className="flex items-start gap-3 p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50"
                   >
-                    <span className="shrink-0 mt-0.5 w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 text-xs font-bold flex items-center justify-center">
+                    <span className="shrink-0 mt-0.5 w-6 h-6 rounded-full bg-[#3730a3]/10 text-[#3730a3] text-xs font-bold flex items-center justify-center">
                       {idx + 1}
                     </span>
                     <div className="flex-1 min-w-0 space-y-2">
@@ -1274,7 +1285,7 @@ function InterviewCreatePage() {
                             }
                             setR('questions', updated)
                           }}
-                          className="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-violet-500"
+                          className="px-2 py-1 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-[#3730a3]"
                         >
                           {CATEGORIES.map((c) => (
                             <option key={c.value} value={c.value}>
@@ -1326,38 +1337,13 @@ function InterviewCreatePage() {
                       },
                     ])
                   }
-                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-violet-400 text-slate-400 hover:text-violet-600 text-sm transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-2.5 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-700 hover:border-[#3730a3]/40 text-slate-400 hover:text-[#3730a3] text-sm transition-colors flex items-center justify-center gap-2"
                 >
                   <PlusIcon className="w-4 h-4" /> Add Question
                 </button>
               </div>
             )}
           </div>
-        </div>
-
-        {/* ── Bottom submit button ────────────────────────────────────────── */}
-        <div className="flex justify-end pt-2 pb-4">
-          <button
-            onClick={handleSubmit}
-            disabled={creating}
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors disabled:opacity-50"
-          >
-            {creating ? (
-              <img
-                src="/lira_black.png"
-                alt="Loading"
-                className="w-4 h-4 animate-spin opacity-50"
-                style={{ animationDuration: '1.2s' }}
-              />
-            ) : (
-              <BriefcaseIcon className="w-4 h-4" />
-            )}
-            {editMode
-              ? 'ArrowDownOnSquareIcon Changes'
-              : templateMode
-                ? 'Create Interview'
-                : 'Create Role'}
-          </button>
         </div>
       </div>
     </div>

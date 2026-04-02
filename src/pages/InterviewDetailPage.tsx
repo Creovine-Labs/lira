@@ -51,10 +51,10 @@ const STATUS_COLORS: Record<InterviewStatus, string> = {
   scheduled: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400',
   bot_deployed: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
   in_progress: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
-  evaluating: 'text-purple-600 bg-purple-100 dark:bg-purple-900/40 dark:text-purple-400',
-  completed: 'text-emerald-600 bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-400',
-  cancelled: 'text-red-500 bg-red-100 dark:bg-red-900/40 dark:text-red-400',
-  no_show: 'text-violet-600 bg-violet-100 dark:bg-violet-900/40 dark:text-violet-400',
+  evaluating: 'text-[#3730a3] bg-[#3730a3]/10',
+  completed: 'text-emerald-600 bg-emerald-100',
+  cancelled: 'text-red-500 bg-red-100',
+  no_show: 'text-[#3730a3] bg-[#3730a3]/10',
 }
 
 const DECISION_CONFIG: Record<
@@ -88,7 +88,7 @@ function QACard({ qa, index }: { qa: QASummary; index: number }) {
       {/* Always-visible: question + answer summary */}
       <div className="px-4 py-3">
         <div className="flex items-start gap-3">
-          <span className="shrink-0 w-7 h-7 rounded-full bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 text-xs font-bold flex items-center justify-center mt-0.5">
+          <span className="shrink-0 w-7 h-7 rounded-full bg-[#3730a3]/10 text-[#3730a3] text-xs font-bold flex items-center justify-center mt-0.5">
             {index + 1}
           </span>
           <div className="flex-1 min-w-0 space-y-2">
@@ -156,13 +156,8 @@ function QACard({ qa, index }: { qa: QASummary; index: number }) {
                 Follow-ups
               </p>
               {(qa.follow_ups ?? []).map((fu, i) => (
-                <div
-                  key={i}
-                  className="ml-2 mt-1 pl-3 border-l-2 border-violet-300 dark:border-violet-700"
-                >
-                  <p className="text-xs font-medium text-violet-700 dark:text-violet-400">
-                    {fu.question}
-                  </p>
+                <div key={i} className="ml-2 mt-1 pl-3 border-l-2 border-[#3730a3]/50">
+                  <p className="text-xs font-medium text-[#3730a3]">{fu.question}</p>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {fu.answer_summary}
                   </p>
@@ -462,7 +457,7 @@ function InterviewDetailPage() {
         <p className="text-slate-500">Interview not found</p>
         <button
           onClick={() => navigate('/org/roles')}
-          className="px-4 py-2 rounded-lg bg-violet-600 text-white text-sm"
+          className="px-4 py-2 rounded-lg bg-[#3730a3] text-white text-sm"
         >
           Back to Interviews
         </button>
@@ -553,7 +548,7 @@ function InterviewDetailPage() {
           {!interview.decision && interview.status === 'completed' && (
             <button
               onClick={() => setShowDecision(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-violet-300 dark:border-violet-700 text-sm text-violet-700 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#3730a3]/40 text-sm text-[#3730a3] hover:bg-[#3730a3]/5 transition-colors"
             >
               <HandThumbUpIcon className="w-4 h-4" />
               Decide
@@ -563,7 +558,7 @@ function InterviewDetailPage() {
             <button
               onClick={handleCreateFollowUp}
               disabled={followUpCreating}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-300 dark:border-blue-700 text-sm text-blue-700 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#3730a3]/40 text-sm text-[#3730a3] hover:bg-[#3730a3]/5 transition-colors disabled:opacity-50"
             >
               {followUpCreating ? (
                 <img
@@ -599,7 +594,7 @@ function InterviewDetailPage() {
             <button
               onClick={handleStartClick}
               disabled={actionLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3730a3] hover:bg-[#312e81] text-white text-sm font-medium transition-colors disabled:opacity-50"
             >
               {actionLoading ? (
                 <img
@@ -635,8 +630,8 @@ function InterviewDetailPage() {
             className={cn(
               'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5',
               activeTab === 'details'
-                ? 'border-violet-600 text-violet-700 dark:text-violet-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'border-[#3730a3] text-[#3730a3]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             )}
           >
             <DocumentTextIcon className="w-4 h-4" />
@@ -647,8 +642,8 @@ function InterviewDetailPage() {
             className={cn(
               'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors flex items-center gap-1.5',
               activeTab === 'evaluation'
-                ? 'border-violet-600 text-violet-700 dark:text-violet-400'
-                : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                ? 'border-[#3730a3] text-[#3730a3]'
+                : 'border-transparent text-slate-500 hover:text-slate-700'
             )}
           >
             <ChartBarIcon className="w-4 h-4" />
@@ -710,12 +705,10 @@ function InterviewDetailPage() {
 
             {/* Immediate-start callout */}
             {canStart && interview.status === 'scheduled' && (
-              <div className="flex flex-col gap-3 p-4 rounded-xl border border-violet-300 dark:border-violet-700 bg-violet-50 dark:bg-violet-900/20">
+              <div className="flex flex-col gap-3 p-4 rounded-xl border border-[#3730a3]/30 bg-[#3730a3]/5">
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-violet-800 dark:text-violet-300">
-                    Start this interview now
-                  </p>
-                  <p className="text-xs text-violet-600 dark:text-violet-400 mt-0.5">
+                  <p className="text-sm font-medium text-[#3730a3]">Start this interview now</p>
+                  <p className="text-xs text-[#3730a3]/80 mt-0.5">
                     Paste the meeting link below — Lira will join immediately and the scheduled time
                     will be cleared.
                   </p>
@@ -726,12 +719,12 @@ function InterviewDetailPage() {
                     value={immediateLink || interview.meeting_link || ''}
                     onChange={(e) => setImmediateLink(e.target.value)}
                     placeholder="https://meet.google.com/..."
-                    className="flex-1 sm:w-64 px-3 py-1.5 rounded-lg border border-violet-300 dark:border-violet-600 bg-white dark:bg-slate-900 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    className="flex-1 sm:w-64 px-3 py-1.5 rounded-lg border border-[#3730a3]/40 bg-white text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3730a3]"
                   />
                   <button
                     onClick={handleStartClick}
                     disabled={actionLoading || !(immediateLink.trim() || interview.meeting_link)}
-                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
+                    className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#3730a3] hover:bg-[#312e81] text-white text-sm font-medium transition-colors disabled:opacity-50 whitespace-nowrap"
                   >
                     {actionLoading ? (
                       <img
@@ -801,17 +794,15 @@ function InterviewDetailPage() {
               </div>
             )}
             {interview.status === 'evaluating' && !hasEval && (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/10">
+              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-[#3730a3]/20 bg-[#3730a3]/5">
                 <img
                   src="/lira_black.png"
                   alt="Loading"
                   className="w-8 h-8 animate-spin opacity-50"
                   style={{ animationDuration: '1.2s' }}
                 />
-                <p className="font-medium text-purple-700 dark:text-purple-400">
-                  Generating evaluation...
-                </p>
-                <p className="text-sm text-purple-600 dark:text-purple-500">
+                <p className="font-medium text-[#3730a3]">Generating evaluation...</p>
+                <p className="text-sm text-[#3730a3]/70">
                   Lira is analyzing the interview transcript. This usually takes 1–2 minutes.
                 </p>
               </div>
@@ -830,7 +821,7 @@ function InterviewDetailPage() {
                 <button
                   onClick={handleReEvaluate}
                   disabled={actionLoading}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm transition-colors disabled:opacity-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#3730a3] hover:bg-[#312e81] text-white text-sm transition-colors disabled:opacity-50"
                 >
                   {actionLoading ? (
                     <img
@@ -857,17 +848,14 @@ function InterviewDetailPage() {
                   {transcript.map((msg) => (
                     <div
                       key={msg.id}
-                      className={cn(
-                        'px-4 py-3 flex gap-3',
-                        msg.is_ai ? 'bg-violet-50/50 dark:bg-violet-900/10' : ''
-                      )}
+                      className={cn('px-4 py-3 flex gap-3', msg.is_ai ? 'bg-[#3730a3]/5' : '')}
                     >
                       <div
                         className={cn(
                           'shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold',
                           msg.is_ai
-                            ? 'bg-violet-200 text-violet-700 dark:bg-violet-800 dark:text-violet-300'
-                            : 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                            ? 'bg-[#3730a3]/20 text-[#3730a3]'
+                            : 'bg-slate-200 text-slate-600'
                         )}
                       >
                         {msg.is_ai
@@ -923,9 +911,7 @@ function InterviewDetailPage() {
                         key={ri.interview_id}
                         className={cn(
                           'border-l-2 transition-colors',
-                          isCurrent
-                            ? 'border-l-violet-500 bg-violet-50/40 dark:bg-violet-900/10'
-                            : 'border-l-transparent'
+                          isCurrent ? 'border-l-[#3730a3] bg-[#3730a3]/5' : 'border-l-transparent'
                         )}
                       >
                         <button
@@ -943,8 +929,8 @@ function InterviewDetailPage() {
                             className={cn(
                               'shrink-0 w-7 h-7 rounded-full text-xs font-bold flex items-center justify-center',
                               isCurrent
-                                ? 'bg-violet-200 text-violet-700 dark:bg-violet-800 dark:text-violet-300'
-                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                                ? 'bg-[#3730a3]/20 text-[#3730a3]'
+                                : 'bg-blue-100 text-blue-700'
                             )}
                           >
                             {ri.round ?? 1}
@@ -958,7 +944,7 @@ function InterviewDetailPage() {
                                 </span>
                               )}
                               {isCurrent && (
-                                <span className="ml-1.5 text-xs text-violet-500 dark:text-violet-400 font-normal">
+                                <span className="ml-1.5 text-xs text-[#3730a3] font-normal">
                                   (current)
                                 </span>
                               )}
@@ -999,10 +985,8 @@ function InterviewDetailPage() {
           <>
             {/* Candidate CV Summary */}
             {interview.resume?.parsed && (
-              <div className="rounded-xl border border-violet-200 dark:border-violet-800/60 bg-violet-50/50 dark:bg-violet-900/10 p-5 space-y-4">
-                <p className="text-sm font-semibold text-violet-800 dark:text-violet-200">
-                  Candidate CV
-                </p>
+              <div className="rounded-xl border border-[#3730a3]/20 bg-[#3730a3]/5 p-5 space-y-4">
+                <p className="text-sm font-semibold text-[#3730a3]">Candidate CV</p>
                 {interview.resume.parsed.summary && (
                   <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">
                     {interview.resume.parsed.summary}
@@ -1017,7 +1001,7 @@ function InterviewDetailPage() {
                       {interview.resume.parsed.skills.map((s) => (
                         <span
                           key={s}
-                          className="text-xs px-2 py-0.5 rounded-full bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300"
+                          className="text-xs px-2 py-0.5 rounded-full bg-[#3730a3]/10 text-[#3730a3]"
                         >
                           {s}
                         </span>
@@ -1146,7 +1130,7 @@ function InterviewDetailPage() {
                   value={modalCandidateName}
                   onChange={(e) => setModalCandidateName(e.target.value)}
                   placeholder="e.g. John Doe"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                  className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3730a3]"
                 />
               </div>
             )}
@@ -1177,7 +1161,7 @@ function InterviewDetailPage() {
                     }
                   }
                 }}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3730a3]"
               />
             </div>
 
@@ -1211,7 +1195,7 @@ function InterviewDetailPage() {
                   (needsCandidateName && !modalCandidateName.trim()) ||
                   actionLoading
                 }
-                className="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg bg-[#3730a3] hover:bg-[#312e81] text-white text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {actionLoading ? (
                   <img
@@ -1232,10 +1216,8 @@ function InterviewDetailPage() {
       {/* Decision modal */}
       {showDecision && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="w-full max-w-sm mx-4 rounded-2xl bg-white dark:bg-slate-900 shadow-2xl p-6 space-y-4">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
-              Record Decision
-            </h2>
+          <div className="w-full max-w-sm mx-4 rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+            <h2 className="text-lg font-bold text-slate-900">Record Decision</h2>
             <div className="grid grid-cols-2 gap-2">
               {(
                 [
@@ -1244,7 +1226,7 @@ function InterviewDetailPage() {
                   {
                     value: 'next_round',
                     label: '→ Next Round',
-                    color: 'border-blue-400 text-blue-600',
+                    color: 'border-[#3730a3]/60 text-[#3730a3]',
                   },
                   {
                     value: 'undecided',
@@ -1259,8 +1241,8 @@ function InterviewDetailPage() {
                   className={cn(
                     'py-2 rounded-lg border-2 text-sm font-medium transition-colors',
                     decision === opt.value
-                      ? `${opt.color} bg-slate-50 dark:bg-slate-800`
-                      : 'border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                      ? `${opt.color} bg-slate-50`
+                      : 'border-slate-200 text-slate-600'
                   )}
                 >
                   {opt.label}
@@ -1272,29 +1254,29 @@ function InterviewDetailPage() {
               value={decisionNotes}
               onChange={(e) => setDecisionNotes(e.target.value)}
               rows={3}
-              className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500 resize-none"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 bg-white text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#3730a3] resize-none"
             />
             <div className="flex gap-2">
               <button
                 onClick={() => setShowDecision(false)}
-                className="flex-1 py-2 rounded-lg border border-slate-300 dark:border-slate-600 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
+                className="flex-1 py-2 rounded-lg border border-slate-300 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDecision}
                 disabled={!decision || actionLoading}
-                className="flex-1 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                className="flex-1 py-2 rounded-lg bg-[#3730a3] hover:bg-[#312e81] text-white text-sm font-medium transition-colors disabled:opacity-50"
               >
                 {actionLoading ? (
                   <img
                     src="/lira_black.png"
                     alt="Loading"
-                    className="w-4 h-4  mx-auto animate-spin opacity-50"
+                    className="w-4 h-4 mx-auto animate-spin opacity-50"
                     style={{ animationDuration: '1.2s' }}
                   />
                 ) : (
-                  'ArrowDownOnSquareIcon Decision'
+                  'Save Decision'
                 )}
               </button>
             </div>

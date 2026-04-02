@@ -56,10 +56,10 @@ function CandidateRow({
   const statusColor = STATUS_COLORS[latest.status] ?? 'text-slate-500 bg-slate-100'
 
   return (
-    <div className="group relative flex items-center rounded-xl border border-gray-200 bg-white px-4 py-3.5 hover:border-violet-300 hover:shadow-sm transition-all">
+    <div className="group relative flex items-center rounded-xl border border-gray-200 bg-white px-4 py-3.5 hover:border-gray-300 hover:shadow-sm transition-all">
       <button onClick={onOpen} className="flex-1 flex items-center gap-4 text-left min-w-0">
         {/* Avatar */}
-        <div className="shrink-0 w-10 h-10 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold shadow-sm">
+        <div className="shrink-0 w-10 h-10 rounded-full bg-[#0f0f0f] flex items-center justify-center text-white text-sm font-bold">
           {initial ? initial : <UserIcon className="w-4 h-4" />}
         </div>
         <div className="flex-1 min-w-0">
@@ -85,7 +85,7 @@ function CandidateRow({
             <p className="text-xs text-gray-400 mt-0.5 truncate">{latest.candidate_email}</p>
           )}
         </div>
-        <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0" />
+        <ChevronRightIcon className="w-4 h-4 text-gray-300 group-hover:text-gray-600 transition-colors shrink-0" />
       </button>
       <button
         onClick={(e) => {
@@ -230,8 +230,8 @@ function InterviewRolePage() {
           <ArrowLeftIcon className="w-5 h-5" />
         </button>
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="p-2 rounded-lg bg-violet-100 dark:bg-violet-900/30 shrink-0">
-            <BriefcaseIcon className="w-4 h-4 text-violet-600 dark:text-violet-400" />
+          <div className="p-2 rounded-lg bg-gray-100 shrink-0">
+            <BriefcaseIcon className="w-4 h-4 text-gray-600" />
           </div>
           <h1 className="text-xl font-bold text-slate-900 dark:text-slate-100 truncate">{role}</h1>
         </div>
@@ -279,12 +279,12 @@ function InterviewRolePage() {
             {templateId && (
               <button
                 onClick={() => navigate(`/org/roles/new?from=${templateId}`)}
-                className="w-full flex items-center gap-4 rounded-xl border border-dashed border-violet-300 bg-violet-50/60 px-4 py-3.5 hover:bg-violet-50 hover:border-violet-400 transition-all text-left"
+                className="w-full flex items-center gap-4 rounded-xl border border-dashed border-gray-300 bg-gray-50/60 px-4 py-3.5 hover:bg-gray-50 hover:border-gray-400 transition-all text-left"
               >
-                <div className="shrink-0 w-10 h-10 rounded-full border-2 border-dashed border-violet-400 text-violet-500 flex items-center justify-center">
+                <div className="shrink-0 w-10 h-10 rounded-full border-2 border-dashed border-gray-400 text-gray-500 flex items-center justify-center">
                   <UserPlusIcon className="w-4 h-4" />
                 </div>
-                <span className="font-semibold text-violet-600">Interview Another Person</span>
+                <span className="font-semibold text-gray-700">Interview Another Person</span>
               </button>
             )}
 

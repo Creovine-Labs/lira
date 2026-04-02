@@ -15,7 +15,6 @@ import {
   MicrophoneIcon,
   PlayCircleIcon,
   ShieldCheckIcon,
-  TrophyIcon,
   XCircleIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
@@ -46,7 +45,7 @@ const ROLE_CONFIG: Record<
 > = {
   owner: {
     label: 'Owner',
-    icon: TrophyIcon,
+    icon: ShieldCheckIcon,
     pill: 'bg-[#3730a3]/15 text-[#a5b4fc]',
     gradient: 'from-[#3730a3] to-[#1e1b4b]',
     banner: 'from-[#1e1b4b] via-[#3730a3] to-[#0f0f0f]',

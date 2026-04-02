@@ -155,7 +155,7 @@ function TasksPage() {
           </div>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#312e81]"
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-gray-800"
           >
             <PlusIcon className="h-4 w-4" />
             New Task
@@ -369,10 +369,10 @@ function TaskCard({
           className={cn(
             'flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition',
             task.status === 'completed'
-              ? 'border-emerald-500 bg-emerald-500 text-white'
+              ? 'border-[#3730a3] bg-[#3730a3] text-white'
               : task.status === 'in_progress'
-                ? 'border-amber-400 hover:border-amber-500'
-                : 'border-red-300 hover:border-red-500'
+                ? 'border-[#3730a3] hover:border-[#3730a3]'
+                : 'border-[#3730a3]/40 hover:border-[#3730a3]'
           )}
         >
           {task.status === 'completed' && <CheckCircleIcon className="h-3 w-3" />}
