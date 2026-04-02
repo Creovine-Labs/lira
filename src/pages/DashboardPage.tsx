@@ -67,10 +67,10 @@ function StatCard({
   return (
     <Tag
       {...(onClick ? { onClick } : {})}
-      className="group relative overflow-hidden rounded-2xl border border-white/60 bg-white p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+      className="group relative overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50 p-5 text-left shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
     >
       <div className="flex items-start justify-between">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gray-100 text-gray-500">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-gray-500">
           <Icon className="h-[15px] w-[15px]" />
         </div>
         {onClick && (
@@ -222,7 +222,7 @@ function ActivityPanel({
   ]
 
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-white/60 bg-white shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm">
       {/* Underline tab bar — purple active */}
       <div className="flex items-center gap-0 border-b border-gray-100 px-4 pt-4">
         {tabs.map((t) => (
@@ -489,7 +489,7 @@ function DeployHeroBar() {
     }
 
     return (
-      <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm sm:p-8">
+      <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6 shadow-sm sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
@@ -538,7 +538,7 @@ function DeployHeroBar() {
           {isActive && (
             <button
               onClick={handleTerminate}
-              className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
+              className="shrink-0 rounded-full border border-indigo-100 bg-white px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
             >
               {botState === 'leaving' ? 'Force remove' : 'Remove from call'}
             </button>
@@ -573,7 +573,7 @@ function DeployHeroBar() {
   ]
 
   return (
-    <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm sm:p-8">
+    <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-6 shadow-sm sm:p-8">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
@@ -595,7 +595,7 @@ function DeployHeroBar() {
                 'rounded-full px-3.5 py-1 text-xs font-semibold transition-all duration-200',
                 selected
                   ? 'bg-[#3730a3] text-white shadow-sm shadow-[#3730a3]/40'
-                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
+                  : 'bg-white text-gray-500 hover:bg-indigo-100 hover:text-gray-700'
               )}
             >
               {label}
@@ -612,7 +612,7 @@ function DeployHeroBar() {
           </div>
           <input
             type="url"
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3]/60 focus:ring-2 focus:ring-[#3730a3]/30"
+            className="w-full rounded-xl border border-indigo-100 bg-white py-3 pl-10 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3]/60 focus:ring-2 focus:ring-[#3730a3]/30"
             placeholder="Paste Google Meet or Zoom link…"
             value={meetingLink}
             onChange={(e) => {
@@ -876,7 +876,7 @@ function DashboardPage() {
         {/* ── Bento: Quick actions + Activity ── */}
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* Quick actions sidebar */}
-          <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
+          <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-indigo-50 shadow-sm">
             <div className="border-b border-gray-100 px-5 py-4">
               <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
                 Quick Actions
