@@ -27,8 +27,8 @@ function percent(used: number, limit: number): number {
 
 function barColor(pct: number): string {
   if (pct >= 100) return 'bg-red-500'
-  if (pct >= 80) return 'bg-amber-500'
-  return 'bg-emerald-500'
+  if (pct >= 80) return 'bg-[#312e81]'
+  return 'bg-[#3730a3]'
 }
 
 export function UsagePage() {
@@ -107,9 +107,9 @@ export function UsagePage() {
       </div>
 
       {/* Beta info card */}
-      <div className="mt-8 rounded-xl border border-blue-100 bg-blue-50/50 p-5">
-        <h3 className="text-sm font-semibold text-blue-900">About the Beta</h3>
-        <p className="text-xs text-blue-700 mt-1 leading-relaxed">
+      <div className="mt-8 rounded-xl border border-[#3730a3]/20 bg-[#3730a3]/5 p-5">
+        <h3 className="text-sm font-semibold text-[#3730a3]">About the Beta</h3>
+        <p className="text-xs text-[#3730a3]/80 mt-1 leading-relaxed">
           All features are available during the beta, with usage limits to keep the experience
           smooth for everyone. Once you hit a limit, that feature pauses until the full release.
           We&apos;d love your feedback —{' '}

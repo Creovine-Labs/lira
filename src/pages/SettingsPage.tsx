@@ -99,7 +99,7 @@ function Section({
   return (
     <div className={`rounded-xl border bg-card p-6 shadow-sm ${disabled ? 'opacity-50' : ''}`}>
       <div className="mb-4 flex items-center gap-2">
-        <Icon className="h-5 w-5 text-violet-500" />
+        <Icon className="h-5 w-5 text-[#3730a3]" />
         <h2 className="text-base font-semibold text-foreground">{title}</h2>
         {disabled && (
           <span className="ml-auto flex items-center gap-1 text-xs text-muted-foreground">
@@ -174,7 +174,7 @@ function AiConfigSection() {
               onChange={(e) => setLocalName(e.target.value)}
               maxLength={30}
               id="ai-name"
-              className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20"
+              className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
               placeholder="e.g. Lira, Sarah, Max…"
             />
             <Button
@@ -196,8 +196,8 @@ function AiConfigSection() {
                 onClick={() => setLocalName(n)}
                 className={`rounded-full border px-2.5 py-0.5 text-xs transition ${
                   localName === n
-                    ? 'border-violet-500 bg-violet-100 text-violet-600 dark:bg-violet-900/40 dark:text-violet-400'
-                    : 'border-border text-muted-foreground hover:border-violet-300 hover:text-foreground'
+                    ? 'border-[#3730a3] bg-[#3730a3]/10 text-[#3730a3]'
+                    : 'border-border text-muted-foreground hover:border-[#3730a3]/40 hover:text-foreground'
                 }`}
               >
                 {n}
@@ -217,17 +217,17 @@ function AiConfigSection() {
                 onClick={() => handleVoiceChange(v.id)}
                 className={`flex items-start gap-3 rounded-xl border p-3 text-left transition ${
                   voiceId === v.id
-                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
-                    : 'border-border hover:border-violet-300'
+                    ? 'border-[#3730a3] bg-[#3730a3]/5'
+                    : 'border-border hover:border-[#3730a3]/40'
                 }`}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#3730a3]/10 text-[#3730a3]">
                   <MicrophoneIcon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium text-foreground">{v.label}</span>
-                    <span className="rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-violet-600 dark:bg-violet-900/30 dark:text-violet-400">
+                    <span className="rounded-full bg-[#3730a3]/10 px-1.5 py-0.5 text-[10px] font-semibold capitalize text-[#3730a3]">
                       {v.gender}
                     </span>
                   </div>
@@ -249,8 +249,8 @@ function AiConfigSection() {
                 onClick={() => setPersonality(p.id)}
                 className={`flex flex-col gap-0.5 rounded-xl border p-3 text-left transition ${
                   personality === p.id
-                    ? 'border-violet-500 bg-violet-50 dark:bg-violet-900/20'
-                    : 'border-border hover:border-violet-300'
+                    ? 'border-[#3730a3] bg-[#3730a3]/5'
+                    : 'border-border hover:border-[#3730a3]/40'
                 }`}
               >
                 <span className="text-sm font-medium text-foreground">{p.label}</span>
@@ -264,7 +264,7 @@ function AiConfigSection() {
   )
 }
 
-// ── Cog6ToothIcon tabs ─────────────────────────────────────────────────────────────
+// ── Settings tabs ─────────────────────────────────────────────────────────────────
 
 type SettingsTab = 'ai' | 'organization' | 'subscription' | 'billing'
 

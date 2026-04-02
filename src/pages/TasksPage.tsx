@@ -62,8 +62,8 @@ const STATUS_COLORS: Record<TaskStatus, { dot: string; badge: string; text: stri
 
 const PRIORITY_COLORS: Record<TaskPriority, string> = {
   low: 'text-slate-500 bg-slate-100 dark:bg-slate-800',
-  medium: 'text-blue-600 bg-blue-100 dark:bg-blue-900/40 dark:text-blue-400',
-  high: 'text-amber-600 bg-amber-100 dark:bg-amber-900/40 dark:text-amber-400',
+  medium: 'text-[#3730a3] bg-[#3730a3]/10',
+  high: 'text-red-600 bg-red-100',
   urgent: 'text-red-600 bg-red-100 dark:bg-red-900/40 dark:text-red-400',
 }
 
@@ -155,7 +155,7 @@ function TasksPage() {
           </div>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#1a1a1a]"
+            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#312e81]"
           >
             <PlusIcon className="h-4 w-4" />
             New Task
@@ -443,13 +443,13 @@ function TaskCard({
             </span>
           )}
           {task.execution_status === 'completed' && (
-            <span className="flex items-center gap-0.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-600">
+            <span className="flex items-center gap-0.5 rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#3730a3]">
               <BoltIcon className="h-2.5 w-2.5" />
               AI Result
             </span>
           )}
           {task.execution_status === 'running' && (
-            <span className="flex items-center gap-0.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
+            <span className="flex items-center gap-0.5 rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-[10px] font-semibold text-[#3730a3]">
               <img
                 src="/lira_black.png"
                 alt="Loading"

@@ -147,7 +147,7 @@ function OrgSettingsPage() {
       }
       await updateOrganization(currentOrgId, { name: name.trim(), profile })
       updateOrgInStore(currentOrgId, { name: name.trim() })
-      toast.success('Cog6ToothIcon saved')
+      toast.success('Settings saved')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to save')
     } finally {
@@ -164,10 +164,8 @@ function OrgSettingsPage() {
   return (
     <div className="space-y-8 pb-8">
       <div>
-        <h1 className="text-xl font-bold text-foreground">Organization Cog6ToothIcon</h1>
-        {name && (
-          <p className="mt-0.5 text-base font-bold text-violet-600 dark:text-violet-400">{name}</p>
-        )}
+        <h1 className="text-xl font-bold text-foreground">Organization Settings</h1>
+        {name && <p className="mt-0.5 text-base font-bold text-[#3730a3]">{name}</p>}
         <p className="mt-1 text-sm text-muted-foreground">
           Configure your organization profile. This information helps Lira provide contextualized
           responses during meetings.
@@ -313,7 +311,7 @@ function OrgSettingsPage() {
               {values.map((v, i) => (
                 <span
                   key={i}
-                  className="flex items-center gap-1 rounded-full bg-violet-100 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-violet-900/40 dark:text-violet-400"
+                  className="flex items-center gap-1 rounded-full bg-[#3730a3]/10 px-2.5 py-1 text-xs font-medium text-[#3730a3]"
                 >
                   {v}
                   <button
@@ -492,7 +490,7 @@ function OrgSettingsPage() {
         <button
           onClick={handleSave}
           disabled={saving || !name.trim() || !canEdit}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-6 py-2.5 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
+          className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#312e81] disabled:opacity-50"
         >
           {saving ? (
             <img

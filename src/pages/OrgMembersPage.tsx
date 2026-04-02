@@ -5,7 +5,6 @@ import {
   ArrowsRightLeftIcon,
   DocumentDuplicateIcon,
   ShieldCheckIcon,
-  TrophyIcon,
   UserMinusIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
@@ -253,8 +252,7 @@ function OrgMembersPage() {
 
                 <div className="flex items-center gap-1.5">
                   {m.role === 'owner' ? (
-                    <span className="flex items-center gap-1 rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-700">
-                      <TrophyIcon className="h-3 w-3" />
+                    <span className="rounded-full bg-[#3730a3]/10 px-2.5 py-1 text-xs font-semibold text-[#3730a3]">
                       Owner
                     </span>
                   ) : m.role === 'admin' ? (
@@ -326,8 +324,8 @@ function OrgMembersPage() {
         )}
 
         {currentMember?.role === 'owner' && (
-          <div className="rounded-2xl border border-amber-200 bg-white p-6 shadow-sm">
-            <h2 className="mb-1 text-sm font-bold text-amber-600">Can’t leave yet</h2>
+          <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
+            <h2 className="mb-1 text-sm font-bold text-red-600">Can't leave yet</h2>
             <p className="text-sm text-gray-400">
               You’re the owner of this organization. Transfer ownership to another member before
               leaving.
@@ -383,7 +381,7 @@ function OrgMembersPage() {
                 <button
                   onClick={handleTransferOwnership}
                   disabled={transferring}
-                  className="rounded-xl bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-amber-600 disabled:opacity-50"
+                  className="rounded-xl bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:opacity-50"
                 >
                   {transferring ? (
                     <img

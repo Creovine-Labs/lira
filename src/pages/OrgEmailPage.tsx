@@ -629,43 +629,42 @@ function OrgEmailPage() {
 
             {/* Status card */}
             {config && (
-              <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1c1c1e] to-[#0a0a0a] px-5 py-5 shadow-lg">
-                <div className="pointer-events-none absolute inset-[1px] rounded-[15px] border border-white/[0.06]" />
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-white/40">
+              <section className="rounded-2xl border border-white/60 bg-white px-5 py-5 shadow-sm">
+                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                   Current Status
                 </p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div>
-                    <p className="text-xs text-white/40">Sending mode</p>
-                    <p className="font-semibold text-white capitalize">{config.mode}</p>
+                    <p className="text-xs text-gray-400">Sending mode</p>
+                    <p className="font-semibold text-gray-900 capitalize">{config.mode}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-white/40">Domain verified</p>
+                    <p className="text-xs text-gray-400">Domain verified</p>
                     <p
-                      className={`font-semibold ${config.domain_verified ? 'text-emerald-400' : 'text-amber-400'}`}
+                      className={`font-semibold ${config.domain_verified ? 'text-[#3730a3]' : 'text-red-500'}`}
                     >
                       {config.domain_verified ? 'Yes' : 'No'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-white/40">Notifications</p>
+                    <p className="text-xs text-gray-400">Notifications</p>
                     <p
-                      className={`font-semibold ${config.email_notifications_enabled ? 'text-emerald-400' : 'text-white/50'}`}
+                      className={`font-semibold ${config.email_notifications_enabled ? 'text-[#3730a3]' : 'text-gray-400'}`}
                     >
                       {config.email_notifications_enabled ? 'Enabled' : 'Disabled'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-white/40">AI auto-reply</p>
+                    <p className="text-xs text-gray-400">AI auto-reply</p>
                     <p
-                      className={`font-semibold ${(config.ai_reply_enabled ?? true) ? 'text-emerald-400' : 'text-amber-400'}`}
+                      className={`font-semibold ${(config.ai_reply_enabled ?? true) ? 'text-[#3730a3]' : 'text-red-500'}`}
                     >
                       {(config.ai_reply_enabled ?? true) ? 'On' : 'Off'}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs text-white/40">Last updated</p>
-                    <p className="font-semibold text-white/70">
+                    <p className="text-xs text-gray-400">Last updated</p>
+                    <p className="font-semibold text-gray-700">
                       {new Date(config.updated_at).toLocaleDateString()}
                     </p>
                   </div>

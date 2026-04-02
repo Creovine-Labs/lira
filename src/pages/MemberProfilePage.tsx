@@ -488,7 +488,7 @@ function MemberProfilePage() {
                       className={cn(
                         'flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-all',
                         activeTab === tab.id
-                          ? 'bg-[#3730a3] font-semibold text-white shadow-sm'
+                          ? 'bg-[#0f0f0f] font-semibold text-white shadow-sm'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       )}
                     >
