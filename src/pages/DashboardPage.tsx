@@ -508,7 +508,7 @@ function DeployHeroBar() {
     }
 
     return (
-      <div className="rounded-2xl bg-[#0f0f0f] p-6 sm:p-8">
+      <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm sm:p-8">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
@@ -547,7 +547,7 @@ function DeployHeroBar() {
               >
                 {stateLabel[botState] ?? botState}
               </p>
-              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-white/40">
+              <p className="mt-0.5 flex items-center gap-1.5 text-xs text-gray-400">
                 <VideoCameraIcon className="h-3 w-3" />
                 {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
               </p>
@@ -557,7 +557,7 @@ function DeployHeroBar() {
           {isActive && (
             <button
               onClick={handleTerminate}
-              className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
+              className="shrink-0 rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-50"
             >
               {botState === 'leaving' ? 'Force remove' : 'Remove from call'}
             </button>
@@ -592,13 +592,13 @@ function DeployHeroBar() {
   ]
 
   return (
-    <div className="rounded-2xl bg-[#0f0f0f] p-6 sm:p-8">
+    <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm sm:p-8">
       <div className="mb-6 flex items-start justify-between">
         <div>
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-white/30">
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
             Meeting
           </p>
-          <h2 className="text-xl font-bold text-white">Invite Lira to a meeting</h2>
+          <h2 className="text-xl font-bold text-gray-900">Invite Lira to a meeting</h2>
         </div>
       </div>
 
@@ -614,7 +614,7 @@ function DeployHeroBar() {
                 'rounded-full px-3.5 py-1 text-xs font-semibold transition-all duration-200',
                 selected
                   ? 'bg-[#3730a3] text-white shadow-sm shadow-[#3730a3]/40'
-                  : 'bg-white/10 text-white/50 hover:bg-white/20 hover:text-white'
+                  : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-gray-700'
               )}
             >
               {label}
@@ -627,11 +627,11 @@ function DeployHeroBar() {
       <div className="flex gap-2 sm:gap-3">
         <div className="relative flex-1">
           <div className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2">
-            <VideoCameraIcon className="h-4 w-4 text-white/25" />
+            <VideoCameraIcon className="h-4 w-4 text-gray-400" />
           </div>
           <input
             type="url"
-            className="w-full rounded-xl border border-white/10 bg-white/10 py-3 pl-10 pr-16 text-sm text-white placeholder:text-white/30 outline-none transition focus:border-[#3730a3]/60 focus:ring-2 focus:ring-[#3730a3]/30"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 py-3 pl-10 pr-16 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3]/60 focus:ring-2 focus:ring-[#3730a3]/30"
             placeholder="Paste Google Meet or Zoom link…"
             value={meetingLink}
             onChange={(e) => {
@@ -679,37 +679,37 @@ function DeployHeroBar() {
       </div>
 
       {error && (
-        <p className="mt-3 flex items-center gap-1.5 text-sm text-red-400">
+        <p className="mt-3 flex items-center gap-1.5 text-sm text-red-500">
           <ExclamationCircleIcon className="h-3.5 w-3.5 shrink-0" />
           {error}
         </p>
       )}
 
       {/* Capability anchors */}
-      <div className="mt-5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-white/30">
+      <div className="mt-5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-gray-400">
         <span>Also:</span>
         <button
           onClick={() => navigate('/org/roles')}
-          className="text-white/50 transition hover:text-white"
+          className="text-gray-500 transition hover:text-gray-700"
         >
           Conduct interviews
         </button>
         <span>·</span>
         <button
           onClick={() => navigate('/org/tasks')}
-          className="text-white/50 transition hover:text-white"
+          className="text-gray-500 transition hover:text-gray-700"
         >
           Manage tasks
         </button>
         <span>·</span>
         <button
           onClick={() => navigate('/org/knowledge')}
-          className="text-white/50 transition hover:text-white"
+          className="text-gray-500 transition hover:text-gray-700"
         >
           Knowledge base
         </button>
         <span>·</span>
-        <span className="italic text-white/20">Sales calls (coming soon)</span>
+        <span className="italic text-gray-400">Sales calls (coming soon)</span>
       </div>
     </div>
   )
