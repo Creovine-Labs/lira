@@ -660,7 +660,6 @@ function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['Conversations', 'Workspace']))
-  const [flyoutOpen, setFlyoutOpen] = useState<string | null>(null)
   const { token, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
@@ -933,50 +932,24 @@ function AppShell() {
             }
             const isOpen = expanded.has(entry.label)
             const hasActive = entry.children.some((c) => location.pathname.startsWith(c.to))
-            const isFlyoutOpen = flyoutOpen === entry.label
             if (sidebarCollapsed) {
               return (
                 <div key={entry.label} className="relative">
                   <button
                     title={entry.label}
-                    onClick={() => setFlyoutOpen(isFlyoutOpen ? null : entry.label)}
+                    onClick={() => {
+                      setExpanded((prev) => new Set([...prev, entry.label]))
+                      setSidebarCollapsed(false)
+                    }}
                     className={cn(
                       'flex w-full items-center justify-center rounded-xl px-2 py-2 text-[13px] font-medium transition-colors',
-                      hasActive || isFlyoutOpen
+                      hasActive
                         ? 'bg-[#1A1A1A] text-white'
                         : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
                     )}
                   >
                     <entry.icon className="h-4 w-4 shrink-0" />
                   </button>
-                  {isFlyoutOpen && (
-                    <div className="absolute left-full top-0 z-50 ml-2 w-44 rounded-xl border border-gray-200 bg-white py-1.5 shadow-lg">
-                      <p className="px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                        {entry.label}
-                      </p>
-                      {entry.children.map(({ to, icon: Icon, label }) => (
-                        <NavLink
-                          key={to}
-                          to={to}
-                          onClick={() => setFlyoutOpen(null)}
-                          className={({ isActive }) =>
-                            cn(
-                              'flex items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
-                              isActive ? 'font-semibold text-[#1A1A1A]' : 'text-gray-600'
-                            )
-                          }
-                        >
-                          <Icon className="h-4 w-4 shrink-0 text-gray-400" />
-                          {label}
-                          {to === '/org/tasks' ? (
-                            <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
-                          ) : (
-                            <NavBadge count={badges[to] ?? 0} />
-                          )}
-                        </NavLink>
-                      ))}
-                    </div>
-                  )}
                 </div>
               )
             }

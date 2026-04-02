@@ -1089,7 +1089,7 @@ function InterviewDetailPage() {
 
             {/* Q&A Analysis */}
             {(interview.evaluation.qa_summary ?? []).length > 0 && (
-              <div className="space-y-3">
+              <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-5 space-y-3">
                 <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                   Question & Answer Analysis
                 </p>
