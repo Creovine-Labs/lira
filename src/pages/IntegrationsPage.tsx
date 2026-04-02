@@ -5051,7 +5051,7 @@ export default function IntegrationsPage() {
             </p>
           </div>
           <a
-            href="https://docs.lyraintelligence.com/integrations"
+            href="https://docs.liraintelligence.com/integrations/overview"
             target="_blank"
             rel="noopener noreferrer"
             className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 shadow-sm transition hover:border-gray-300 hover:text-gray-900"

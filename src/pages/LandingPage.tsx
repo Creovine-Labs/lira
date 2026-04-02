@@ -1233,8 +1233,8 @@ function Hero() {
       {showModal && <MeetingModal url={meetingUrl} onClose={() => setShowModal(false)} />}
       <section className="relative overflow-hidden pt-36 sm:pt-44 pb-0 px-6 text-center">
         {/* Headline */}
-        <h1 className="mx-auto max-w-2xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
-          The{' '}
+        <h1 className="mx-auto max-w-3xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
+          Your{' '}
           <span
             className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg ai-badge"
             style={{
@@ -1244,9 +1244,9 @@ function Hero() {
           >
             AI
           </span>{' '}
-          that listens,
+          in every room.
           <br />
-          remembers, and acts.
+          Nothing gets left behind.
         </h1>
 
         {/* Join meeting widget */}

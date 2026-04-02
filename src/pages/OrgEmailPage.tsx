@@ -244,7 +244,7 @@ function OrgEmailPage() {
                 <EnvelopeIcon className="h-5 w-5 text-gray-400" />
                 <h2 className="text-sm font-semibold text-gray-800">Sender Identity</h2>
                 <a
-                  href="https://docs.lyraintelligence.com/email"
+                  href="https://docs.liraintelligence.com"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="ml-auto inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-500 transition hover:border-gray-300 hover:text-gray-800"
