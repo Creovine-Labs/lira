@@ -580,11 +580,12 @@ function OnboardingPage() {
                   </p>
                   <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed text-gray-700">
                     <p>
-                      Hey team! We just created a workspace for{' '}
+                      Hey team! We just set up a workspace for{' '}
                       <span className="font-semibold text-gray-900">{createdOrgName}</span> on Lira
-                      — it helps us automatically capture meeting notes, assign tasks, and send
-                      notifications after every call. We'd love for you to join so nothing falls
-                      through the cracks.
+                      — an AI assistant that joins our Google Meet and Zoom calls, takes notes,
+                      creates and follows up on action items, and keeps everyone in the loop with
+                      smart notifications. We'd love for you to join so we can all stay aligned
+                      without the manual work.
                     </p>
                     <p className="mt-2">Here's how to get set up: </p>
                     <p className="mt-1">
@@ -603,7 +604,7 @@ function OnboardingPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const msg = `Hey team! We just created a workspace for ${createdOrgName} on Lira — it helps us automatically capture meeting notes, assign tasks, and send notifications after every call. We'd love for you to join so nothing falls through the cracks.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
+                      const msg = `Hey team! We just set up a workspace for ${createdOrgName} on Lira — an AI assistant that joins our Google Meet and Zoom calls, takes notes, creates and follows up on action items, and keeps everyone in the loop with smart notifications. We'd love for you to join so we can all stay aligned without the manual work.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
                       navigator.clipboard.writeText(msg)
                       setMessageCopied(true)
                       setTimeout(() => setMessageCopied(false), 2000)
@@ -624,13 +625,7 @@ function OnboardingPage() {
                   </button>
                 </div>
 
-                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                  <button
-                    onClick={() => navigate('/dashboard')}
-                    className="text-sm text-gray-400 transition hover:text-gray-600"
-                  >
-                    Skip for now
-                  </button>
+                <div className="border-t border-gray-100 pt-4">
                   <button
                     onClick={() => setStep('success')}
                     className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
