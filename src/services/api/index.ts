@@ -209,6 +209,28 @@ export async function verifyOtp(
   })
 }
 
+// ── Password Reset ────────────────────────────────────────────────────────────
+
+/** Request a password reset email. Always resolves (no email enumeration). */
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  return apiFetch('/v1/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+/** Reset password using the token from the email link. */
+export async function resetPassword(
+  email: string,
+  token: string,
+  password: string
+): Promise<{ message: string }> {
+  return apiFetch('/v1/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, token, password }),
+  })
+}
+
 // ── Meetings ──────────────────────────────────────────────────────────────────
 
 export async function createMeeting(title: string, settings?: MeetingSettings): Promise<Meeting> {

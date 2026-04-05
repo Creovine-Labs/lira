@@ -10,6 +10,8 @@ export const ROUTES = {
   uiLab: '/ui-lab',
   onboarding: '/onboarding',
   verifyEmail: '/verify-email',
+  forgotPassword: '/forgot-password',
+  resetPassword: '/reset-password',
   organizations: '/organizations',
   orgSettings: '/org/settings',
   orgKnowledge: '/org/knowledge',

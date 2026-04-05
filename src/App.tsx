@@ -41,6 +41,8 @@ import {
   UsagePage,
   LaunchDemoPage,
   VerifyEmailPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
 } from '@/pages'
 import {
   AdminShell,
@@ -86,6 +88,8 @@ function App() {
         <Route path="/signup" element={<HomePage defaultView="landing" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/launch-demo" element={<LaunchDemoPage />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />

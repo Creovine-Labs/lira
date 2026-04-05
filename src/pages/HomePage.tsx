@@ -596,6 +596,14 @@ function LoginForm({
                         </button>
                       </div>
                     </div>
+                    <div className="flex justify-end">
+                      <Link
+                        to="/forgot-password"
+                        className="text-xs font-medium text-[#3730a3] hover:text-[#312e81]"
+                      >
+                        Forgot password?
+                      </Link>
+                    </div>
                     {error && (
                       <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
                     )}
