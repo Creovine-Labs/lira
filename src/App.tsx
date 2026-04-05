@@ -18,7 +18,6 @@ import {
   OrgMembersPage,
   MemberProfilePage,
   KnowledgeBasePage,
-  DocumentsPage,
   TasksPage,
   OrgTaskDetailPage,
   OrgEmailPage,
@@ -76,7 +75,7 @@ function App() {
         {/* Public routes — no shell */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
-        <Route path="/signup" element={<HomePage defaultView="signup" />} />
+        <Route path="/signup" element={<HomePage defaultView="landing" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
@@ -105,7 +104,10 @@ function App() {
           <Route path="/org" element={<OrgLayout />}>
             <Route path="settings" element={<OrgSettingsPage />} />
             <Route path="knowledge" element={<KnowledgeBasePage />} />
-            <Route path="documents" element={<DocumentsPage />} />
+            <Route
+              path="documents"
+              element={<Navigate to="/org/knowledge?tab=documents" replace />}
+            />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="tasks/:taskId" element={<OrgTaskDetailPage />} />
             <Route path="members" element={<OrgMembersPage />} />
