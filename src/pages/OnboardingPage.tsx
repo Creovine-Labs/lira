@@ -581,11 +581,10 @@ function OnboardingPage() {
                   <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed text-gray-700">
                     <p>
                       Hey team! We just set up a workspace for{' '}
-                      <span className="font-semibold text-gray-900">{createdOrgName}</span> on Lira
-                      — an AI assistant that joins our Google Meet and Zoom calls, takes notes,
-                      creates and follows up on action items, and keeps everyone in the loop with
-                      smart notifications. We'd love for you to join so we can all stay aligned
-                      without the manual work.
+                      <span className="font-semibold text-gray-900">{createdOrgName}</span> on Lira,
+                      an AI assistant that joins our Google Meet calls, takes notes, creates and
+                      follows up on action items, and keeps everyone in the loop with smart
+                      notifications.
                     </p>
                     <p className="mt-2">Here's how to get set up: </p>
                     <p className="mt-1">
@@ -604,7 +603,7 @@ function OnboardingPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const msg = `Hey team! We just set up a workspace for ${createdOrgName} on Lira — an AI assistant that joins our Google Meet and Zoom calls, takes notes, creates and follows up on action items, and keeps everyone in the loop with smart notifications. We'd love for you to join so we can all stay aligned without the manual work.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
+                      const msg = `Hey team! We just set up a workspace for ${createdOrgName} on Lira, an AI assistant that joins our Google Meet calls, takes notes, creates and follows up on action items, and keeps everyone in the loop with smart notifications.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
                       navigator.clipboard.writeText(msg)
                       setMessageCopied(true)
                       setTimeout(() => setMessageCopied(false), 2000)
