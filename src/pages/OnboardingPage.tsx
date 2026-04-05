@@ -314,7 +314,7 @@ function OnboardingPage() {
       setCurrentOrg(organization.org_id)
       setCreatedOrgName(organization.name)
       setCreatedInviteCode(organization.invite_code)
-      setStep('success')
+      setStep('invite')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create organization')
     } finally {
@@ -472,7 +472,7 @@ function OnboardingPage() {
           <LiraLogo size="md" />
         </div>
         {/* Scrollable content */}
-        <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
+        <div className="flex flex-1 flex-col justify-start pt-4 px-5 py-8 sm:px-10 sm:py-12 md:justify-center md:px-16">
           <div className="w-full max-w-[560px]">
             {/* Step: success */}
             {step === 'success' && (
@@ -487,8 +487,7 @@ function OnboardingPage() {
                     You're all set.
                   </h1>
                   <p className="text-base text-gray-500">
-                    Your organization is ready. Invite your team, connect your meetings, and let
-                    Lira get to work.
+                    Your organization is ready. Connect your meetings and let Lira get to work.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-[#3730a3]/20 bg-[#3730a3]/5 px-6 py-5">
@@ -513,10 +512,10 @@ function OnboardingPage() {
                 </ul>
                 <div className="border-t border-gray-100 pt-4">
                   <button
-                    onClick={() => setStep('invite')}
+                    onClick={() => navigate('/dashboard')}
                     className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
                   >
-                    Continue
+                    Enter workspace
                   </button>
                 </div>
               </div>
@@ -633,10 +632,10 @@ function OnboardingPage() {
                     Skip for now
                   </button>
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => setStep('success')}
                     className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
                   >
-                    Enter workspace
+                    Continue
                   </button>
                 </div>
               </div>
@@ -909,6 +908,12 @@ function OnboardingPage() {
                         type="button"
                         disabled={website.trim() !== '' && looksLikePartialUrl(website)}
                         onClick={() => {
+                          if (!website.trim()) {
+                            setDescribeError(
+                              'Add your website above and Lira will read it and write a description for you.'
+                            )
+                            return
+                          }
                           const next = !autoDescribe
                           setAutoDescribe(next)
                           if (next && website.trim() && looksLikeCompleteUrl(website)) {
