@@ -2854,8 +2854,11 @@ export async function adminGetOrganization(orgId: string): Promise<AdminOrgDetai
   return apiFetch(`/v1/platform/admin/lira/organizations/${encodeURIComponent(orgId)}`)
 }
 
-export async function adminListUsers(search?: string): Promise<AdminUser[]> {
-  const q = search ? `?search=${encodeURIComponent(search)}` : ''
+export async function adminListUsers(search?: string, filter?: string): Promise<AdminUser[]> {
+  const params = new URLSearchParams()
+  if (search) params.set('search', search)
+  if (filter) params.set('filter', filter)
+  const q = params.toString() ? `?${params.toString()}` : ''
   return apiFetch(`/v1/platform/admin/lira/users${q}`)
 }
 
