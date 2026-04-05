@@ -671,7 +671,7 @@ function AppShell() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['Conversations', 'Workspace']))
-  const { token, clearCredentials } = useAuthStore()
+  const { token, emailVerified, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
 
@@ -722,6 +722,11 @@ function AppShell() {
     return <Navigate to="/" replace />
   }
 
+  // Email not verified — must complete OTP before accessing the app
+  if (emailVerified === false) {
+    return <Navigate to="/verify-email" replace />
+  }
+
   // Loading orgs — show spinner to prevent flash of empty state
   if (orgLoading && organizations.length === 0) {
     return (
@@ -736,27 +741,9 @@ function AppShell() {
     )
   }
 
-  // No org yet — prompt onboarding
+  // No org yet — redirect to onboarding
   if (organizations.length === 0 && currentOrgId === null) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-100">
-            <BuildingOffice2Icon className="h-6 w-6 text-violet-600" />
-          </div>
-          <p className="text-sm font-medium text-gray-900">No organization yet</p>
-          <p className="mt-1 text-sm text-gray-500">
-            Create or join an organization to get started.
-          </p>
-          <button
-            onClick={() => navigate('/onboarding')}
-            className="mt-4 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
-          >
-            Get started
-          </button>
-        </div>
-      </div>
-    )
+    return <Navigate to="/onboarding" replace />
   }
 
   return (

@@ -3,7 +3,7 @@ import { Navigate, Link, useNavigate } from 'react-router-dom'
 import { EnvelopeIcon } from '@heroicons/react/24/outline'
 
 import { useAuthStore } from '@/app/store'
-import { sendOtp, verifyOtp } from '@/services/api'
+import { sendOtp, verifyOtp, listOrganizations } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 
 const CODE_LENGTH = 6
@@ -80,8 +80,13 @@ function VerifyEmailPage() {
     try {
       const res = await verifyOtp(code)
       if (res.verified) {
+        // New users (no orgs) → onboarding; returning users → dashboard
+        const orgs = await listOrganizations().catch(() => [])
+        const dest = orgs.length === 0 ? '/onboarding' : '/dashboard'
+        // Set verified AFTER computing destination so the guard doesn't redirect
+        // to /dashboard before we navigate.
         setEmailVerified(true)
-        navigate('/onboarding', { replace: true })
+        navigate(dest, { replace: true })
       } else {
         setError('Invalid code. Please try again.')
       }

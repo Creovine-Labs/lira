@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon,
   CheckIcon,
@@ -14,7 +14,7 @@ import {
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
-import { useOrgStore } from '@/app/store'
+import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   createOrganization,
   describeUrlPublic,
@@ -258,6 +258,7 @@ function SparkleGraphic() {
 
 function OnboardingPage() {
   const navigate = useNavigate()
+  const { token, emailVerified } = useAuthStore()
   const { addOrganization, setCurrentOrg } = useOrgStore()
 
   const [step, setStep] = useState<FlowStep>('choose')
@@ -284,6 +285,11 @@ function OnboardingPage() {
   const [joining, setJoining] = useState(false)
   const [validating, setValidating] = useState(false)
   const [validatedOrg, setValidatedOrg] = useState<{ name: string; org_id: string } | null>(null)
+
+  // Email not verified — must complete OTP before onboarding
+  if (token && emailVerified === false) {
+    return <Navigate to="/verify-email" replace />
+  }
 
   function goBack() {
     const prev = STEP_BACK[step]
@@ -716,7 +722,8 @@ function OnboardingPage() {
                     What industry are you in?
                   </h1>
                   <p className="mt-2 text-sm text-gray-500">
-                    We'll focus Lira's experience based on your choice.
+                    Lira uses this to understand your organization's context during meetings and
+                    deliver smarter, more relevant responses.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">

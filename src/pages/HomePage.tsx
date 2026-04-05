@@ -17,6 +17,7 @@ import {
   googleLogin as apiGoogleLogin,
   credentials,
   listOrganizations,
+  sendOtp,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 
@@ -317,8 +318,9 @@ function LoginForm({
         res.user.role
       )
       credentials.set(res.token)
-      // If email not verified, redirect to OTP page
+      // If email not verified, send a fresh OTP and redirect to the OTP page
       if (res.user.emailVerified === false) {
+        sendOtp().catch(() => {}) // fire-and-forget — fresh OTP for returning unverified user
         onLogin(false, false)
         return
       }
@@ -874,10 +876,15 @@ interface HomePageProps {
 }
 
 function HomePage({ defaultView }: HomePageProps) {
-  const { token } = useAuthStore()
+  const { token, emailVerified } = useAuthStore()
   const navigate = useNavigate()
 
-  // Authenticated — redirect to dashboard
+  // Authenticated but email not verified — go to OTP page
+  if (token && emailVerified === false) {
+    return <Navigate to="/verify-email" replace />
+  }
+
+  // Authenticated and verified — redirect to dashboard
   if (token) {
     return <Navigate to="/dashboard" replace />
   }
