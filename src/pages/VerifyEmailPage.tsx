@@ -9,8 +9,14 @@ import { LiraLogo } from '@/components/LiraLogo'
 const CODE_LENGTH = 6
 const RESEND_COOLDOWN = 60 // seconds
 
+/** Check if an error indicates the user account no longer exists (deleted via admin). */
+function isAccountGone(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  return /^(404|400):/.test(err.message)
+}
+
 function VerifyEmailPage() {
-  const { token, userEmail, emailVerified, setEmailVerified } = useAuthStore()
+  const { token, userEmail, emailVerified, setEmailVerified, clearCredentials } = useAuthStore()
   const navigate = useNavigate()
 
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(''))
@@ -91,6 +97,12 @@ function VerifyEmailPage() {
         setError('Invalid code. Please try again.')
       }
     } catch (err) {
+      if (isAccountGone(err)) {
+        clearCredentials()
+        setError('This account no longer exists. Redirecting to sign up…')
+        setTimeout(() => navigate('/', { replace: true }), 1500)
+        return
+      }
       setError(err instanceof Error ? err.message : 'Verification failed. Please try again.')
     } finally {
       setLoading(false)
@@ -107,6 +119,12 @@ function VerifyEmailPage() {
       setDigits(Array(CODE_LENGTH).fill(''))
       inputRefs.current[0]?.focus()
     } catch (err) {
+      if (isAccountGone(err)) {
+        clearCredentials()
+        setError('This account no longer exists. Redirecting to sign up…')
+        setTimeout(() => navigate('/', { replace: true }), 1500)
+        return
+      }
       setError(err instanceof Error ? err.message : 'Failed to resend code.')
     } finally {
       setResending(false)
@@ -201,7 +219,7 @@ function VerifyEmailPage() {
             </form>
 
             {/* Resend */}
-            <div className="text-center">
+            <div className="text-center space-y-2">
               <p className="text-sm text-gray-500">
                 {"Didn't receive the code? "}
                 {resendTimer > 0 ? (
@@ -216,6 +234,18 @@ function VerifyEmailPage() {
                     {resending ? 'Sending...' : 'Resend code'}
                   </button>
                 )}
+              </p>
+              <p className="text-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    clearCredentials()
+                    navigate('/', { replace: true })
+                  }}
+                  className="font-medium text-gray-500 hover:text-gray-700"
+                >
+                  Use a different email
+                </button>
               </p>
             </div>
           </div>
