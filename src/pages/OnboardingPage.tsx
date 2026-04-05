@@ -568,7 +568,9 @@ function OnboardingPage() {
                     </p>
                     <p className="mt-2">
                       1. Go to{' '}
-                      <span className="font-medium text-[#3730a3]">https://lira.creovine.com</span>
+                      <span className="font-medium text-[#3730a3]">
+                        https://liraintelligence.com
+                      </span>
                       <br />
                       2. Sign up and choose{' '}
                       <span className="font-semibold">"Join an organization"</span>
@@ -579,7 +581,7 @@ function OnboardingPage() {
                     <button
                       type="button"
                       onClick={() => {
-                        const msg = `Hey! I'm using Lira to run AI-powered meetings, interviews, and tasks for our team. Join our workspace so you can get meeting notes, task assignments, and notifications automatically.\n\n1. Go to https://lira.creovine.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
+                        const msg = `Hey! I'm using Lira to run AI-powered meetings, interviews, and tasks for our team. Join our workspace so you can get meeting notes, task assignments, and notifications automatically.\n\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
                         navigator.clipboard.writeText(msg)
                         setMessageCopied(true)
                         setTimeout(() => setMessageCopied(false), 2000)
