@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react'
-import { XMarkIcon } from '@heroicons/react/24/outline'
-import { adminListOrganizations, adminGetOrganization } from '@/services/api'
+import { XMarkIcon, TrashIcon } from '@heroicons/react/24/outline'
+import {
+  adminListOrganizations,
+  adminGetOrganization,
+  adminDeleteOrganization,
+} from '@/services/api'
 import type { AdminOrgItem, AdminOrgDetail } from '@/services/api'
 import { cn } from '@/lib'
 
@@ -35,6 +39,8 @@ export function AdminOrganizationsPage() {
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<AdminOrgDetail | null>(null)
   const [detailLoading, setDetailLoading] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<AdminOrgDetail | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     adminListOrganizations()
@@ -55,10 +61,65 @@ export function AdminOrganizationsPage() {
     }
   }
 
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await adminDeleteOrganization(deleteTarget.org_id)
+      setOrgs((prev) => prev.filter((o) => o.org_id !== deleteTarget.org_id))
+      setSelected(null)
+      setDeleteTarget(null)
+    } catch {
+      /* ignore */
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="px-6 py-6">
       <h1 className="text-lg font-semibold text-gray-900">Organizations</h1>
       <p className="mt-0.5 text-sm text-gray-400">{orgs.length} organizations</p>
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            role="presentation"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => !deleting && setDeleteTarget(null)}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Delete Organization</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              Permanently delete{' '}
+              <span className="font-medium text-gray-900">{deleteTarget.name}</span> and all its
+              data? This cannot be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleting ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <TrashIcon className="h-4 w-4" />
+                )}
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="mt-5 flex flex-col gap-5 lg:flex-row">
         {/* Orgs table */}
@@ -216,6 +277,17 @@ export function AdminOrganizationsPage() {
                       </li>
                     ))}
                   </ul>
+                </div>
+
+                {/* Delete action */}
+                <div className="mt-5 border-t border-gray-100 pt-4">
+                  <button
+                    onClick={() => setDeleteTarget(selected)}
+                    className="flex items-center gap-1.5 text-sm font-medium text-red-500 hover:text-red-700"
+                  >
+                    <TrashIcon className="h-4 w-4" />
+                    Delete organization
+                  </button>
                 </div>
               </>
             )}
