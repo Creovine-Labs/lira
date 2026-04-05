@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
   LockClosedIcon,
@@ -14,6 +15,7 @@ import {
   getOrganization,
   listOrgMembers,
   updateOrganization,
+  deleteOrganization,
   type OrganizationProfile,
   type OrgProduct,
   type OrgTerminology,
@@ -41,7 +43,8 @@ const INDUSTRIES = [
 ]
 
 function OrgSettingsPage() {
-  const { currentOrgId, updateOrganization: updateOrgInStore } = useOrgStore()
+  const navigate = useNavigate()
+  const { currentOrgId, updateOrganization: updateOrgInStore, removeOrganization } = useOrgStore()
   const userId = useAuthStore((s) => {
     const token = s.token
     if (!token) return null
@@ -56,6 +59,8 @@ function OrgSettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [currentRole, setCurrentRole] = useState<string | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   // Profile fields
   const [name, setName] = useState('')
@@ -152,6 +157,22 @@ function OrgSettingsPage() {
       toast.error(err instanceof Error ? err.message : 'Failed to save')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function handleDeleteOrg() {
+    if (!currentOrgId) return
+    setDeleting(true)
+    try {
+      await deleteOrganization(currentOrgId)
+      removeOrganization(currentOrgId)
+      toast.success('Organization deleted')
+      navigate('/')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete organization')
+    } finally {
+      setDeleting(false)
+      setShowDeleteModal(false)
     }
   }
 
@@ -485,7 +506,69 @@ function OrgSettingsPage() {
         />
       </section>
 
-      {/* ArrowDownOnSquareIcon */}
+      {/* Danger Zone */}
+      {canEdit && (
+        <section className="rounded-xl border border-red-200 bg-red-50/40 p-6">
+          <h2 className="mb-1 text-base font-semibold text-red-700">Danger Zone</h2>
+          <p className="mb-4 text-sm text-red-600/80">Destructive actions that cannot be undone.</p>
+          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-white px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-gray-900">Delete this organization</p>
+              <p className="text-xs text-gray-500">
+                Permanently removes all members, documents, meetings, and data.
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDeleteModal(true)}
+              className="ml-4 shrink-0 rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+            >
+              Delete
+            </button>
+          </div>
+        </section>
+      )}
+
+      {/* Delete confirmation modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            role="presentation"
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm"
+            onClick={() => !deleting && setShowDeleteModal(false)}
+          />
+          <div className="relative w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Delete Organization</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              Permanently delete <span className="font-semibold text-gray-900">{name}</span> and all
+              its data including members, meetings, documents, and the knowledge base? This cannot
+              be undone.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteOrg}
+                disabled={deleting}
+                className="flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60"
+              >
+                {deleting ? (
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                ) : (
+                  <TrashIcon className="h-4 w-4" />
+                )}
+                {deleting ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save */}
       <div className="flex justify-end">
         <button
           onClick={handleSave}
