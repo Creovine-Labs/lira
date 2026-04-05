@@ -311,8 +311,8 @@ function LoginForm({
       setCredentials(
         res.token,
         res.user.email,
-        undefined,
-        undefined,
+        res.user.name,
+        res.user.picture,
         res.user.id,
         res.user.emailVerified,
         res.user.role
@@ -352,8 +352,8 @@ function LoginForm({
       setCredentials(
         res.token,
         res.user.email,
-        undefined,
-        undefined,
+        res.user.name ?? name.trim(),
+        res.user.picture,
         res.user.id,
         false,
         res.user.role

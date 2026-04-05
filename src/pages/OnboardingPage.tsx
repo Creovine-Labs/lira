@@ -273,12 +273,14 @@ function OnboardingPage() {
   const [industryCustom, setIndustryCustom] = useState('')
   const [website, setWebsite] = useState('')
   const [description, setDescription] = useState('')
+  const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null)
   const [autoDescribe, setAutoDescribe] = useState(false)
   const [describingUrl, setDescribingUrl] = useState(false)
   const [describeError, setDescribeError] = useState<string | null>(null)
   const [editingDescription, setEditingDescription] = useState(true)
   const [creating, setCreating] = useState(false)
   const describeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const logoInputRef = useRef<HTMLInputElement>(null)
 
   // Join org state
   const [inviteCode, setInviteCode] = useState('')
@@ -306,6 +308,7 @@ function OnboardingPage() {
         industry: resolvedIndustry || undefined,
         website: website.trim() ? normalizeUrl(website) : undefined,
         description: description.trim() || undefined,
+        logo_url: logoDataUrl ?? undefined,
       })
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
@@ -335,6 +338,16 @@ function OnboardingPage() {
   function normalizeUrl(url: string): string {
     const u = url.trim()
     return /^https?:\/\//i.test(u) ? u : `https://${u}`
+  }
+
+  function handleLogoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) return
+    const reader = new FileReader()
+    reader.onload = () => setLogoDataUrl(reader.result as string)
+    reader.readAsDataURL(file)
+    if (logoInputRef.current) logoInputRef.current.value = ''
   }
 
   async function triggerAutoDescribe(url: string) {
@@ -805,6 +818,56 @@ function OnboardingPage() {
                   </p>
                 </div>
                 <div className="space-y-4">
+                  {/* Logo */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Organization logo{' '}
+                      <span className="font-normal text-gray-400">(optional)</span>
+                    </label>
+                    <div className="flex items-center gap-4">
+                      {/* Preview */}
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border-2 border-dashed border-gray-200 bg-gray-50">
+                        {logoDataUrl ? (
+                          <img
+                            src={logoDataUrl}
+                            alt="Logo preview"
+                            className="h-full w-full object-contain"
+                          />
+                        ) : (
+                          <span className="text-2xl font-bold text-gray-300">
+                            {orgName?.charAt(0)?.toUpperCase() || '?'}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => logoInputRef.current?.click()}
+                          className="rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50 hover:border-gray-300"
+                        >
+                          {logoDataUrl ? 'Change logo' : 'Upload logo'}
+                        </button>
+                        {logoDataUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setLogoDataUrl(null)}
+                            className="text-xs text-red-400 hover:text-red-600"
+                          >
+                            Remove
+                          </button>
+                        )}
+                        <p className="text-[11px] text-gray-400">PNG, JPG or SVG. Max 2 MB.</p>
+                      </div>
+                    </div>
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleLogoSelect}
+                    />
+                  </div>
+
                   {/* Website */}
                   <div className="space-y-1.5">
                     <label htmlFor="ob-website" className="text-sm font-medium text-gray-700">

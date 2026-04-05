@@ -150,7 +150,7 @@ function MemberProfilePage() {
   const { userId: paramUserId } = useParams<{ userId: string }>()
   const navigate = useNavigate()
   const { currentOrgId, organizations } = useOrgStore()
-  const { userId: myUserId } = useAuthStore()
+  const { userId: myUserId, setUserPicture } = useAuthStore()
   // When accessed via /profile (no param), default to the logged-in user
   const userId = paramUserId ?? myUserId
   const isOwnProfile = myUserId === userId
@@ -256,6 +256,8 @@ function MemberProfilePage() {
       await updateMyPicture(dataUrl)
       // Update local member state so avatar refreshes immediately
       setMember((prev) => (prev ? { ...prev, picture: dataUrl } : prev))
+      // Sync auth store so the header avatar updates too
+      setUserPicture(dataUrl)
       toast.success('Profile picture updated')
     } catch {
       toast.error('Failed to upload picture')

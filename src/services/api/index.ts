@@ -54,6 +54,8 @@ export interface LoginResponse {
   user: {
     id: string
     email: string
+    name?: string
+    picture?: string
     tenantId: string
     role: string
     emailVerified?: boolean
