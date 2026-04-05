@@ -566,13 +566,16 @@ function OnboardingPage() {
                   <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
                     Or share this message
                   </p>
-                  <div className="relative rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed text-gray-700">
+                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed text-gray-700">
                     <p>
-                      Hey! I'm using Lira to run AI-powered meetings, interviews, and tasks for our
-                      team. Join our workspace so you can get meeting notes, task assignments, and
-                      notifications automatically.
+                      Hey team! We just created a workspace for{' '}
+                      <span className="font-semibold text-gray-900">{createdOrgName}</span> on Lira
+                      — it helps us automatically capture meeting notes, assign tasks, and send
+                      notifications after every call. We'd love for you to join so nothing falls
+                      through the cracks.
                     </p>
-                    <p className="mt-2">
+                    <p className="mt-2">Here's how to get set up: </p>
+                    <p className="mt-1">
                       1. Go to{' '}
                       <span className="font-medium text-[#3730a3]">
                         https://liraintelligence.com
@@ -584,29 +587,29 @@ function OnboardingPage() {
                       3. Enter invite code:{' '}
                       <span className="font-bold tracking-wider">{createdInviteCode}</span>
                     </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const msg = `Hey! I'm using Lira to run AI-powered meetings, interviews, and tasks for our team. Join our workspace so you can get meeting notes, task assignments, and notifications automatically.\n\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
-                        navigator.clipboard.writeText(msg)
-                        setMessageCopied(true)
-                        setTimeout(() => setMessageCopied(false), 2000)
-                      }}
-                      className="absolute right-3 top-3 flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
-                    >
-                      {messageCopied ? (
-                        <>
-                          <ClipboardDocumentCheckIcon className="h-3 w-3" />
-                          Copied!
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardDocumentIcon className="h-3 w-3" />
-                          Copy
-                        </>
-                      )}
-                    </button>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const msg = `Hey team! We just created a workspace for ${createdOrgName} on Lira — it helps us automatically capture meeting notes, assign tasks, and send notifications after every call. We'd love for you to join so nothing falls through the cracks.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
+                      navigator.clipboard.writeText(msg)
+                      setMessageCopied(true)
+                      setTimeout(() => setMessageCopied(false), 2000)
+                    }}
+                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
+                  >
+                    {messageCopied ? (
+                      <>
+                        <ClipboardDocumentCheckIcon className="h-3.5 w-3.5 text-emerald-600" />
+                        Copied!
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                        Copy message
+                      </>
+                    )}
+                  </button>
                 </div>
 
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
@@ -795,7 +798,10 @@ function OnboardingPage() {
                     Tell us about {orgName || 'your organization'}
                   </h1>
                   <p className="mt-2 text-sm text-gray-500">
-                    This helps Lira give smarter, more relevant answers in every meeting.
+                    These fields are <span className="font-medium text-gray-700">optional</span> —
+                    you can always add or update them later from your Knowledge Base. The more
+                    context you give Lira, the smarter and more relevant its responses will be in
+                    your meetings.
                   </p>
                 </div>
                 <div className="space-y-4">
@@ -914,25 +920,37 @@ function OnboardingPage() {
                     <ArrowLeftIcon className="h-4 w-4" />
                     Back
                   </button>
-                  <button
-                    disabled={creating}
-                    onClick={handleCreate}
-                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-                  >
-                    {creating ? (
-                      <span className="flex items-center gap-2">
-                        <img
-                          src="/lira_black.png"
-                          alt="Loading"
-                          className="h-4 w-4 animate-spin opacity-50"
-                          style={{ animationDuration: '1.2s' }}
-                        />
-                        Creating…
-                      </span>
-                    ) : (
-                      'Create workspace'
+                  <div className="flex items-center gap-3">
+                    {website.trim() || description.trim() ? null : (
+                      <button
+                        type="button"
+                        disabled={creating}
+                        onClick={handleCreate}
+                        className="text-sm text-gray-400 transition hover:text-gray-600 disabled:opacity-40"
+                      >
+                        Skip &amp; create
+                      </button>
                     )}
-                  </button>
+                    <button
+                      disabled={creating}
+                      onClick={handleCreate}
+                      className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                    >
+                      {creating ? (
+                        <span className="flex items-center gap-2">
+                          <img
+                            src="/lira_black.png"
+                            alt="Loading"
+                            className="h-4 w-4 animate-spin opacity-50"
+                            style={{ animationDuration: '1.2s' }}
+                          />
+                          Creating…
+                        </span>
+                      ) : (
+                        'Create workspace'
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
