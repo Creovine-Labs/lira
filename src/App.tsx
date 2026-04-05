@@ -42,6 +42,14 @@ import {
   LaunchDemoPage,
   VerifyEmailPage,
 } from '@/pages'
+import {
+  AdminShell,
+  AdminDashboardPage,
+  AdminUsersPage,
+  AdminOrganizationsPage,
+  AdminEmailPage,
+  AdminManagementPage,
+} from '@/pages/admin'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -123,6 +131,15 @@ function App() {
             <Route path="interviews/:interviewId/edit" element={<InterviewCreatePage />} />
             <Route path="interviews/:interviewId" element={<InterviewDetailPage />} />
           </Route>
+        </Route>
+
+        {/* Admin dashboard — own shell, role-guarded */}
+        <Route path="/admin" element={<AdminShell />}>
+          <Route index element={<AdminDashboardPage />} />
+          <Route path="users" element={<AdminUsersPage />} />
+          <Route path="organizations" element={<AdminOrganizationsPage />} />
+          <Route path="email" element={<AdminEmailPage />} />
+          <Route path="admins" element={<AdminManagementPage />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

@@ -13,13 +13,13 @@ import {
   ClipboardDocumentCheckIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
-  DocumentTextIcon,
   EnvelopeIcon,
   FolderOpenIcon,
   MicrophoneIcon,
   PlusIcon,
   ChartBarIcon,
   PuzzlePieceIcon,
+  ShieldCheckIcon,
   Squares2X2Icon,
   UserIcon,
   UsersIcon,
@@ -132,7 +132,6 @@ const NAV: NavEntry[] = [
     icon: FolderOpenIcon,
     children: [
       { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
-      { to: '/org/documents', icon: DocumentTextIcon, label: 'Documents' },
       { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
       { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
       { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
@@ -366,7 +365,7 @@ function BetaProgressBar() {
 
 // ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
-  const { userName, userEmail, userPicture } = useAuthStore()
+  const { userName, userEmail, userPicture, userRole } = useAuthStore()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -427,6 +426,18 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             <UserIcon className="h-4 w-4 text-gray-400" />
             My Profile
           </button>
+          {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
+            <button
+              onClick={() => {
+                setOpen(false)
+                navigate('/admin')
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
+            >
+              <ShieldCheckIcon className="h-4 w-4 text-gray-400" />
+              Admin Dashboard
+            </button>
+          )}
           <div className="my-1 border-t border-gray-100" />
           <button
             onClick={() => {
@@ -873,6 +884,16 @@ function AppShell() {
                   {label}
                 </NavLink>
               ))}
+              <a
+                href="https://docs.liraintelligence.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setSidebarOpen(false)}
+                className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors"
+              >
+                <BookOpenIcon className="h-4 w-4 shrink-0" />
+                Docs
+              </a>
             </div>
           </aside>
         </>
@@ -1027,6 +1048,19 @@ function AppShell() {
               {!sidebarCollapsed && label}
             </NavLink>
           ))}
+          <a
+            href="https://docs.liraintelligence.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            title={sidebarCollapsed ? 'Docs' : undefined}
+            className={cn(
+              'flex items-center rounded-xl py-2 text-[13px] font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors',
+              sidebarCollapsed ? 'justify-center px-2' : 'gap-2.5 px-3'
+            )}
+          >
+            <BookOpenIcon className="h-4 w-4 shrink-0" />
+            {!sidebarCollapsed && 'Docs'}
+          </a>
         </div>
       </aside>
 

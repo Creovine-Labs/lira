@@ -18,6 +18,7 @@ interface AuthSlice {
   userEmail: string | null
   userName: string | null
   userPicture: string | null
+  userRole: string | null
   emailVerified: boolean | null
   setCredentials: (
     token: string,
@@ -25,7 +26,8 @@ interface AuthSlice {
     name?: string,
     picture?: string,
     id?: string,
-    emailVerified?: boolean
+    emailVerified?: boolean,
+    role?: string
   ) => void
   setEmailVerified: (v: boolean) => void
   clearCredentials: () => void
@@ -39,14 +41,16 @@ export const useAuthStore = create<AuthSlice>()(
       userEmail: null,
       userName: null,
       userPicture: null,
+      userRole: null,
       emailVerified: null,
-      setCredentials: (token, email, name, picture, id, emailVerified) =>
+      setCredentials: (token, email, name, picture, id, emailVerified, role) =>
         set({
           token,
           userId: id ?? null,
           userEmail: email ?? null,
           userName: name ?? null,
           userPicture: picture ?? null,
+          userRole: role ?? null,
           emailVerified: emailVerified ?? null,
         }),
       setEmailVerified: (v) => set({ emailVerified: v }),
@@ -57,6 +61,7 @@ export const useAuthStore = create<AuthSlice>()(
           userEmail: null,
           userName: null,
           userPicture: null,
+          userRole: null,
           emailVerified: null,
         }),
     }),

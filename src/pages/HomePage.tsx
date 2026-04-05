@@ -280,7 +280,8 @@ function LoginForm({
         gName,
         gPicture,
         res.user.id,
-        res.user.emailVerified ?? true
+        res.user.emailVerified ?? true,
+        res.user.role
       )
       credentials.set(res.token)
       const orgs = await listOrganizations().catch(() => [])
@@ -312,7 +313,8 @@ function LoginForm({
         undefined,
         undefined,
         res.user.id,
-        res.user.emailVerified
+        res.user.emailVerified,
+        res.user.role
       )
       credentials.set(res.token)
       // If email not verified, redirect to OTP page
@@ -345,7 +347,15 @@ function LoginForm({
     setError(null)
     try {
       const res = await apiSignup(name.trim(), email.trim(), password.trim())
-      setCredentials(res.token, res.user.email, undefined, undefined, res.user.id, false)
+      setCredentials(
+        res.token,
+        res.user.email,
+        undefined,
+        undefined,
+        res.user.id,
+        false,
+        res.user.role
+      )
       credentials.set(res.token)
       // New users need to verify email first — OTP was already sent by the backend
       onLogin(true, false)

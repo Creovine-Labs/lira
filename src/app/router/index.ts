@@ -38,6 +38,14 @@ export const ROUTES = {
   cookies: '/cookies',
   acceptableUse: '/acceptable-use',
   security: '/security',
+  // Admin dashboard
+  admin: '/admin',
+  adminUsers: '/admin/users',
+  adminUserDetail: '/admin/users/:id',
+  adminOrganizations: '/admin/organizations',
+  adminOrgDetail: '/admin/organizations/:id',
+  adminEmail: '/admin/email',
+  adminManagement: '/admin/admins',
 } as const
 
 export type AppRoute = (typeof ROUTES)[keyof typeof ROUTES]

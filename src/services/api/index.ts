@@ -243,6 +243,13 @@ export async function getMeetingSummary(
   return apiFetch<MeetingSummary>(`/lira/v1/meetings/${id}/summary?${params}`)
 }
 
+export async function chatAboutMeeting(id: string, message: string): Promise<{ answer: string }> {
+  return apiFetch<{ answer: string }>(`/lira/v1/meetings/${encodeURIComponent(id)}/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
+
 export async function updateMeetingSettings(
   id: string,
   settings: MeetingSettings
@@ -286,6 +293,7 @@ export interface BotStatusResponse {
   joined_at?: string
   terminated_at?: string
   error?: string
+  is_muted?: boolean
 }
 
 export interface DeployBotResponse {
@@ -349,6 +357,23 @@ export async function listActiveBots(): Promise<BotStatusResponse[]> {
 /** Terminate all active bots for the current user */
 export async function terminateAllBots(): Promise<{ message: string; terminated_count: number }> {
   return apiFetch('/lira/v1/bot/terminate-all', { method: 'POST', body: JSON.stringify({}) })
+}
+
+/** Mute a bot (Google Meet mic + AI output) */
+export async function muteBotApi(botId: string): Promise<{ message: string; bot_id: string }> {
+  return apiFetch(`/lira/v1/bot/${botId}/mute`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+/** Unmute a bot (Google Meet mic + AI output) */
+export async function unmuteBotApi(botId: string): Promise<{ message: string; bot_id: string }> {
+  return apiFetch(`/lira/v1/bot/${botId}/unmute`, { method: 'POST', body: JSON.stringify({}) })
+}
+
+/** Trigger Lira to speak proactively based on conversation context */
+export async function triggerBotSpeakApi(
+  botId: string
+): Promise<{ message: string; bot_id: string }> {
+  return apiFetch(`/lira/v1/bot/${botId}/speak`, { method: 'POST', body: JSON.stringify({}) })
 }
 
 // ── Bot Auth Status API ───────────────────────────────────────────────────────
@@ -773,6 +798,63 @@ export async function reprocessDocument(orgId: string, docId: string): Promise<v
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents/${encodeURIComponent(docId)}/reprocess`,
     { method: 'POST' }
   )
+}
+
+// ── Connected Documents API ───────────────────────────────────────────────────
+
+export interface ConnectedFile {
+  id: string
+  name: string
+  mimeType: string
+  webUrl?: string
+  createdTime?: string
+  size?: number
+  source: 'google_drive' | 'github'
+  repo?: string // GitHub only
+  path?: string // GitHub only
+  ref?: string // GitHub only
+}
+
+export interface ConnectedSourceStatus {
+  connected: boolean
+  files: ConnectedFile[]
+  error?: string
+}
+
+export interface ConnectedDocumentsResponse {
+  sources: {
+    google_drive: ConnectedSourceStatus
+    github: ConnectedSourceStatus
+  }
+}
+
+export async function listConnectedDocuments(orgId: string): Promise<ConnectedDocumentsResponse> {
+  return apiFetch<ConnectedDocumentsResponse>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents/connected`
+  )
+}
+
+export async function importConnectedDocument(
+  orgId: string,
+  source: 'google_drive' | 'github',
+  fileId: string,
+  fileName: string,
+  mimeType?: string,
+  repo?: string,
+  path?: string,
+  ref?: string
+): Promise<DocumentRecord> {
+  const body: Record<string, string> = { source, file_id: fileId, file_name: fileName }
+  if (mimeType) body.mime_type = mimeType
+  if (repo) body.repo = repo
+  if (path) body.path = path
+  if (ref) body.ref = ref
+
+  const data = await apiFetch<{ document: DocumentRecord }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents/import`,
+    { method: 'POST', body: JSON.stringify(body), headers: { 'Content-Type': 'application/json' } }
+  )
+  return data.document
 }
 
 // ── Task API ──────────────────────────────────────────────────────────────────
@@ -2549,4 +2631,278 @@ export async function getOrgUsage(orgId: string): Promise<UsageSummary> {
 
 export function isBetaLimitError(err: unknown): boolean {
   return err instanceof Error && err.message === 'Beta limit reached'
+}
+
+// ── Knowledge Base Query (RAG) ─────────────────────────────────────────────────
+
+export interface KBQueryMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface KBQuerySource {
+  type: 'document' | 'website'
+  id: string
+  name: string
+  score: number
+}
+
+export interface KBQueryResponse {
+  answer: string
+  sources: KBQuerySource[]
+  has_context: boolean
+}
+
+export async function queryKnowledgeBase(
+  orgId: string,
+  query: string,
+  conversationHistory?: KBQueryMessage[]
+): Promise<KBQueryResponse> {
+  return apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/query`, {
+    method: 'POST',
+    body: JSON.stringify({
+      query,
+      ...(conversationHistory?.length ? { conversation_history: conversationHistory } : {}),
+    }),
+  })
+}
+
+// ── Meeting Schedules ─────────────────────────────────────────────────────────
+
+export type RecurrenceType = 'daily' | 'weekdays' | 'weekly'
+
+export interface Recurrence {
+  type: RecurrenceType
+  days_of_week?: number[] // 0=Sun…6=Sat
+}
+
+export type ScheduleMeetingType =
+  | 'meeting'
+  | 'standup'
+  | 'one_on_one'
+  | 'technical'
+  | 'brainstorming'
+  | 'sales'
+
+export interface MeetingSchedule {
+  schedule_id: string
+  org_id: string
+  user_id: string
+  name: string
+  meeting_url: string
+  meeting_type: ScheduleMeetingType
+  time: string // "HH:mm"
+  timezone: string // IANA timezone
+  recurrence: Recurrence
+  enabled: boolean
+  settings?: {
+    personality?: string
+    ai_name?: string
+    voice_id?: string
+  }
+  created_at: string
+  updated_at: string
+  last_run_date?: string
+  next_run_at: string | null
+}
+
+export interface CreateScheduleInput {
+  name: string
+  meeting_url: string
+  meeting_type?: ScheduleMeetingType
+  time: string
+  timezone: string
+  recurrence: Recurrence
+  settings?: {
+    personality?: string
+    ai_name?: string
+    voice_id?: string
+  }
+  org_id?: string
+}
+
+export interface UpdateScheduleInput {
+  name?: string
+  meeting_url?: string
+  meeting_type?: ScheduleMeetingType
+  time?: string
+  timezone?: string
+  recurrence?: Recurrence
+  settings?: {
+    personality?: string
+    ai_name?: string
+    voice_id?: string
+  }
+  enabled?: boolean
+}
+
+export async function createSchedule(input: CreateScheduleInput): Promise<MeetingSchedule> {
+  return apiFetch('/lira/v1/schedules', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function listSchedules(orgId?: string): Promise<MeetingSchedule[]> {
+  const params = orgId ? `?org_id=${encodeURIComponent(orgId)}` : ''
+  return apiFetch(`/lira/v1/schedules${params}`)
+}
+
+export async function getSchedule(scheduleId: string, orgId?: string): Promise<MeetingSchedule> {
+  const params = orgId ? `?org_id=${encodeURIComponent(orgId)}` : ''
+  return apiFetch(`/lira/v1/schedules/${encodeURIComponent(scheduleId)}${params}`)
+}
+
+export async function updateSchedule(
+  scheduleId: string,
+  input: UpdateScheduleInput,
+  orgId?: string
+): Promise<MeetingSchedule> {
+  const params = orgId ? `?org_id=${encodeURIComponent(orgId)}` : ''
+  return apiFetch(`/lira/v1/schedules/${encodeURIComponent(scheduleId)}${params}`, {
+    method: 'PATCH',
+    body: JSON.stringify(input),
+  })
+}
+
+export async function deleteSchedule(
+  scheduleId: string,
+  orgId?: string
+): Promise<{ success: boolean }> {
+  const params = orgId ? `?org_id=${encodeURIComponent(orgId)}` : ''
+  return apiFetch(`/lira/v1/schedules/${encodeURIComponent(scheduleId)}${params}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function toggleSchedule(
+  scheduleId: string,
+  enabled: boolean,
+  orgId?: string
+): Promise<{ schedule_id: string; enabled: boolean }> {
+  const params = orgId ? `?org_id=${encodeURIComponent(orgId)}` : ''
+  return apiFetch(`/lira/v1/schedules/${encodeURIComponent(scheduleId)}/toggle${params}`, {
+    method: 'POST',
+    body: JSON.stringify({ enabled }),
+  })
+}
+
+// ── Admin Dashboard API ───────────────────────────────────────────────────────
+
+export interface AdminDashboardOverview {
+  totalUsers: number
+  totalOrgs: number
+  newSignups7d: number
+  newSignups30d: number
+  verifiedUsers: number
+  unverifiedUsers: number
+  signupTrend: { date: string; count: number }[]
+}
+
+export interface AdminOrgItem {
+  org_id: string
+  name: string
+  industry?: string
+  owner_id?: string
+  owner_email?: string
+  owner_name?: string
+  member_count: number
+  created_at?: string
+  invite_code?: string
+  usage: Record<string, number>
+  limits: Record<string, number>
+}
+
+export interface AdminOrgDetail extends AdminOrgItem {
+  members: {
+    user_id: string
+    role: string
+    joined_at: string
+    email?: string
+    name?: string
+    emailVerified?: boolean
+  }[]
+}
+
+export interface AdminUser {
+  id: string
+  email: string | null
+  name: string | null
+  role: string
+  emailVerified: boolean
+  createdAt: string
+}
+
+export interface AdminUserDetail extends AdminUser {
+  organizations: {
+    org_id: string
+    org_name: string
+    role: string
+    joined_at: string
+  }[]
+}
+
+export async function adminGetDashboard(): Promise<AdminDashboardOverview> {
+  return apiFetch('/v1/platform/admin/lira/dashboard')
+}
+
+export async function adminListOrganizations(): Promise<AdminOrgItem[]> {
+  return apiFetch('/v1/platform/admin/lira/organizations')
+}
+
+export async function adminGetOrganization(orgId: string): Promise<AdminOrgDetail> {
+  return apiFetch(`/v1/platform/admin/lira/organizations/${encodeURIComponent(orgId)}`)
+}
+
+export async function adminListUsers(search?: string): Promise<AdminUser[]> {
+  const q = search ? `?search=${encodeURIComponent(search)}` : ''
+  return apiFetch(`/v1/platform/admin/lira/users${q}`)
+}
+
+export async function adminGetUser(userId: string): Promise<AdminUserDetail> {
+  return apiFetch(`/v1/platform/admin/lira/users/${encodeURIComponent(userId)}`)
+}
+
+export async function adminDeleteUser(userId: string): Promise<void> {
+  return apiFetch(`/v1/platform/admin/lira/users/${encodeURIComponent(userId)}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function adminSendEmail(
+  to: string[],
+  subject: string,
+  html: string
+): Promise<{ sent: number; failed: string[] }> {
+  return apiFetch('/v1/platform/admin/lira/email/send', {
+    method: 'POST',
+    body: JSON.stringify({ to, subject, html }),
+  })
+}
+
+export async function adminBroadcastEmail(
+  subject: string,
+  html: string,
+  filter?: { emailVerified?: boolean }
+): Promise<{ sent: number; total: number; failed: string[] }> {
+  return apiFetch('/v1/platform/admin/lira/email/broadcast', {
+    method: 'POST',
+    body: JSON.stringify({ subject, html, filter }),
+  })
+}
+
+export async function adminListAdmins(): Promise<AdminUser[]> {
+  return apiFetch('/v1/platform/admin/admins')
+}
+
+export async function adminPromoteUser(userId: string): Promise<AdminUser> {
+  return apiFetch(`/v1/platform/admin/users/${encodeURIComponent(userId)}/promote`, {
+    method: 'POST',
+  })
+}
+
+export async function adminDemoteUser(userId: string): Promise<AdminUser> {
+  return apiFetch(`/v1/platform/admin/users/${encodeURIComponent(userId)}/demote`, {
+    method: 'POST',
+  })
 }
