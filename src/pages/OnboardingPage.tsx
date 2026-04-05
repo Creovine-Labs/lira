@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon,
   CheckIcon,
+  ClipboardDocumentIcon,
+  ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
   PencilIcon,
   PlusIcon,
   SparklesIcon,
   UserPlusIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
@@ -40,7 +43,7 @@ const INDUSTRIES = [
   'Telecommunications',
 ]
 
-type FlowStep = 'choose' | 'org-name' | 'industry' | 'details' | 'join-code' | 'success'
+type FlowStep = 'choose' | 'org-name' | 'industry' | 'details' | 'success' | 'invite' | 'join-code'
 
 const STEP_BACK: Partial<Record<FlowStep, FlowStep>> = {
   'org-name': 'choose',
@@ -53,6 +56,7 @@ const LEFT_HEADINGS: Partial<Record<FlowStep, string>> = {
   'org-name': 'Create your\nworkspace',
   industry: 'Tailor your\nexperience',
   details: 'Almost\nthere',
+  invite: 'Grow your\nteam',
   'join-code': 'Join your\nteam',
 }
 
@@ -258,6 +262,9 @@ function OnboardingPage() {
 
   const [step, setStep] = useState<FlowStep>('choose')
   const [createdOrgName, setCreatedOrgName] = useState('')
+  const [createdInviteCode, setCreatedInviteCode] = useState('')
+  const [inviteCopied, setInviteCopied] = useState(false)
+  const [messageCopied, setMessageCopied] = useState(false)
 
   // Create org state
   const [orgName, setOrgName] = useState('')
@@ -297,6 +304,7 @@ function OnboardingPage() {
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       setCreatedOrgName(organization.name)
+      setCreatedInviteCode(organization.invite_code)
       setStep('success')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create organization')
@@ -421,6 +429,15 @@ function OnboardingPage() {
                 Your workspace is live and ready for your team.
               </p>
             </>
+          ) : step === 'invite' ? (
+            <>
+              <div className="flex h-[160px] w-[160px] items-center justify-center rounded-full bg-[#3730a3]/10">
+                <UsersIcon className="h-20 w-20 text-[#3730a3]" />
+              </div>
+              <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
+                Bring your team on board so nothing falls through the cracks.
+              </p>
+            </>
           ) : (
             <h2 className="whitespace-pre-line text-5xl font-bold leading-tight tracking-tight text-gray-900">
               {LEFT_HEADINGS[step] ?? ''}
@@ -476,6 +493,121 @@ function OnboardingPage() {
                   ))}
                 </ul>
                 <div className="border-t border-gray-100 pt-4">
+                  <button
+                    onClick={() => setStep('invite')}
+                    className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+                  >
+                    Continue
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Step: invite */}
+            {step === 'invite' && (
+              <div className="space-y-8">
+                <div className="space-y-3">
+                  <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
+                    Invite your team
+                  </p>
+                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
+                    Share your invite code
+                  </h1>
+                  <p className="text-sm text-gray-500">
+                    Lira works best when your whole team is on board. Share the code below so
+                    teammates can join{' '}
+                    <span className="font-medium text-gray-700">{createdOrgName}</span> and start
+                    collaborating right away — tasks, meeting notes, and notifications will flow to
+                    the right people.
+                  </p>
+                </div>
+
+                {/* Invite code */}
+                <div className="rounded-2xl border border-[#3730a3]/20 bg-[#3730a3]/5 px-6 py-5">
+                  <p className="text-xs font-medium uppercase tracking-widest text-[#3730a3]/70">
+                    Invite Code
+                  </p>
+                  <div className="mt-2 flex items-center gap-3">
+                    <p className="text-3xl font-bold tracking-widest text-[#3730a3]">
+                      {createdInviteCode}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(createdInviteCode)
+                        setInviteCopied(true)
+                        setTimeout(() => setInviteCopied(false), 2000)
+                      }}
+                      className="flex items-center gap-1 rounded-lg border border-[#3730a3]/30 bg-white px-2.5 py-1.5 text-xs font-medium text-[#3730a3] transition hover:bg-[#3730a3]/5"
+                    >
+                      {inviteCopied ? (
+                        <>
+                          <ClipboardDocumentCheckIcon className="h-3.5 w-3.5" />
+                          Copied
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                          Copy code
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Copyable invite message */}
+                <div className="space-y-2">
+                  <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
+                    Or share this message
+                  </p>
+                  <div className="relative rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed text-gray-700">
+                    <p>
+                      Hey! I'm using Lira to run AI-powered meetings, interviews, and tasks for our
+                      team. Join our workspace so you can get meeting notes, task assignments, and
+                      notifications automatically.
+                    </p>
+                    <p className="mt-2">
+                      1. Go to{' '}
+                      <span className="font-medium text-[#3730a3]">https://lira.creovine.com</span>
+                      <br />
+                      2. Sign up and choose{' '}
+                      <span className="font-semibold">"Join an organization"</span>
+                      <br />
+                      3. Enter invite code:{' '}
+                      <span className="font-bold tracking-wider">{createdInviteCode}</span>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const msg = `Hey! I'm using Lira to run AI-powered meetings, interviews, and tasks for our team. Join our workspace so you can get meeting notes, task assignments, and notifications automatically.\n\n1. Go to https://lira.creovine.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
+                        navigator.clipboard.writeText(msg)
+                        setMessageCopied(true)
+                        setTimeout(() => setMessageCopied(false), 2000)
+                      }}
+                      className="absolute right-3 top-3 flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-[11px] font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700"
+                    >
+                      {messageCopied ? (
+                        <>
+                          <ClipboardDocumentCheckIcon className="h-3 w-3" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <ClipboardDocumentIcon className="h-3 w-3" />
+                          Copy
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
+                  <button
+                    onClick={() => navigate('/dashboard')}
+                    className="text-sm text-gray-400 transition hover:text-gray-600"
+                  >
+                    Skip for now
+                  </button>
                   <button
                     onClick={() => navigate('/dashboard')}
                     className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
