@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { NavLink, Outlet, Navigate } from 'react-router-dom'
+import { NavLink, Outlet, Navigate, Link } from 'react-router-dom'
 import { useAuthStore } from '@/app/store'
 import {
   Squares2X2Icon,
@@ -7,11 +7,11 @@ import {
   BuildingOffice2Icon,
   EnvelopeIcon,
   ShieldCheckIcon,
-  ArrowLeftIcon,
   Bars3Icon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
+import { LiraLogo } from '@/components/LiraLogo'
 
 const NAV_ITEMS: { to: string; icon: React.ElementType; label: string; end?: boolean }[] = [
   { to: '/admin', icon: Squares2X2Icon, label: 'Overview', end: true },
@@ -34,11 +34,13 @@ function SidebarContent({
   return (
     <>
       {/* Header */}
-      <div className="flex items-center gap-2.5 px-4 py-4">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#3730a3] text-[11px] font-bold text-white">
-          A
-        </div>
-        <span className="text-sm font-semibold text-gray-900">Admin</span>
+      <div className="border-b border-gray-100 px-4 py-3">
+        <Link to="/dashboard" className="block">
+          <LiraLogo size="sm" />
+        </Link>
+        <span className="mt-2 block text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+          Admin
+        </span>
       </div>
 
       {/* Nav items */}
@@ -71,8 +73,7 @@ function SidebarContent({
           onClick={onNav}
           className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-gray-500 transition hover:bg-gray-100 hover:text-gray-900"
         >
-          <ArrowLeftIcon className="h-4 w-4" />
-          Back to App
+          ← Back to App
         </NavLink>
       </div>
     </>
@@ -134,7 +135,12 @@ export function AdminShell() {
           >
             <Bars3Icon className="h-5 w-5" />
           </button>
-          <span className="text-sm font-semibold text-gray-900">Admin</span>
+          <Link to="/dashboard">
+            <LiraLogo size="sm" />
+          </Link>
+          <span className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+            Admin
+          </span>
         </div>
 
         <main className="flex-1 overflow-y-auto">
