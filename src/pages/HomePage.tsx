@@ -239,9 +239,21 @@ function LoginForm({
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [errorAction, setErrorAction] = useState<
+    { label: string; view: AuthView } | { label: string; href: string } | null
+  >(null)
+
+  function showError(
+    msg: string,
+    action?: { label: string; view: AuthView } | { label: string; href: string }
+  ) {
+    setError(msg)
+    setErrorAction(action ?? null)
+  }
 
   function goTo(view: AuthView) {
     setError(null)
+    setErrorAction(null)
     setAuthView(view)
   }
 
@@ -253,6 +265,7 @@ function LoginForm({
   async function handleGoogleSuccess(response: CredentialResponse) {
     if (!response.credential) return
     setError(null)
+    setErrorAction(null)
     setLoading(true)
     try {
       // Decode Google JWT to extract name + picture
@@ -283,7 +296,7 @@ function LoginForm({
       const orgs = await listOrganizations().catch(() => [])
       onLogin(orgs.length === 0)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.')
+      showError(err instanceof Error ? err.message : 'Google sign-in failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -293,11 +306,12 @@ function LoginForm({
     e.preventDefault()
 
     if (!email.trim() || !password.trim()) {
-      setError('Please enter your email and password.')
+      showError('Please enter your email and password.')
       return
     }
     setLoading(true)
     setError(null)
+    setErrorAction(null)
     try {
       const res = await apiLogin(email.trim(), password.trim())
       setCredentials(
@@ -319,7 +333,20 @@ function LoginForm({
       const orgs = await listOrganizations().catch(() => [])
       onLogin(orgs.length === 0)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Login failed. Please try again.')
+      const msg = err instanceof Error ? err.message : 'Login failed. Please try again.'
+      if (msg.includes('No account found')) {
+        showError('No account found with that email address.', {
+          label: 'Sign up instead',
+          view: 'signup',
+        })
+      } else if (msg.includes('Incorrect password')) {
+        showError('Incorrect password. Please try again.', {
+          label: 'Reset password',
+          href: '/forgot-password',
+        })
+      } else {
+        showError(msg)
+      }
     } finally {
       setLoading(false)
     }
@@ -328,11 +355,12 @@ function LoginForm({
   async function handleSignup(e: React.FormEvent) {
     e.preventDefault()
     if (!name.trim() || !email.trim() || !password.trim()) {
-      setError('Please fill in your name, email, and password.')
+      showError('Please fill in your name, email, and password.')
       return
     }
     setLoading(true)
     setError(null)
+    setErrorAction(null)
     try {
       const res = await apiSignup(name.trim(), email.trim(), password.trim())
       setCredentials(
@@ -348,7 +376,15 @@ function LoginForm({
       // New users need to verify email first — OTP was already sent by the backend
       onLogin(true, false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-up failed. Please try again.')
+      const msg = err instanceof Error ? err.message : 'Sign-up failed. Please try again.'
+      if (msg.includes('already exists')) {
+        showError('An account already exists with this email.', {
+          label: 'Sign in instead',
+          view: 'login',
+        })
+      } else {
+        showError(msg)
+      }
     } finally {
       setLoading(false)
     }
@@ -415,7 +451,7 @@ function LoginForm({
                       >
                         <GoogleLogin
                           onSuccess={handleGoogleSuccess}
-                          onError={() => setError('Google sign-in failed. Please try again.')}
+                          onError={() => showError('Google sign-in failed. Please try again.')}
                           width="1000"
                           size="large"
                         />
@@ -454,7 +490,34 @@ function LoginForm({
                   .
                 </p>
                 {error && (
-                  <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
+                  <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                    {error}
+                    {errorAction && 'view' in errorAction && (
+                      <>
+                        {' '}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            goTo((errorAction as { label: string; view: AuthView }).view)
+                          }
+                          className="font-semibold underline hover:text-red-800"
+                        >
+                          {errorAction.label}
+                        </button>
+                      </>
+                    )}
+                    {errorAction && 'href' in errorAction && (
+                      <>
+                        {' '}
+                        <Link
+                          to={(errorAction as { label: string; href: string }).href}
+                          className="font-semibold underline hover:text-red-800"
+                        >
+                          {errorAction.label}
+                        </Link>
+                      </>
+                    )}
+                  </div>
                 )}
                 <p className="text-sm text-gray-500">
                   Already have an account?{' '}
@@ -498,7 +561,7 @@ function LoginForm({
                         >
                           <GoogleLogin
                             onSuccess={handleGoogleSuccess}
-                            onError={() => setError('Google sign-in failed. Please try again.')}
+                            onError={() => showError('Google sign-in failed. Please try again.')}
                             width="1000"
                             size="large"
                           />
@@ -574,7 +637,34 @@ function LoginForm({
                       </Link>
                     </div>
                     {error && (
-                      <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
+                      <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                        {error}
+                        {errorAction && 'view' in errorAction && (
+                          <>
+                            {' '}
+                            <button
+                              type="button"
+                              onClick={() =>
+                                goTo((errorAction as { label: string; view: AuthView }).view)
+                              }
+                              className="font-semibold underline hover:text-red-800"
+                            >
+                              {errorAction.label}
+                            </button>
+                          </>
+                        )}
+                        {errorAction && 'href' in errorAction && (
+                          <>
+                            {' '}
+                            <Link
+                              to={(errorAction as { label: string; href: string }).href}
+                              className="font-semibold underline hover:text-red-800"
+                            >
+                              {errorAction.label}
+                            </Link>
+                          </>
+                        )}
+                      </div>
                     )}
                   </form>
                   <p className="text-sm text-gray-500">
@@ -716,7 +806,34 @@ function LoginForm({
                     </div>
                   </div>
                   {error && (
-                    <p className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-500">{error}</p>
+                    <div className="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+                      {error}
+                      {errorAction && 'view' in errorAction && (
+                        <>
+                          {' '}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              goTo((errorAction as { label: string; view: AuthView }).view)
+                            }
+                            className="font-semibold underline hover:text-red-800"
+                          >
+                            {errorAction.label}
+                          </button>
+                        </>
+                      )}
+                      {errorAction && 'href' in errorAction && (
+                        <>
+                          {' '}
+                          <Link
+                            to={(errorAction as { label: string; href: string }).href}
+                            className="font-semibold underline hover:text-red-800"
+                          >
+                            {errorAction.label}
+                          </Link>
+                        </>
+                      )}
+                    </div>
                   )}
                   <p className="text-xs leading-relaxed text-gray-400">
                     By creating an account, you agree to our{' '}

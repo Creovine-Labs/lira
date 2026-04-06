@@ -1433,8 +1433,8 @@ interface _TeamsCardProps {
 }
 
 // TEAMS_DISABLED: restore by removing _ prefix from _TeamsCard / _TeamsCardProps
-// @ts-expect-error -- noUnusedLocals suppressed: Teams temporarily disabled
 /* eslint-disable react-hooks/rules-of-hooks */
+// @ts-expect-error -- _TeamsCard unused: Teams integration temporarily disabled
 function _TeamsCard({ orgId, onStatusChange }: _TeamsCardProps) {
   const [status, setStatus] = useState<TeamsStatus | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
