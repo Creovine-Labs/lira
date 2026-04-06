@@ -496,20 +496,6 @@ function OnboardingPage() {
                   </p>
                   <p className="mt-1 text-2xl font-bold text-[#3730a3]">{createdOrgName}</p>
                 </div>
-                <ul className="space-y-3">
-                  {[
-                    'Schedule and join AI-powered meetings',
-                    'Get real-time transcripts and summaries',
-                    'Build a shared knowledge base for your team',
-                  ].map((feat) => (
-                    <li key={feat} className="flex items-center gap-3 text-sm text-gray-600">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10">
-                        <CheckIcon className="h-3 w-3 text-[#3730a3]" />
-                      </span>
-                      {feat}
-                    </li>
-                  ))}
-                </ul>
                 <div className="border-t border-gray-100 pt-4">
                   <button
                     onClick={() => navigate('/dashboard')}
