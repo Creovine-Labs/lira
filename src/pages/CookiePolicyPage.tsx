@@ -29,7 +29,7 @@ export function CookiePolicyPage() {
           <p>
             This Cookie Policy explains how Creovine Inc. ("<strong>Creovine</strong>", "
             <strong>we</strong>", "<strong>us</strong>") uses cookies and similar technologies on
-            the Lira AI platform at <strong>lira.creovine.com</strong> (the "
+            the Lira AI platform at <strong>liraintelligence.com</strong> (the "
             <strong>Service</strong>").
           </p>
 

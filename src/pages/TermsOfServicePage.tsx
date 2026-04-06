@@ -25,7 +25,7 @@ export function TermsOfServicePage() {
             between you ("<strong>you</strong>" or "<strong>User</strong>") and Creovine Inc. ("
             <strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>", or "
             <strong>our</strong>"), governing your access to and use of the Lira AI platform,
-            available at <strong>lira.creovine.com</strong>, and all related services, features,
+            available at <strong>liraintelligence.com</strong>, and all related services, features,
             content, and applications (collectively, the "<strong>Service</strong>").
           </p>
           <p>

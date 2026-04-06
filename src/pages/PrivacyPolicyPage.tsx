@@ -23,7 +23,7 @@ export function PrivacyPolicyPage() {
           <p>
             Creovine Inc. ("<strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>
             ", or "<strong>our</strong>") operates the Lira AI platform located at{' '}
-            <strong>lira.creovine.com</strong> and its associated services (collectively, the "
+            <strong>liraintelligence.com</strong> and its associated services (collectively, the "
             <strong>Service</strong>"). This Privacy Policy describes how we collect, use, disclose,
             and protect your personal information when you access or use our Service.
           </p>

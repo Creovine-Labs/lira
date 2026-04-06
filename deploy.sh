@@ -51,4 +51,4 @@ fi
 echo "▶ Deploying to Vercel production…"
 vercel deploy --prebuilt --prod
 
-echo "✅  Deploy complete → https://lira.creovine.com"
+echo "✅  Deploy complete → https://liraintelligence.com"
