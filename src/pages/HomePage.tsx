@@ -794,6 +794,17 @@ function LoginForm({
             )}
           </div>
         </div>
+        <p className="py-4 text-center text-xs text-gray-300">
+          Built by{' '}
+          <a
+            href="https://creovine.com/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-gray-500 transition-colors"
+          >
+            Creovine
+          </a>
+        </p>
       </main>
     </div>
   )

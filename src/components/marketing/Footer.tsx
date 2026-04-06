@@ -10,7 +10,18 @@ export function MarketingFooter() {
           <p className="text-sm text-gray-400 max-w-xs leading-relaxed">
             The AI that was actually in the room.
           </p>
-          <p className="text-xs text-gray-300">© 2026 Creovine. All rights reserved.</p>
+          <p className="text-xs text-gray-300">
+            © 2026{' '}
+            <a
+              href="https://creovine.com/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-gray-500 transition-colors"
+            >
+              Creovine
+            </a>
+            . All rights reserved.
+          </p>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-8 text-sm">
           <div className="space-y-3">
@@ -45,6 +56,14 @@ export function MarketingFooter() {
                 {label}
               </Link>
             ))}
+            <a
+              href="https://docs.liraintelligence.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block text-gray-500 hover:text-gray-900 transition-colors"
+            >
+              Documentation
+            </a>
           </div>
           <div className="space-y-3">
             <p className="text-xs font-black text-gray-900 uppercase tracking-wider">Legal</p>
