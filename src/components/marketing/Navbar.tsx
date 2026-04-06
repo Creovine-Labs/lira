@@ -69,7 +69,7 @@ interface ResourceItem {
 const RESOURCES: ResourceItem[] = [
   { Icon: BookOpenIcon, label: 'How-to Guides', href: '/resources#guides' },
   { Icon: AcademicCapIcon, label: 'Tutorials', href: '/resources#tutorials' },
-  { Icon: DocumentTextIcon, label: 'Documentation', href: '/resources#docs' },
+  { Icon: DocumentTextIcon, label: 'Documentation', href: 'https://docs.liraintelligence.com' },
   { Icon: CodeBracketIcon, label: 'API Reference', href: '/resources#api' },
 ]
 
@@ -184,17 +184,29 @@ export function MarketingNavbar() {
 
               {openDropdown === 'resources' && (
                 <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[240px] rounded-2xl bg-white border border-gray-200 shadow-xl p-2 z-50">
-                  {RESOURCES.map(({ Icon, label, href }) => (
-                    <Link
-                      key={label}
-                      to={href}
-                      onClick={close}
-                      className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors"
-                    >
-                      <Icon className="h-4 w-4 text-gray-700 shrink-0" />
-                      <span className="text-sm font-black text-gray-900">{label}</span>
-                    </Link>
-                  ))}
+                  {RESOURCES.map(({ Icon, label, href }) => {
+                    const isExternal = href.startsWith('http')
+                    const cls =
+                      'flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors'
+                    return isExternal ? (
+                      <a
+                        key={label}
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={close}
+                        className={cls}
+                      >
+                        <Icon className="h-4 w-4 text-gray-700 shrink-0" />
+                        <span className="text-sm font-black text-gray-900">{label}</span>
+                      </a>
+                    ) : (
+                      <Link key={label} to={href} onClick={close} className={cls}>
+                        <Icon className="h-4 w-4 text-gray-700 shrink-0" />
+                        <span className="text-sm font-black text-gray-900">{label}</span>
+                      </Link>
+                    )
+                  })}
                 </div>
               )}
             </li>
@@ -283,17 +295,34 @@ export function MarketingNavbar() {
             </button>
             {mobileExpanded === 'resources' && (
               <div className="pl-3 pb-1 space-y-0.5">
-                {RESOURCES.map(({ Icon, label, href }) => (
-                  <Link
-                    key={label}
-                    to={href}
-                    className="flex items-center gap-2.5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-gray-100 last:border-0"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    <Icon className="h-4 w-4 shrink-0 text-gray-400" />
-                    {label}
-                  </Link>
-                ))}
+                {RESOURCES.map(({ Icon, label, href }) => {
+                  const isExternal = href.startsWith('http')
+                  const cls =
+                    'flex items-center gap-2.5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-gray-100 last:border-0'
+                  return isExternal ? (
+                    <a
+                      key={label}
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cls}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+                      {label}
+                    </a>
+                  ) : (
+                    <Link
+                      key={label}
+                      to={href}
+                      className={cls}
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <Icon className="h-4 w-4 shrink-0 text-gray-400" />
+                      {label}
+                    </Link>
+                  )
+                })}
               </div>
             )}
 

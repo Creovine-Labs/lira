@@ -47,6 +47,7 @@ const SECTIONS = [
     color: 'bg-gray-100 text-gray-700',
     heading: 'Documentation',
     subtitle: 'Full reference docs for all Lira features and settings.',
+    externalHref: 'https://docs.liraintelligence.com',
     items: [
       'Lira platform overview',
       'Meeting Intelligence — full reference',
@@ -91,7 +92,7 @@ export function ResourcesPage() {
       </section>
 
       {/* Resource sections */}
-      {SECTIONS.map(({ id, Icon, color, heading, subtitle, items }) => (
+      {SECTIONS.map(({ id, Icon, color, heading, subtitle, items, externalHref }) => (
         <section key={id} id={id} className="py-16 px-6 border-t border-gray-200">
           <div className="mx-auto max-w-6xl">
             <div className="flex items-start gap-4 mb-10">
@@ -109,7 +110,9 @@ export function ResourcesPage() {
               {items.map((item) => (
                 <a
                   key={item}
-                  href={`/resources/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                  href={externalHref ?? `/resources/${item.toLowerCase().replace(/\s+/g, '-')}`}
+                  target={externalHref ? '_blank' : undefined}
+                  rel={externalHref ? 'noopener noreferrer' : undefined}
                   className="group flex items-center justify-between gap-3 rounded-xl bg-white border border-gray-200 px-5 py-4 hover:border-gray-300 hover:shadow-sm transition-all"
                 >
                   <span className="text-sm font-black text-gray-800 group-hover:text-gray-900">
