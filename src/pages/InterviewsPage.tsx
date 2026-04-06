@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
+  BookOpenIcon,
   BriefcaseIcon,
   ChevronRightIcon,
   MagnifyingGlassIcon,
@@ -110,13 +111,24 @@ function InterviewsPage() {
             </p>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Interviews</h1>
           </div>
-          <button
-            onClick={() => navigate('/org/roles/new')}
-            className="flex items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#222]"
-          >
-            <PlusIcon className="h-4 w-4" />
-            Create Role
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://docs.liraintelligence.com/getting-started/navigation#interviews"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              Docs
+            </a>
+            <button
+              onClick={() => navigate('/org/roles/new')}
+              className="flex items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#222]"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Create Role
+            </button>
+          </div>
         </div>
 
         {/* ── Stat strip ── */}

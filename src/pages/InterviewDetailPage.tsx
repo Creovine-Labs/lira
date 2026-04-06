@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, useRef } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
@@ -6,6 +6,7 @@ import {
   BriefcaseIcon,
   CalendarDaysIcon,
   ChartBarIcon,
+  ChatBubbleLeftEllipsisIcon,
   CheckBadgeIcon,
   CheckCircleIcon,
   ChevronDownIcon,
@@ -15,6 +16,9 @@ import {
   HandThumbUpIcon,
   PencilIcon,
   PlayIcon,
+  RadioIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
   TrashIcon,
   UserMinusIcon,
   XCircleIcon,
@@ -22,7 +26,7 @@ import {
 import { toast } from 'sonner'
 import { format } from 'date-fns'
 
-import { useOrgStore, useInterviewStore } from '@/app/store'
+import { useOrgStore, useInterviewStore, useBotStore } from '@/app/store'
 import {
   getInterviewRecord,
   getRelatedInterviews,
@@ -35,6 +39,12 @@ import {
   deleteInterviewRecord,
   runInterviewEvaluation,
   recordInterviewDecision,
+  getBotStatus,
+  listActiveBots,
+  muteBotApi,
+  unmuteBotApi,
+  triggerBotSpeakApi,
+  terminateBot,
   type Interview,
   type InterviewStatus,
   type DecisionOutcome,
@@ -203,6 +213,116 @@ function InterviewDetailPage() {
   const [followUpCreating, setFollowUpCreating] = useState(false)
   const [relatedInterviews, setRelatedInterviews] = useState<Interview[]>([])
 
+  // ── Bot controls ───────────────────────────────────────────────────────────
+  const { botId, botState, setBotDeployed, setBotState, setBotError, clearBot } = useBotStore()
+  const [isMuted, setIsMuted] = useState(true)
+  const [muteLoading, setMuteLoading] = useState(false)
+  const [speakLoading, setSpeakLoading] = useState(false)
+  const botPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  const startBotPolling = useCallback(
+    (id: string) => {
+      if (botPollRef.current) clearInterval(botPollRef.current)
+      botPollRef.current = setInterval(async () => {
+        try {
+          const status = await getBotStatus(id)
+          setBotState(status.state)
+          if (status.is_muted !== undefined) setIsMuted(status.is_muted)
+          if (status.state === 'terminated' || status.state === 'error') {
+            if (status.error) setBotError(status.error)
+            if (botPollRef.current) clearInterval(botPollRef.current)
+            botPollRef.current = null
+          }
+        } catch {
+          setBotState('terminated')
+          if (botPollRef.current) clearInterval(botPollRef.current)
+          botPollRef.current = null
+        }
+      }, 2_000)
+    },
+    [setBotState, setBotError]
+  )
+
+  // Restore active bot on mount (refresh persistence)
+  useEffect(() => {
+    if (botId && botState && botState !== 'terminated' && botState !== 'error') {
+      startBotPolling(botId)
+      return
+    }
+    let cancelled = false
+    ;(async () => {
+      try {
+        const bots = await listActiveBots()
+        if (cancelled) return
+        const active = bots.find((b) => b.state !== 'terminated' && b.state !== 'error')
+        if (!active) return
+        setBotDeployed(active.bot_id, '', active.platform as 'google_meet' | 'zoom', active.state)
+        startBotPolling(active.bot_id)
+      } catch {
+        /* ignore */
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(
+    () => () => {
+      if (botPollRef.current) clearInterval(botPollRef.current)
+    },
+    []
+  )
+
+  useEffect(() => {
+    if (botState !== 'terminated') return
+    const t = setTimeout(clearBot, 4_000)
+    return () => clearTimeout(t)
+  }, [botState, clearBot])
+
+  async function handleBotMuteToggle() {
+    if (!botId || muteLoading) return
+    setMuteLoading(true)
+    try {
+      if (isMuted) {
+        await unmuteBotApi(botId)
+        setIsMuted(false)
+      } else {
+        await muteBotApi(botId)
+        setIsMuted(true)
+      }
+    } catch {
+      /* polling reconciles */
+    } finally {
+      setMuteLoading(false)
+    }
+  }
+
+  async function handleBotSpeak() {
+    if (!botId || speakLoading) return
+    setSpeakLoading(true)
+    try {
+      await triggerBotSpeakApi(botId)
+      setIsMuted(false)
+    } catch {
+      /* ignore */
+    } finally {
+      setSpeakLoading(false)
+    }
+  }
+
+  async function handleBotTerminate() {
+    if (!botId) return
+    try {
+      await terminateBot(botId)
+      setBotState('terminated')
+      if (botPollRef.current) clearInterval(botPollRef.current)
+      botPollRef.current = null
+    } catch {
+      /* ignore */
+    }
+  }
+
   const load = useCallback(async () => {
     if (!currentOrgId || !interviewId) return
     try {
@@ -281,7 +401,12 @@ function InterviewDetailPage() {
       )
       setInterview(result.interview)
       updateInterview(interviewId, result.interview)
-      toast.success('CpuChipIcon deployed — interview is starting')
+      // Store bot_id so controls work for interview bots too
+      if (result.bot_id) {
+        setBotDeployed(result.bot_id, '', 'google_meet', 'launching')
+        startBotPolling(result.bot_id)
+      }
+      toast.success('Lira deployed — interview is starting')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to start interview')
     } finally {
@@ -778,19 +903,78 @@ function InterviewDetailPage() {
 
             {/* In-progress / evaluating status cards (no tabs yet) */}
             {(interview.status === 'in_progress' || interview.status === 'bot_deployed') && (
-              <div className="flex flex-col items-center justify-center py-12 gap-3 text-center rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10">
-                <img
-                  src="/lira_black.png"
-                  alt="Loading"
-                  className="w-8 h-8 animate-spin opacity-50"
-                  style={{ animationDuration: '1.2s' }}
-                />
+              <div className="flex flex-col items-center justify-center py-8 gap-3 text-center rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/10">
+                {botId && botState === 'active' ? (
+                  <RadioIcon className="w-8 h-8 animate-pulse text-emerald-500" />
+                ) : (
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="w-8 h-8 animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
+                )}
                 <p className="font-medium text-amber-700 dark:text-amber-400">
                   Interview in progress
+                  {botId && botState === 'active' && isMuted && (
+                    <span className="ml-1.5 text-xs font-normal text-amber-500">(muted)</span>
+                  )}
                 </p>
                 <p className="text-sm text-amber-600 dark:text-amber-500">
                   Evaluation will appear automatically when complete.
                 </p>
+
+                {/* Bot controls */}
+                {botId && botState === 'active' && (
+                  <div className="flex gap-2 mt-2 w-full max-w-sm mx-auto">
+                    <button
+                      onClick={handleBotMuteToggle}
+                      disabled={muteLoading}
+                      className={cn(
+                        'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition',
+                        isMuted
+                          ? 'bg-white text-[#3730a3] hover:bg-gray-100 shadow-sm'
+                          : 'bg-amber-500 text-white hover:bg-amber-600'
+                      )}
+                    >
+                      {isMuted ? (
+                        <>
+                          <SpeakerWaveIcon className="h-3.5 w-3.5" /> Unmute
+                        </>
+                      ) : (
+                        <>
+                          <SpeakerXMarkIcon className="h-3.5 w-3.5" /> Mute
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={handleBotSpeak}
+                      disabled={speakLoading}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#3730a3] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#312e81]"
+                    >
+                      <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" />
+                      Speak
+                    </button>
+                    <button
+                      onClick={handleBotTerminate}
+                      className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
+                    >
+                      End
+                    </button>
+                  </div>
+                )}
+                {botId &&
+                  botState &&
+                  botState !== 'active' &&
+                  botState !== 'terminated' &&
+                  botState !== 'error' && (
+                    <button
+                      onClick={handleBotTerminate}
+                      className="mt-2 rounded-lg bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
+                    >
+                      Cancel Bot
+                    </button>
+                  )}
               </div>
             )}
             {interview.status === 'evaluating' && !hasEval && (

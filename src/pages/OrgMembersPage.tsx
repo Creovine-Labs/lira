@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom'
 import {
   ArrowRightOnRectangleIcon,
   ArrowsRightLeftIcon,
+  BookOpenIcon,
   DocumentDuplicateIcon,
   ShieldCheckIcon,
   UserMinusIcon,
@@ -163,12 +164,25 @@ function OrgMembersPage() {
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-4xl space-y-5">
         {/* Header */}
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Settings</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Team Members</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Manage your team and invite people to your organization.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Settings
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Team Members</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Manage your team and invite people to your organization.
+            </p>
+          </div>
+          <a
+            href="https://docs.liraintelligence.com/getting-started/navigation#members"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
         </div>
 
         {/* Invite Code */}

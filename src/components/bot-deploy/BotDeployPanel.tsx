@@ -6,6 +6,9 @@ import {
   RadioIcon,
   StopIcon,
   VideoCameraIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
+  ChatBubbleLeftEllipsisIcon,
 } from '@heroicons/react/24/outline'
 import { useBotStore, useUserPrefsStore, useOrgStore } from '@/app/store'
 import {
@@ -14,6 +17,9 @@ import {
   listActiveBots,
   terminateBot,
   terminateAllBots,
+  muteBotApi,
+  unmuteBotApi,
+  triggerBotSpeakApi,
   type BotState,
   type MeetingType,
 } from '@/services/api'
@@ -72,6 +78,9 @@ function BotDeployPanel() {
   const [deploying, setDeploying] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
   const [terminatingAll, setTerminatingAll] = useState(false)
+  const [isMuted, setIsMuted] = useState<boolean>(true)
+  const [muteLoading, setMuteLoading] = useState(false)
+  const [speakLoading, setSpeakLoading] = useState(false)
 
   const { aiName, voiceId, personality } = useUserPrefsStore()
   const { currentOrgId, organizations } = useOrgStore()
@@ -113,6 +122,7 @@ function BotDeployPanel() {
         try {
           const status = await getBotStatus(id)
           setBotState(status.state)
+          if (status.is_muted !== undefined) setIsMuted(status.is_muted)
 
           // Stop polling on terminal states
           if (status.state === 'terminated' || status.state === 'error') {
@@ -263,6 +273,41 @@ function BotDeployPanel() {
     clearBot()
   }
 
+  // ── Remote mute/unmute toggle ───────────────────────────────────────────
+
+  async function handleMuteToggle() {
+    if (!botId || muteLoading) return
+    setMuteLoading(true)
+    try {
+      if (isMuted) {
+        await unmuteBotApi(botId)
+        setIsMuted(false)
+      } else {
+        await muteBotApi(botId)
+        setIsMuted(true)
+      }
+    } catch {
+      // ignore — polling will reconcile
+    } finally {
+      setMuteLoading(false)
+    }
+  }
+
+  // ── Trigger Lira to speak proactively ───────────────────────────────────
+
+  async function handleSpeak() {
+    if (!botId || speakLoading) return
+    setSpeakLoading(true)
+    try {
+      await triggerBotSpeakApi(botId)
+      setIsMuted(false) // optimistic — speak unmutes
+    } catch {
+      // ignore
+    } finally {
+      setSpeakLoading(false)
+    }
+  }
+
   // ── Platform icon ───────────────────────────────────────────────────────
 
   const detectedPlatform = meetingLink.trim() ? detectPlatform(meetingLink.trim()) : null
@@ -384,9 +429,17 @@ function BotDeployPanel() {
         {/* Live hint */}
         {botState === 'active' && (
           <div className="rounded-xl border border-[#3730a3]/25 bg-[#3730a3]/5 px-4 py-3 text-sm text-[#3730a3] leading-relaxed">
-            <span className="font-semibold">Lira is in the meeting.</span> Open your meeting —
-            you'll see Lira as a participant. Say <span className="font-semibold">"Lira"</span> to
-            get her attention.
+            <span className="font-semibold">
+              Lira is in the meeting{isMuted ? ' (muted)' : ''}.
+            </span>{' '}
+            {isMuted ? (
+              <>
+                Say <span className="font-semibold">"Hello Lira"</span> in the meeting or use the
+                controls below to unmute.
+              </>
+            ) : (
+              <>Lira is listening and will respond when addressed.</>
+            )}
             {selectedOrgId && (
               <span className="mt-1 block text-xs text-[#3730a3]/60">
                 Using context from:{' '}
@@ -405,10 +458,45 @@ function BotDeployPanel() {
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
+          {botState === 'active' && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleMuteToggle}
+                disabled={muteLoading}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
+                  isMuted
+                    ? 'bg-white text-[#3730a3] hover:bg-gray-100'
+                    : 'bg-amber-500 text-white hover:bg-amber-600'
+                )}
+              >
+                {isMuted ? (
+                  <>
+                    <SpeakerWaveIcon className="h-4 w-4" />
+                    Unmute Lira
+                  </>
+                ) : (
+                  <>
+                    <SpeakerXMarkIcon className="h-4 w-4" />
+                    Mute Lira
+                  </>
+                )}
+              </button>
+              <button
+                onClick={handleSpeak}
+                disabled={speakLoading}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+              >
+                <ChatBubbleLeftEllipsisIcon className="h-4 w-4" />
+                Lira, Speak
+              </button>
+            </div>
+          )}
+
           {isActive && (
             <button
               onClick={handleTerminate}
-              className="w-full rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/20"
+              className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
             >
               Remove Lira from Meeting
             </button>

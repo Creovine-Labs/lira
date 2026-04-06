@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BoltIcon,
+  BookOpenIcon,
   CheckCircleIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
   ClipboardDocumentCheckIcon,
   ClockIcon,
   PlayCircleIcon,
@@ -15,6 +18,7 @@ import { toast } from 'sonner'
 import { useOrgStore, useTaskStore } from '@/app/store'
 import {
   listTasks,
+  listMeetings,
   listOrgMembers,
   createTask,
   updateTask,
@@ -85,13 +89,33 @@ function TasksPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [pendingDeleteTask, setPendingDeleteTask] = useState<TaskRecord | null>(null)
   const [deletingTask, setDeletingTask] = useState(false)
+  const [meetingTitles, setMeetingTitles] = useState<Record<string, string>>({})
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+
+  function toggleGroup(key: string) {
+    setCollapsedGroups((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   const loadTasks = useCallback(async () => {
     if (!currentOrgId) return
     setLoading(true)
     try {
-      const { tasks: taskList } = await listTasks(currentOrgId)
+      const [{ tasks: taskList }, meetings] = await Promise.all([
+        listTasks(currentOrgId),
+        listMeetings(currentOrgId).catch(() => []),
+      ])
       setTasks(taskList)
+      // Build session_id → title map
+      const titles: Record<string, string> = {}
+      for (const m of meetings) {
+        titles[m.session_id] = m.title || `Meeting ${m.session_id.slice(0, 8)}`
+      }
+      setMeetingTitles(titles)
     } catch {
       toast.error('Failed to load tasks')
     } finally {
@@ -108,6 +132,39 @@ function TasksPage() {
       ? tasks.filter((t) => t.status === statusFilter)
       : [...tasks]
   ).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+
+  // Group tasks by meeting (session_id). Manual tasks go under 'manual'.
+  const taskGroups = useMemo(() => {
+    const groups: { key: string; title: string; date: string; tasks: TaskRecord[] }[] = []
+    const groupMap = new Map<string, TaskRecord[]>()
+
+    for (const task of filteredTasks) {
+      const key = task.session_id || 'manual'
+      if (!groupMap.has(key)) groupMap.set(key, [])
+      groupMap.get(key)!.push(task)
+    }
+
+    // Sort groups: most recent first (by first task's created_at)
+    const entries = [...groupMap.entries()].sort((a, b) => {
+      const aTime = new Date(a[1][0].created_at).getTime()
+      const bTime = new Date(b[1][0].created_at).getTime()
+      return bTime - aTime
+    })
+
+    for (const [key, groupTasks] of entries) {
+      const firstTask = groupTasks[0]
+      const title =
+        key === 'manual' ? 'Manually Created' : meetingTitles[key] || `Meeting ${key.slice(0, 8)}`
+      const date = new Date(firstTask.created_at).toLocaleDateString(undefined, {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+      groups.push({ key, title, date, tasks: groupTasks })
+    }
+
+    return groups
+  }, [filteredTasks, meetingTitles])
 
   const counts = {
     all: tasks.length,
@@ -153,13 +210,24 @@ function TasksPage() {
               Track action items from meetings and beyond.
             </p>
           </div>
-          <button
-            onClick={() => setShowCreate(!showCreate)}
-            className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-gray-800"
-          >
-            <PlusIcon className="h-4 w-4" />
-            New Task
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://docs.liraintelligence.com/getting-started/navigation#tasks"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              Docs
+            </a>
+            <button
+              onClick={() => setShowCreate(!showCreate)}
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-gray-800"
+            >
+              <PlusIcon className="h-4 w-4" />
+              New Task
+            </button>
+          </div>
         </div>
 
         {/* Stat strip */}
@@ -237,7 +305,7 @@ function TasksPage() {
           </div>
         </div>
 
-        {/* Task list */}
+        {/* Task list grouped by meeting */}
         {filteredTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-16 text-center shadow-sm">
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-gray-100">
@@ -249,24 +317,54 @@ function TasksPage() {
             </p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {filteredTasks.map((task) => (
-              <TaskCard
-                key={task.task_id}
-                task={task}
-                onClick={() => navigate(`/org/tasks/${task.task_id}`)}
-                onStatusChange={async (status) => {
-                  if (!currentOrgId) return
-                  try {
-                    await updateTask(currentOrgId, task.task_id, { status })
-                    useTaskStore.getState().updateTask(task.task_id, { status })
-                  } catch {
-                    toast.error('Failed to update status')
-                  }
-                }}
-                onDelete={() => setPendingDeleteTask(task)}
-              />
-            ))}
+          <div className="space-y-4">
+            {taskGroups.map((group) => {
+              const isCollapsed = collapsedGroups.has(group.key)
+              return (
+                <div key={group.key}>
+                  {/* Meeting group header — clickable to collapse */}
+                  <button
+                    onClick={() => toggleGroup(group.key)}
+                    className="mb-2 flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-white/60"
+                  >
+                    {isCollapsed ? (
+                      <ChevronRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    ) : (
+                      <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+                    )}
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">
+                      {group.title}
+                    </h3>
+                    <span className="text-[10px] text-gray-300">{group.date}</span>
+                    <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500">
+                      {group.tasks.length}
+                    </span>
+                    {isCollapsed && <span className="ml-auto text-[10px] text-gray-300">Show</span>}
+                  </button>
+                  {!isCollapsed && (
+                    <div className="space-y-2">
+                      {group.tasks.map((task) => (
+                        <TaskCard
+                          key={task.task_id}
+                          task={task}
+                          onClick={() => navigate(`/org/tasks/${task.task_id}`)}
+                          onStatusChange={async (status) => {
+                            if (!currentOrgId) return
+                            try {
+                              await updateTask(currentOrgId, task.task_id, { status })
+                              useTaskStore.getState().updateTask(task.task_id, { status })
+                            } catch {
+                              toast.error('Failed to update status')
+                            }
+                          }}
+                          onDelete={() => setPendingDeleteTask(task)}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
       </div>

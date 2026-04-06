@@ -4,12 +4,15 @@ import {
   ArrowRightIcon,
   BookOpenIcon,
   BriefcaseIcon,
+  ChatBubbleLeftEllipsisIcon,
   ClipboardDocumentCheckIcon,
   ClockIcon,
   ExclamationCircleIcon,
   MicrophoneIcon,
   PlusIcon,
   RadioIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
   VideoCameraIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useBotStore, useOrgStore, useUserPrefsStore } from '@/app/store'
@@ -21,7 +24,10 @@ import {
   listInterviews,
   listMeetings,
   listTasks,
+  muteBotApi,
   terminateBot,
+  triggerBotSpeakApi,
+  unmuteBotApi,
   type Meeting,
   type MeetingType,
   type TaskRecord,
@@ -378,6 +384,10 @@ function DeployHeroBar() {
     clearBot,
   } = useBotStore()
 
+  const [isMuted, setIsMuted] = useState(true)
+  const [muteLoading, setMuteLoading] = useState(false)
+  const [speakLoading, setSpeakLoading] = useState(false)
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const detectedPlatform = meetingLink.trim() ? detectMeetingPlatform(meetingLink.trim()) : null
 
@@ -396,13 +406,14 @@ function DeployHeroBar() {
         try {
           const status = await getBotStatus(id)
           setBotState(status.state)
+          if (status.is_muted !== undefined) setIsMuted(status.is_muted)
           if (status.state === 'terminated' || status.state === 'error') {
             if (status.error) setBotError(status.error)
             if (pollRef.current) clearInterval(pollRef.current)
             pollRef.current = null
           }
         } catch {
-          // CpuChipIcon no longer found on server (404) — treat as terminated
+          // Bot no longer found on server (404) — treat as terminated
           setBotState('terminated')
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
@@ -480,6 +491,39 @@ function DeployHeroBar() {
     }
   }
 
+  // ── Mute / Unmute ──
+  async function handleMuteToggle() {
+    if (!botId || muteLoading) return
+    setMuteLoading(true)
+    try {
+      if (isMuted) {
+        await unmuteBotApi(botId)
+        setIsMuted(false)
+      } else {
+        await muteBotApi(botId)
+        setIsMuted(true)
+      }
+    } catch {
+      /* polling will reconcile */
+    } finally {
+      setMuteLoading(false)
+    }
+  }
+
+  // ── Speak ──
+  async function handleSpeak() {
+    if (!botId || speakLoading) return
+    setSpeakLoading(true)
+    try {
+      await triggerBotSpeakApi(botId)
+      setIsMuted(false)
+    } catch {
+      /* ignore */
+    } finally {
+      setSpeakLoading(false)
+    }
+  }
+
   // ── Terminate ──
   async function handleTerminate() {
     if (!botId) return
@@ -554,13 +598,10 @@ function DeployHeroBar() {
             </div>
           </div>
 
-          {isActive && (
-            <button
-              onClick={handleTerminate}
-              className="shrink-0 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/10"
-            >
-              {botState === 'leaving' ? 'Force remove' : 'Remove from call'}
-            </button>
+          {isActive && !botState?.startsWith('leav') && (
+            <span className="shrink-0 text-xs text-white/30">
+              {platform === 'google_meet' ? 'Google Meet' : 'Zoom'}
+            </span>
           )}
           {botState === 'error' && (
             <button
@@ -571,6 +612,58 @@ function DeployHeroBar() {
             </button>
           )}
         </div>
+
+        {/* ── Mute / Speak / End controls ── */}
+        {botState === 'active' && (
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={handleMuteToggle}
+              disabled={muteLoading}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition',
+                isMuted
+                  ? 'bg-white text-[#3730a3] hover:bg-gray-100'
+                  : 'bg-amber-500 text-white hover:bg-amber-600'
+              )}
+            >
+              {isMuted ? (
+                <>
+                  <SpeakerWaveIcon className="h-4 w-4" /> Unmute Lira
+                </>
+              ) : (
+                <>
+                  <SpeakerXMarkIcon className="h-4 w-4" /> Mute Lira
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleSpeak}
+              disabled={speakLoading}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+            >
+              <ChatBubbleLeftEllipsisIcon className="h-4 w-4" />
+              Lira, Speak
+            </button>
+            <button
+              onClick={handleTerminate}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+            >
+              Remove from Call
+            </button>
+          </div>
+        )}
+
+        {/* Cancel / Force remove for non-active states */}
+        {isActive && botState !== 'active' && (
+          <div className="mt-4">
+            <button
+              onClick={handleTerminate}
+              className="w-full rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700"
+            >
+              {botState === 'leaving' ? 'Force remove' : 'Cancel'}
+            </button>
+          </div>
+        )}
 
         {storeError && <p className="mt-3 text-sm text-red-400">{storeError}</p>}
 

@@ -14,6 +14,7 @@ import {
   TableCellsIcon,
   CodeBracketIcon,
   ArrowTopRightOnSquareIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid'
 import { toast } from 'sonner'
@@ -39,6 +40,7 @@ import {
   listSlackMembers,
   listSlackMemberMappings,
   saveSlackMemberMapping,
+  // TEAMS_DISABLED (routes off, card hidden): kept for easy re-enable
   getTeamsAuthUrl,
   getTeamsStatus,
   disconnectTeams,
@@ -105,6 +107,7 @@ import type {
   SlackChannel,
   SlackMember,
   SlackMemberMapping,
+  // TEAMS_DISABLED (routes off, card hidden): kept for easy re-enable
   TeamsStatus,
   TeamsTeam,
   TeamsChannel,
@@ -146,7 +149,7 @@ function useConnectionCallback() {
     const c = params.get('connected')
     return c === 'linear' ||
       c === 'slack' ||
-      c === 'teams' ||
+      // TEAMS_DISABLED: c === 'teams' ||
       c === 'google' ||
       c === 'github' ||
       c === 'hubspot' ||
@@ -175,6 +178,7 @@ function useConnectionCallback() {
       window.history.replaceState({}, '', window.location.pathname)
       setJustConnected(null)
     }
+    /* TEAMS_DISABLED
     if (justConnected === 'teams') {
       toast.success('Microsoft Teams connected successfully!', {
         description: 'Meeting summaries can now be posted to Teams channels.',
@@ -182,6 +186,7 @@ function useConnectionCallback() {
       window.history.replaceState({}, '', window.location.pathname)
       setJustConnected(null)
     }
+    TEAMS_DISABLED */
     if (justConnected === 'google') {
       toast.success('Google connected successfully!', {
         description: 'Calendar and Drive integrations are now active.',
@@ -361,6 +366,15 @@ function LinearCard({ orgId, onStatusChange }: LinearCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="https://docs.liraintelligence.com/integrations/linear"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           {status?.connected ? (
             <>
               <button
@@ -998,6 +1012,15 @@ function SlackCard({ orgId, onStatusChange }: SlackCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="https://docs.liraintelligence.com/integrations/slack"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           {status?.connected ? (
             <>
               <button
@@ -1403,12 +1426,16 @@ const TEAMS_LOGO = (
   </svg>
 )
 
-interface TeamsCardProps {
+// TEAMS_DISABLED: prefixed with _ to suppress noUnusedLocals — restore by removing _
+interface _TeamsCardProps {
   orgId: string
   onStatusChange?: () => void
 }
 
-function TeamsCard({ orgId, onStatusChange }: TeamsCardProps) {
+// TEAMS_DISABLED: restore by removing _ prefix from _TeamsCard / _TeamsCardProps
+// @ts-expect-error -- noUnusedLocals suppressed: Teams temporarily disabled
+/* eslint-disable react-hooks/rules-of-hooks */
+function _TeamsCard({ orgId, onStatusChange }: _TeamsCardProps) {
   const [status, setStatus] = useState<TeamsStatus | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
   const [disconnecting, setDisconnecting] = useState(false)
@@ -1577,6 +1604,15 @@ function TeamsCard({ orgId, onStatusChange }: TeamsCardProps) {
 
         {/* Actions */}
         <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="https://docs.liraintelligence.com/integrations/microsoft-teams"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           {status?.connected ? (
             <>
               <button
@@ -2215,6 +2251,15 @@ function GoogleCalendarCard({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="https://docs.liraintelligence.com/integrations/google-calendar"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           {status?.connected ? (
             <>
               <button
@@ -2702,6 +2747,15 @@ function GoogleDriveCard({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <a
+            href="https://docs.liraintelligence.com/integrations/google-drive"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           {status?.connected ? (
             <>
               <button
@@ -3303,13 +3357,24 @@ function GitHubCard({ orgId }: { orgId: string }) {
             <h3 className="font-semibold text-gray-900">GitHub</h3>
             <p className="text-sm text-gray-500 mt-0.5">Browse repos, issues, and pull requests</p>
           </div>
-          <button
-            onClick={handleConnect}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl transition-colors"
-          >
-            <LinkIcon className="h-3.5 w-3.5" />
-            Connect
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://docs.liraintelligence.com/integrations/github"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              Docs
+            </a>
+            <button
+              onClick={handleConnect}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl transition-colors"
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
+              Connect
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -3335,6 +3400,15 @@ function GitHubCard({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="https://docs.liraintelligence.com/integrations/github"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           <button
             onClick={() => setConfigOpen(!configOpen)}
             className={`text-xs font-medium px-3 py-1.5 rounded-xl border transition-colors ${
@@ -3671,6 +3745,7 @@ function GitHubCard({ orgId }: { orgId: string }) {
     </div>
   )
 }
+/* eslint-enable react-hooks/rules-of-hooks */
 
 // ── Greenhouse Card ───────────────────────────────────────────────────────────
 
@@ -3842,6 +3917,15 @@ function GreenhouseCard({ orgId }: { orgId: string }) {
               Sync candidates, jobs, and interview scorecards
             </p>
           </div>
+          <a
+            href="https://docs.liraintelligence.com/integrations/greenhouse"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
         </div>
         <div className="border-t border-gray-100 px-5 py-5 bg-gray-50/50">
           <p className="text-xs text-gray-500 mb-3">
@@ -3900,6 +3984,15 @@ function GreenhouseCard({ orgId }: { orgId: string }) {
           <p className="text-sm text-gray-500 mt-0.5">Applicant Tracking System</p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="https://docs.liraintelligence.com/integrations/greenhouse"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           <button
             onClick={() => setConfigOpen(!configOpen)}
             className={`text-xs font-medium px-3 py-1.5 rounded-xl border transition-colors ${
@@ -4344,13 +4437,24 @@ function HubSpotCard({ orgId }: { orgId: string }) {
               Log meeting outcomes and tasks directly into your CRM
             </p>
           </div>
-          <button
-            onClick={handleConnect}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl transition-colors"
-          >
-            <LinkIcon className="h-3.5 w-3.5" />
-            Connect
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://docs.liraintelligence.com/integrations/hubspot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              Docs
+            </a>
+            <button
+              onClick={handleConnect}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl transition-colors"
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
+              Connect
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -4377,6 +4481,15 @@ function HubSpotCard({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="https://docs.liraintelligence.com/integrations/hubspot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           <button
             onClick={() => setConfigOpen(!configOpen)}
             className={`text-xs font-medium px-3 py-1.5 rounded-xl border transition-colors ${
@@ -4761,15 +4874,26 @@ function SalesforceCard({ orgId }: { orgId: string }) {
               Sync contacts, accounts, opportunities, and leads
             </p>
           </div>
-          <button
-            onClick={() => {
-              window.location.href = getSalesforceAuthUrl(orgId)
-            }}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl transition-colors"
-          >
-            <LinkIcon className="h-3.5 w-3.5" />
-            Connect
-          </button>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://docs.liraintelligence.com/integrations/salesforce"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              Docs
+            </a>
+            <button
+              onClick={() => {
+                window.location.href = getSalesforceAuthUrl(orgId)
+              }}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-gray-900 hover:bg-gray-800 text-white px-4 py-2 rounded-xl transition-colors"
+            >
+              <LinkIcon className="h-3.5 w-3.5" />
+              Connect
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -4796,6 +4920,15 @@ function SalesforceCard({ orgId }: { orgId: string }) {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="https://docs.liraintelligence.com/integrations/salesforce"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
           <button
             onClick={() => setConfigOpen(!configOpen)}
             className={`text-xs font-medium px-3 py-1.5 rounded-xl border transition-colors ${
@@ -5078,7 +5211,7 @@ export default function IntegrationsPage() {
           </h2>
           <div className="space-y-3">
             <SlackCard orgId={orgId} />
-            <TeamsCard orgId={orgId} />
+            {/* TEAMS_DISABLED: <TeamsCard orgId={orgId} /> */}
           </div>
         </section>
 

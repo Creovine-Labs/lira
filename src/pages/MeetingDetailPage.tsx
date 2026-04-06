@@ -8,24 +8,28 @@ import {
   CheckIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ClipboardDocumentCheckIcon,
   ClockIcon,
   CpuChipIcon,
   DocumentDuplicateIcon,
+  PaperAirplaneIcon,
   PencilIcon,
   ShareIcon,
-  SparklesIcon,
   UserIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import ReactMarkdown from 'react-markdown'
 
-import { useAuthStore } from '@/app/store'
+import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   getMeeting,
   getMeetingSummary,
+  chatAboutMeeting,
   updateMeeting,
+  listTasks,
   type Meeting,
   type Message,
+  type TaskRecord,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 import { cn } from '@/lib'
@@ -127,6 +131,7 @@ function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { token } = useAuthStore()
+  const { currentOrgId } = useOrgStore()
 
   const [meeting, setMeeting] = useState<Meeting | null>(null)
   const [loading, setLoading] = useState(true)
@@ -151,6 +156,17 @@ function MeetingDetailPage() {
 
   // Transcript expand/collapse
   const [showTranscript, setShowTranscript] = useState(false)
+
+  // Tasks from this meeting
+  const [meetingTasks, setMeetingTasks] = useState<TaskRecord[]>([])
+  const [tasksLoading, setTasksLoading] = useState(false)
+  const [showTasks, setShowTasks] = useState(true)
+
+  // Follow-up chat
+  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([])
+  const [chatInput, setChatInput] = useState('')
+  const [chatLoading, setChatLoading] = useState(false)
+  const chatEndRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!token) {
@@ -181,6 +197,16 @@ function MeetingDetailPage() {
       setLoading(false)
     }
   }
+
+  // Fetch tasks extracted from this meeting
+  useEffect(() => {
+    if (!currentOrgId || !id) return
+    setTasksLoading(true)
+    listTasks(currentOrgId, { session_id: id })
+      .then(({ tasks }) => setMeetingTasks(tasks))
+      .catch(() => {})
+      .finally(() => setTasksLoading(false))
+  }, [currentOrgId, id])
 
   const handleGenerateSummary = useCallback(
     async (mode?: 'short' | 'long', regenerate = false) => {
@@ -227,7 +253,7 @@ function MeetingDetailPage() {
     [id, summaryLoading, summaryMode, meeting]
   )
 
-  // DocumentDuplicateIcon summary to clipboard
+  // Copy summary to clipboard
   const handleCopy = useCallback(() => {
     if (!summary) return
     // Strip markdown formatting for clean clipboard text
@@ -304,6 +330,31 @@ function MeetingDetailPage() {
       setEditingTitle(false)
     }
   }
+
+  // Chat send handler
+  const handleChatSend = useCallback(async () => {
+    const trimmed = chatInput.trim()
+    if (!trimmed || chatLoading || !id) return
+    setChatInput('')
+    setChatMessages((prev) => [...prev, { role: 'user', text: trimmed }])
+    setChatLoading(true)
+    try {
+      const { answer } = await chatAboutMeeting(id, trimmed)
+      setChatMessages((prev) => [...prev, { role: 'ai', text: answer }])
+    } catch {
+      setChatMessages((prev) => [
+        ...prev,
+        { role: 'ai', text: "Sorry, I couldn't answer that. Please try again." },
+      ])
+    } finally {
+      setChatLoading(false)
+    }
+  }, [chatInput, chatLoading, id])
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [chatMessages, chatLoading])
 
   // ── Loading / error states ──────────────────────────────────────────────
 
@@ -457,7 +508,6 @@ function MeetingDetailPage() {
         <div className="rounded-xl border bg-card">
           <div className="flex items-center justify-between px-5 py-4 border-b">
             <div className="flex items-center gap-2">
-              <SparklesIcon className="h-5 w-5 text-violet-500" />
               <h3 className="font-semibold text-foreground">Meeting Summary</h3>
               {summary && summaryGeneratedAt && (
                 <span className="text-[10px] text-muted-foreground">
@@ -474,12 +524,9 @@ function MeetingDetailPage() {
               <button
                 onClick={() => handleGenerateSummary('short')}
                 disabled={msgCount === 0}
-                className="rounded-full border border-violet-500/30 bg-violet-600 px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-violet-500 hover:shadow-md disabled:opacity-50 disabled:hover:shadow-sm"
+                className="rounded-full border border-black/20 bg-black px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 hover:shadow-md disabled:opacity-50 disabled:hover:shadow-sm"
               >
-                <span className="flex items-center gap-1.5">
-                  <SparklesIcon className="h-3.5 w-3.5" />
-                  Generate Summary
-                </span>
+                Generate Summary
               </button>
             )}
           </div>
@@ -580,11 +627,10 @@ function MeetingDetailPage() {
                     disabled={summaryLoading}
                     className="flex items-center gap-1.5 rounded-full border border-violet-500/30 bg-violet-50 px-4 py-2 text-xs font-medium text-violet-700 shadow-sm transition hover:bg-violet-100 hover:shadow-md dark:bg-violet-500/10 dark:text-violet-400 dark:hover:bg-violet-500/20 disabled:opacity-50"
                   >
-                    <SparklesIcon className="h-3.5 w-3.5" />
                     {summaryMode === 'short' ? 'Detailed Summary' : 'Shorter Summary'}
                   </button>
 
-                  {/* DocumentDuplicateIcon */}
+                  {/* Copy summary */}
                   <button
                     onClick={handleCopy}
                     className="flex items-center gap-1.5 rounded-full border border-border bg-background px-4 py-2 text-xs font-medium text-foreground shadow-sm transition hover:bg-accent hover:shadow-md"
@@ -594,7 +640,7 @@ function MeetingDetailPage() {
                     ) : (
                       <DocumentDuplicateIcon className="h-3.5 w-3.5" />
                     )}
-                    {copied ? 'Copied!' : 'DocumentDuplicateIcon'}
+                    {copied ? 'Copied!' : 'Copy'}
                   </button>
 
                   {/* Share dropdown */}
@@ -625,15 +671,14 @@ function MeetingDetailPage() {
                             onClick={() => handleShare('twitter')}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
                           >
-                            <span className="text-base">🐦</span> Twitter / XMarkIcon
+                            <span className="text-base">🐦</span> Twitter / X
                           </button>
                           <div className="my-1 border-t border-border/50" />
                           <button
                             onClick={() => handleShare('clipboard')}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-foreground transition hover:bg-accent"
                           >
-                            <DocumentDuplicateIcon className="h-4 w-4" /> DocumentDuplicateIcon to
-                            clipboard
+                            <DocumentDuplicateIcon className="h-4 w-4" /> Copy to clipboard
                           </button>
                         </div>
                       </div>
@@ -643,6 +688,208 @@ function MeetingDetailPage() {
               </div>
             )}
           </div>
+        </div>
+
+        {/* Follow-up chat */}
+        {summary && (
+          <div className="rounded-xl border bg-card">
+            <div className="px-5 py-4 border-b">
+              <h3 className="font-semibold text-foreground">Ask about this meeting</h3>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Ask any question — Lira will answer based on the full transcript.
+              </p>
+            </div>
+
+            {chatMessages.length > 0 && (
+              <div className="px-5 py-3 space-y-3 max-h-[400px] overflow-y-auto">
+                {chatMessages.map((msg, i) => (
+                  <div
+                    key={i}
+                    className={cn(
+                      'flex gap-2.5',
+                      msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs',
+                        msg.role === 'ai'
+                          ? 'bg-violet-500/20 text-violet-400'
+                          : 'bg-slate-500/20 text-slate-400'
+                      )}
+                    >
+                      {msg.role === 'ai' ? (
+                        <CpuChipIcon className="h-3 w-3" />
+                      ) : (
+                        <UserIcon className="h-3 w-3" />
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        'max-w-[80%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed',
+                        msg.role === 'ai'
+                          ? 'rounded-tl-md bg-violet-500/10 text-foreground'
+                          : 'rounded-tr-md bg-accent text-foreground'
+                      )}
+                    >
+                      {msg.role === 'ai' ? (
+                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:mb-1 prose-li:leading-relaxed">
+                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                        </div>
+                      ) : (
+                        <p>{msg.text}</p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {chatLoading && (
+                  <div className="flex gap-2.5">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-xs">
+                      <CpuChipIcon className="h-3 w-3" />
+                    </div>
+                    <div className="rounded-2xl rounded-tl-md bg-violet-500/10 px-3.5 py-2">
+                      <img
+                        src="/lira_black.png"
+                        alt="Thinking"
+                        className="h-4 w-4 animate-spin opacity-50"
+                        style={{ animationDuration: '1.2s' }}
+                      />
+                    </div>
+                  </div>
+                )}
+                <div ref={chatEndRef} />
+              </div>
+            )}
+
+            <div className="px-5 py-3 border-t">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={chatInput}
+                  onChange={(e) => setChatInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault()
+                      handleChatSend()
+                    }
+                  }}
+                  placeholder="e.g. What was the best approach discussed?"
+                  className="flex-1 rounded-lg border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-violet-500/30 placeholder:text-muted-foreground/60"
+                  disabled={chatLoading}
+                />
+                <button
+                  onClick={handleChatSend}
+                  disabled={chatLoading || !chatInput.trim()}
+                  className="flex items-center justify-center rounded-lg bg-black px-3 py-2 text-white transition hover:bg-zinc-800 disabled:opacity-40"
+                >
+                  <PaperAirplaneIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tasks from this meeting */}
+        <div className="rounded-xl border bg-card">
+          <button
+            onClick={() => setShowTasks((v) => !v)}
+            className="flex w-full items-center justify-between px-5 py-4 text-left transition hover:bg-accent/50"
+          >
+            <div className="flex items-center gap-2">
+              <ClipboardDocumentCheckIcon className="h-5 w-5 text-muted-foreground" />
+              <h3 className="font-semibold text-foreground">Tasks from this Meeting</h3>
+              {tasksLoading ? (
+                <span className="text-xs text-muted-foreground">Loading…</span>
+              ) : (
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                  {meetingTasks.length}
+                </span>
+              )}
+            </div>
+            {showTasks ? (
+              <ChevronUpIcon className="h-5 w-5 text-muted-foreground" />
+            ) : (
+              <ChevronDownIcon className="h-5 w-5 text-muted-foreground" />
+            )}
+          </button>
+
+          {showTasks && (
+            <div className="border-t px-5 py-4">
+              {tasksLoading ? (
+                <div className="flex items-center gap-2 py-2">
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="h-4 w-4 animate-spin opacity-40"
+                    style={{ animationDuration: '1.2s' }}
+                  />
+                  <p className="text-sm text-muted-foreground">Loading tasks…</p>
+                </div>
+              ) : meetingTasks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No tasks were extracted from this meeting.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {meetingTasks.map((task) => (
+                    <button
+                      key={task.task_id}
+                      onClick={() => navigate(`/org/tasks/${task.task_id}`)}
+                      className="flex w-full items-start gap-3 rounded-xl border border-border/60 bg-background px-4 py-3 text-left transition hover:border-violet-200 hover:bg-violet-50/30"
+                    >
+                      <div
+                        className={cn(
+                          'mt-0.5 h-2 w-2 shrink-0 rounded-full',
+                          task.status === 'completed'
+                            ? 'bg-emerald-500'
+                            : task.status === 'in_progress'
+                              ? 'bg-amber-400'
+                              : task.status === 'cancelled'
+                                ? 'bg-slate-400'
+                                : 'bg-red-500'
+                        )}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={cn(
+                            'text-sm font-medium',
+                            task.status === 'completed'
+                              ? 'text-gray-400 line-through'
+                              : 'text-foreground'
+                          )}
+                        >
+                          {task.title}
+                        </p>
+                        {task.assigned_to && task.assigned_to !== 'unassigned' && (
+                          <p className="mt-0.5 text-xs text-muted-foreground">
+                            → {task.assigned_to === 'lira' ? 'Lira (AI)' : task.assigned_to}
+                          </p>
+                        )}
+                      </div>
+                      <span
+                        className={cn(
+                          'shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                          task.priority === 'urgent' || task.priority === 'high'
+                            ? 'bg-red-100 text-red-600'
+                            : task.priority === 'medium'
+                              ? 'bg-[#3730a3]/10 text-[#3730a3]'
+                              : 'bg-gray-100 text-gray-500'
+                        )}
+                      >
+                        {task.priority}
+                      </span>
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => navigate('/org/tasks')}
+                    className="mt-1 text-xs font-medium text-violet-600 hover:underline"
+                  >
+                    View all tasks →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Full transcript (collapsible) */}

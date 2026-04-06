@@ -2,14 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowTopRightOnSquareIcon,
+  BookOpenIcon,
+  CalendarDaysIcon,
   CalendarIcon,
   ChatBubbleLeftIcon,
+  ChatBubbleLeftEllipsisIcon,
   CheckIcon,
   ClockIcon,
   ExclamationCircleIcon,
   MicrophoneIcon,
   PencilIcon,
+  PlusIcon,
   RadioIcon,
+  SpeakerWaveIcon,
+  SpeakerXMarkIcon,
   TrashIcon,
   VideoCameraIcon,
   XMarkIcon,
@@ -24,11 +30,22 @@ import {
   getBotStatus,
   listActiveBots,
   terminateBot,
+  muteBotApi,
+  unmuteBotApi,
+  triggerBotSpeakApi,
+  listSchedules,
+  createSchedule,
+  updateSchedule as updateScheduleApi,
+  deleteSchedule,
+  toggleSchedule,
   type Meeting,
   type MeetingType,
+  type MeetingSchedule,
+  type CreateScheduleInput,
   type BotState,
 } from '@/services/api'
 import { BotDeployPanel as _BotDeployPanel } from '@/components/bot-deploy'
+import { ScheduleModal } from '@/components/schedules'
 import { cn } from '@/lib'
 
 // ── Meeting type metadata ────────────────────────────────────────────────────
@@ -94,6 +111,11 @@ function CompactInviteBar() {
   const [deploying, setDeploying] = useState(false)
   const [localError, setLocalError] = useState<string | null>(null)
 
+  // Mute/speak state
+  const [isMuted, setIsMuted] = useState(true)
+  const [muteLoading, setMuteLoading] = useState(false)
+  const [speakLoading, setSpeakLoading] = useState(false)
+
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const startPolling = (id: string) => {
@@ -102,6 +124,7 @@ function CompactInviteBar() {
       try {
         const status = await getBotStatus(id)
         setBotState(status.state)
+        if (status.is_muted !== undefined) setIsMuted(status.is_muted)
         if (status.state === 'terminated' || status.state === 'error') {
           if (pollRef.current) clearInterval(pollRef.current)
           pollRef.current = null
@@ -180,6 +203,37 @@ function CompactInviteBar() {
     }
   }
 
+  async function handleMuteToggle() {
+    if (!botId || muteLoading) return
+    setMuteLoading(true)
+    try {
+      if (isMuted) {
+        await unmuteBotApi(botId)
+        setIsMuted(false)
+      } else {
+        await muteBotApi(botId)
+        setIsMuted(true)
+      }
+    } catch {
+      // polling will reconcile
+    } finally {
+      setMuteLoading(false)
+    }
+  }
+
+  async function handleSpeak() {
+    if (!botId || speakLoading) return
+    setSpeakLoading(true)
+    try {
+      await triggerBotSpeakApi(botId)
+      setIsMuted(false)
+    } catch {
+      // ignore
+    } finally {
+      setSpeakLoading(false)
+    }
+  }
+
   async function handleTerminate() {
     if (!botId) return
     try {
@@ -204,36 +258,86 @@ function CompactInviteBar() {
       <div className="relative">
         {/* Active bot banner */}
         {botId && botState && botState !== 'terminated' && (
-          <div
-            className={cn(
-              'mb-4 flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-sm',
-              botState === 'active'
-                ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
-                : botState === 'error'
-                  ? 'border-red-500/30 bg-red-500/10 text-red-400'
-                  : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
-            )}
-          >
-            <div className="flex items-center gap-2">
-              {botState === 'active' ? (
-                <RadioIcon className="h-4 w-4 animate-pulse" />
-              ) : (
-                <img
-                  src="/lira_black.png"
-                  alt="Loading"
-                  className="h-4 w-4 animate-spin opacity-50"
-                  style={{ animationDuration: '1.2s' }}
-                />
+          <div className="mb-4 space-y-2">
+            <div
+              className={cn(
+                'flex items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-sm',
+                botState === 'active'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                  : botState === 'error'
+                    ? 'border-red-500/30 bg-red-500/10 text-red-400'
+                    : 'border-amber-500/30 bg-amber-500/10 text-amber-400'
               )}
-              <span className="font-semibold">{STATE_LABELS[botState]}</span>
-              <span className="text-xs opacity-60">
-                {platform === 'google_meet' ? '· Google Meet' : platform === 'zoom' ? '· Zoom' : ''}
-              </span>
+            >
+              <div className="flex items-center gap-2">
+                {botState === 'active' ? (
+                  <RadioIcon className="h-4 w-4 animate-pulse" />
+                ) : (
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="h-4 w-4 animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
+                )}
+                <span className="font-semibold">{STATE_LABELS[botState]}</span>
+                {botState === 'active' && isMuted && (
+                  <span className="text-xs text-amber-400">(muted)</span>
+                )}
+                <span className="text-xs opacity-60">
+                  {platform === 'google_meet'
+                    ? '· Google Meet'
+                    : platform === 'zoom'
+                      ? '· Zoom'
+                      : ''}
+                </span>
+              </div>
             </div>
-            {isActive && (
+
+            {/* Controls row */}
+            {botState === 'active' && (
+              <div className="flex gap-2">
+                <button
+                  onClick={handleMuteToggle}
+                  disabled={muteLoading}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold transition',
+                    isMuted
+                      ? 'bg-white text-[#3730a3] hover:bg-gray-100'
+                      : 'bg-amber-500 text-white hover:bg-amber-600'
+                  )}
+                >
+                  {isMuted ? (
+                    <>
+                      <SpeakerWaveIcon className="h-3.5 w-3.5" /> Unmute
+                    </>
+                  ) : (
+                    <>
+                      <SpeakerXMarkIcon className="h-3.5 w-3.5" /> Mute
+                    </>
+                  )}
+                </button>
+                <button
+                  onClick={handleSpeak}
+                  disabled={speakLoading}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#3730a3] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#312e81]"
+                >
+                  <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5" />
+                  Speak
+                </button>
+                <button
+                  onClick={handleTerminate}
+                  className="flex flex-1 items-center justify-center gap-1.5 rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
+                >
+                  End
+                </button>
+              </div>
+            )}
+
+            {isActive && botState !== 'active' && (
               <button
                 onClick={handleTerminate}
-                className="shrink-0 rounded-lg border border-white/20 px-2.5 py-1 text-xs font-medium text-white/70 transition hover:bg-white/10"
+                className="w-full rounded-lg bg-red-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-red-700"
               >
                 End
               </button>
@@ -394,6 +498,42 @@ function duration(start: string, end: string): string {
   return m ? `${h}h ${m}m` : `${h}h`
 }
 
+// ── Schedule helpers ────────────────────────────────────────────────────────
+
+const RECURRENCE_LABELS: Record<string, string> = {
+  daily: 'Every day',
+  weekdays: 'Weekdays',
+  weekly: 'Weekly',
+}
+
+const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const
+
+function formatRecurrence(rec: { type: string; days_of_week?: number[] }): string {
+  if (rec.type === 'weekly' && rec.days_of_week?.length) {
+    return rec.days_of_week.map((d) => SHORT_DAYS[d]).join(', ')
+  }
+  return RECURRENCE_LABELS[rec.type] ?? rec.type
+}
+
+function formatScheduleTime(time: string, timezone: string): string {
+  const [h, m] = time.split(':').map(Number)
+  const period = h >= 12 ? 'PM' : 'AM'
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h
+  const shortTz = timezone.split('/').pop()?.replace(/_/g, ' ') ?? timezone
+  return `${h12}:${String(m).padStart(2, '0')} ${period} (${shortTz})`
+}
+
+function formatNextRun(iso: string): string {
+  const d = new Date(iso)
+  const now = new Date()
+  const diffMs = d.getTime() - now.getTime()
+  if (diffMs < 0) return 'Soon'
+  const diffH = Math.floor(diffMs / 3_600_000)
+  if (diffH < 1) return `in ${Math.max(1, Math.floor(diffMs / 60_000))} min`
+  if (diffH < 24) return `in ${diffH}h`
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
 // ── Component ────────────────────────────────────────────────────────────────
 
 function MeetingsPage() {
@@ -414,12 +554,21 @@ function MeetingsPage() {
   const [savingTitleId, setSavingTitleId] = useState<string | null>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
 
+  // Schedules
+  const [schedules, setSchedules] = useState<MeetingSchedule[]>([])
+  const [schedulesLoading, setSchedulesLoading] = useState(true)
+  const [showScheduleModal, setShowScheduleModal] = useState(false)
+  const [editingSchedule, setEditingSchedule] = useState<MeetingSchedule | null>(null)
+  const [togglingScheduleId, setTogglingScheduleId] = useState<string | null>(null)
+  const [deletingScheduleId, setDeletingScheduleId] = useState<string | null>(null)
+
   useEffect(() => {
     if (!token) {
       navigate('/', { replace: true })
       return
     }
     fetchMeetings()
+    fetchSchedules()
   }, [token, currentOrgId, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
@@ -440,6 +589,59 @@ function MeetingsPage() {
       setError(err instanceof Error ? err.message : 'Failed to load meetings')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function fetchSchedules() {
+    setSchedulesLoading(true)
+    try {
+      const data = await listSchedules(currentOrgId ?? undefined)
+      setSchedules(data)
+    } catch {
+      /* schedules fail silently — non-critical */
+    } finally {
+      setSchedulesLoading(false)
+    }
+  }
+
+  async function handleCreateOrUpdateSchedule(input: CreateScheduleInput) {
+    if (editingSchedule) {
+      const updated = await updateScheduleApi(
+        editingSchedule.schedule_id,
+        input,
+        currentOrgId ?? undefined
+      )
+      setSchedules((prev) => prev.map((s) => (s.schedule_id === updated.schedule_id ? updated : s)))
+    } else {
+      const created = await createSchedule({ ...input, org_id: currentOrgId ?? undefined })
+      setSchedules((prev) => [created, ...prev])
+    }
+  }
+
+  async function handleToggleSchedule(scheduleId: string, enabled: boolean) {
+    setTogglingScheduleId(scheduleId)
+    try {
+      await toggleSchedule(scheduleId, enabled, currentOrgId ?? undefined)
+      setSchedules((prev) =>
+        prev.map((s) => (s.schedule_id === scheduleId ? { ...s, enabled } : s))
+      )
+    } catch {
+      /* ignore */
+    } finally {
+      setTogglingScheduleId(null)
+    }
+  }
+
+  async function handleDeleteSchedule(scheduleId: string) {
+    if (!confirm('Delete this schedule? Lira will stop joining this meeting.')) return
+    setDeletingScheduleId(scheduleId)
+    try {
+      await deleteSchedule(scheduleId, currentOrgId ?? undefined)
+      setSchedules((prev) => prev.filter((s) => s.schedule_id !== scheduleId))
+    } catch {
+      /* ignore */
+    } finally {
+      setDeletingScheduleId(null)
     }
   }
 
@@ -530,41 +732,199 @@ function MeetingsPage() {
             </p>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Meetings</h1>
           </div>
-          {meetings.length > 1 && (
-            <div className="flex items-center gap-2">
-              <button
-                onClick={toggleSelectAll}
-                className="rounded-xl border border-white/60 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:shadow-md"
-              >
-                {selectedIds.size === meetings.length ? 'Deselect all' : 'Select all'}
-              </button>
-              {selectedIds.size > 0 && (
+          <div className="flex items-center gap-2">
+            <a
+              href="https://docs.liraintelligence.com/getting-started/navigation#meetings"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+            >
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              Docs
+            </a>
+            {meetings.length > 1 && (
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={handleBulkDelete}
-                  disabled={bulkDeleting}
-                  className="flex items-center gap-1.5 rounded-xl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+                  onClick={toggleSelectAll}
+                  className="rounded-xl border border-white/60 bg-white px-3 py-1.5 text-xs font-medium text-gray-600 shadow-sm transition hover:shadow-md"
                 >
-                  {bulkDeleting ? (
-                    <img
-                      src="/lira_black.png"
-                      alt="Loading"
-                      className="h-3.5 w-3.5 animate-spin opacity-50"
-                      style={{ animationDuration: '1.2s' }}
-                    />
-                  ) : (
-                    <TrashIcon className="h-3.5 w-3.5" />
-                  )}
-                  Delete {selectedIds.size}
+                  {selectedIds.size === meetings.length ? 'Deselect all' : 'Select all'}
                 </button>
-              )}
-            </div>
-          )}
+                {selectedIds.size > 0 && (
+                  <button
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleting}
+                    className="flex items-center gap-1.5 rounded-xl bg-red-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-red-600 disabled:opacity-50"
+                  >
+                    {bulkDeleting ? (
+                      <img
+                        src="/lira_black.png"
+                        alt="Loading"
+                        className="h-3.5 w-3.5 animate-spin opacity-50"
+                        style={{ animationDuration: '1.2s' }}
+                      />
+                    ) : (
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    )}
+                    Delete {selectedIds.size}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* ── Dark deploy hero ── */}
         <div className="mb-5">
           <CompactInviteBar />
         </div>
+
+        {/* ── Recurring Schedules ── */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <CalendarDaysIcon className="h-4.5 w-4.5 text-[#3730a3]" />
+              <h2 className="text-sm font-bold text-gray-900">Recurring Schedules</h2>
+              {schedules.length > 0 && (
+                <span className="rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-[10px] font-bold text-[#3730a3]">
+                  {schedules.length}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setEditingSchedule(null)
+                setShowScheduleModal(true)
+              }}
+              className="flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-[#312e81]"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              New Schedule
+            </button>
+          </div>
+
+          {schedulesLoading ? (
+            <div className="flex items-center justify-center rounded-2xl border border-white/60 bg-white py-8">
+              <img
+                src="/lira_black.png"
+                alt="Loading"
+                className="h-5 w-5 animate-spin opacity-30"
+                style={{ animationDuration: '1.2s' }}
+              />
+            </div>
+          ) : schedules.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white/60 py-8 text-center">
+              <CalendarDaysIcon className="mx-auto mb-2 h-8 w-8 text-gray-300" />
+              <p className="text-sm font-medium text-gray-400">No recurring schedules yet</p>
+              <p className="mt-1 text-xs text-gray-300">
+                Create one to have Lira auto-join your meetings
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {schedules.map((s) => (
+                <div
+                  key={s.schedule_id}
+                  className={cn(
+                    'group relative flex items-center gap-3 overflow-hidden rounded-2xl border border-white/60 bg-white px-4 py-3.5 shadow-sm transition hover:border-[#3730a3]/30 hover:shadow-md',
+                    deletingScheduleId === s.schedule_id && 'pointer-events-none opacity-50',
+                    !s.enabled && 'opacity-60'
+                  )}
+                >
+                  {/* Left accent */}
+                  <div
+                    className={cn(
+                      'absolute left-0 top-0 h-full w-0.5',
+                      s.enabled ? 'bg-[#3730a3]' : 'bg-gray-200'
+                    )}
+                  />
+
+                  {/* Content */}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <h3 className="truncate text-sm font-semibold text-gray-900">{s.name}</h3>
+                      {s.meeting_type && <MeetingTypeBadge type={s.meeting_type} />}
+                    </div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                      <span className="flex items-center gap-1 text-xs text-gray-400">
+                        <ClockIcon className="h-3 w-3" />
+                        {formatScheduleTime(s.time, s.timezone)}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {formatRecurrence(s.recurrence)}
+                      </span>
+                      {s.next_run_at && s.enabled && (
+                        <span className="text-xs text-emerald-500 font-medium">
+                          Next: {formatNextRun(s.next_run_at)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {/* Toggle switch */}
+                    <button
+                      onClick={() => handleToggleSchedule(s.schedule_id, !s.enabled)}
+                      disabled={togglingScheduleId === s.schedule_id}
+                      className={cn(
+                        'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors',
+                        s.enabled ? 'bg-[#3730a3]' : 'bg-gray-200'
+                      )}
+                      title={s.enabled ? 'Disable' : 'Enable'}
+                    >
+                      <span
+                        className={cn(
+                          'inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform',
+                          s.enabled ? 'translate-x-[18px]' : 'translate-x-[3px]'
+                        )}
+                      />
+                    </button>
+                    {/* Edit */}
+                    <button
+                      onClick={() => {
+                        setEditingSchedule(s)
+                        setShowScheduleModal(true)
+                      }}
+                      className="rounded-lg p-1.5 text-gray-300 transition hover:bg-gray-100 hover:text-gray-600 opacity-0 group-hover:opacity-100"
+                      title="Edit schedule"
+                    >
+                      <PencilIcon className="h-3.5 w-3.5" />
+                    </button>
+                    {/* Delete */}
+                    <button
+                      onClick={() => handleDeleteSchedule(s.schedule_id)}
+                      className="rounded-lg p-1.5 text-gray-300 transition hover:bg-red-50 hover:text-red-500 opacity-0 group-hover:opacity-100"
+                      title="Delete schedule"
+                    >
+                      {deletingScheduleId === s.schedule_id ? (
+                        <img
+                          src="/lira_black.png"
+                          alt="Loading"
+                          className="h-3.5 w-3.5 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
+                      ) : (
+                        <TrashIcon className="h-3.5 w-3.5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── Schedule Modal ── */}
+        <ScheduleModal
+          open={showScheduleModal}
+          onClose={() => {
+            setShowScheduleModal(false)
+            setEditingSchedule(null)
+          }}
+          onSave={handleCreateOrUpdateSchedule}
+          editing={editingSchedule}
+        />
 
         {/* ── Stat strip ── */}
         {!loading && !error && (
