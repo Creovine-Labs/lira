@@ -31,6 +31,7 @@ import {
   ProductInterviewsPage,
   ProductCustomerSupportPage,
   ResourcesPage,
+  TutorialsPage,
   BlogPage,
   BlogPostPage,
   PrivacyPolicyPage,
@@ -96,6 +97,7 @@ function App() {
         <Route path="/products/interviews" element={<ProductInterviewsPage />} />
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/tutorials" element={<TutorialsPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />

@@ -9,7 +9,6 @@ import {
   BookOpenIcon,
   CheckBadgeIcon,
   ChevronDownIcon,
-  CodeBracketIcon,
   ComputerDesktopIcon,
   DocumentTextIcon,
   HeartIcon,
@@ -67,10 +66,13 @@ interface ResourceItem {
 }
 
 const RESOURCES: ResourceItem[] = [
-  { Icon: BookOpenIcon, label: 'How-to Guides', href: '/resources#guides' },
-  { Icon: AcademicCapIcon, label: 'Tutorials', href: '/resources#tutorials' },
+  {
+    Icon: BookOpenIcon,
+    label: 'How-to Guides',
+    href: 'https://docs.liraintelligence.com/getting-started/navigation',
+  },
+  { Icon: AcademicCapIcon, label: 'Tutorials', href: '/tutorials' },
   { Icon: DocumentTextIcon, label: 'Documentation', href: 'https://docs.liraintelligence.com' },
-  { Icon: CodeBracketIcon, label: 'API Reference', href: '/resources#api' },
 ]
 
 // ─── Component ────────────────────────────────────────────────────────────────
