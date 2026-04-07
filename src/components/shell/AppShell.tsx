@@ -474,21 +474,33 @@ function NotificationBell() {
   useEffect(() => {
     if (!token || !currentOrgId) return
     function refresh() {
-      // 1. Pull backend assignment notifications for this user
+      // 1. Pull backend notifications for this user (assignments, task created, needs_info)
       listMyNotifications()
         .then((notifs) => {
           notifs
             .filter((n) => !n.read)
-            .forEach((n) =>
+            .forEach((n) => {
+              let subtitle = `Assigned to you by ${n.assigned_by}`
+              let link = `/org/tasks/${n.task_id}`
+              if (n.kind === 'lira_needs_info') {
+                subtitle = 'Lira needs more information to complete this task'
+                link = `/org/tasks/${n.task_id}`
+              } else if (n.kind === 'task_created') {
+                subtitle = n.message || 'New tasks extracted from meeting'
+                link = '/org/tasks'
+              } else if (n.kind === 'integration_required') {
+                subtitle = n.message || 'Integration required'
+                link = `/org/tasks/${n.task_id}`
+              }
               addNotif({
-                id: `task-${n.task_id}`,
+                id: `notif-${n.notif_id}`,
                 kind: 'task',
                 title: n.task_title,
-                subtitle: `Assigned to you by ${n.assigned_by}`,
+                subtitle,
                 orgId: n.org_id,
-                link: `/org/tasks/${n.task_id}`,
+                link,
               })
-            )
+            })
         })
         .catch(() => {})
 
@@ -515,7 +527,7 @@ function NotificationBell() {
       })
     }
     refresh()
-    const id = setInterval(refresh, 60_000)
+    const id = setInterval(refresh, 15_000)
     return () => clearInterval(id)
   }, [token, currentOrgId, userEmail, userName, addNotif])
 
