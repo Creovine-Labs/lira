@@ -24,11 +24,13 @@ import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   getMeeting,
   getMeetingSummary,
+  getMeetingChat,
   chatAboutMeeting,
   updateMeeting,
   listTasks,
   type Meeting,
   type Message,
+  type ChatMessage,
   type TaskRecord,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
@@ -130,7 +132,7 @@ const MEETING_TYPE_COLORS: Record<string, string> = {
 function MeetingDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
-  const { token } = useAuthStore()
+  const { token, userId, userName, userPicture } = useAuthStore()
   const { currentOrgId } = useOrgStore()
 
   const [meeting, setMeeting] = useState<Meeting | null>(null)
@@ -162,8 +164,8 @@ function MeetingDetailPage() {
   const [tasksLoading, setTasksLoading] = useState(false)
   const [showTasks, setShowTasks] = useState(true)
 
-  // Follow-up chat
-  const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai'; text: string }[]>([])
+  // Follow-up chat (org-shared, persisted)
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
@@ -175,6 +177,10 @@ function MeetingDetailPage() {
     }
     if (!id) return
     fetchMeeting()
+    // Load persisted Q&A chat history
+    getMeetingChat(id)
+      .then(({ messages }) => setChatMessages(messages))
+      .catch(() => {})
   }, [token, id, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function fetchMeeting() {
@@ -336,20 +342,38 @@ function MeetingDetailPage() {
     const trimmed = chatInput.trim()
     if (!trimmed || chatLoading || !id) return
     setChatInput('')
-    setChatMessages((prev) => [...prev, { role: 'user', text: trimmed }])
+    // Optimistically add local user message so the UI feels instant
+    const optimisticUserMsg: ChatMessage = {
+      id: `optimistic-${Date.now()}`,
+      role: 'user',
+      text: trimmed,
+      user_id: userId ?? undefined,
+      user_name: userName ?? undefined,
+      user_picture: userPicture ?? undefined,
+      created_at: new Date().toISOString(),
+    }
+    setChatMessages((prev) => [...prev, optimisticUserMsg])
     setChatLoading(true)
     try {
-      const { answer } = await chatAboutMeeting(id, trimmed)
-      setChatMessages((prev) => [...prev, { role: 'ai', text: answer }])
-    } catch {
+      const { user_message, ai_message } = await chatAboutMeeting(id, trimmed)
+      // Replace optimistic message with server-returned versions (have real IDs)
       setChatMessages((prev) => [
-        ...prev,
-        { role: 'ai', text: "Sorry, I couldn't answer that. Please try again." },
+        ...prev.filter((m) => m.id !== optimisticUserMsg.id),
+        user_message,
+        ai_message,
       ])
+    } catch {
+      const errMsg: ChatMessage = {
+        id: `err-${Date.now()}`,
+        role: 'ai',
+        text: "Sorry, I couldn't answer that. Please try again.",
+        created_at: new Date().toISOString(),
+      }
+      setChatMessages((prev) => [...prev, errMsg])
     } finally {
       setChatLoading(false)
     }
-  }, [chatInput, chatLoading, id])
+  }, [chatInput, chatLoading, id, userId, userName, userPicture])
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -690,70 +714,99 @@ function MeetingDetailPage() {
           </div>
         </div>
 
-        {/* Follow-up chat */}
-        {summary && (
+        {/* Follow-up chat — org-shared Q&A thread */}
+        {(summary || chatMessages.length > 0) && (
           <div className="rounded-xl border bg-card">
-            <div className="px-5 py-4 border-b">
-              <h3 className="font-semibold text-foreground">Ask about this meeting</h3>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Ask any question — Lira will answer based on the full transcript.
-              </p>
+            <div className="px-5 py-4 border-b flex items-center gap-2.5">
+              <LiraLogo size="sm" />
+              <div>
+                <h3 className="font-semibold text-foreground">Ask about this meeting</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Lira answers based on the full transcript · visible to everyone in your org
+                </p>
+              </div>
             </div>
 
             {chatMessages.length > 0 && (
-              <div className="px-5 py-3 space-y-3 max-h-[400px] overflow-y-auto">
-                {chatMessages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={cn(
-                      'flex gap-2.5',
-                      msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                    )}
-                  >
+              <div className="px-5 py-4 space-y-4 max-h-[480px] overflow-y-auto">
+                {chatMessages.map((msg) => {
+                  const isAi = msg.role === 'ai'
+                  return (
                     <div
-                      className={cn(
-                        'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs',
-                        msg.role === 'ai'
-                          ? 'bg-violet-500/20 text-violet-400'
-                          : 'bg-slate-500/20 text-slate-400'
-                      )}
+                      key={msg.id}
+                      className={cn('flex gap-3', isAi ? 'flex-row' : 'flex-row-reverse')}
                     >
-                      {msg.role === 'ai' ? (
-                        <CpuChipIcon className="h-3 w-3" />
-                      ) : (
-                        <UserIcon className="h-3 w-3" />
-                      )}
-                    </div>
-                    <div
-                      className={cn(
-                        'max-w-[80%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed',
-                        msg.role === 'ai'
-                          ? 'rounded-tl-md bg-violet-500/10 text-foreground'
-                          : 'rounded-tr-md bg-accent text-foreground'
-                      )}
-                    >
-                      {msg.role === 'ai' ? (
-                        <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:mb-1 prose-li:leading-relaxed">
-                          <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      {/* Avatar */}
+                      {isAi ? (
+                        <div className="shrink-0 mt-0.5">
+                          <LiraLogo size="sm" />
                         </div>
                       ) : (
-                        <p>{msg.text}</p>
+                        <div className="shrink-0 mt-0.5">
+                          {msg.user_picture ? (
+                            <img
+                              src={msg.user_picture}
+                              alt={msg.user_name ?? 'User'}
+                              className="h-7 w-7 rounded-full object-cover ring-1 ring-border"
+                            />
+                          ) : (
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-700 text-xs font-semibold text-slate-600 dark:text-slate-300 ring-1 ring-border">
+                              {(msg.user_name ?? 'U').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                        </div>
                       )}
+
+                      <div
+                        className={cn(
+                          'flex flex-col max-w-[78%]',
+                          isAi ? 'items-start' : 'items-end'
+                        )}
+                      >
+                        {/* Sender label */}
+                        <span className="mb-1 text-[11px] font-medium text-muted-foreground">
+                          {isAi ? 'Lira' : (msg.user_name ?? 'You')}
+                        </span>
+
+                        {/* Bubble */}
+                        <div
+                          className={cn(
+                            'rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed',
+                            isAi
+                              ? 'rounded-tl-md bg-violet-500/10 text-foreground'
+                              : 'rounded-tr-md bg-accent text-foreground'
+                          )}
+                        >
+                          {isAi ? (
+                            <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:mb-1 prose-li:leading-relaxed">
+                              <ReactMarkdown>{msg.text}</ReactMarkdown>
+                            </div>
+                          ) : (
+                            <p>{msg.text}</p>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
+
                 {chatLoading && (
-                  <div className="flex gap-2.5">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-violet-500/20 text-violet-400 text-xs">
-                      <CpuChipIcon className="h-3 w-3" />
+                  <div className="flex gap-3">
+                    <div className="shrink-0 mt-0.5">
+                      <LiraLogo size="sm" />
                     </div>
-                    <div className="rounded-2xl rounded-tl-md bg-violet-500/10 px-3.5 py-2">
-                      <img
-                        src="/lira_black.png"
-                        alt="Thinking"
-                        className="h-4 w-4 animate-spin opacity-50"
-                        style={{ animationDuration: '1.2s' }}
-                      />
+                    <div className="flex flex-col items-start max-w-[78%]">
+                      <span className="mb-1 text-[11px] font-medium text-muted-foreground">
+                        Lira
+                      </span>
+                      <div className="rounded-2xl rounded-tl-md bg-violet-500/10 px-3.5 py-2.5">
+                        <img
+                          src="/lira_black.png"
+                          alt="Thinking"
+                          className="h-4 w-4 animate-spin opacity-50"
+                          style={{ animationDuration: '1.2s' }}
+                        />
+                      </div>
                     </div>
                   </div>
                 )}

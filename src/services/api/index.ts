@@ -37,6 +37,18 @@ export interface Meeting {
   summary_generated_at?: string
   meeting_type?: MeetingType
   meeting_topic?: string
+  chat_messages?: ChatMessage[]
+}
+
+/** A single message in the post-meeting Q&A thread (org-shared). */
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'ai'
+  text: string
+  user_id?: string
+  user_name?: string
+  user_picture?: string
+  created_at: string
 }
 
 export interface MeetingSummary {
@@ -267,11 +279,18 @@ export async function getMeetingSummary(
   return apiFetch<MeetingSummary>(`/lira/v1/meetings/${id}/summary?${params}`)
 }
 
-export async function chatAboutMeeting(id: string, message: string): Promise<{ answer: string }> {
-  return apiFetch<{ answer: string }>(`/lira/v1/meetings/${encodeURIComponent(id)}/chat`, {
-    method: 'POST',
-    body: JSON.stringify({ message }),
-  })
+export async function getMeetingChat(id: string): Promise<{ messages: ChatMessage[] }> {
+  return apiFetch<{ messages: ChatMessage[] }>(`/lira/v1/meetings/${encodeURIComponent(id)}/chat`)
+}
+
+export async function chatAboutMeeting(
+  id: string,
+  message: string
+): Promise<{ answer: string; user_message: ChatMessage; ai_message: ChatMessage }> {
+  return apiFetch<{ answer: string; user_message: ChatMessage; ai_message: ChatMessage }>(
+    `/lira/v1/meetings/${encodeURIComponent(id)}/chat`,
+    { method: 'POST', body: JSON.stringify({ message }) }
+  )
 }
 
 export async function updateMeetingSettings(
@@ -1002,11 +1021,12 @@ export async function getMeetingTasks(
 export interface UserBackendNotif {
   notif_id: string
   user_id: string
-  kind: 'task_assigned'
+  kind: 'task_assigned' | 'integration_required' | 'task_created' | 'lira_needs_info'
   task_id: string
   task_title: string
   org_id: string
   assigned_by: string
+  message?: string
   created_at: string
   read: boolean
 }
@@ -2936,6 +2956,52 @@ export async function adminPromoteUser(userId: string): Promise<AdminUser> {
 
 export async function adminDemoteUser(userId: string): Promise<AdminUser> {
   return apiFetch(`/v1/platform/admin/users/${encodeURIComponent(userId)}/demote`, {
+    method: 'POST',
+  })
+}
+
+// ── Calendar Sync ─────────────────────────────────────────────────────────────
+
+export interface CalendarSyncSettings {
+  enabled: boolean
+  join_before_minutes: number
+  platforms: ('google_meet' | 'zoom' | 'teams')[]
+  default_meeting_settings?: {
+    personality?: string
+    ai_name?: string
+    voice_id?: string
+    wake_word_enabled?: boolean
+  }
+}
+
+export async function getCalendarSync(
+  orgId: string
+): Promise<{ calendar_sync: CalendarSyncSettings }> {
+  return apiFetch(`/v1/orgs/${encodeURIComponent(orgId)}/calendar-sync`)
+}
+
+export async function updateCalendarSync(
+  orgId: string,
+  settings: Partial<CalendarSyncSettings>
+): Promise<{ calendar_sync: CalendarSyncSettings }> {
+  return apiFetch(`/v1/orgs/${encodeURIComponent(orgId)}/calendar-sync`, {
+    method: 'PATCH',
+    body: JSON.stringify(settings),
+  })
+}
+
+export async function enableCalendarSync(
+  orgId: string
+): Promise<{ calendar_sync: CalendarSyncSettings }> {
+  return apiFetch(`/v1/orgs/${encodeURIComponent(orgId)}/calendar-sync/enable`, {
+    method: 'POST',
+  })
+}
+
+export async function disableCalendarSync(
+  orgId: string
+): Promise<{ calendar_sync: CalendarSyncSettings }> {
+  return apiFetch(`/v1/orgs/${encodeURIComponent(orgId)}/calendar-sync/disable`, {
     method: 'POST',
   })
 }
