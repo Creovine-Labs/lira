@@ -46,6 +46,8 @@ function OrgMembersPage() {
   const [transferTarget, setTransferTarget] = useState<OrgMembership | null>(null)
   const [transferring, setTransferring] = useState(false)
   const [leavingOrg, setLeavingOrg] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<OrgMembership | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   const loadData = useCallback(async () => {
     if (!currentOrgId) return
@@ -298,7 +300,7 @@ function OrgMembersPage() {
                       </select>
                     )}
                     <button
-                      onClick={() => handleRemove(m.user_id)}
+                      onClick={() => setRemoveTarget(m)}
                       className="rounded-xl p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
                       title="Remove member"
                     >
@@ -344,6 +346,46 @@ function OrgMembersPage() {
               You’re the owner of this organization. Transfer ownership to another member before
               leaving.
             </p>
+          </div>
+        )}
+
+        {/* Remove Member Confirmation Modal */}
+        {removeTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-xl">
+              <h3 className="text-base font-bold text-gray-900">Remove Member?</h3>
+              <p className="mt-2 text-sm text-gray-500">
+                Remove{' '}
+                <span className="font-semibold text-gray-900">
+                  {removeTarget.name ?? removeTarget.email ?? removeTarget.user_id}
+                </span>{' '}
+                from this organization? They will need a new invite code to rejoin.
+              </p>
+              <div className="mt-5 flex justify-end gap-3">
+                <button
+                  onClick={() => setRemoveTarget(null)}
+                  disabled={removing}
+                  className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    setRemoving(true)
+                    try {
+                      await handleRemove(removeTarget.user_id)
+                      setRemoveTarget(null)
+                    } finally {
+                      setRemoving(false)
+                    }
+                  }}
+                  disabled={removing}
+                  className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+                >
+                  {removing ? 'Removing…' : 'Remove member'}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 

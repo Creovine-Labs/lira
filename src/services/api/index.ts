@@ -679,6 +679,38 @@ export async function updateMyPicture(picture: string): Promise<void> {
   })
 }
 
+export async function updateMyName(name: string): Promise<void> {
+  await apiFetch('/v1/auth/me/name', {
+    method: 'PATCH',
+    body: JSON.stringify({ name }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+export async function updateMyEmail(newEmail: string, password: string): Promise<void> {
+  await apiFetch('/v1/auth/me/email', {
+    method: 'PATCH',
+    body: JSON.stringify({ new_email: newEmail, password }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiFetch('/v1/auth/me/password', {
+    method: 'PATCH',
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+export async function deleteAccount(password: string): Promise<void> {
+  await apiFetch('/v1/auth/me', {
+    method: 'DELETE',
+    body: JSON.stringify({ password }),
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
 export async function updateMemberRole(
   orgId: string,
   userId: string,

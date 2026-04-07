@@ -1,19 +1,38 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
   BuildingOffice2Icon,
+  CalendarDaysIcon,
   CreditCardIcon,
+  EnvelopeIcon,
+  ExclamationTriangleIcon,
   LockClosedIcon,
   MicrophoneIcon,
   ShieldCheckIcon,
   SparklesIcon,
+  UserCircleIcon,
 } from '@heroicons/react/24/outline'
-import { useUserPrefsStore, type VoiceId, type Personality } from '@/app/store'
+import { toast } from 'sonner'
+import {
+  useUserPrefsStore,
+  useAuthStore,
+  useOrgStore,
+  type VoiceId,
+  type Personality,
+} from '@/app/store'
 import { Button } from '@/components/common'
 import { cn } from '@/lib'
+import {
+  updateMyName,
+  updateMyEmail,
+  updateMyPicture,
+  changePassword,
+  deleteAccount,
+  leaveOrganization,
+} from '@/services/api'
 import { OrgSettingsPage } from './OrgSettingsPage'
-
-// ── Types ────────────────────────────────────────────────────────────────────
+import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 
 interface VoiceOption {
   id: VoiceId
@@ -264,19 +283,439 @@ function AiConfigSection() {
   )
 }
 
+// ── Account Section ────────────────────────────────────────────────────────────
+
+function AccountSection() {
+  const navigate = useNavigate()
+  const {
+    userName,
+    userEmail,
+    userPicture,
+    userId,
+    setUserName,
+    setUserEmail,
+    setUserPicture,
+    clearCredentials,
+  } = useAuthStore()
+  const { organizations, removeOrganization } = useOrgStore()
+
+  // Profile
+  const [name, setName] = useState(userName ?? '')
+  const [savingName, setSavingName] = useState(false)
+
+  // Picture
+  const [picture, setPicture] = useState(userPicture ?? '')
+  const [savingPicture, setSavingPicture] = useState(false)
+
+  // Email change
+  const [newEmail, setNewEmail] = useState('')
+  const [emailPassword, setEmailPassword] = useState('')
+  const [savingEmail, setSavingEmail] = useState(false)
+
+  // Password change
+  const [currentPassword, setCurrentPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
+
+  // Leave org
+  const [leavingOrgId, setLeavingOrgId] = useState<string | null>(null)
+
+  // Delete account
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deletePassword, setDeletePassword] = useState('')
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleSaveName() {
+    const trimmed = name.trim()
+    if (!trimmed || trimmed === (userName ?? '')) return
+    setSavingName(true)
+    try {
+      await updateMyName(trimmed)
+      setUserName(trimmed)
+      toast.success('Name updated')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update name')
+    } finally {
+      setSavingName(false)
+    }
+  }
+
+  async function handleSavePicture() {
+    const trimmed = picture.trim()
+    if (!trimmed || trimmed === (userPicture ?? '')) return
+    setSavingPicture(true)
+    try {
+      await updateMyPicture(trimmed)
+      setUserPicture(trimmed)
+      toast.success('Profile picture updated')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update picture')
+    } finally {
+      setSavingPicture(false)
+    }
+  }
+
+  async function handleChangeEmail() {
+    if (!newEmail.trim() || !emailPassword) return
+    setSavingEmail(true)
+    try {
+      await updateMyEmail(newEmail.trim(), emailPassword)
+      setUserEmail(newEmail.trim())
+      setNewEmail('')
+      setEmailPassword('')
+      toast.success('Email updated. Check your inbox to verify the new address.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update email')
+    } finally {
+      setSavingEmail(false)
+    }
+  }
+
+  async function handleChangePassword() {
+    if (!currentPassword || !newPassword || !confirmPassword) return
+    if (newPassword !== confirmPassword) {
+      toast.error('New passwords do not match')
+      return
+    }
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters')
+      return
+    }
+    setSavingPassword(true)
+    try {
+      await changePassword(currentPassword, newPassword)
+      setCurrentPassword('')
+      setNewPassword('')
+      setConfirmPassword('')
+      toast.success('Password changed')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to change password')
+    } finally {
+      setSavingPassword(false)
+    }
+  }
+
+  async function handleLeaveOrg(orgId: string) {
+    try {
+      await leaveOrganization(orgId)
+      removeOrganization(orgId)
+      toast.success('Left organization')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to leave organization')
+    } finally {
+      setLeavingOrgId(null)
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (!deletePassword) return
+    setDeleting(true)
+    try {
+      await deleteAccount(deletePassword)
+      clearCredentials()
+      navigate('/login')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete account')
+      setDeleting(false)
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Profile */}
+      <Section icon={UserCircleIcon} title="Profile">
+        <div className="space-y-4">
+          {/* Avatar preview */}
+          <div className="flex items-center gap-4">
+            {userPicture ? (
+              <img
+                src={userPicture}
+                alt={userName ?? ''}
+                className="h-16 w-16 rounded-full object-cover ring-2 ring-gray-100"
+                referrerPolicy="no-referrer"
+              />
+            ) : (
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#1c1c1e] to-[#0a0a0a] text-lg font-bold text-white">
+                {(userName ?? userEmail ?? 'U').slice(0, 2).toUpperCase()}
+              </div>
+            )}
+            <div>
+              <p className="text-sm font-semibold text-gray-900">{userName ?? '—'}</p>
+              <p className="text-xs text-gray-400">{userEmail ?? '—'}</p>
+            </div>
+          </div>
+
+          {/* Display name */}
+          <div>
+            <label
+              htmlFor="account-name"
+              className="mb-1.5 block text-sm font-medium text-foreground"
+            >
+              Display Name
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="account-name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                maxLength={60}
+                className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="Your name"
+              />
+              <Button
+                size="sm"
+                onClick={handleSaveName}
+                disabled={savingName || !name.trim() || name.trim() === (userName ?? '')}
+                className="gap-1.5 rounded-xl"
+              >
+                <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
+                {savingName ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Profile picture URL */}
+          <div>
+            <label
+              htmlFor="account-picture"
+              className="mb-1.5 block text-sm font-medium text-foreground"
+            >
+              Profile Picture URL
+            </label>
+            <div className="flex gap-2">
+              <input
+                id="account-picture"
+                type="url"
+                value={picture}
+                onChange={(e) => setPicture(e.target.value)}
+                className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="https://example.com/avatar.png"
+              />
+              <Button
+                size="sm"
+                onClick={handleSavePicture}
+                disabled={
+                  savingPicture || !picture.trim() || picture.trim() === (userPicture ?? '')
+                }
+                className="gap-1.5 rounded-xl"
+              >
+                <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
+                {savingPicture ? 'Saving…' : 'Save'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* Security */}
+      <Section icon={EnvelopeIcon} title="Security">
+        <div className="space-y-5">
+          {/* Change email */}
+          <div>
+            <p className="mb-1.5 text-sm font-medium text-foreground">Change Email</p>
+            <p className="mb-3 text-xs text-gray-400">
+              Current: <span className="font-medium text-gray-600">{userEmail ?? '—'}</span>
+            </p>
+            <div className="space-y-2">
+              <input
+                type="email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="New email address"
+              />
+              <input
+                type="password"
+                value={emailPassword}
+                onChange={(e) => setEmailPassword(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="Confirm with your password"
+              />
+              <Button
+                size="sm"
+                onClick={handleChangeEmail}
+                disabled={savingEmail || !newEmail.trim() || !emailPassword}
+                className="gap-1.5 rounded-xl"
+              >
+                <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
+                {savingEmail ? 'Updating…' : 'Update email'}
+              </Button>
+            </div>
+          </div>
+
+          {/* Change password */}
+          <div className="border-t border-gray-100 pt-5">
+            <p className="mb-3 text-sm font-medium text-foreground">Change Password</p>
+            <div className="space-y-2">
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="Current password"
+              />
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="New password (min 8 characters)"
+              />
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                placeholder="Confirm new password"
+              />
+              <Button
+                size="sm"
+                onClick={handleChangePassword}
+                disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                className="gap-1.5 rounded-xl"
+              >
+                <LockClosedIcon className="h-3.5 w-3.5" />
+                {savingPassword ? 'Updating…' : 'Change password'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Section>
+
+      {/* Organizations */}
+      {organizations.length > 0 && (
+        <Section icon={BuildingOffice2Icon} title="Organizations">
+          <div className="space-y-2">
+            {organizations.map((org) => {
+              const isOwner = org.owner_id === userId
+              return (
+                <div
+                  key={org.org_id}
+                  className="flex items-center justify-between rounded-xl border border-gray-100 px-4 py-3"
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{org.name}</p>
+                    <p className="text-xs text-gray-400">{isOwner ? 'Owner' : 'Member'}</p>
+                  </div>
+                  {!isOwner && (
+                    <button
+                      onClick={() => setLeavingOrgId(org.org_id)}
+                      className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-500 transition hover:bg-red-50"
+                    >
+                      Leave
+                    </button>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        </Section>
+      )}
+
+      {/* Danger Zone */}
+      <Section icon={ExclamationTriangleIcon} title="Danger Zone">
+        <p className="mb-4 text-sm text-gray-500">
+          Permanently delete your account and all associated data. This action cannot be undone.
+        </p>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="rounded-xl border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50"
+        >
+          Delete account
+        </button>
+      </Section>
+
+      {/* Leave Org Confirmation Modal */}
+      {leavingOrgId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-xl">
+            <h3 className="text-base font-bold text-gray-900">Leave Organization?</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              You will be removed from{' '}
+              <span className="font-semibold text-gray-900">
+                {organizations.find((o) => o.org_id === leavingOrgId)?.name ?? leavingOrgId}
+              </span>{' '}
+              immediately. You will need a new invite code to rejoin.
+            </p>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => setLeavingOrgId(null)}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleLeaveOrg(leavingOrgId)}
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-xl">
+            <h3 className="text-base font-bold text-red-600">Delete Account</h3>
+            <p className="mt-2 text-sm text-gray-500">
+              This will permanently delete your account, remove you from all organizations, and
+              erase all your data. This cannot be undone.
+            </p>
+            <div className="mt-4">
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="w-full rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-red-400 focus:ring-2 focus:ring-red-400/20"
+                placeholder="Enter your password to confirm"
+              />
+            </div>
+            <div className="mt-5 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false)
+                  setDeletePassword('')
+                }}
+                disabled={deleting}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting || !deletePassword}
+                className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-red-600 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Delete my account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── Settings tabs ─────────────────────────────────────────────────────────────────
 
-type SettingsTab = 'ai' | 'organization' | 'subscription' | 'billing'
+type SettingsTab = 'account' | 'ai' | 'organization' | 'calendar' | 'subscription' | 'billing'
 
 const SETTINGS_TABS = [
+  { id: 'account' as SettingsTab, icon: UserCircleIcon, label: 'Account' },
   { id: 'ai' as SettingsTab, icon: SparklesIcon, label: 'Lira Configuration' },
   { id: 'organization' as SettingsTab, icon: BuildingOffice2Icon, label: 'Organization' },
+  { id: 'calendar' as SettingsTab, icon: CalendarDaysIcon, label: 'Calendar Sync' },
   { id: 'subscription' as SettingsTab, icon: ShieldCheckIcon, label: 'Subscription' },
   { id: 'billing' as SettingsTab, icon: CreditCardIcon, label: 'Billing' },
 ]
 
 function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('ai')
+  const [activeTab, setActiveTab] = useState<SettingsTab>('account')
 
   return (
     <div className="flex flex-col h-full">
@@ -313,8 +752,10 @@ function SettingsPage() {
 
         {/* Main content */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
+          {activeTab === 'account' && <AccountSection />}
           {activeTab === 'ai' && <AiConfigSection />}
           {activeTab === 'organization' && <OrgSettingsPage />}
+          {activeTab === 'calendar' && <CalendarSyncSection />}
           {activeTab === 'subscription' && (
             <Section icon={ShieldCheckIcon} title="Subscription" disabled>
               <LockedRow
