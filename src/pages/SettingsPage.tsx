@@ -304,8 +304,9 @@ function AccountSection() {
   const [savingName, setSavingName] = useState(false)
 
   // Picture
-  const [picture, setPicture] = useState(userPicture ?? '')
   const [savingPicture, setSavingPicture] = useState(false)
+  const [picturePreview, setPicturePreview] = useState<string | null>(null)
+  const [pictureFile, setPictureFile] = useState<File | null>(null)
 
   // Email change
   const [newEmail, setNewEmail] = useState('')
@@ -341,13 +342,33 @@ function AccountSection() {
     }
   }
 
+  function handlePictureFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file')
+      return
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Image must be under 2 MB')
+      return
+    }
+    setPictureFile(file)
+    const reader = new FileReader()
+    reader.onload = (ev) => setPicturePreview(ev.target?.result as string)
+    reader.readAsDataURL(file)
+  }
+
   async function handleSavePicture() {
-    const trimmed = picture.trim()
-    if (!trimmed || trimmed === (userPicture ?? '')) return
+    if (!pictureFile && !picturePreview) return
+    const dataUri = picturePreview
+    if (!dataUri) return
     setSavingPicture(true)
     try {
-      await updateMyPicture(trimmed)
-      setUserPicture(trimmed)
+      await updateMyPicture(dataUri)
+      setUserPicture(dataUri)
+      setPictureFile(null)
+      setPicturePreview(null)
       toast.success('Profile picture updated')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to update picture')
@@ -426,23 +447,64 @@ function AccountSection() {
       {/* Profile */}
       <Section icon={UserCircleIcon} title="Profile">
         <div className="space-y-4">
-          {/* Avatar preview */}
+          {/* Avatar with click-to-upload */}
           <div className="flex items-center gap-4">
-            {userPicture ? (
-              <img
-                src={userPicture}
-                alt={userName ?? ''}
-                className="h-16 w-16 rounded-full object-cover ring-2 ring-gray-100"
-                referrerPolicy="no-referrer"
-              />
-            ) : (
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#1c1c1e] to-[#0a0a0a] text-lg font-bold text-white">
-                {(userName ?? userEmail ?? 'U').slice(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div>
+            <label
+              htmlFor="account-picture"
+              className="group relative h-16 w-16 shrink-0 cursor-pointer rounded-full"
+              title="Upload profile picture"
+            >
+              {(picturePreview ?? userPicture) ? (
+                <img
+                  src={picturePreview ?? userPicture ?? ''}
+                  alt={userName ?? ''}
+                  className="h-16 w-16 rounded-full object-cover ring-2 ring-gray-100 transition group-hover:brightness-75"
+                  referrerPolicy="no-referrer"
+                />
+              ) : (
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-[#1c1c1e] to-[#0a0a0a] text-lg font-bold text-white transition group-hover:brightness-75">
+                  {(userName ?? userEmail ?? 'U').slice(0, 2).toUpperCase()}
+                </div>
+              )}
+              <span className="absolute inset-0 flex items-center justify-center rounded-full text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100">
+                Edit
+              </span>
+            </label>
+            <input
+              id="account-picture"
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handlePictureFileChange}
+            />
+            <div className="flex-1">
               <p className="text-sm font-semibold text-gray-900">{userName ?? '—'}</p>
               <p className="text-xs text-gray-400">{userEmail ?? '—'}</p>
+              {pictureFile ? (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <span className="truncate text-xs text-gray-500">{pictureFile.name}</span>
+                  <Button
+                    size="sm"
+                    onClick={handleSavePicture}
+                    disabled={savingPicture}
+                    className="shrink-0 gap-1 rounded-xl px-3 py-1 text-xs"
+                  >
+                    <ArrowDownOnSquareIcon className="h-3 w-3" />
+                    {savingPicture ? 'Saving…' : 'Save'}
+                  </Button>
+                  <button
+                    onClick={() => {
+                      setPictureFile(null)
+                      setPicturePreview(null)
+                    }}
+                    className="text-xs text-gray-400 hover:text-gray-600"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-0.5 text-xs text-gray-400">Click photo to change · Max 2 MB</p>
+              )}
             </div>
           </div>
 
@@ -472,37 +534,6 @@ function AccountSection() {
               >
                 <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
                 {savingName ? 'Saving…' : 'Save'}
-              </Button>
-            </div>
-          </div>
-
-          {/* Profile picture URL */}
-          <div>
-            <label
-              htmlFor="account-picture"
-              className="mb-1.5 block text-sm font-medium text-foreground"
-            >
-              Profile Picture URL
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="account-picture"
-                type="url"
-                value={picture}
-                onChange={(e) => setPicture(e.target.value)}
-                className="flex-1 rounded-xl border border-input bg-background px-4 py-2 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
-                placeholder="https://example.com/avatar.png"
-              />
-              <Button
-                size="sm"
-                onClick={handleSavePicture}
-                disabled={
-                  savingPicture || !picture.trim() || picture.trim() === (userPicture ?? '')
-                }
-                className="gap-1.5 rounded-xl"
-              >
-                <ArrowDownOnSquareIcon className="h-3.5 w-3.5" />
-                {savingPicture ? 'Saving…' : 'Save'}
               </Button>
             </div>
           </div>
