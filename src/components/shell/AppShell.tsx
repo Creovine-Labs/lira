@@ -8,6 +8,7 @@ import {
   BriefcaseIcon,
   BuildingOffice2Icon,
   ChatBubbleLeftRightIcon,
+  ChatBubbleLeftEllipsisIcon,
   ChevronDownIcon,
   ChevronUpDownIcon,
   ClipboardDocumentCheckIcon,
@@ -24,6 +25,10 @@ import {
   UserIcon,
   UsersIcon,
   XMarkIcon,
+  BoltIcon,
+  InboxIcon,
+  CpuChipIcon,
+  UserGroupIcon,
 } from '@heroicons/react/24/outline'
 import {
   useAuthStore,
@@ -111,6 +116,7 @@ type NavGroup = {
   label: string
   icon: React.ComponentType<{ className?: string }>
   children: NavLeaf[]
+  badge?: string
 }
 type NavEntry = NavLeaf | NavGroup
 function isNavGroup(entry: NavEntry): entry is NavGroup {
@@ -139,6 +145,20 @@ const NAV: NavEntry[] = [
     ],
   },
   { to: '/org/members', icon: UsersIcon, label: 'Members' },
+  {
+    label: 'Support',
+    icon: ChatBubbleLeftEllipsisIcon,
+    badge: 'New',
+    children: [
+      { to: '/support/home', icon: Squares2X2Icon, label: 'Overview' },
+      { to: '/support/inbox', icon: InboxIcon, label: 'Inbox' },
+      { to: '/support/customers', icon: UserGroupIcon, label: 'Customers' },
+      { to: '/support/proactive', icon: BoltIcon, label: 'Proactive' },
+      { to: '/support/knowledge', icon: BookOpenIcon, label: 'Knowledge' },
+      { to: '/support/actions', icon: CpuChipIcon, label: 'Actions' },
+      { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
+    ],
+  },
 ]
 
 const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
@@ -682,7 +702,7 @@ function AppShell() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(['Conversations', 'Workspace']))
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(['Conversations', 'Workspace', 'Support']))
   const { token, emailVerified, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
@@ -826,6 +846,11 @@ function AppShell() {
                     >
                       <entry.icon className="h-4 w-4 shrink-0" />
                       {entry.label}
+                      {entry.badge && (
+                        <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-bold text-violet-700">
+                          {entry.badge}
+                        </span>
+                      )}
                       <ChevronDownIcon
                         className={cn(
                           'ml-auto h-3.5 w-3.5 transition-transform duration-200',
@@ -988,6 +1013,11 @@ function AppShell() {
                 >
                   <entry.icon className="h-4 w-4 shrink-0" />
                   {entry.label}
+                  {entry.badge && (
+                    <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-bold text-violet-700">
+                      {entry.badge}
+                    </span>
+                  )}
                   <ChevronDownIcon
                     className={cn(
                       'ml-auto h-3.5 w-3.5 transition-transform duration-200',

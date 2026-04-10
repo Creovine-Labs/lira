@@ -44,6 +44,36 @@ import {
   VerifyEmailPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  SupportActivatePage,
+  SupportOnboardingPage,
+  SupportHomePage,
+  SupportEntryPage,
+  SupportInboxPage,
+  SupportConversationDetailPage,
+  SupportConversationActionPage,
+  SupportEscalationPage,
+  SupportHumanOverridePage,
+  SupportCSATPage,
+  SupportVoiceTranscriptPage,
+  SupportCustomerListPage,
+  SupportCustomerProfilePage,
+  SupportCustomerTimelinePage,
+  SupportCustomerCRMPage,
+  SupportProactiveTriggerListPage,
+  SupportProactiveTriggerWizardPage,
+  SupportProactiveActivityLogPage,
+  SupportKnowledgeLibraryPage,
+  SupportKnowledgeDraftQueuePage,
+  SupportKnowledgeEntryEditorPage,
+  SupportKnowledgeGapReportPage,
+  SupportActionApprovalQueuePage,
+  SupportActionHistoryPage,
+  SupportActionChainPage,
+  SupportActionIntegrationHealthPage,
+  SupportAnalyticsOverviewPage,
+  SupportProactiveOutreachPage,
+  SupportWeeklyReportPage,
+  SupportBillingOutcomePage,
 } from '@/pages'
 import {
   AdminShell,
@@ -105,6 +135,10 @@ function App() {
         <Route path="/cookies" element={<CookiePolicyPage />} />
         <Route path="/acceptable-use" element={<AcceptableUsePolicyPage />} />
         <Route path="/security" element={<SecurityPage />} />
+        
+        {/* ── Customer Support module — Activation & Onboarding (no shell) ── */}
+        <Route path="/support/activate" element={<SupportActivatePage />} />
+        <Route path="/support/onboarding" element={<SupportOnboardingPage />} />
 
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>
@@ -115,6 +149,36 @@ function App() {
           <Route path="/meetings/:id" element={<MeetingDetailPage />} />
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/organizations" element={<OrganizationsPage />} />
+          {/* ── Customer Support module (with shell) ── */}
+          <Route path="/support" element={<SupportEntryPage />} />
+          <Route path="/support/home" element={<SupportHomePage />} />
+          <Route path="/support/inbox" element={<SupportInboxPage />} />
+          <Route path="/support/inbox/:id" element={<SupportConversationDetailPage />} />
+          <Route path="/support/inbox/:id/action" element={<SupportConversationActionPage />} />
+          <Route path="/support/inbox/:id/escalation" element={<SupportEscalationPage />} />
+          <Route path="/support/inbox/:id/override" element={<SupportHumanOverridePage />} />
+          <Route path="/support/inbox/:id/csat" element={<SupportCSATPage />} />
+          <Route path="/support/inbox/:id/voice" element={<SupportVoiceTranscriptPage />} />
+          <Route path="/support/customers" element={<SupportCustomerListPage />} />
+          <Route path="/support/customers/:id" element={<SupportCustomerProfilePage />} />
+          <Route path="/support/customers/:id/timeline" element={<SupportCustomerTimelinePage />} />
+          <Route path="/support/customers/:id/crm" element={<SupportCustomerCRMPage />} />
+          <Route path="/support/proactive" element={<SupportProactiveTriggerListPage />} />
+          <Route path="/support/proactive/new" element={<SupportProactiveTriggerWizardPage />} />
+          <Route path="/support/proactive/activity" element={<SupportProactiveActivityLogPage />} />
+          <Route path="/support/knowledge" element={<SupportKnowledgeLibraryPage />} />
+          <Route path="/support/knowledge/drafts" element={<SupportKnowledgeDraftQueuePage />} />
+          <Route path="/support/knowledge/drafts/:id/edit" element={<SupportKnowledgeEntryEditorPage />} />
+          <Route path="/support/knowledge/new" element={<SupportKnowledgeEntryEditorPage />} />
+          <Route path="/support/knowledge/gaps" element={<SupportKnowledgeGapReportPage />} />
+          <Route path="/support/actions" element={<SupportActionApprovalQueuePage />} />
+          <Route path="/support/actions/history" element={<SupportActionHistoryPage />} />
+          <Route path="/support/actions/chain" element={<SupportActionChainPage />} />
+          <Route path="/support/actions/integrations" element={<SupportActionIntegrationHealthPage />} />
+          <Route path="/support/analytics" element={<SupportAnalyticsOverviewPage />} />
+          <Route path="/support/analytics/proactive" element={<SupportProactiveOutreachPage />} />
+          <Route path="/support/analytics/weekly" element={<SupportWeeklyReportPage />} />
+          <Route path="/support/analytics/billing" element={<SupportBillingOutcomePage />} />
           <Route path="/org" element={<OrgLayout />}>
             <Route path="settings" element={<OrgSettingsPage />} />
             <Route path="knowledge" element={<KnowledgeBasePage />} />
