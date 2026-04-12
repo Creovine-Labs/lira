@@ -1,6 +1,7 @@
 import React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import {
   ArrowRightIcon,
   ArrowTrendingUpIcon,
@@ -1271,6 +1272,17 @@ function Hero() {
           <p className="mt-4 text-xs text-gray-400 tracking-wide">
             ✦ Lira joins as a voice participant — no plugins required ✦
           </p>
+
+          {/* Try Beta — mobile only */}
+          <div className="mt-5 flex justify-center md:hidden">
+            <Link
+              to="/signup"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1A1A] px-6 py-3 text-sm font-semibold text-white shadow-md active:scale-95 transition-transform"
+            >
+              Try Beta
+              <ArrowRightIcon className="h-4 w-4" />
+            </Link>
+          </div>
         </div>
 
         {/* Meeting demo */}
@@ -2333,6 +2345,12 @@ function FinalCTA() {
 export function LandingPage() {
   return (
     <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: '#ebebeb' }}>
+      <SEO
+        title="Lira AI — AI Meeting Participant, Sales Coach, Interview Agent & Customer Support"
+        description="Lira AI is an intelligent meeting participant that joins your calls in real time. Automate sales coaching, first-round interviews, customer support, and meeting transcription with AI-powered voice agents."
+        keywords="AI meeting assistant, AI meeting participant, AI sales coaching, AI interview automation, AI customer support, real-time transcription, meeting intelligence, voice AI agent, meeting notetaker, AI meeting bot, sales call coaching, automated interviews, Lira AI"
+        path="/"
+      />
       <MarketingNavbar />
       <Hero />
       <MidCTA />
