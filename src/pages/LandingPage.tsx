@@ -1277,7 +1277,7 @@ function Hero() {
           <div className="mt-5 flex justify-center md:hidden">
             <Link
               to="/signup"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#1A1A1A] px-6 py-3 text-sm font-semibold text-white shadow-md active:scale-95 transition-transform"
+              className="inline-flex items-center gap-2 rounded-2xl bg-[#3730a3] px-6 py-3 text-sm font-semibold text-white shadow-md active:scale-95 transition-transform"
             >
               Try Beta
               <ArrowRightIcon className="h-4 w-4" />
