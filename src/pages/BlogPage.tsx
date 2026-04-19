@@ -1,11 +1,18 @@
 import { Link } from 'react-router-dom'
 import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 import { BLOG_POSTS } from './blogData'
 
 export function BlogPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Blog — Meetings, Hiring & The Future of Work"
+        description="Ideas and insights on AI meeting intelligence, sales coaching, hiring automation, and building knowledge-driven teams. Read the latest from Lira AI."
+        keywords="AI meeting blog, sales coaching insights, hiring automation blog, AI for teams, meeting intelligence articles, Lira AI blog, future of work AI"
+        path="/blog"
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6">
         <div className="mx-auto max-w-6xl">

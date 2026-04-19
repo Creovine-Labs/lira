@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
 const LAST_UPDATED = 'March 25, 2026'
@@ -6,6 +7,12 @@ const LAST_UPDATED = 'March 25, 2026'
 export function CookiePolicyPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Cookie Policy"
+        description="Lira AI Cookie Policy. Learn about the cookies we use, why we use them, and how you can manage your cookie preferences."
+        keywords="Lira AI cookies, cookie policy, website cookies"
+        path="/cookies"
+      />
       <div className="bg-white">
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">

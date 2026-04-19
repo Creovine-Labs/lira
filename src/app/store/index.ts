@@ -393,7 +393,7 @@ export const useInterviewStore = create<InterviewSlice>()((set) => ({
 
 export interface NotifEntry {
   id: string
-  kind: 'task' | 'meeting_ended' | 'interview'
+  kind: 'task' | 'meeting_ended' | 'interview' | 'support_escalation'
   title: string
   subtitle?: string
   orgId?: string
@@ -406,6 +406,7 @@ interface NotifSlice {
   // timestamp-based "seen" for meetings and interviews (section-level)
   meetingSeenAt: number
   interviewSeenAt: number
+  supportSeenAt: number
   // per-task read tracking — only clears when user opens the individual task detail
   readTaskNotifIds: string[]
   addNotif: (entry: Omit<NotifEntry, 'createdAt'>) => void
@@ -414,6 +415,7 @@ interface NotifSlice {
   markTaskRead: (notifId: string) => void
   markMeetingsSeen: () => void
   markInterviewsSeen: () => void
+  markSupportSeen: () => void
 }
 
 export const useNotifStore = create<NotifSlice>()(
@@ -422,6 +424,7 @@ export const useNotifStore = create<NotifSlice>()(
       entries: [],
       meetingSeenAt: 0,
       interviewSeenAt: 0,
+      supportSeenAt: 0,
       readTaskNotifIds: [],
       addNotif: (entry) =>
         set((s) => {
@@ -439,6 +442,7 @@ export const useNotifStore = create<NotifSlice>()(
         ),
       markMeetingsSeen: () => set({ meetingSeenAt: Date.now() }),
       markInterviewsSeen: () => set({ interviewSeenAt: Date.now() }),
+      markSupportSeen: () => set({ supportSeenAt: Date.now() }),
     }),
     { name: 'lira-notif' }
   )

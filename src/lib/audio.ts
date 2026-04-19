@@ -102,8 +102,10 @@ export function playPcmChunk(pcmData: ArrayBuffer): void {
   if (!playbackCtx) initPlayback()
   if (!playbackCtx) return
 
-  const int16 = new Int16Array(pcmData)
-  if (int16.length === 0) return
+  // PCM 16-bit requires even byte count — trim trailing odd byte if present
+  const byteLen = pcmData.byteLength & ~1
+  if (byteLen === 0) return
+  const int16 = new Int16Array(pcmData, 0, byteLen / 2)
 
   const float32 = new Float32Array(int16.length)
   for (let i = 0; i < int16.length; i++) {

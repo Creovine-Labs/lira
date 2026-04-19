@@ -1,5 +1,6 @@
 import { Link, useParams, Navigate } from 'react-router-dom'
 import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 import { BLOG_POSTS } from './blogData'
 
@@ -15,6 +16,33 @@ export function BlogPostPage() {
 
   return (
     <MarketingLayout>
+      <SEO
+        title={post.title}
+        description={post.excerpt}
+        keywords={`${post.category}, AI, Lira AI, ${post.title.split(' ').slice(0, 5).join(', ')}`}
+        path={`/blog/${post.slug}`}
+        type="article"
+        article={{
+          publishedTime: post.date,
+          author: post.author.name,
+          section: post.category,
+        }}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'BlogPosting',
+          headline: post.title,
+          description: post.excerpt,
+          datePublished: post.date,
+          author: { '@type': 'Person', name: post.author.name, jobTitle: post.author.role },
+          publisher: {
+            '@type': 'Organization',
+            name: 'Lira AI',
+            url: 'https://liraintelligence.com',
+          },
+          mainEntityOfPage: `https://liraintelligence.com/blog/${post.slug}`,
+          articleSection: post.category,
+        }}
+      />
       <section className="pt-32 pb-20 px-6">
         <div className="mx-auto max-w-3xl">
           {/* Back */}

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
 const LAST_UPDATED = 'March 25, 2026'
@@ -6,6 +7,12 @@ const LAST_UPDATED = 'March 25, 2026'
 export function AcceptableUsePolicyPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Acceptable Use Policy"
+        description="Lira AI Acceptable Use Policy. Understand the rules and guidelines for using our AI-powered meeting, interview, sales coaching, and customer support platform."
+        keywords="Lira AI acceptable use, usage policy, platform rules"
+        path="/acceptable-use"
+      />
       <div className="bg-white">
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">

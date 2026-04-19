@@ -1,12 +1,15 @@
-import { useSearchParams } from 'react-router-dom'
+import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   BookOpenIcon,
   DocumentTextIcon,
   GlobeAltIcon,
   LinkIcon,
   SparklesIcon,
+  BuildingOfficeIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
+import { useOrgStore } from '@/app/store'
 
 import { DocumentsPanel } from './kb/DocumentsPanel'
 import { ConnectedSourcesPanel } from './kb/ConnectedSourcesPanel'
@@ -44,6 +47,11 @@ type TabKey = (typeof TABS)[number]['key']
 
 function KnowledgeBasePage() {
   const [searchParams, setSearchParams] = useSearchParams()
+  const navigate = useNavigate()
+  const { currentOrgId, organizations } = useOrgStore()
+  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
+  const description = currentOrg?.profile?.description
+
   const activeTab = (TABS.find((t) => t.key === searchParams.get('tab'))?.key ??
     'documents') as TabKey
 
@@ -77,6 +85,36 @@ function KnowledgeBasePage() {
             <BookOpenIcon className="h-3.5 w-3.5" />
             Docs
           </a>
+        </div>
+
+        {/* Tab bar */}
+        {/* Org description card */}
+        <div className="mb-5 rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3">
+              <BuildingOfficeIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#3730a3]" />
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Organization description
+                </p>
+                {description ? (
+                  <p className="mt-1 text-sm text-gray-700 leading-relaxed">{description}</p>
+                ) : (
+                  <p className="mt-1 text-sm text-gray-400 italic">
+                    No description added yet. Add one in Org Settings so Lira knows what your
+                    organization does.
+                  </p>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/org/settings')}
+              className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition"
+            >
+              <PencilSquareIcon className="h-3.5 w-3.5" />
+              Edit
+            </button>
+          </div>
         </div>
 
         {/* Tab bar */}

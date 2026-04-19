@@ -144,6 +144,25 @@ import type {
 // ── URL-based success/error detection ────────────────────────────────────────
 
 function useConnectionCallback() {
+  // If this page loaded inside a popup (opened by SupportActivatePage or similar),
+  // signal the opener and auto-close instead of rendering normally.
+  useEffect(() => {
+    if (window.opener) {
+      const params = new URLSearchParams(window.location.search)
+      const connected = params.get('connected')
+      const error = params.get('error')
+      try {
+        window.opener.postMessage(
+          { type: 'oauth_callback', connected, error },
+          window.location.origin
+        )
+      } catch (_) {
+        // opener may be cross-origin or already closed
+      }
+      window.close()
+    }
+  }, [])
+
   const [justConnected, setJustConnected] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     const c = params.get('connected')

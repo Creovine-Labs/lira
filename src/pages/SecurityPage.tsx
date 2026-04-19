@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import {
   ShieldCheckIcon,
   LockClosedIcon,
@@ -67,6 +68,12 @@ const SECURITY_PILLARS = [
 export function SecurityPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Security — How Lira Protects Your Data"
+        description="Lira AI is built with security at its core. TLS 1.2+ encryption, AES-256 at rest, OAuth 2.0 PKCE, SOC 2-compliant infrastructure, and OWASP Top 10 compliance. Learn how we protect your meetings, interviews, and customer data."
+        keywords="Lira AI security, data protection, encryption, SOC 2, OWASP, OAuth 2.0, secure AI platform, data privacy, enterprise security, meeting data security"
+        path="/security"
+      />
       <div className="bg-white">
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import {
   ArrowRightIcon,
   ChatBubbleLeftIcon,
@@ -87,6 +88,22 @@ const FEATURES = [
 export function ProductInterviewsPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Interview Automation — Conduct, Score & Rank Candidates Automatically"
+        description="Let Lira AI run your entire first-round hiring process. Automated scheduling, AI-conducted interviews, competency scoring against custom rubrics, and evidence-backed hire/no-hire recommendations."
+        keywords="AI interview automation, automated interviews, AI hiring tool, first-round interview AI, competency scoring, candidate evaluation AI, interview scheduling automation, hiring efficiency, AI recruiter, structured interviews AI, candidate ranking, interview assessment AI, HR automation, talent acquisition AI, Lira AI interviews"
+        path="/products/interviews"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: 'Lira AI Interview Automation',
+          description:
+            'AI-powered interview platform that schedules, conducts, scores, and ranks candidates with evidence-backed recommendations.',
+          brand: { '@type': 'Brand', name: 'Lira AI' },
+          category: 'HR Technology Software',
+          url: 'https://liraintelligence.com/products/interviews',
+        }}
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center">
         <h1 className="mx-auto max-w-2xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">

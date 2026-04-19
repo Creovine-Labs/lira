@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import {
   ArrowRightIcon,
   ArrowTrendingUpIcon,
@@ -81,6 +82,22 @@ const FEATURES = [
 export function ProductSalesPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Sales Coaching — Real-Time Objection Handling & Deal Intelligence"
+        description="Lira AI listens to every sales call in real time and tells you exactly what to say. Get AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and automatic CRM updates for Salesforce and HubSpot."
+        keywords="AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, CRM auto-fill, Salesforce AI, HubSpot AI, sales intelligence, competitive selling AI, real-time sales guidance, sales enablement AI, win-rate analytics, revenue intelligence, sales call transcription, Lira AI sales"
+        path="/products/sales"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: 'Lira AI Sales Coaching',
+          description:
+            'AI-powered real-time sales coaching that listens to calls, detects objections, surfaces battle cards, and auto-fills your CRM.',
+          brand: { '@type': 'Brand', name: 'Lira AI' },
+          category: 'Sales Enablement Software',
+          url: 'https://liraintelligence.com/products/sales',
+        }}
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center">
         <h1 className="mx-auto max-w-2xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">

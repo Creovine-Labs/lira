@@ -2346,7 +2346,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: '#ebebeb' }}>
       <SEO
-        title="Lira AI — AI Meeting Participant, Sales Coach, Interview Agent & Customer Support"
+        title="Lira"
         description="Lira AI is an intelligent meeting participant that joins your calls in real time. Automate sales coaching, first-round interviews, customer support, and meeting transcription with AI-powered voice agents."
         keywords="AI meeting assistant, AI meeting participant, AI sales coaching, AI interview automation, AI customer support, real-time transcription, meeting intelligence, voice AI agent, meeting notetaker, AI meeting bot, sales call coaching, automated interviews, Lira AI"
         path="/"

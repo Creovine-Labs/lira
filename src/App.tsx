@@ -53,6 +53,13 @@ import {
   AdminEmailPage,
   AdminManagementPage,
 } from '@/pages/admin'
+import {
+  SupportActivatePage,
+  SupportConversationPage,
+  SupportNotificationsPage,
+  SupportCustomerDetailPage,
+  SupportPage,
+} from '@/pages/support'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -137,6 +144,12 @@ function App() {
             <Route path="interviews/:interviewId/edit" element={<InterviewCreatePage />} />
             <Route path="interviews/:interviewId" element={<InterviewDetailPage />} />
           </Route>
+          <Route path="/support" element={<SupportPage />} />
+          <Route path="/support/activate" element={<SupportActivatePage />} />
+          <Route path="/support/inbox/:id" element={<SupportConversationPage />} />
+          <Route path="/support/notifications" element={<SupportNotificationsPage />} />
+          <Route path="/support/notifications/:id" element={<SupportConversationPage />} />
+          <Route path="/support/customers/:id" element={<SupportCustomerDetailPage />} />
         </Route>
 
         {/* Admin dashboard — own shell, role-guarded */}

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import {
   AcademicCapIcon,
   ArrowRightIcon,
@@ -79,6 +80,12 @@ const SECTIONS = [
 export function ResourcesPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Resources — Guides, Tutorials, Documentation & API Reference"
+        description="Everything you need to get started with Lira AI. Step-by-step guides, video tutorials, full documentation, and API reference for meetings, interviews, knowledge base, and integrations."
+        keywords="Lira AI documentation, Lira AI guides, API reference, meeting AI tutorial, interview automation guide, knowledge base setup, Lira AI help, getting started Lira"
+        path="/resources"
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center">
         <h1 className="mx-auto max-w-xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">

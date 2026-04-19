@@ -1,4 +1,5 @@
 import { PlayCircleIcon } from '@heroicons/react/24/outline'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
 const FEATURED_VIDEO = {
@@ -11,6 +12,12 @@ const FEATURED_VIDEO = {
 export function TutorialsPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Tutorials — Learn Lira in Minutes"
+        description="Video tutorials and walkthroughs to help you get the most out of Lira AI. Learn how to set up meetings, run interviews, configure sales coaching, and more."
+        keywords="Lira AI tutorials, meeting AI tutorial, interview automation tutorial, sales coaching guide, video walkthrough, Lira AI demo, learn Lira AI"
+        path="/tutorials"
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center">
         <h1 className="mx-auto max-w-xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">

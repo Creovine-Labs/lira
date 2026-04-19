@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import {
   ArrowRightIcon,
   ChatBubbleLeftIcon,
@@ -81,6 +82,22 @@ const FEATURES = [
 export function ProductCustomerSupportPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Customer Support — Voice Agent Grounded in Your Knowledge Base"
+        description="Lira AI handles inbound customer support calls 24/7 with a voice agent grounded in your documentation. No hallucinations, smart escalation to humans, post-call summaries, and knowledge base gap identification."
+        keywords="AI customer support, customer support automation, AI voice agent, knowledge base AI, support chatbot, AI phone support, customer service AI, automated support calls, help desk AI, support ticket automation, voice AI customer service, intelligent escalation, customer support bot, AI call center, Lira AI support"
+        path="/products/customer-support"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: 'Lira AI Customer Support',
+          description:
+            'AI voice agent for customer support calls, grounded in your knowledge base with smart escalation and post-call analytics.',
+          brand: { '@type': 'Brand', name: 'Lira AI' },
+          category: 'Customer Service Software',
+          url: 'https://liraintelligence.com/products/customer-support',
+        }}
+      />
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center">
         <h1 className="mx-auto max-w-2xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">

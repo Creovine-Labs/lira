@@ -6,8 +6,8 @@ import {
   BriefcaseIcon,
   ChatBubbleLeftEllipsisIcon,
   ClipboardDocumentCheckIcon,
-  ClockIcon,
   ExclamationCircleIcon,
+  InboxIcon,
   MicrophoneIcon,
   PlusIcon,
   RadioIcon,
@@ -16,6 +16,7 @@ import {
   VideoCameraIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useBotStore, useOrgStore, useUserPrefsStore } from '@/app/store'
+import { useSupportStore } from '@/app/store/support-store'
 import {
   deployBot,
   getBotStatus,
@@ -34,6 +35,12 @@ import {
   type Interview,
   type DashboardStats,
 } from '@/services/api'
+import {
+  getSupportStats,
+  listConversations,
+  type SupportStats,
+  type SupportConversation,
+} from '@/services/api/support-api'
 import { cn } from '@/lib'
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -225,17 +232,21 @@ function RecentTasks({ tasks }: { tasks: TaskRecord[] }) {
 }
 
 // ── Activity panel (tabbed) ───────────────────────────────────────────────────
-type Tab = 'meetings' | 'tasks' | 'interviews'
+type Tab = 'meetings' | 'tasks' | 'interviews' | 'support'
 
 function ActivityPanel({
   meetings,
   tasks,
   interviews,
+  supportConversations,
+  supportActivated,
   navigate,
 }: {
   meetings: Meeting[]
   tasks: TaskRecord[]
   interviews: Interview[]
+  supportConversations: SupportConversation[]
+  supportActivated: boolean
   navigate: (path: string) => void
 }) {
   const [tab, setTab] = useState<Tab>('meetings')
@@ -244,6 +255,15 @@ function ActivityPanel({
     { id: 'meetings', label: 'Meetings', count: meetings.length || undefined },
     { id: 'tasks', label: 'Tasks', count: tasks.length || undefined },
     { id: 'interviews', label: 'Interviews', count: interviews.length || undefined },
+    ...(supportActivated
+      ? [
+          {
+            id: 'support' as Tab,
+            label: 'Support',
+            count: supportConversations.length || undefined,
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -343,6 +363,57 @@ function ActivityPanel({
                   className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#3730a3] transition hover:text-[#312e81]"
                 >
                   Manage interview roles <ArrowRightIcon className="h-3 w-3" />
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* ── Support ── */}
+        {tab === 'support' && (
+          <div>
+            {supportConversations.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-center">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100">
+                  <ChatBubbleLeftEllipsisIcon className="h-5 w-5 text-gray-400" />
+                </div>
+                <p className="text-sm text-gray-400">No open conversations</p>
+              </div>
+            ) : (
+              <>
+                <div className="divide-y divide-gray-100">
+                  {supportConversations.slice(0, 8).map((c) => (
+                    <button
+                      key={c.conv_id}
+                      onClick={() => navigate(`/support/inbox/${c.conv_id}`)}
+                      className="flex w-full items-center gap-3 rounded-lg px-1 py-3 text-left transition hover:bg-gray-50"
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                        <ChatBubbleLeftEllipsisIcon className="h-3.5 w-3.5 text-gray-500" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">
+                          {c.subject || 'No subject'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                          {c.status === 'open'
+                            ? 'Open'
+                            : c.status === 'escalated'
+                              ? 'Escalated'
+                              : c.status}
+                          {' · '}
+                          {timeAgo(c.updated_at || c.created_at)}
+                        </p>
+                      </div>
+                      <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-300" />
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={() => navigate('/support')}
+                  className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#3730a3] transition hover:text-[#312e81]"
+                >
+                  Open support inbox <ArrowRightIcon className="h-3 w-3" />
                 </button>
               </>
             )}
@@ -789,6 +860,13 @@ function DeployHeroBar() {
         </button>
         <span>·</span>
         <button
+          onClick={() => navigate('/support')}
+          className="text-white/50 transition hover:text-white"
+        >
+          Customer support
+        </button>
+        <span>·</span>
+        <button
           onClick={() => navigate('/org/tasks')}
           className="text-white/50 transition hover:text-white"
         >
@@ -814,11 +892,14 @@ function DashboardPage() {
   const { token, userName } = useAuthStore()
   const { currentOrgId } = useOrgStore()
   const lastTerminatedAt = useBotStore((s) => s.lastTerminatedAt)
+  const supportActivated = useSupportStore((s) => s.config?.activated ?? false)
 
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [tasks, setTasks] = useState<TaskRecord[]>([])
   const [interviews, setInterviews] = useState<Interview[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [supportStats, setSupportStats] = useState<SupportStats | null>(null)
+  const [supportConvs, setSupportConvs] = useState<SupportConversation[]>([])
   const [loading, setLoading] = useState(true)
 
   const greeting = (() => {
@@ -837,6 +918,10 @@ function DashboardPage() {
     // while the new org's data is loading.
     // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset stale UI before async fetch
     setStats(null)
+
+    setSupportStats(null)
+
+    setSupportConvs([])
 
     setMeetings([])
 
@@ -862,16 +947,30 @@ function DashboardPage() {
       ? listInterviews(currentOrgId).catch(() => [] as Interview[])
       : Promise.resolve([] as Interview[])
 
-    Promise.all([statsP, meetingP, taskP, interviewP]).then(([s, m, t, iv]) => {
-      m.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      t.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      setStats(s)
-      setMeetings(m)
-      setTasks(t)
-      setInterviews(iv)
-      setLoading(false)
-    })
-  }, [token, currentOrgId, navigate])
+    // Support data (only if activated)
+    const supportStatsP =
+      currentOrgId && supportActivated
+        ? getSupportStats(currentOrgId).catch(() => null)
+        : Promise.resolve(null)
+    const supportConvsP =
+      currentOrgId && supportActivated
+        ? listConversations(currentOrgId, 'open').catch(() => [] as SupportConversation[])
+        : Promise.resolve([] as SupportConversation[])
+
+    Promise.all([statsP, meetingP, taskP, interviewP, supportStatsP, supportConvsP]).then(
+      ([s, m, t, iv, ss, sc]) => {
+        m.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        t.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        setStats(s)
+        setMeetings(m)
+        setTasks(t)
+        setInterviews(iv)
+        setSupportStats(ss)
+        setSupportConvs(sc)
+        setLoading(false)
+      }
+    )
+  }, [token, currentOrgId, navigate, supportActivated])
 
   // Re-fetch stats + meetings silently whenever Lira leaves a meeting so
   // the meeting count and activity list update without a manual page refresh.
@@ -913,21 +1012,6 @@ function DashboardPage() {
       </div>
     )
   }
-
-  const lastActivityLabel = (() => {
-    type AnyItem = { created_at: string; _kind: string }
-    const candidates: AnyItem[] = [
-      ...meetings.map((m) => ({ created_at: m.created_at, _kind: 'Meeting' })),
-      ...tasks.map((t) => ({ created_at: t.created_at, _kind: 'Task' })),
-      ...interviews.map((iv) => ({ created_at: iv.created_at, _kind: 'Interview' })),
-    ]
-    if (stats?.last_activity_at && candidates.length === 0) return timeAgo(stats.last_activity_at)
-    if (candidates.length === 0) return '—'
-    const latest = candidates.sort(
-      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )[0]
-    return `${latest._kind} · ${timeAgo(latest.created_at)}`
-  })()
 
   return (
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
@@ -978,10 +1062,13 @@ function DashboardPage() {
             onClick={() => navigate('/org/roles')}
           />
           <StatCard
-            label="Last activity"
-            value={lastActivityLabel}
-            icon={ClockIcon}
+            label="Open tickets"
+            value={
+              supportActivated ? (supportStats?.open_conversations ?? supportConvs.length) : '—'
+            }
+            icon={InboxIcon}
             accent="slate"
+            onClick={() => navigate(supportActivated ? '/support' : '/support/activate')}
           />
         </div>
 
@@ -1009,6 +1096,12 @@ function DashboardPage() {
                 onClick={() => navigate('/org/roles')}
               />
               <QuickAction
+                icon={ChatBubbleLeftEllipsisIcon}
+                label="Support inbox"
+                description="AI-powered customer support"
+                onClick={() => navigate('/support')}
+              />
+              <QuickAction
                 icon={BookOpenIcon}
                 label="Add knowledge"
                 description="Upload docs or crawl your website"
@@ -1029,6 +1122,8 @@ function DashboardPage() {
               meetings={meetings}
               tasks={tasks}
               interviews={interviews}
+              supportConversations={supportConvs}
+              supportActivated={supportActivated}
               navigate={navigate}
             />
           </div>

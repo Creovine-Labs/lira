@@ -1,9 +1,14 @@
-import { useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
+  ArrowTopRightOnSquareIcon,
   BuildingOffice2Icon,
   CalendarDaysIcon,
+  ChatBubbleLeftEllipsisIcon,
+  ClipboardDocumentIcon,
+  CodeBracketIcon,
+  Cog6ToothIcon,
   CreditCardIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
@@ -21,6 +26,7 @@ import {
   type VoiceId,
   type Personality,
 } from '@/app/store'
+import { useSupportStore } from '@/app/store/support-store'
 import { Button } from '@/components/common'
 import { cn } from '@/lib'
 import {
@@ -732,15 +738,611 @@ function AccountSection() {
   )
 }
 
+// ── Support Settings section ──────────────────────────────────────────────────
+
+function SupportSettingsSection() {
+  const { currentOrgId } = useOrgStore()
+  const { config, loadConfig, updateConfig } = useSupportStore()
+  const [saving, setSaving] = useState(false)
+
+  const [emailEnabled, setEmailEnabled] = useState(false)
+  const [customSupportEmail, setCustomSupportEmail] = useState('')
+  const [chatEnabled, setChatEnabled] = useState(false)
+  const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [portalEnabled, setPortalEnabled] = useState(false)
+  const [portalSlug, setPortalSlug] = useState('')
+  const [widgetColor, setWidgetColor] = useState('#3730a3')
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(true)
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.7)
+  const [forceEscalateIntents, setForceEscalateIntents] = useState('')
+  const [slackChannel, setSlackChannel] = useState('')
+  const [linearTeam, setLinearTeam] = useState('')
+  const [escalationEmail, setEscalationEmail] = useState('')
+  const [greetingMessage, setGreetingMessage] = useState('Hello! How can I help you today?')
+  const [slaHours, setSlaHours] = useState(4)
+
+  useEffect(() => {
+    if (!currentOrgId) return
+    loadConfig(currentOrgId)
+  }, [currentOrgId, loadConfig])
+
+  useEffect(() => {
+    if (!config) return
+    setEmailEnabled(config.email_enabled)
+    setCustomSupportEmail(config.custom_support_email ?? '')
+    setChatEnabled(config.chat_enabled)
+    setVoiceEnabled(config.voice_enabled)
+    setPortalEnabled(config.portal_enabled ?? false)
+    setPortalSlug(config.portal_slug ?? '')
+    setWidgetColor(config.widget_color ?? '#3730a3')
+    setAutoReplyEnabled(config.auto_reply_enabled)
+    setConfidenceThreshold(config.confidence_threshold)
+    setForceEscalateIntents(config.force_escalate_intents.join(', '))
+    setSlackChannel(config.escalation_slack_channel ?? '')
+    setLinearTeam(config.escalation_linear_team ?? '')
+    setEscalationEmail(config.escalation_email ?? '')
+    setGreetingMessage(config.greeting_message ?? 'Hello! How can I help you today?')
+    setSlaHours(config.sla_hours ?? 4)
+  }, [config])
+
+  const handleSave = useCallback(async () => {
+    if (!currentOrgId) return
+    setSaving(true)
+    try {
+      await updateConfig(currentOrgId, {
+        email_enabled: emailEnabled,
+        custom_support_email: customSupportEmail.trim() || undefined,
+        chat_enabled: chatEnabled,
+        voice_enabled: voiceEnabled,
+        portal_enabled: portalEnabled,
+        portal_slug: portalSlug.trim() || undefined,
+        widget_color: widgetColor || undefined,
+        auto_reply_enabled: autoReplyEnabled,
+        confidence_threshold: confidenceThreshold,
+        force_escalate_intents: forceEscalateIntents
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+        escalation_slack_channel: slackChannel || undefined,
+        escalation_linear_team: linearTeam || undefined,
+        escalation_email: escalationEmail.trim() || undefined,
+        greeting_message: greetingMessage.trim() || undefined,
+        sla_hours: slaHours,
+      })
+      toast.success('Support settings saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }, [
+    currentOrgId,
+    emailEnabled,
+    customSupportEmail,
+    chatEnabled,
+    voiceEnabled,
+    portalEnabled,
+    portalSlug,
+    widgetColor,
+    autoReplyEnabled,
+    confidenceThreshold,
+    forceEscalateIntents,
+    slackChannel,
+    linearTeam,
+    escalationEmail,
+    greetingMessage,
+    slaHours,
+    updateConfig,
+  ])
+
+  const [activeTab, setActiveTab] = useState<'widget' | 'channels' | 'behavior' | 'escalation'>(
+    'widget'
+  )
+
+  if (!config) {
+    return (
+      <Section icon={ChatBubbleLeftEllipsisIcon} title="Customer Support">
+        <p className="text-sm text-muted-foreground">
+          Support module is not activated yet. Go to{' '}
+          <a href="/support/activate" className="font-semibold text-[#3730a3] hover:underline">
+            Support &rarr; Activate
+          </a>{' '}
+          to get started.
+        </p>
+      </Section>
+    )
+  }
+
+  const SUPPORT_TABS = [
+    { key: 'widget' as const, label: 'Widget', icon: CodeBracketIcon },
+    { key: 'channels' as const, label: 'Channels', icon: EnvelopeIcon },
+    { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
+    { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
+  ]
+
+  return (
+    <div className="space-y-4">
+      {/* Tab bar */}
+      <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+        {SUPPORT_TABS.map((tab) => {
+          const Icon = tab.icon
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={cn(
+                'flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition',
+                activeTab === tab.key
+                  ? 'bg-[#1A1A1A] text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-white hover:text-gray-900'
+              )}
+            >
+              <Icon className="h-3.5 w-3.5 shrink-0" />
+              {tab.label}
+            </button>
+          )
+        })}
+      </div>
+
+      {/* ── Widget tab ── */}
+      {activeTab === 'widget' && (
+        <div className="space-y-4">
+          {/* Embed code */}
+          <div className="rounded-lg border px-4 py-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Embed Code</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Paste before the <code className="font-mono">&lt;/body&gt;</code> tag on every page
+                where you want the chat widget.
+              </p>
+            </div>
+            <div className="relative">
+              <pre className="overflow-x-auto rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                {[
+                  '<script',
+                  '  src="https://widget.liraintelligence.com/v1/widget.js"',
+                  `  data-org-id="${config.org_id}"`,
+                  `  data-greeting="${(greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '&quot;')}"`,
+                  '  data-position="bottom-right">',
+                  '</script>',
+                ].join('\n')}
+              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  const code = [
+                    '<script',
+                    '  src="https://widget.liraintelligence.com/v1/widget.js"',
+                    `  data-org-id="${config.org_id}"`,
+                    `  data-greeting="${(greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '"')}"`,
+                    '  data-position="bottom-right">',
+                    '</script>',
+                  ].join('\n')
+                  navigator.clipboard.writeText(code)
+                  toast.success('Embed code copied!')
+                }}
+                className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 hover:bg-gray-600 transition"
+              >
+                <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                Copy
+              </button>
+            </div>
+          </div>
+
+          {/* Widget Color */}
+          <div className="rounded-lg border px-4 py-3 space-y-3">
+            <p className="text-sm font-medium text-foreground">Widget Color</p>
+            <div className="flex items-center gap-3">
+              <input
+                type="color"
+                value={widgetColor}
+                onChange={(e) => setWidgetColor(e.target.value)}
+                className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+              />
+              <input
+                type="text"
+                value={widgetColor}
+                onChange={(e) => {
+                  if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) setWidgetColor(e.target.value)
+                }}
+                maxLength={7}
+                className="w-28 rounded-xl border border-input bg-background px-3 py-1.5 font-mono text-sm outline-none focus:border-gray-900"
+              />
+              <div className="h-9 flex-1 rounded-lg" style={{ background: widgetColor }} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {[
+                '#3730a3',
+                '#1d4ed8',
+                '#0891b2',
+                '#059669',
+                '#d97706',
+                '#dc2626',
+                '#7c3aed',
+                '#db2777',
+                '#1a1a2e',
+              ].map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setWidgetColor(c)}
+                  className={cn(
+                    'h-7 w-7 rounded-md border-2 transition',
+                    widgetColor === c
+                      ? 'border-gray-900 scale-110'
+                      : 'border-transparent hover:scale-105'
+                  )}
+                  style={{ background: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Greeting message */}
+          <div className="rounded-lg border px-4 py-3">
+            <p className="mb-1 text-sm font-medium text-foreground">Greeting Message</p>
+            <textarea
+              value={greetingMessage}
+              onChange={(e) => setGreetingMessage(e.target.value)}
+              rows={2}
+              placeholder="Hello! How can I help you today?"
+              className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900 resize-none"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Opening message shown when the chat widget loads
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ── Channels tab ── */}
+      {activeTab === 'channels' && (
+        <div className="space-y-4">
+          {/* Support Portal — listed first */}
+          <div className="rounded-lg border px-4 py-3 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-foreground">Support Portal</p>
+                  <a
+                    href="https://docs.liraintelligence.com/platform/customer-support/portal"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-400 hover:text-[#3730a3] transition-colors"
+                  >
+                    <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                    Docs
+                  </a>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Branded self-service portal — submit tickets, track status
+                </p>
+              </div>
+              <label aria-label="Toggle support portal" className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={portalEnabled}
+                  onChange={(e) => setPortalEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+              </label>
+            </div>
+            {portalEnabled && (
+              <div className="space-y-2">
+                <label
+                  htmlFor="portal-slug-input"
+                  className="block text-xs font-semibold text-gray-500"
+                >
+                  Portal URL slug
+                </label>
+                <div className="flex items-center">
+                  <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                    support.liraintelligence.com/
+                  </span>
+                  <input
+                    id="portal-slug-input"
+                    type="text"
+                    value={portalSlug}
+                    onChange={(e) =>
+                      setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                    }
+                    placeholder="my-company"
+                    className="flex-1 rounded-r-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                  />
+                </div>
+                {config.portal_slug && (
+                  <a
+                    href={`https://support.liraintelligence.com/${config.portal_slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
+                  >
+                    <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                    Open portal
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Chat */}
+          <div className="flex items-start justify-between rounded-lg border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Chat Widget</p>
+              <p className="text-xs text-muted-foreground">Embeddable live chat for your website</p>
+            </div>
+            <label aria-label="Toggle chat widget" className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={chatEnabled}
+                onChange={(e) => setChatEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+            </label>
+          </div>
+
+          {/* Voice */}
+          <div className="flex items-start justify-between rounded-lg border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Voice Support</p>
+              <p className="text-xs text-muted-foreground">
+                Inbound phone support powered by Lira&apos;s voice
+              </p>
+            </div>
+            <label aria-label="Toggle voice support" className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={voiceEnabled}
+                onChange={(e) => setVoiceEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+            </label>
+          </div>
+
+          {/* Email */}
+          <div className="rounded-lg border px-4 py-3 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Email Support</p>
+                <p className="text-xs text-muted-foreground">
+                  Receive and respond to customer emails via AI
+                </p>
+              </div>
+              <label aria-label="Toggle email support" className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={emailEnabled}
+                  onChange={(e) => setEmailEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+              </label>
+            </div>
+            {config.email_address && (
+              <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 mb-1">
+                  Your Lira support address
+                </p>
+                <div className="flex items-center gap-2">
+                  <code className="flex-1 text-xs font-mono text-gray-800 truncate">
+                    {config.email_address}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(config.email_address ?? '')
+                      toast.success('Copied!')
+                    }}
+                    className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-gray-200 transition"
+                  >
+                    Copy
+                  </button>
+                </div>
+                <p className="mt-1 text-[11px] text-gray-400">
+                  Share with customers or set as a forwarding destination.
+                </p>
+              </div>
+            )}
+            {emailEnabled && (
+              <div className="rounded-lg border border-dashed border-gray-300 px-3 py-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-700">
+                  Custom address <span className="font-normal text-gray-400">(optional)</span>
+                </p>
+                <input
+                  type="email"
+                  value={customSupportEmail}
+                  onChange={(e) => setCustomSupportEmail(e.target.value)}
+                  placeholder="support@yourcompany.com"
+                  className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900"
+                />
+                {customSupportEmail.trim() && config.email_address && (
+                  <div className="rounded-lg bg-blue-50 border border-blue-100 px-3 py-2 text-xs text-blue-700 space-y-1">
+                    <p className="font-semibold">Forwarding setup required</p>
+                    <p>
+                      Create a forwarding rule from <strong>{customSupportEmail.trim()}</strong> to{' '}
+                      <strong className="font-mono">{config.email_address}</strong> in your email
+                      provider.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Behavior tab ── */}
+      {activeTab === 'behavior' && (
+        <div className="space-y-4">
+          <div className="flex items-start justify-between rounded-lg border px-4 py-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Auto-reply</p>
+              <p className="text-xs text-muted-foreground">
+                Lira automatically responds to customer messages when confident
+              </p>
+            </div>
+            <label aria-label="Toggle auto-reply" className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={autoReplyEnabled}
+                onChange={(e) => setAutoReplyEnabled(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+            </label>
+          </div>
+
+          <div className="rounded-lg border px-4 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">Confidence Threshold</p>
+              <span className="text-sm font-semibold text-gray-700">
+                {Math.round(confidenceThreshold * 100)}%
+              </span>
+            </div>
+            <input
+              type="range"
+              min={0}
+              max={100}
+              value={Math.round(confidenceThreshold * 100)}
+              onChange={(e) => setConfidenceThreshold(Number(e.target.value) / 100)}
+              className="mt-2 w-full"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Conversations below this threshold are escalated to a human
+            </p>
+          </div>
+
+          <div className="rounded-lg border px-4 py-3">
+            <p className="mb-1 text-sm font-medium text-foreground">Force-Escalate Intents</p>
+            <input
+              type="text"
+              value={forceEscalateIntents}
+              onChange={(e) => setForceEscalateIntents(e.target.value)}
+              placeholder="data_privacy, account_security, legal, fraud"
+              className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Comma-separated intents that always escalate regardless of confidence
+            </p>
+          </div>
+
+          {/* Volume limits */}
+          {config && (
+            <div className="rounded-lg border px-4 py-3 space-y-3">
+              <p className="text-sm font-medium text-foreground">Volume &amp; Limits</p>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Conversations (this month)</span>
+                <span className="font-semibold">
+                  {config.conversations_this_month ?? 0} / {config.max_conversations_per_month}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">AI Replies (this month)</span>
+                <span className="font-semibold">
+                  {config.ai_replies_this_month ?? 0} / {config.max_ai_replies_per_month}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Escalation tab ── */}
+      {activeTab === 'escalation' && (
+        <div className="space-y-4">
+          <div className="rounded-lg border px-4 py-3">
+            <p className="mb-1 text-sm font-medium text-foreground">Escalation Email</p>
+            <input
+              type="email"
+              value={escalationEmail}
+              onChange={(e) => setEscalationEmail(e.target.value)}
+              placeholder="you@company.com"
+              className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Lira sends an alert here whenever a conversation is escalated
+            </p>
+          </div>
+
+          <div className="rounded-lg border px-4 py-3">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-foreground">SLA Target (hours)</p>
+              <span className="text-sm font-semibold text-gray-700">{slaHours}h</span>
+            </div>
+            <input
+              type="range"
+              min={1}
+              max={72}
+              value={slaHours}
+              onChange={(e) => setSlaHours(Number(e.target.value))}
+              className="mt-2 w-full"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Escalated tickets breach SLA after this many hours
+            </p>
+          </div>
+
+          <div className="rounded-lg border px-4 py-3">
+            <p className="mb-1 text-sm font-medium text-foreground">Slack Channel</p>
+            <input
+              type="text"
+              value={slackChannel}
+              onChange={(e) => setSlackChannel(e.target.value)}
+              placeholder="#support-escalations"
+              className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Notifications go here when a conversation is escalated
+            </p>
+          </div>
+
+          <div className="rounded-lg border px-4 py-3">
+            <p className="mb-1 text-sm font-medium text-foreground">Linear Team</p>
+            <input
+              type="text"
+              value={linearTeam}
+              onChange={(e) => setLinearTeam(e.target.value)}
+              placeholder="Team ID or name"
+              className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900"
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Escalated tickets are created as Linear issues in this team
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Save */}
+      <div className="flex justify-end pt-2">
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={saving}
+          className="bg-[#1A1A1A] text-white hover:bg-[#333] disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save Support Settings'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 // ── Settings tabs ─────────────────────────────────────────────────────────────────
 
-type SettingsTab = 'account' | 'ai' | 'organization' | 'calendar' | 'subscription' | 'billing'
+type SettingsTab =
+  | 'account'
+  | 'ai'
+  | 'organization'
+  | 'calendar'
+  | 'support'
+  | 'subscription'
+  | 'billing'
 
 const SETTINGS_TABS = [
   { id: 'account' as SettingsTab, icon: UserCircleIcon, label: 'Account' },
   { id: 'ai' as SettingsTab, icon: SparklesIcon, label: 'Lira Configuration' },
   { id: 'organization' as SettingsTab, icon: BuildingOffice2Icon, label: 'Organization' },
   { id: 'calendar' as SettingsTab, icon: CalendarDaysIcon, label: 'Calendar Sync' },
+  { id: 'support' as SettingsTab, icon: ChatBubbleLeftEllipsisIcon, label: 'Support' },
   { id: 'subscription' as SettingsTab, icon: ShieldCheckIcon, label: 'Subscription' },
   { id: 'billing' as SettingsTab, icon: CreditCardIcon, label: 'Billing' },
 ]
@@ -787,6 +1389,7 @@ function SettingsPage() {
           {activeTab === 'ai' && <AiConfigSection />}
           {activeTab === 'organization' && <OrgSettingsPage />}
           {activeTab === 'calendar' && <CalendarSyncSection />}
+          {activeTab === 'support' && <SupportSettingsSection />}
           {activeTab === 'subscription' && (
             <Section icon={ShieldCheckIcon} title="Subscription" disabled>
               <LockedRow

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
 const LAST_UPDATED = 'March 25, 2026'
@@ -6,6 +7,12 @@ const LAST_UPDATED = 'March 25, 2026'
 export function PrivacyPolicyPage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Privacy Policy"
+        description="Learn how Lira AI collects, uses, and protects your personal information. Read our full privacy policy covering data collection, storage, third-party sharing, and your privacy rights."
+        keywords="Lira AI privacy policy, data privacy, personal data protection, GDPR, privacy rights"
+        path="/privacy"
+      />
       <div className="bg-white">
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">

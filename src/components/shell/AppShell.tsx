@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import {
   ArrowRightOnRectangleIcon,
@@ -7,13 +7,14 @@ import {
   BookOpenIcon,
   BriefcaseIcon,
   BuildingOffice2Icon,
-  ChatBubbleLeftRightIcon,
+  ChatBubbleLeftEllipsisIcon,
   ChevronDownIcon,
   ChevronUpDownIcon,
   ClipboardDocumentCheckIcon,
   ClipboardDocumentListIcon,
   Cog6ToothIcon,
   EnvelopeIcon,
+  ExclamationTriangleIcon,
   FolderOpenIcon,
   MicrophoneIcon,
   PlusIcon,
@@ -36,6 +37,7 @@ import {
   useBotStore,
   useUsageStore,
 } from '@/app/store'
+import { useSupportStore } from '@/app/store/support-store'
 import {
   listOrganizations,
   listMyNotifications,
@@ -43,6 +45,7 @@ import {
   getOrgUsage,
   type TaskRecord,
 } from '@/services/api'
+import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/support-api'
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { cn } from '@/lib'
@@ -78,7 +81,7 @@ function TaskNavBadge({ pending, inProgress }: { pending: number; inProgress: nu
 
 // ── useSidebarBadges — derive per-section unread counts ───────────────────────
 function useSidebarBadges() {
-  const { entries, meetingSeenAt, interviewSeenAt } = useNotifStore()
+  const { entries, meetingSeenAt, interviewSeenAt, supportSeenAt } = useNotifStore()
   const { tasks } = useTaskStore()
 
   // Task status counts for the tri-color badge
@@ -91,10 +94,15 @@ function useSidebarBadges() {
   const interviewBadge = entries.filter(
     (e) => e.kind === 'interview' && (interviewSeenAt === 0 || e.createdAt > interviewSeenAt)
   ).length
+  const supportBadge = entries.filter(
+    (e) => e.kind === 'support_escalation' && (supportSeenAt === 0 || e.createdAt > supportSeenAt)
+  ).length
   return {
     badges: {
       '/meetings': meetingBadge,
       '/org/roles': interviewBadge,
+      '/support/inbox': supportBadge,
+      '/support': supportBadge,
     } as Record<string, number>,
     taskPending,
     taskInProgress,
@@ -111,35 +119,43 @@ type NavGroup = {
   label: string
   icon: React.ComponentType<{ className?: string }>
   children: NavLeaf[]
+  to?: string // optional: clicking the label navigates here (WordPress-style)
 }
 type NavEntry = NavLeaf | NavGroup
 function isNavGroup(entry: NavEntry): entry is NavGroup {
   return 'children' in entry
 }
 
-const NAV: NavEntry[] = [
+const NAV_CORE: NavEntry[] = [
   { to: '/dashboard', icon: Squares2X2Icon, label: 'Home' },
-  {
-    label: 'Conversations',
-    icon: ChatBubbleLeftRightIcon,
-    children: [
-      { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
-      { to: '/org/roles', icon: BriefcaseIcon, label: 'Interviews' },
-    ],
-  },
-  {
-    label: 'Workspace',
-    icon: FolderOpenIcon,
-    children: [
-      { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
-      { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
-      { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
-      { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
-      { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
-    ],
-  },
-  { to: '/org/members', icon: UsersIcon, label: 'Members' },
+  { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
+  { to: '/org/roles', icon: BriefcaseIcon, label: 'Interviews' },
 ]
+
+const SUPPORT_NAV_ACTIVATED: NavLeaf = {
+  to: '/support',
+  icon: ChatBubbleLeftEllipsisIcon,
+  label: 'Support',
+}
+
+const SUPPORT_NAV_INACTIVE: NavLeaf = {
+  to: '/support/activate',
+  icon: ChatBubbleLeftEllipsisIcon,
+  label: 'Support',
+}
+
+const NAV_WORKSPACE: NavGroup = {
+  label: 'Workspace',
+  icon: FolderOpenIcon,
+  children: [
+    { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
+    { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
+    { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
+    { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
+    { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
+    { to: '/org/members', icon: UsersIcon, label: 'Members' },
+  ],
+}
 
 const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
 
@@ -531,6 +547,31 @@ function NotificationBell() {
     return () => clearInterval(id)
   }, [token, currentOrgId, userEmail, userName, addNotif])
 
+  // ── Support escalation alerts ──
+  const { config: supportConfig } = useSupportStore()
+  useEffect(() => {
+    if (!token || !currentOrgId || !supportConfig?.activated) return
+    function refreshAlerts() {
+      listEscalationAlerts(currentOrgId!)
+        .then(({ alerts }) => {
+          alerts.forEach((a) => {
+            addNotif({
+              id: `support-alert-${a.alert_id}`,
+              kind: 'support_escalation',
+              title: `Escalation: ${a.subject}`,
+              subtitle: a.reason,
+              orgId: currentOrgId ?? undefined,
+              link: `/support/notifications/${a.conv_id}`,
+            })
+          })
+        })
+        .catch(() => {})
+    }
+    refreshAlerts()
+    const id = setInterval(refreshAlerts, 30_000)
+    return () => clearInterval(id)
+  }, [token, currentOrgId, supportConfig?.activated, addNotif])
+
   // ── Meeting-ended notification ──
   useEffect(() => {
     if (!lastTerminatedAt) return
@@ -572,6 +613,9 @@ function NotificationBell() {
     task: <ClipboardDocumentListIcon className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />,
     meeting_ended: <MicrophoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />,
     interview: <BriefcaseIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />,
+    support_escalation: (
+      <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+    ),
   }
 
   return (
@@ -657,11 +701,11 @@ function NotificationBell() {
               <button
                 onClick={() => {
                   setOpen(false)
-                  navigate('/org/tasks')
+                  navigate('/support/notifications')
                 }}
                 className="text-xs font-medium text-violet-600 hover:text-violet-700"
               >
-                View all tasks →
+                View all notifications →
               </button>
               <button
                 onClick={() => useNotifStore.getState().clearAll()}
@@ -682,7 +726,7 @@ function AppShell() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(['Conversations', 'Workspace']))
+  const [expanded, setExpanded] = useState<Set<string>>(new Set(['Workspace']))
   const { token, emailVerified, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
@@ -697,8 +741,27 @@ function AppShell() {
   }, [token, setOrganizations])
 
   const { badges, taskPending, taskInProgress } = useSidebarBadges()
-  const { markMeetingsSeen, markInterviewsSeen } = useNotifStore()
+  const { markMeetingsSeen, markInterviewsSeen, markSupportSeen } = useNotifStore()
   const setSummary = useUsageStore((s) => s.setSummary)
+  const supportConfig = useSupportStore((s) => s.config)
+  const loadSupportConfig = useSupportStore((s) => s.loadConfig)
+
+  // Load support config when org changes
+  useEffect(() => {
+    if (!currentOrgId) return
+    loadSupportConfig(currentOrgId)
+  }, [currentOrgId, loadSupportConfig])
+
+  // Build nav with conditional Support entry
+  const supportActivated = supportConfig?.activated ?? false
+  const navEntries = useMemo<NavEntry[]>(
+    () => [
+      ...NAV_CORE,
+      supportActivated ? SUPPORT_NAV_ACTIVATED : SUPPORT_NAV_INACTIVE,
+      NAV_WORKSPACE,
+    ],
+    [supportActivated]
+  )
 
   // Fetch usage summary when org changes
   useEffect(() => {
@@ -715,13 +778,24 @@ function AppShell() {
     const p = location.pathname
     if (p.startsWith('/meetings') || p.startsWith('/meeting')) markMeetingsSeen()
     else if (p.startsWith('/org/roles') || p.startsWith('/org/interviews')) markInterviewsSeen()
+    else if (p.startsWith('/support')) {
+      markSupportSeen()
+      if (currentOrgId) markEscalationAlertsRead(currentOrgId).catch(() => {})
+    }
     // Auto-expand the nav group that contains the active route
-    NAV.forEach((entry) => {
+    navEntries.forEach((entry) => {
       if (isNavGroup(entry) && entry.children.some((c) => p.startsWith(c.to))) {
         setExpanded((prev) => new Set([...prev, entry.label]))
       }
     })
-  }, [location.pathname, markMeetingsSeen, markInterviewsSeen])
+  }, [
+    location.pathname,
+    markMeetingsSeen,
+    markInterviewsSeen,
+    markSupportSeen,
+    currentOrgId,
+    supportActivated,
+  ])
 
   function handleSignOut() {
     clearCredentials()
@@ -789,7 +863,7 @@ function AppShell() {
               <OrgSwitcher />
             </div>
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
-              {NAV.map((entry) => {
+              {navEntries.map((entry) => {
                 if (!isNavGroup(entry)) {
                   return (
                     <NavLink
@@ -807,32 +881,64 @@ function AppShell() {
                     >
                       <entry.icon className="h-4 w-4 shrink-0" />
                       {entry.label}
+                      {entry.to === '/org/tasks' ? (
+                        <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                      ) : (
+                        <NavBadge count={badges[entry.to] ?? 0} />
+                      )}
                     </NavLink>
                   )
                 }
                 const isOpen = expanded.has(entry.label)
+                const toggleGroup = () =>
+                  setExpanded((prev) => {
+                    const next = new Set(prev)
+                    if (next.has(entry.label)) next.delete(entry.label)
+                    else next.add(entry.label)
+                    return next
+                  })
                 return (
                   <div key={entry.label}>
-                    <button
-                      onClick={() =>
-                        setExpanded((prev) => {
-                          const next = new Set(prev)
-                          if (next.has(entry.label)) next.delete(entry.label)
-                          else next.add(entry.label)
-                          return next
-                        })
-                      }
-                      className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                    >
-                      <entry.icon className="h-4 w-4 shrink-0" />
-                      {entry.label}
-                      <ChevronDownIcon
-                        className={cn(
-                          'ml-auto h-3.5 w-3.5 transition-transform duration-200',
-                          isOpen && 'rotate-180'
-                        )}
-                      />
-                    </button>
+                    <div className="flex items-center rounded-xl hover:bg-gray-100 transition-colors">
+                      {entry.to ? (
+                        <NavLink
+                          to={entry.to}
+                          onClick={() => {
+                            setSidebarOpen(false)
+                            setExpanded((prev) => new Set([...prev, entry.label]))
+                          }}
+                          className={({ isActive }) =>
+                            cn(
+                              'flex flex-1 items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors',
+                              isActive ? 'text-gray-900' : 'text-gray-500'
+                            )
+                          }
+                        >
+                          <entry.icon className="h-4 w-4 shrink-0" />
+                          {entry.label}
+                        </NavLink>
+                      ) : (
+                        <button
+                          onClick={toggleGroup}
+                          className="flex flex-1 items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-gray-500"
+                        >
+                          <entry.icon className="h-4 w-4 shrink-0" />
+                          {entry.label}
+                        </button>
+                      )}
+                      <button
+                        onClick={toggleGroup}
+                        className="px-2 py-2 text-gray-400 hover:text-gray-700"
+                        aria-label="Toggle"
+                      >
+                        <ChevronDownIcon
+                          className={cn(
+                            'h-3.5 w-3.5 transition-transform duration-200',
+                            isOpen && 'rotate-180'
+                          )}
+                        />
+                      </button>
+                    </div>
                     {isOpen && (
                       <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
                         {entry.children.map(({ to, icon: Icon, label }) => (
@@ -928,7 +1034,7 @@ function AppShell() {
 
         {/* Nav groups */}
         <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto">
-          {NAV.map((entry) => {
+          {navEntries.map((entry) => {
             if (!isNavGroup(entry)) {
               return (
                 <NavLink
@@ -947,6 +1053,11 @@ function AppShell() {
                 >
                   <entry.icon className="h-4 w-4 shrink-0" />
                   {!sidebarCollapsed && entry.label}
+                  {!sidebarCollapsed && entry.to === '/org/tasks' ? (
+                    <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                  ) : !sidebarCollapsed ? (
+                    <NavBadge count={badges[entry.to] ?? 0} />
+                  ) : null}
                 </NavLink>
               )
             }
@@ -960,6 +1071,7 @@ function AppShell() {
                     onClick={() => {
                       setExpanded((prev) => new Set([...prev, entry.label]))
                       setSidebarCollapsed(false)
+                      if (entry.children.length > 0) navigate(entry.children[0].to)
                     }}
                     className={cn(
                       'flex w-full items-center justify-center rounded-xl px-2 py-2 text-[13px] font-medium transition-colors',
@@ -973,28 +1085,52 @@ function AppShell() {
                 </div>
               )
             }
+            const toggleGroup = () =>
+              setExpanded((prev) => {
+                const next = new Set(prev)
+                if (next.has(entry.label)) next.delete(entry.label)
+                else next.add(entry.label)
+                return next
+              })
             return (
               <div key={entry.label}>
-                <button
-                  onClick={() =>
-                    setExpanded((prev) => {
-                      const next = new Set(prev)
-                      if (next.has(entry.label)) next.delete(entry.label)
-                      else next.add(entry.label)
-                      return next
-                    })
-                  }
-                  className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900"
-                >
-                  <entry.icon className="h-4 w-4 shrink-0" />
-                  {entry.label}
-                  <ChevronDownIcon
-                    className={cn(
-                      'ml-auto h-3.5 w-3.5 transition-transform duration-200',
-                      isOpen && 'rotate-180'
-                    )}
-                  />
-                </button>
+                <div className="flex items-center rounded-xl hover:bg-gray-100 transition-colors">
+                  {entry.to ? (
+                    <NavLink
+                      to={entry.to}
+                      onClick={() => setExpanded((prev) => new Set([...prev, entry.label]))}
+                      className={({ isActive }) =>
+                        cn(
+                          'flex flex-1 items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors',
+                          isActive ? 'text-gray-900' : 'text-gray-500'
+                        )
+                      }
+                    >
+                      <entry.icon className="h-4 w-4 shrink-0" />
+                      {entry.label}
+                    </NavLink>
+                  ) : (
+                    <button
+                      onClick={toggleGroup}
+                      className="flex flex-1 items-center gap-2.5 px-3 py-2 text-[13px] font-medium text-gray-500"
+                    >
+                      <entry.icon className="h-4 w-4 shrink-0" />
+                      {entry.label}
+                    </button>
+                  )}
+                  <button
+                    onClick={toggleGroup}
+                    className="px-2 py-2 text-gray-400 hover:text-gray-700"
+                    aria-label="Toggle"
+                  >
+                    <ChevronDownIcon
+                      className={cn(
+                        'h-3.5 w-3.5 transition-transform duration-200',
+                        isOpen && 'rotate-180'
+                      )}
+                    />
+                  </button>
+                </div>
                 {isOpen && (
                   <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
                     {entry.children.map(({ to, icon: Icon, label }) => (

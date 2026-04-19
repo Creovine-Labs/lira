@@ -1,0 +1,36 @@
+# Lira AI — https://liraintelligence.com
+# Allow all crawlers to index public marketing pages
+
+User-agent: *
+Allow: /
+Allow: /products/
+Allow: /blog/
+Allow: /resources/
+Allow: /tutorials/
+Allow: /security
+Allow: /privacy
+Allow: /terms
+Allow: /cookies
+Allow: /acceptable-use
+
+# Disallow authenticated/internal routes
+Disallow: /dashboard
+Disallow: /meeting
+Disallow: /meetings
+Disallow: /settings
+Disallow: /organizations
+Disallow: /org/
+Disallow: /support/
+Disallow: /admin/
+Disallow: /profile
+Disallow: /onboarding
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /ui-lab
+Disallow: /launch-demo
+Disallow: /login
+Disallow: /signup
+
+# Sitemap location
+Sitemap: https://liraintelligence.com/sitemap.xml

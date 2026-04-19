@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
 const LAST_UPDATED = 'March 25, 2026'
@@ -6,6 +7,12 @@ const LAST_UPDATED = 'March 25, 2026'
 export function TermsOfServicePage() {
   return (
     <MarketingLayout>
+      <SEO
+        title="Terms of Service"
+        description="Read the Lira AI Terms of Service. Understand your rights and obligations when using our AI meeting participant, sales coaching, interview, and customer support platform."
+        keywords="Lira AI terms of service, terms and conditions, user agreement"
+        path="/terms"
+      />
       <div className="bg-white">
         {/* Hero */}
         <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">
