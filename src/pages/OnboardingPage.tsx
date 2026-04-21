@@ -2,7 +2,10 @@ import { useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon,
+  ArrowRightIcon,
+  BoltIcon,
   CheckIcon,
+  ChatBubbleLeftRightIcon,
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
@@ -11,6 +14,7 @@ import {
   SparklesIcon,
   UserPlusIcon,
   UsersIcon,
+  VideoCameraIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
@@ -43,7 +47,15 @@ const INDUSTRIES = [
   'Telecommunications',
 ]
 
-type FlowStep = 'choose' | 'org-name' | 'industry' | 'details' | 'success' | 'invite' | 'join-code'
+type FlowStep =
+  | 'choose'
+  | 'org-name'
+  | 'industry'
+  | 'details'
+  | 'success'
+  | 'invite'
+  | 'join-code'
+  | 'module'
 
 const STEP_BACK: Partial<Record<FlowStep, FlowStep>> = {
   'org-name': 'choose',
@@ -58,6 +70,20 @@ const LEFT_HEADINGS: Partial<Record<FlowStep, string>> = {
   details: 'Almost\nthere',
   invite: 'Grow your\nteam',
   'join-code': 'Join your\nteam',
+  module: 'Choose your\nfirst module',
+}
+
+// TODO(api): persist to user.preferred_module via creovine-api once field exists.
+// For now we stash in localStorage so the dashboard + routing can read it.
+export type PreferredModule = 'support' | 'sales' | 'meetings' | 'unsure'
+const PREFERRED_MODULE_KEY = 'lira.preferred_module'
+
+function persistPreferredModule(choice: PreferredModule) {
+  try {
+    localStorage.setItem(PREFERRED_MODULE_KEY, choice)
+  } catch {
+    // ignore storage errors (private mode, etc.)
+  }
 }
 
 function CelebrationGraphic() {
@@ -94,6 +120,125 @@ function CelebrationGraphic() {
       <circle cx="37" cy="123" r="3" fill="#3730a3" />
       <circle cx="123" cy="123" r="3" fill="#4338ca" />
     </svg>
+  )
+}
+
+// ── Module picker step ──────────────────────────────────────────────────────
+
+const MODULE_OPTIONS: {
+  id: PreferredModule
+  title: string
+  description: string
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  accent: string
+  recommended?: boolean
+}[] = [
+  {
+    id: 'support',
+    title: 'Customer Support',
+    description: 'Launch an AI support agent — chat, portal, email — grounded in your knowledge.',
+    Icon: ChatBubbleLeftRightIcon,
+    accent: '#3730a3',
+    recommended: true,
+  },
+  {
+    id: 'sales',
+    title: 'Sales Coaching',
+    description: 'Real-time objection handling and CRM auto-fill on every call.',
+    Icon: BoltIcon,
+    accent: '#f59e0b',
+  },
+  {
+    id: 'meetings',
+    title: 'Meeting Intelligence',
+    description: 'Lira joins your meetings, contributes, and closes the loop on action items.',
+    Icon: VideoCameraIcon,
+    accent: '#10b981',
+  },
+  {
+    id: 'unsure',
+    title: 'Not sure yet — show me around',
+    description: "We'll take you to the dashboard with all modules visible.",
+    Icon: SparklesIcon,
+    accent: '#6366f1',
+  },
+]
+
+function ModuleStep({ onPick }: { onPick: (choice: PreferredModule) => void }) {
+  const [selected, setSelected] = useState<PreferredModule>('support')
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
+          One more thing
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+          What brings you to Lira?
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">
+          Pick what you'd like to set up first. You can always enable the others later from your
+          dashboard.
+        </p>
+      </div>
+
+      <div className="space-y-2.5">
+        {MODULE_OPTIONS.map((opt) => {
+          const { Icon } = opt
+          const isSelected = selected === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setSelected(opt.id)}
+              className={`group relative flex w-full items-start gap-4 rounded-xl border px-5 py-4 text-left transition ${
+                isSelected
+                  ? 'border-[#3730a3] bg-[#3730a3]/5 shadow-sm'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <div
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
+                style={{
+                  background: `${opt.accent}14`,
+                  color: opt.accent,
+                }}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-gray-900">{opt.title}</p>
+                  {opt.recommended && (
+                    <span className="inline-flex items-center rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#3730a3]">
+                      Recommended
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">{opt.description}</p>
+              </div>
+              <div
+                className={`mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 transition ${
+                  isSelected ? 'border-[#3730a3] bg-[#3730a3]' : 'border-gray-300 bg-white'
+                }`}
+              >
+                {isSelected && <CheckIcon className="h-full w-full p-0.5 text-white" />}
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex items-center justify-end border-t border-gray-100 pt-4">
+        <button
+          onClick={() => onPick(selected)}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#3730a3] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+        >
+          Continue
+          <ArrowRightIcon className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
   )
 }
 
@@ -498,13 +643,24 @@ function OnboardingPage() {
                 </div>
                 <div className="border-t border-gray-100 pt-4">
                   <button
-                    onClick={() => navigate('/dashboard')}
+                    onClick={() => setStep('module')}
                     className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
                   >
-                    Enter workspace
+                    Continue
                   </button>
                 </div>
               </div>
+            )}
+
+            {/* Step: module picker */}
+            {step === 'module' && (
+              <ModuleStep
+                onPick={(choice) => {
+                  persistPreferredModule(choice)
+                  if (choice === 'support') navigate('/support/activate')
+                  else navigate('/dashboard')
+                }}
+              />
             )}
 
             {/* Step: invite */}
