@@ -1596,6 +1596,14 @@ function SupportActivatePage() {
                           : liraAddress}
                       </li>
                       <li>Chat widget: {chatEnabled ? 'Enabled' : 'Disabled'}</li>
+                      {portalEnabled && (
+                        <li>
+                          Support portal:{' '}
+                          {portalCustomDomain.trim()
+                            ? portalCustomDomain.trim()
+                            : portalUrl}
+                        </li>
+                      )}
                       <li>Knowledge base: Connected</li>
                     </ul>
                   </div>

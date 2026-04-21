@@ -378,47 +378,6 @@ function TopbarOrgSwitcher() {
   )
 }
 
-// ── Beta progress bar — aggregate usage across all 7 features ─────────────────
-const BETA_KEYS = [
-  'meetings',
-  'meeting_minutes',
-  'ai_tasks',
-  'documents',
-  'knowledge_pages',
-] as const
-
-function BetaProgressBar() {
-  const navigate = useNavigate()
-  const summary = useUsageStore((s) => s.summary)
-
-  if (!summary) return null
-
-  // average percentage across all 7 features, each capped at 100%
-  const total = BETA_KEYS.reduce((sum, k) => {
-    const used = summary.usage[k] ?? 0
-    const limit = summary.limits[k] ?? 0
-    return sum + (limit > 0 ? Math.min(used / limit, 1) : 0)
-  }, 0)
-  const pct = Math.round((total / BETA_KEYS.length) * 100)
-
-  return (
-    <button
-      onClick={() => navigate('/org/usage')}
-      title={`Beta usage: ${pct}%`}
-      className="relative ml-2 flex h-[22px] w-20 items-center overflow-hidden rounded-md border border-gray-400/60 bg-transparent transition hover:border-gray-500 sm:w-28"
-    >
-      {/* fill — dark gray, grows with usage */}
-      <div
-        className="absolute inset-y-0 left-0 bg-gray-400/40 transition-all duration-500"
-        style={{ width: `${Math.max(pct, 2)}%` }}
-      />
-      <span className="relative z-10 w-full text-center text-[10px] font-semibold tracking-widest text-gray-400">
-        BETA {pct}%
-      </span>
-    </button>
-  )
-}
-
 // ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
   const { userName, userEmail, userPicture, userRole } = useAuthStore()
