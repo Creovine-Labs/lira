@@ -5,6 +5,7 @@ import { SEO } from '@/components/SEO'
 import {
   ArrowRightIcon,
   ArrowTrendingUpIcon,
+  BoltIcon,
   BookOpenIcon,
   BuildingOffice2Icon,
   ChevronLeftIcon,
@@ -1171,22 +1172,39 @@ function Hero() {
 
 // ─── Hub & Spoke ──────────────────────────────────────────────────────────────
 
+const ORBIT_DURATION = '44s'
+
 const HUB_STYLES = `
-  @keyframes hubDraw{from{stroke-dashoffset:var(--len,600)}to{stroke-dashoffset:0}}
   @keyframes hubGlow{0%,100%{box-shadow:0 0 0 0 rgba(55,48,163,.35),0 24px 60px -12px rgba(55,48,163,.45)}50%{box-shadow:0 0 0 18px rgba(55,48,163,0),0 24px 60px -12px rgba(55,48,163,.6)}}
   @keyframes hubSpinCW{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
   @keyframes hubSpinCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
-  @keyframes hubParticle{0%{offset-distance:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
   @keyframes hubFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-  .hub-line{stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);animation:hubDraw 1.4s cubic-bezier(.2,.7,.3,1) forwards}
+
+  /* Orbital motion: the arm rotates around the hub, the card counter-rotates to stay upright. */
+  @keyframes orbitArm{from{transform:rotate(var(--start,0deg))}to{transform:rotate(calc(var(--start,0deg) + 360deg))}}
+  @keyframes orbitCardUpright{from{transform:translate(-50%,-50%) rotate(calc(var(--start,0deg) * -1))}to{transform:translate(-50%,-50%) rotate(calc(var(--start,0deg) * -1 - 360deg))}}
+
   .hub-glow{animation:hubGlow 3.2s ease-in-out infinite}
   .hub-ring-cw{transform-origin:50% 50%;animation:hubSpinCW 60s linear infinite}
   .hub-ring-ccw{transform-origin:50% 50%;animation:hubSpinCCW 80s linear infinite}
-  .hub-particle{offset-rotate:0deg;animation:hubParticle 3.4s ease-in-out infinite}
   .hub-card{animation:hubFadeUp .55s cubic-bezier(.2,.7,.3,1) both}
+
+  .orbit-stage{position:absolute;inset:0}
+  .orbit-arm{
+    position:absolute;left:50%;top:50%;width:0;height:0;
+    animation:orbitArm ${ORBIT_DURATION} linear infinite;
+  }
+  .orbit-card-wrapper{
+    position:absolute;left:var(--radius,300px);top:0;
+    animation:orbitCardUpright ${ORBIT_DURATION} linear infinite;
+    transform:translate(-50%,-50%);
+  }
+  .orbit-stage:hover .orbit-arm,
+  .orbit-stage:hover .orbit-card-wrapper{animation-play-state:paused}
+
   @media (prefers-reduced-motion:reduce){
-    .hub-line{stroke-dashoffset:0;animation:none}
-    .hub-glow,.hub-ring-cw,.hub-ring-ccw,.hub-particle,.hub-card{animation:none}
+    .hub-glow,.hub-ring-cw,.hub-ring-ccw,.hub-card,.orbit-arm,.orbit-card-wrapper{animation:none}
+    .orbit-card-wrapper{transform:translate(-50%,-50%) rotate(calc(var(--start,0deg) * -1))}
   }
 `
 
@@ -1199,7 +1217,7 @@ type Spoke = {
   Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
 
-const SPOKES: Record<'support' | 'sales' | 'meetings' | 'knowledge', Spoke> = {
+const SPOKES: Record<'support' | 'tasks' | 'meetings' | 'knowledge', Spoke> = {
   support: {
     id: 'support',
     label: 'Customer Support',
@@ -1213,18 +1231,18 @@ const SPOKES: Record<'support' | 'sales' | 'meetings' | 'knowledge', Spoke> = {
     accent: '#3730a3',
     Icon: HeartIcon,
   },
-  sales: {
-    id: 'sales',
-    label: 'Sales',
-    description: 'Real-time objection handling',
+  tasks: {
+    id: 'tasks',
+    label: 'Task Execution',
+    description: 'Acts on every conversation',
     events: [
-      'Detected pricing objection — surfaced ROI card',
-      'Logged discovery call to Salesforce',
-      'Flagged competitor mention — Acme',
-      'Drafted follow-up email',
+      'Created Linear ticket LIR-428',
+      'Updated HubSpot deal — stage: Negotiation',
+      'Booked follow-up via Google Calendar',
+      'Posted action items to #eng-standup',
     ],
-    accent: '#0ea5e9',
-    Icon: ArrowTrendingUpIcon,
+    accent: '#f59e0b',
+    Icon: BoltIcon,
   },
   meetings: {
     id: 'meetings',
@@ -1232,9 +1250,9 @@ const SPOKES: Record<'support' | 'sales' | 'meetings' | 'knowledge', Spoke> = {
     description: 'Joins. Listens. Acts.',
     events: [
       'Extracted 3 action items from Sprint Planning',
-      'Created Linear ticket LIR-428',
       'Summarized 42-min call in 120 words',
-      'Posted recap to #eng-standup',
+      'Flagged competitor mention — Acme',
+      'Sent recap to 8 attendees',
     ],
     accent: '#8b5cf6',
     Icon: VideoCameraIcon,
@@ -1252,15 +1270,6 @@ const SPOKES: Record<'support' | 'sales' | 'meetings' | 'knowledge', Spoke> = {
     accent: '#10b981',
     Icon: BookOpenIcon,
   },
-}
-
-// Shared coordinate system — everything uses percentages of the same container.
-// Hub at (50%, 50%). Endpoints are where the line meets the card edge.
-const NODES = {
-  support:   { x: 50, y: 12,  primary: true },   // top
-  sales:     { x: 88, y: 50 },                    // right
-  meetings:  { x: 50, y: 88 },                    // bottom
-  knowledge: { x: 12, y: 50 },                    // left
 }
 
 function SpokeEventTicker({ events, accent }: { events: string[]; accent: string }) {
@@ -1288,39 +1297,58 @@ function SpokeEventTicker({ events, accent }: { events: string[]; accent: string
   )
 }
 
-function SpokeCard({
+function GlassSpokeCard({
   spoke,
   compact = false,
-  className = '',
-  style,
 }: {
   spoke: Spoke
   compact?: boolean
-  className?: string
-  style?: React.CSSProperties
 }) {
   const { Icon } = spoke
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm ring-1 ring-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-8px_rgba(16,24,40,0.08)] ${compact ? 'w-full p-3.5' : 'w-[212px] p-4'} ${className}`}
-      style={style}
+      className={`relative rounded-2xl overflow-hidden ${compact ? 'w-full p-3.5' : 'w-[212px] p-4'}`}
+      style={{
+        // Glassmorphic stack
+        background:
+          'linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.58) 100%)',
+        backdropFilter: 'blur(14px) saturate(140%)',
+        WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+        boxShadow:
+          '0 1px 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(255,255,255,0.55) inset, 0 8px 32px -8px rgba(16,24,40,0.18), 0 2px 6px -2px rgba(16,24,40,0.08)',
+      }}
     >
+      {/* Subtle color wash using the accent */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: `radial-gradient(ellipse 80% 60% at 0% 0%, ${spoke.accent}22, transparent 60%)`,
+        }}
+      />
       {/* Accent bar */}
       <div
         className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
-        style={{ background: spoke.accent }}
+        style={{ background: spoke.accent, opacity: 0.85 }}
       />
-      <div className="pl-2.5">
+      <div className="relative pl-2.5">
         <div className="flex items-center gap-2 mb-2">
           <div
-            className="flex h-6 w-6 items-center justify-center rounded-md"
-            style={{ background: `${spoke.accent}14`, color: spoke.accent }}
+            className="flex h-6 w-6 items-center justify-center rounded-md ring-1"
+            style={{
+              background: `${spoke.accent}1f`,
+              color: spoke.accent,
+              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.6)`,
+              // @ts-expect-error ringColor inline
+              '--tw-ring-color': `${spoke.accent}33`,
+            }}
           >
             <Icon className="h-3.5 w-3.5" />
           </div>
           <p className="text-[11px] font-bold tracking-[-0.01em] text-gray-900">{spoke.label}</p>
         </div>
-        <p className="text-[10.5px] text-gray-400 mb-2.5 tracking-[-0.005em]">{spoke.description}</p>
+        <p className="text-[10.5px] text-gray-500 mb-2.5 tracking-[-0.005em]">
+          {spoke.description}
+        </p>
         <SpokeEventTicker events={spoke.events} accent={spoke.accent} />
       </div>
     </div>
@@ -1328,9 +1356,17 @@ function SpokeCard({
 }
 
 function HubAndSpoke() {
-  // Keep the hub diameter constant and drop the lines a bit short of the
-  // hub so we don't visually collide with the center node.
   const HUB_SIZE = 176 // px
+  // 4 cards equally spaced; rotate them so Support starts at the top.
+  // Orbit radius in CSS px for desktop container; the container maintains aspect
+  // ratio 10:8 so a 260px orbit fits within both axes.
+  const ORBITERS = [
+    { key: 'support',   start: -90, radius: 280 },
+    { key: 'tasks',     start: 0,   radius: 280 },
+    { key: 'meetings',  start: 90,  radius: 280 },
+    { key: 'knowledge', start: 180, radius: 280 },
+  ] as const
+
   return (
     <section className="relative py-24 sm:py-32 px-6 overflow-hidden">
       <style>{HUB_STYLES}</style>
@@ -1340,19 +1376,19 @@ function HubAndSpoke() {
         className="absolute inset-0 -z-10 opacity-60"
         style={{
           background:
-            'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(55,48,163,0.06), transparent 70%)',
+            'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(55,48,163,0.07), transparent 70%)',
         }}
       />
       <div
-        className="absolute inset-0 -z-10 opacity-[0.25]"
+        className="absolute inset-0 -z-10 opacity-[0.22]"
         style={{
           backgroundImage:
             'radial-gradient(circle at 1px 1px, rgba(16,24,40,0.25) 1px, transparent 0)',
           backgroundSize: '28px 28px',
           maskImage:
-            'radial-gradient(ellipse 50% 40% at 50% 50%, #000 40%, transparent 75%)',
+            'radial-gradient(ellipse 55% 45% at 50% 50%, #000 40%, transparent 75%)',
           WebkitMaskImage:
-            'radial-gradient(ellipse 50% 40% at 50% 50%, #000 40%, transparent 75%)',
+            'radial-gradient(ellipse 55% 45% at 50% 50%, #000 40%, transparent 75%)',
         }}
       />
 
@@ -1385,124 +1421,64 @@ function HubAndSpoke() {
             engine.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-            Lira hears, understands, and <em className="not-italic text-gray-700 font-semibold">acts on</em>{' '}
-            every business conversation — grounded in your shared knowledge.
+            Lira hears, understands, and{' '}
+            <em className="not-italic text-gray-700 font-semibold">acts on</em> every business
+            conversation — grounded in your shared knowledge.
           </p>
         </div>
 
         {/* ─── Desktop / tablet ───────────────────────────────────────────── */}
         <div
-          className="relative hidden md:block mx-auto"
-          style={{ width: '100%', maxWidth: 860, aspectRatio: '10 / 7' }}
+          className="orbit-stage relative hidden md:block mx-auto"
+          style={{ width: '100%', maxWidth: 820, aspectRatio: '10 / 8' }}
         >
-          {/* SVG connectors + orbit rings — viewBox matches aspect ratio so px == % */}
+          {/* SVG: orbit rings only (cards on their own orbital track) */}
           <svg
-            viewBox="0 0 1000 700"
-            preserveAspectRatio="none"
+            viewBox="0 0 1000 800"
+            preserveAspectRatio="xMidYMid meet"
             className="absolute inset-0 w-full h-full"
             style={{ overflow: 'visible' }}
           >
-            <defs>
-              {Object.values(SPOKES).map((s) => (
-                <linearGradient
-                  key={s.id}
-                  id={`grad-${s.id}`}
-                  x1="50%"
-                  y1="50%"
-                  x2="0%"
-                  y2="0%"
-                >
-                  <stop offset="0%" stopColor={s.accent} stopOpacity="0.15" />
-                  <stop offset="100%" stopColor={s.accent} stopOpacity="0.9" />
-                </linearGradient>
-              ))}
-            </defs>
-
-            {/* Orbit rings (centered at 500,350) */}
-            <g className="hub-ring-cw" style={{ transformOrigin: '500px 350px' }}>
+            {/* Inner slow ring */}
+            <g className="hub-ring-cw" style={{ transformOrigin: '500px 400px' }}>
               <circle
                 cx="500"
-                cy="350"
-                r="150"
+                cy="400"
+                r="170"
                 fill="none"
                 stroke="#3730a3"
-                strokeOpacity="0.18"
+                strokeOpacity="0.2"
                 strokeWidth="1.2"
-                strokeDasharray="2 8"
+                strokeDasharray="2 9"
               />
             </g>
-            <g className="hub-ring-ccw" style={{ transformOrigin: '500px 350px' }}>
+            {/* Mid ring */}
+            <g className="hub-ring-ccw" style={{ transformOrigin: '500px 400px' }}>
               <circle
                 cx="500"
-                cy="350"
-                r="220"
+                cy="400"
+                r="240"
                 fill="none"
                 stroke="#3730a3"
-                strokeOpacity="0.12"
+                strokeOpacity="0.14"
                 strokeWidth="1"
-                strokeDasharray="1 10"
+                strokeDasharray="1 12"
               />
             </g>
-
-            {/* Connector lines — hub (500,350) → endpoint; stop short of card */}
-            {(
-              [
-                { id: 'support',   x: 500, y: 140 },
-                { id: 'sales',     x: 810, y: 350 },
-                { id: 'meetings',  x: 500, y: 560 },
-                { id: 'knowledge', x: 190, y: 350 },
-              ] as const
-            ).map((p, i) => {
-              const accent = SPOKES[p.id].accent
-              return (
-                <g key={p.id}>
-                  <line
-                    x1="500"
-                    y1="350"
-                    x2={p.x}
-                    y2={p.y}
-                    stroke={`url(#grad-${p.id})`}
-                    strokeWidth={p.id === 'support' ? 2.2 : 1.8}
-                    strokeLinecap="round"
-                    className="hub-line"
-                    style={
-                      {
-                        ['--len' as string]: '420',
-                        animationDelay: `${0.15 * i}s`,
-                      } as React.CSSProperties
-                    }
-                  />
-                  {/* Endpoint dot */}
-                  <circle cx={p.x} cy={p.y} r="3.5" fill={accent} opacity="0.9" />
-                </g>
-              )
-            })}
-
-            {/* Traveling particles (using CSS offset-path) */}
-            {(
-              [
-                { id: 'support', path: 'M 500 350 L 500 140', delay: 0 },
-                { id: 'sales', path: 'M 500 350 L 810 350', delay: 0.8 },
-                { id: 'meetings', path: 'M 500 350 L 500 560', delay: 1.4 },
-                { id: 'knowledge', path: 'M 500 350 L 190 350', delay: 2.0 },
-              ] as const
-            ).map((p) => (
-              <circle
-                key={`p-${p.id}`}
-                r="3.5"
-                fill={SPOKES[p.id].accent}
-                className="hub-particle"
-                style={
-                  {
-                    offsetPath: `path('${p.path}')`,
-                    animationDelay: `${p.delay + 1.2}s`,
-                  } as React.CSSProperties
-                }
-              />
-            ))}
+            {/* Outer ring — orbital track for the cards (very subtle) */}
+            <circle
+              cx="500"
+              cy="400"
+              r="340"
+              fill="none"
+              stroke="#3730a3"
+              strokeOpacity="0.08"
+              strokeWidth="1"
+              strokeDasharray="3 6"
+            />
           </svg>
 
-          {/* Center hub — precisely centered with fixed size */}
+          {/* Center hub */}
           <div
             className="absolute hub-glow rounded-full"
             style={{
@@ -1512,12 +1488,11 @@ function HubAndSpoke() {
               top: `calc(50% - ${HUB_SIZE / 2}px)`,
               background:
                 'radial-gradient(circle at 30% 25%, #6366f1 0%, #3730a3 45%, #1e1b4b 100%)',
+              zIndex: 2,
             }}
           >
-            {/* Inner ring */}
             <div className="absolute inset-2 rounded-full ring-1 ring-white/10" />
             <div className="absolute inset-4 rounded-full ring-1 ring-white/5" />
-            {/* Content */}
             <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
               <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 backdrop-blur-sm mb-2.5">
                 <img
@@ -1537,27 +1512,29 @@ function HubAndSpoke() {
             </div>
           </div>
 
-          {/* Spoke cards — positioned by percentage of the same container */}
-          {(
-            [
-              { node: NODES.support,   key: 'support',   delay: '1.6s' },
-              { node: NODES.sales,     key: 'sales',     delay: '1.75s' },
-              { node: NODES.meetings,  key: 'meetings',  delay: '1.9s' },
-              { node: NODES.knowledge, key: 'knowledge', delay: '2.05s' },
-            ] as const
-          ).map(({ node, key, delay }) => (
+          {/* Orbiting cards — each one rotates on an arm; content counter-rotates to stay upright */}
+          {ORBITERS.map(({ key, start, radius }) => (
             <div
               key={key}
-              className="absolute hub-card"
-              style={{
-                left: `${node.x}%`,
-                top: `${node.y}%`,
-                transform: 'translate(-50%, -50%)',
-                animationDelay: delay,
-                zIndex: 3,
-              }}
+              className="orbit-arm"
+              style={
+                {
+                  ['--start' as string]: `${start}deg`,
+                  zIndex: 3,
+                } as React.CSSProperties
+              }
             >
-              <SpokeCard spoke={SPOKES[key]} />
+              <div
+                className="orbit-card-wrapper"
+                style={
+                  {
+                    ['--start' as string]: `${start}deg`,
+                    ['--radius' as string]: `${radius}px`,
+                  } as React.CSSProperties
+                }
+              >
+                <GlassSpokeCard spoke={SPOKES[key]} />
+              </div>
             </div>
           ))}
         </div>
@@ -1587,8 +1564,8 @@ function HubAndSpoke() {
             </div>
           </div>
           <div className="space-y-3">
-            {(['support', 'sales', 'meetings', 'knowledge'] as const).map((k) => (
-              <SpokeCard key={k} spoke={SPOKES[k]} compact />
+            {(['support', 'tasks', 'meetings', 'knowledge'] as const).map((k) => (
+              <GlassSpokeCard key={k} spoke={SPOKES[k]} compact />
             ))}
           </div>
         </div>
