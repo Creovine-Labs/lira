@@ -50,6 +50,7 @@
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-oauth/google": "^0.13.4",
     "@sentry/react": "^10.39.0",
+    "@vercel/edge": "^1.2.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
