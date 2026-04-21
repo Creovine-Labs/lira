@@ -4,7 +4,6 @@ import {
   ArrowDownOnSquareIcon,
   BuildingOffice2Icon,
   ClipboardDocumentIcon,
-  Cog6ToothIcon,
   LightBulbIcon,
   LockClosedIcon,
   PlusIcon,
