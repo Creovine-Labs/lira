@@ -339,7 +339,7 @@ export function PricingPage() {
               to="/signup"
               className="inline-flex items-center gap-2 rounded-full bg-transparent border border-white/40 text-white px-6 py-3 text-sm font-black hover:bg-white/10 transition-colors"
             >
-              Start free trial
+              Get started
             </Link>
           </div>
         </div>

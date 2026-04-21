@@ -72,7 +72,7 @@ export function UsagePage() {
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Usage</h1>
         <p className="text-sm text-gray-500 mt-1">
-          Track your organization&apos;s feature usage during the beta period.
+          Track your organization&apos;s feature usage.
         </p>
       </div>
 
@@ -106,15 +106,14 @@ export function UsagePage() {
         })}
       </div>
 
-      {/* Beta info card */}
+      {/* Info card */}
       <div className="mt-8 rounded-xl border border-[#3730a3]/20 bg-[#3730a3]/5 p-5">
-        <h3 className="text-sm font-semibold text-[#3730a3]">About the Beta</h3>
+        <h3 className="text-sm font-semibold text-[#3730a3]">About usage limits</h3>
         <p className="text-xs text-[#3730a3]/80 mt-1 leading-relaxed">
-          All features are available during the beta, with usage limits to keep the experience
-          smooth for everyone. Once you hit a limit, that feature pauses until the full release.
-          We&apos;d love your feedback —{' '}
+          All features are available with usage limits to keep the experience smooth for everyone.
+          If you need higher limits,{' '}
           <a
-            href="mailto:support@creovine.com?subject=Lira Beta Feedback"
+            href="mailto:support@creovine.com?subject=Lira Usage"
             className="underline font-medium"
           >
             reach out anytime

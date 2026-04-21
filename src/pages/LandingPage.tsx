@@ -1078,7 +1078,7 @@ function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
           onClick={handleStart}
           className="w-full rounded-xl bg-[#3730a3] text-white text-sm font-semibold py-3 hover:bg-[#312e81] transition flex items-center justify-center gap-2"
         >
-          Start free
+          Get started
           <ArrowRightIcon className="w-4 h-4" />
         </button>
 
@@ -1148,7 +1148,7 @@ function Hero() {
           to="/signup"
           className="inline-flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all"
         >
-          Start free
+          Get started
         </Link>
       </div>
     </section>
@@ -1878,7 +1878,7 @@ function SupportShowcase() {
                 to="/signup"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all active:scale-95"
               >
-                Start free
+                Get started
               </Link>
             </div>
           </div>
@@ -2972,7 +2972,7 @@ function FinalCTA() {
         Your conversations deserve better than a transcript
       </h2>
       <p className="mx-auto max-w-md text-gray-500 mb-8 leading-relaxed">
-        Start with Customer Support, free. Lira resolves tickets, updates your CRM, and books follow-ups while your team sleeps.
+        Start with Customer Support. Lira resolves tickets, updates your CRM, and books follow-ups while your team sleeps.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
@@ -2980,7 +2980,7 @@ function FinalCTA() {
           className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
         >
           <ComputerDesktopIcon className="h-3.5 w-3.5" />
-          Start free
+          Get started
         </Link>
         <a
           href="mailto:hello@creovine.com"

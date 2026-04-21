@@ -119,9 +119,6 @@ export function MarketingNavbar() {
           {/* Logo */}
           <Link to="/" aria-label="Lira AI home" className="flex items-center gap-2">
             <LiraLogo size="md" />
-            <span className="rounded-md border border-gray-700 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-gray-700">
-              BETA
-            </span>
           </Link>
 
           {/* Desktop center nav */}
@@ -241,7 +238,7 @@ export function MarketingNavbar() {
               className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
             >
               <ComputerDesktopIcon className="h-3.5 w-3.5" />
-              Try Beta
+              Get started
             </Link>
             <Link
               to="/login"
@@ -351,7 +348,7 @@ export function MarketingNavbar() {
                 className="inline-flex justify-center items-center gap-2 rounded-full bg-gray-900 px-4 py-2.5 text-sm font-medium text-white"
               >
                 <ComputerDesktopIcon className="h-3.5 w-3.5" />
-                Try Beta
+                Get started
               </Link>
               <Link
                 to="/login"

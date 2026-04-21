@@ -1248,7 +1248,6 @@ function AppShell() {
           {/* Center — persistent org switcher (always visible) */}
           <div className="flex flex-1 items-center">
             <TopbarOrgSwitcher />
-            <BetaProgressBar />
           </div>
 
           {/* Right — notifications + user */}

@@ -26,16 +26,16 @@ export function BetaLimitModal() {
           <img src="/lira_black.png" alt="Lira" className="h-8 w-8" />
         </div>
 
-        <h2 className="text-lg font-bold text-gray-900 mb-1">Beta Limit Reached</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-1">Usage limit reached</h2>
         <p className="text-sm text-gray-500 mb-1 font-medium">{label}</p>
         <p className="text-sm text-gray-600 mb-6">
           {limitMessage ??
-            `You've reached the maximum usage for ${label.toLowerCase()} in the beta. Thank you for trying Lira! Stay tuned for the full release.`}
+            `You've reached your usage limit for ${label.toLowerCase()}. Reach out to us and we'll get you sorted.`}
         </p>
 
         <div className="flex items-center justify-center gap-3">
           <a
-            href="mailto:support@creovine.com?subject=Lira Beta Feedback"
+            href="mailto:support@creovine.com?subject=Lira Usage Feedback"
             className="rounded-xl border border-gray-200 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Share feedback
