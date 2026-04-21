@@ -57,8 +57,8 @@ function WaveBars() {
   )
 }
 
-type DemoMode = 'meetings' | 'sales' | 'support'
-const DEMO_MODES: DemoMode[] = ['meetings', 'sales', 'support']
+type DemoMode = 'support' | 'meetings' | 'sales'
+const DEMO_MODES: DemoMode[] = ['support', 'meetings', 'sales']
 const ROTATE_MS = 10000
 const PAUSE_MS = 20000
 
@@ -82,7 +82,7 @@ const SUPPORT_MSGS = [
 ]
 
 function MeetingDemo() {
-  const [mode, setMode] = useState<DemoMode>('meetings')
+  const [mode, setMode] = useState<DemoMode>('support')
   const [phase, setPhase] = useState(0)
   const [userClicked, setUserClicked] = useState(false)
   const pauseRef = useRef<ReturnType<typeof setTimeout>>(undefined)
@@ -160,7 +160,8 @@ function MeetingDemo() {
 
   return (
     <div
-      className="mx-auto mt-16 sm:mt-24 max-w-6xl px-2 sm:px-4 md:px-6"
+      id="support-demo"
+      className="mx-auto mt-16 sm:mt-24 max-w-6xl px-2 sm:px-4 md:px-6 scroll-mt-24"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -170,9 +171,9 @@ function MeetingDemo() {
       <div className="flex items-center justify-center mb-4 sm:mb-6">
         <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1.5">
           {[
+            { id: 'support' as DemoMode, label: 'Support', Icon: HeartIcon },
             { id: 'meetings' as DemoMode, label: 'Meetings', Icon: VideoCameraIcon },
             { id: 'sales' as DemoMode, label: 'Sales', Icon: ArrowTrendingUpIcon },
-            { id: 'support' as DemoMode, label: 'Support', Icon: HeartIcon },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -1089,78 +1090,82 @@ function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
 // ─── Hero ──────────────────────────────────────────────────────────────────────────────
 
 function Hero() {
-  const [meetingUrl, setMeetingUrl] = React.useState('')
-  const [showModal, setShowModal] = React.useState(false)
-
-  const handleJoin = () => {
-    const trimmed = meetingUrl.trim()
-    if (trimmed) {
-      setShowModal(true)
-    } else {
-      window.location.href = '/signup'
-    }
+  const scrollToSupport = () => {
+    const el = document.getElementById('support-demo')
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   return (
-    <>
-      {showModal && <MeetingModal url={meetingUrl} onClose={() => setShowModal(false)} />}
-      <section className="relative overflow-hidden pt-36 sm:pt-44 pb-0 px-6 text-center">
-        {/* Headline */}
-        <h1 className="mx-auto max-w-3xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
-          Your{' '}
-          <span
-            className="inline-block -rotate-[1.8deg] translate-y-1 text-white px-3 sm:px-4 py-0.5 sm:py-1 rounded-lg ai-badge"
-            style={{
-              background: '#3730a3',
-              boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
-            }}
-          >
-            AI
-          </span>{' '}
-          in every room.
-          <br />
-          Nothing gets left behind.
-        </h1>
+    <section className="relative overflow-hidden pt-28 sm:pt-36 pb-0 px-6 text-center">
+      {/* Category pill */}
+      <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 backdrop-blur px-3 py-1 text-[11px] sm:text-xs font-semibold tracking-wide text-gray-600 shadow-sm">
+        <span className="relative inline-flex h-1.5 w-1.5">
+          <span className="absolute inset-0 rounded-full bg-[#3730a3] opacity-75 animate-ping" />
+          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3730a3]" />
+        </span>
+        Conversational Intelligence Platform
+      </div>
 
-        {/* Join meeting widget */}
-        <div className="mx-auto mt-12 sm:mt-16 max-w-lg">
-          <div className="flex items-center gap-3 rounded-2xl bg-white border border-gray-200 shadow-md px-5 py-3.5">
-            <VideoCameraIcon className="h-4 w-4 shrink-0 text-gray-400" />
-            <input
-              type="url"
-              value={meetingUrl}
-              onChange={(e) => setMeetingUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleJoin()}
-              placeholder="Paste a Google Meet link…"
-              className="flex-1 min-w-0 text-sm text-gray-800 placeholder-gray-400 bg-transparent outline-none"
-            />
-            <button
-              onClick={handleJoin}
-              className="shrink-0 rounded-xl bg-[#3730a3] px-4 py-1.5 text-sm font-semibold text-white hover:bg-[#312e81] transition"
-            >
-              Add Lira
-            </button>
-          </div>
-          <p className="mt-4 text-xs text-gray-400 tracking-wide">
-            ✦ Lira joins as a voice participant — no plugins required ✦
-          </p>
+      {/* Headline */}
+      <h1 className="mx-auto max-w-4xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
+        Every conversation.
+        <br />
+        <span
+          className="inline-block -rotate-[1.2deg] translate-y-1 text-white px-3 sm:px-5 py-0.5 sm:py-1 rounded-lg ai-badge"
+          style={{
+            background: '#3730a3',
+            boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
+          }}
+        >
+          Intelligently
+        </span>{' '}
+        handled.
+      </h1>
 
-          {/* Try Beta — mobile only */}
-          <div className="mt-5 flex justify-center md:hidden">
-            <Link
-              to="/signup"
-              className="inline-flex items-center gap-2 rounded-2xl bg-[#3730a3] px-6 py-3 text-sm font-semibold text-white shadow-md active:scale-95 transition-transform"
-            >
-              Try Beta
-              <ArrowRightIcon className="h-4 w-4" />
-            </Link>
-          </div>
-        </div>
+      {/* Sub */}
+      <p className="mx-auto mt-6 sm:mt-8 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
+        Lira is a Conversational Intelligence platform. One AI agent across your customer support,
+        sales calls, and meetings — grounded in your knowledge, responding in real time.
+      </p>
 
-        {/* Meeting demo */}
-        <MeetingDemo />
-      </section>
-    </>
+      {/* Dual CTA */}
+      <div className="mx-auto mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <button
+          onClick={scrollToSupport}
+          className="inline-flex items-center gap-2 rounded-2xl bg-[#3730a3] px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#312e81] active:scale-95 transition-all"
+        >
+          See it handle a ticket
+          <ArrowRightIcon className="h-4 w-4" />
+        </button>
+        <Link
+          to="/signup"
+          className="inline-flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all"
+        >
+          Start free
+        </Link>
+      </div>
+
+      {/* Live trust line */}
+      <div className="mt-5 flex items-center justify-center gap-2 text-[11px] sm:text-xs text-gray-400">
+        <span className="relative inline-flex h-2 w-2">
+          <span className="absolute inset-0 rounded-full bg-green-500 opacity-75 animate-ping" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+        </span>
+        Live on{' '}
+        <a
+          href="https://demo.liraintelligence.com"
+          target="_blank"
+          rel="noreferrer"
+          className="font-semibold text-gray-500 hover:text-gray-700 underline underline-offset-2"
+        >
+          Nimbus
+        </a>{' '}
+        — resolving tickets right now
+      </div>
+
+      {/* Meeting demo */}
+      <MeetingDemo />
+    </section>
   )
 }
 function MidCTA() {
@@ -2105,9 +2110,9 @@ export function LandingPage() {
   return (
     <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: '#ebebeb' }}>
       <SEO
-        title="Lira"
-        description="Lira AI is an intelligent meeting participant that joins your calls in real time. Automate sales coaching, first-round interviews, customer support, and meeting transcription with AI-powered voice agents."
-        keywords="AI meeting assistant, AI meeting participant, AI sales coaching, AI interview automation, AI customer support, real-time transcription, meeting intelligence, voice AI agent, meeting notetaker, AI meeting bot, sales call coaching, automated interviews, Lira AI"
+        title="Lira — Conversational Intelligence Platform"
+        description="Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings — grounded in your knowledge and responding in real time."
+        keywords="conversational intelligence platform, AI customer support agent, AI support automation, real-time sales coaching AI, AI meeting assistant, voice AI agent, knowledge-grounded AI, conversational AI for SaaS, Lira AI"
         path="/"
       />
       <MarketingNavbar />
