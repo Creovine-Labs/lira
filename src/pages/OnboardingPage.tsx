@@ -599,7 +599,7 @@ function OnboardingPage() {
                 <UsersIcon className="h-20 w-20 text-[#3730a3]" />
               </div>
               <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
-                Bring your team on board so nothing falls through the cracks.
+                Bring your team on board so everyone can collaborate across support, sales, and meetings.
               </p>
             </>
           ) : (
@@ -676,9 +676,9 @@ function OnboardingPage() {
                   <p className="text-sm text-gray-500">
                     Lira works best when your whole team is on board. Share the code below so
                     teammates can join{' '}
-                    <span className="font-medium text-gray-700">{createdOrgName}</span> and start
-                    collaborating right away — tasks, summaries, and notifications will flow to
-                    the right people.
+                    <span className="font-medium text-gray-700">{createdOrgName}</span> — they can
+                    participate in customer support, sales coaching, meeting intelligence, and more.
+                    Tasks, summaries, and notifications will flow to the right people automatically.
                   </p>
                 </div>
 
@@ -724,9 +724,8 @@ function OnboardingPage() {
                     <p>
                       Hey team! We just set up a workspace for{' '}
                       <span className="font-semibold text-gray-900">{createdOrgName}</span> on Lira,
-                      an AI assistant that joins our Google Meet calls, takes notes, creates and
-                      follows up on action items, and keeps everyone in the loop with smart
-                      notifications.
+                      a Conversational Intelligence platform that handles customer support, coaches
+                      sales calls in real time, and runs our meetings — all from one place.
                     </p>
                     <p className="mt-2">Here's how to get set up: </p>
                     <p className="mt-1">
@@ -745,7 +744,7 @@ function OnboardingPage() {
                   <button
                     type="button"
                     onClick={() => {
-                      const msg = `Hey team! We just set up a workspace for ${createdOrgName} on Lira, an AI assistant that joins our Google Meet calls, takes notes, creates and follows up on action items, and keeps everyone in the loop with smart notifications.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
+                      const msg = `Hey team! We just set up a workspace for ${createdOrgName} on Lira, a Conversational Intelligence platform that handles customer support, coaches sales calls in real time, and runs our meetings — all from one place.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
                       navigator.clipboard.writeText(msg)
                       setMessageCopied(true)
                       setTimeout(() => setMessageCopied(false), 2000)
