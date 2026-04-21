@@ -7,8 +7,6 @@ import type {
   KBEntry,
   DocumentRecord,
   CrawlStatus,
-  Interview,
-  InterviewStatus,
   UsageSummary,
 } from '@/services/api'
 
@@ -353,47 +351,13 @@ export const useTaskStore = create<TaskSlice>()((set) => ({
   clear: () => set({ tasks: [], statusFilter: null }),
 }))
 
-// ── Interview Store ───────────────────────────────────────────────────────────
-
-interface InterviewSlice {
-  interviews: Interview[]
-  loading: boolean
-  statusFilter: InterviewStatus | 'all' | null
-  setInterviews: (interviews: Interview[]) => void
-  addInterview: (interview: Interview) => void
-  removeInterview: (interviewId: string) => void
-  updateInterview: (interviewId: string, updates: Partial<Interview>) => void
-  setLoading: (v: boolean) => void
-  setStatusFilter: (status: InterviewStatus | 'all' | null) => void
-  clear: () => void
-}
-
-export const useInterviewStore = create<InterviewSlice>()((set) => ({
-  interviews: [],
-  loading: false,
-  statusFilter: null,
-  setInterviews: (interviews) => set({ interviews }),
-  addInterview: (interview) => set((s) => ({ interviews: [interview, ...s.interviews] })),
-  removeInterview: (interviewId) =>
-    set((s) => ({ interviews: s.interviews.filter((i) => i.interview_id !== interviewId) })),
-  updateInterview: (interviewId, updates) =>
-    set((s) => ({
-      interviews: s.interviews.map((i) =>
-        i.interview_id === interviewId ? { ...i, ...updates } : i
-      ),
-    })),
-  setLoading: (loading) => set({ loading }),
-  setStatusFilter: (statusFilter) => set({ statusFilter }),
-  clear: () => set({ interviews: [], statusFilter: null }),
-}))
-
 // ── Notification Store ────────────────────────────────────────────────────────
 // Lightweight client-side badge counts keyed to sections.
 // Persisted per org in localStorage so page refresh keeps counts.
 
 export interface NotifEntry {
   id: string
-  kind: 'task' | 'meeting_ended' | 'interview' | 'support_escalation'
+  kind: 'task' | 'meeting_ended' | 'support_escalation'
   title: string
   subtitle?: string
   orgId?: string
@@ -403,9 +367,8 @@ export interface NotifEntry {
 
 interface NotifSlice {
   entries: NotifEntry[]
-  // timestamp-based "seen" for meetings and interviews (section-level)
+  // timestamp-based "seen" for meetings (section-level)
   meetingSeenAt: number
-  interviewSeenAt: number
   supportSeenAt: number
   // per-task read tracking — only clears when user opens the individual task detail
   readTaskNotifIds: string[]
@@ -414,7 +377,6 @@ interface NotifSlice {
   clearAll: () => void
   markTaskRead: (notifId: string) => void
   markMeetingsSeen: () => void
-  markInterviewsSeen: () => void
   markSupportSeen: () => void
 }
 
@@ -423,7 +385,6 @@ export const useNotifStore = create<NotifSlice>()(
     (set) => ({
       entries: [],
       meetingSeenAt: 0,
-      interviewSeenAt: 0,
       supportSeenAt: 0,
       readTaskNotifIds: [],
       addNotif: (entry) =>
@@ -441,7 +402,6 @@ export const useNotifStore = create<NotifSlice>()(
             : { readTaskNotifIds: [...s.readTaskNotifIds, notifId] }
         ),
       markMeetingsSeen: () => set({ meetingSeenAt: Date.now() }),
-      markInterviewsSeen: () => set({ interviewSeenAt: Date.now() }),
       markSupportSeen: () => set({ supportSeenAt: Date.now() }),
     }),
     { name: 'lira-notif' }

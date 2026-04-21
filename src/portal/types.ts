@@ -11,6 +11,8 @@ export interface PortalConfig {
   greeting: string
   chatEnabled: boolean
   voiceEnabled: boolean
+  ticketsEnabled: boolean
+  trackEnabled: boolean
   wsUrl: string
 }
 

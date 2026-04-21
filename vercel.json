@@ -1,6 +1,12 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/products/interviews", "destination": "/", "permanent": true },
+    { "source": "/org/roles", "destination": "/dashboard", "permanent": true },
+    { "source": "/org/roles/:path*", "destination": "/dashboard", "permanent": true },
+    { "source": "/org/interviews/:path*", "destination": "/dashboard", "permanent": true }
+  ],
   "rewrites": [
     {
       "source": "/",

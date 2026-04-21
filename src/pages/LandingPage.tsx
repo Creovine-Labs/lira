@@ -58,8 +58,8 @@ function WaveBars() {
   )
 }
 
-type DemoMode = 'meetings' | 'interviews' | 'sales' | 'support'
-const DEMO_MODES: DemoMode[] = ['meetings', 'interviews', 'sales', 'support']
+type DemoMode = 'meetings' | 'sales' | 'support'
+const DEMO_MODES: DemoMode[] = ['meetings', 'sales', 'support']
 const ROTATE_MS = 10000
 const PAUSE_MS = 20000
 
@@ -144,7 +144,6 @@ function MeetingDemo() {
   }
 
   const meetActive = (['adaeze', 'lira', 'kwame', 'lira'] as const)[phase]
-  const ivActive = (['lira', 'candidate', 'lira', 'candidate'] as const)[phase]
   const salesSpeaker = (['prospect', 'none', 'seller', 'none'] as const)[phase]
 
   const [supportSeconds, setSupportSeconds] = useState(272)
@@ -173,7 +172,6 @@ function MeetingDemo() {
         <div className="flex items-center gap-1 sm:gap-1.5 px-1.5 py-1.5">
           {[
             { id: 'meetings' as DemoMode, label: 'Meetings', Icon: VideoCameraIcon },
-            { id: 'interviews' as DemoMode, label: 'Interviews', Icon: CheckBadgeIcon },
             { id: 'sales' as DemoMode, label: 'Sales', Icon: ArrowTrendingUpIcon },
             { id: 'support' as DemoMode, label: 'Support', Icon: HeartIcon },
           ].map((tab) => (
@@ -249,70 +247,6 @@ function MeetingDemo() {
                       <img src={p.img} alt="" className="w-full h-full object-cover" />
                     </div>
                   ))}
-                </div>
-              </div>
-              {/* Compact toolbar */}
-              <div className="flex items-center justify-center gap-2 mt-2.5">
-                <div className="flex items-center gap-1.5 rounded-full bg-[#2a2a2e] px-3 py-1.5">
-                  <svg
-                    className="w-3.5 h-3.5 text-white/80"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.91-3c-.49 0-.9.36-.98.85C16.52 14.2 14.47 16 12 16s-4.52-1.8-4.93-4.15a1 1 0 00-.98-.85c-.61 0-1.09.54-1 1.14.49 3 2.89 5.35 5.91 5.78V20c0 .55.45 1 1 1s1-.45 1-1v-2.08c3.02-.43 5.42-2.78 5.91-5.78.1-.6-.39-1.14-1-1.14z" />
-                  </svg>
-                  <svg
-                    className="w-3.5 h-3.5 text-white/80"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z" />
-                  </svg>
-                </div>
-                <div className="w-8 h-8 rounded-full bg-[#ea4335] flex items-center justify-center">
-                  <svg className="w-3.5 h-3.5 text-white" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M12 9c-1.6 0-3.15.25-4.6.72v3.1c0 .39-.23.74-.56.9-.98.49-1.87 1.12-2.66 1.85-.18.18-.43.28-.7.28-.28 0-.53-.11-.71-.29L.29 13.08a1 1 0 01-.29-.7c0-.28.11-.53.29-.71C3.34 8.78 7.46 7 12 7s8.66 1.78 11.71 4.67c.18.18.29.43.29.71 0 .28-.11.53-.29.71l-2.48 2.48c-.18.18-.43.29-.71.29-.27 0-.52-.11-.7-.28a11.3 11.3 0 00-2.67-1.85c-.33-.16-.56-.5-.56-.9v-3.1C15.15 9.25 13.6 9 12 9z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Interviews — mobile: Alex K. (candidate) talking */}
-          {mode === 'interviews' && (
-            <div className="demo-fade-in">
-              {/* Main speaker — candidate talking */}
-              <div
-                className="relative w-full rounded-2xl overflow-hidden bg-[#1a1a2e]"
-                style={{ height: 240 }}
-              >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full overflow-hidden border-2 border-[#4285f4]/60 meet-pulse-blue">
-                    <img
-                      src="/participants/Alex K.jpg"
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                </div>
-                <div className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 bg-black/50 rounded-full px-2 py-0.5">
-                  <WaveBars />
-                  <span className="text-[10px] text-white/80 font-medium">Alex K. · Candidate</span>
-                </div>
-                <div className="absolute top-2.5 left-0 right-0 text-center">
-                  <span className="text-[10px] text-white/50 font-medium bg-black/30 rounded-full px-3 py-0.5">
-                    Interview · 09:31
-                  </span>
-                </div>
-                {/* Lira thumbnail — bottom right */}
-                <div className="absolute bottom-2.5 right-2.5">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-white/10">
-                    <img
-                      src="/lira_black_with_white_backgound.png"
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
                 </div>
               </div>
               {/* Compact toolbar */}
@@ -577,7 +511,7 @@ function MeetingDemo() {
             </div>
           </div>
 
-          {(mode === 'meetings' || mode === 'interviews') && (
+          {mode === 'meetings' && (
             <div
               key={mode}
               className="mx-auto max-w-[85%] sm:max-w-[80%] md:max-w-[75%] demo-fade-in"
@@ -595,11 +529,11 @@ function MeetingDemo() {
                 {/* Meet header */}
                 <div className="flex items-center justify-between px-3 sm:px-5 py-2 sm:py-2.5 bg-[#202124]">
                   <span className="text-[11px] sm:text-[13px] text-white/70 font-medium tracking-wide">
-                    {mode === 'meetings' ? 'Team Standup' : 'Product Manager Interview'}
+                    {'Team Standup'}
                   </span>
                   <div className="flex items-center gap-2 sm:gap-3">
                     <span className="text-[10px] sm:text-[11px] text-white/40 font-medium tabular-nums">
-                      {mode === 'meetings' ? '12:04' : '09:31'}
+                      {'12:04'}
                     </span>
                     <div className="flex items-center gap-1">
                       <svg
@@ -609,157 +543,96 @@ function MeetingDemo() {
                       >
                         <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z" />
                       </svg>
-                      <span className="text-[10px] sm:text-[11px] text-white/40">
-                        {mode === 'meetings' ? '3' : '2'}
-                      </span>
+                      <span className="text-[10px] sm:text-[11px] text-white/40">{'3'}</span>
                     </div>
                   </div>
                 </div>
 
                 {/* Video grid */}
                 <div className="bg-[#202124] p-2 sm:p-3 md:p-4">
-                  {mode === 'meetings' ? (
-                    /* ── 3-tile meeting grid ── */
-                    <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
-                      {/* Adaeze */}
-                      <div
-                        className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${meetActive === 'adaeze' ? 'border-[#4285f4] shadow-[0_0_16px_rgba(66,133,244,.35)]' : 'border-white/[.06]'}`}
-                      >
-                        <div className="absolute inset-0 bg-[#1a1a2e] flex items-center justify-center">
-                          <div
-                            className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 transition-all duration-500 ${meetActive === 'adaeze' ? 'border-[#4285f4]/60 meet-pulse-blue' : 'border-white/10'}`}
-                          >
-                            <img
-                              src="/participants/adaeze.jpg"
-                              alt="Adaeze O."
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
-                          {meetActive === 'adaeze' ? (
-                            <WaveBars />
-                          ) : (
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
-                          )}
-                          <span className="text-[8px] sm:text-[11px] text-white/90 font-medium">
-                            Adaeze O.
-                          </span>
+                  /* ── 3-tile meeting grid ── */
+                  <div className="grid grid-cols-3 gap-1.5 sm:gap-2 md:gap-3">
+                    {/* Adaeze */}
+                    <div
+                      className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${meetActive === 'adaeze' ? 'border-[#4285f4] shadow-[0_0_16px_rgba(66,133,244,.35)]' : 'border-white/[.06]'}`}
+                    >
+                      <div className="absolute inset-0 bg-[#1a1a2e] flex items-center justify-center">
+                        <div
+                          className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 transition-all duration-500 ${meetActive === 'adaeze' ? 'border-[#4285f4]/60 meet-pulse-blue' : 'border-white/10'}`}
+                        >
+                          <img
+                            src="/participants/adaeze.jpg"
+                            alt="Adaeze O."
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       </div>
-
-                      {/* Lira */}
-                      <div
-                        className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${meetActive === 'lira' ? 'border-violet-500/70 shadow-[0_0_16px_rgba(139,92,246,.35)]' : 'border-white/[.06]'}`}
-                      >
-                        <div className="absolute inset-0 bg-[#131320] flex items-center justify-center">
-                          <div
-                            className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-violet-400/25 transition-all duration-500 ${meetActive === 'lira' ? 'meet-pulse' : ''}`}
-                          >
-                            <img
-                              src="/lira_black_with_white_backgound.png"
-                              alt="Lira"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
-                          {meetActive === 'lira' ? (
-                            <WaveBars />
-                          ) : (
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
-                          )}
-                          <span className="text-[8px] sm:text-[11px] text-white/90 font-medium">
-                            Lira
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Kwame */}
-                      <div
-                        className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${meetActive === 'kwame' ? 'border-[#4285f4] shadow-[0_0_16px_rgba(66,133,244,.35)]' : 'border-white/[.06]'}`}
-                      >
-                        <div className="absolute inset-0 bg-[#1a1a2e] flex items-center justify-center">
-                          <div
-                            className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 transition-all duration-500 ${meetActive === 'kwame' ? 'border-[#4285f4]/60 meet-pulse-blue' : 'border-white/10'}`}
-                          >
-                            <img
-                              src="/participants/kwame.jpg"
-                              alt="Kwame M."
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
-                          {meetActive === 'kwame' ? (
-                            <WaveBars />
-                          ) : (
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
-                          )}
-                          <span className="text-[8px] sm:text-[11px] text-white/90 font-medium">
-                            Kwame M.
-                          </span>
-                        </div>
+                      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
+                        {meetActive === 'adaeze' ? (
+                          <WaveBars />
+                        ) : (
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
+                        )}
+                        <span className="text-[8px] sm:text-[11px] text-white/90 font-medium">
+                          Adaeze O.
+                        </span>
                       </div>
                     </div>
-                  ) : (
-                    /* ── 2-tile interview grid ── */
-                    <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4 max-w-[68%] mx-auto">
-                      {/* Lira — interviewer */}
-                      <div
-                        className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${ivActive === 'lira' ? 'border-violet-500/70 shadow-[0_0_16px_rgba(139,92,246,.35)]' : 'border-white/[.06]'}`}
-                      >
-                        <div className="absolute inset-0 bg-[#131320] flex items-center justify-center">
-                          <div
-                            className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 border-violet-400/25 transition-all duration-500 ${ivActive === 'lira' ? 'meet-pulse' : ''}`}
-                          >
-                            <img
-                              src="/lira_black_with_white_backgound.png"
-                              alt="Lira"
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
-                          {ivActive === 'lira' ? (
-                            <WaveBars />
-                          ) : (
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
-                          )}
-                          <span className="text-[8px] sm:text-[10px] text-white/90 font-medium">
-                            Lira · Interviewer
-                          </span>
+
+                    {/* Lira */}
+                    <div
+                      className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${meetActive === 'lira' ? 'border-violet-500/70 shadow-[0_0_16px_rgba(139,92,246,.35)]' : 'border-white/[.06]'}`}
+                    >
+                      <div className="absolute inset-0 bg-[#131320] flex items-center justify-center">
+                        <div
+                          className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 border-violet-400/25 transition-all duration-500 ${meetActive === 'lira' ? 'meet-pulse' : ''}`}
+                        >
+                          <img
+                            src="/lira_black_with_white_backgound.png"
+                            alt="Lira"
+                            className="w-full h-full object-cover"
+                          />
                         </div>
                       </div>
-
-                      {/* Candidate */}
-                      <div
-                        className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${ivActive === 'candidate' ? 'border-[#4285f4] shadow-[0_0_16px_rgba(66,133,244,.35)]' : 'border-white/[.06]'}`}
-                      >
-                        <div className="absolute inset-0 bg-[#1a1a2e] flex items-center justify-center">
-                          <div
-                            className={`w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden border-2 transition-all duration-500 ${ivActive === 'candidate' ? 'border-[#4285f4]/60 meet-pulse-blue' : 'border-white/10'}`}
-                          >
-                            <img
-                              src="/participants/Alex K.jpg"
-                              alt="Alex K."
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </div>
-                        <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
-                          {ivActive === 'candidate' ? (
-                            <WaveBars />
-                          ) : (
-                            <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
-                          )}
-                          <span className="text-[8px] sm:text-[10px] text-white/90 font-medium">
-                            Alex K. · Candidate
-                          </span>
-                        </div>
+                      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
+                        {meetActive === 'lira' ? (
+                          <WaveBars />
+                        ) : (
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
+                        )}
+                        <span className="text-[8px] sm:text-[11px] text-white/90 font-medium">
+                          Lira
+                        </span>
                       </div>
                     </div>
-                  )}
+
+                    {/* Kwame */}
+                    <div
+                      className={`relative aspect-[3/4] rounded-lg sm:rounded-xl overflow-hidden border-2 transition-all duration-500 ${meetActive === 'kwame' ? 'border-[#4285f4] shadow-[0_0_16px_rgba(66,133,244,.35)]' : 'border-white/[.06]'}`}
+                    >
+                      <div className="absolute inset-0 bg-[#1a1a2e] flex items-center justify-center">
+                        <div
+                          className={`w-14 h-14 sm:w-18 sm:h-18 md:w-20 md:h-20 rounded-full overflow-hidden border-2 transition-all duration-500 ${meetActive === 'kwame' ? 'border-[#4285f4]/60 meet-pulse-blue' : 'border-white/10'}`}
+                        >
+                          <img
+                            src="/participants/kwame.jpg"
+                            alt="Kwame M."
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute bottom-1.5 left-1.5 sm:bottom-2.5 sm:left-2.5 flex items-center gap-1 sm:gap-1.5 bg-black/40 rounded-full px-1.5 sm:px-2 py-0.5 sm:py-1">
+                        {meetActive === 'kwame' ? (
+                          <WaveBars />
+                        ) : (
+                          <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-400/70" />
+                        )}
+                        <span className="text-[8px] sm:text-[11px] text-white/90 font-medium">
+                          Kwame M.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Meet toolbar */}
@@ -1295,9 +1168,9 @@ function MidCTA() {
   return (
     <section className="py-20 px-6 text-center">
       <p className="mx-auto max-w-lg text-base text-gray-500 leading-relaxed">
-        One AI. Every conversation that matters. Meetings, interviews, sales calls, customer
-        support. Lira is already in the room, taking notes, answering questions, and keeping your
-        team moving. No setup. No plugins. Just paste a link.
+        One AI. Every conversation that matters. Meetings, sales calls, customer support. Lira is
+        already in the room, taking notes, answering questions, and keeping your team moving. No
+        setup. No plugins. Just paste a link.
       </p>
     </section>
   )
@@ -1316,11 +1189,10 @@ const FLOW_DEMO_STYLES = `
   .flow-caret{display:inline-block;width:2px;height:1em;background:rgba(255,255,255,.6);vertical-align:text-bottom;margin-left:2px;animation:flowBlink .8s step-end infinite}
 `
 
-type FlowTab = 'meetings' | 'interviews' | 'tasks' | 'integrations'
+type FlowTab = 'meetings' | 'tasks' | 'integrations'
 
 const FLOW_NAV: { id: FlowTab; label: string; desc: string }[] = [
   { id: 'meetings', label: 'Meetings', desc: 'Send Lira to any meeting' },
-  { id: 'interviews', label: 'Interviews', desc: 'AI-powered first rounds' },
   { id: 'tasks', label: 'Tasks', desc: 'Automated follow-through' },
   { id: 'integrations', label: 'Integrations', desc: 'Connect your tools' },
 ]
@@ -1329,7 +1201,6 @@ const TAB_CYCLE_MS = 10_000
 
 /* phase durations (ms) – module-level so useEffect deps stay clean */
 const M_DUR = [1200, 2500, 1500, 3500, 1200]
-const I_DUR = [1500, 3000, 3000, 2000]
 const T_DUR = [2000, 3000, 2500, 2000]
 const IG_DUR = [1500, 1500, 1500, 3000, 1500]
 
@@ -1543,102 +1414,6 @@ function MeetingsGif({ active }: { active: boolean }) {
         <p className="mt-1 text-[11px] text-gray-500">
           3 action items captured · 1 decision logged
         </p>
-      </div>
-    </div>
-  )
-}
-
-/* ─────────────────── Interviews GIF ─────────────────── */
-function InterviewsGif({ active }: { active: boolean }) {
-  const [phase, setPhase] = useState(0)
-
-  useEffect(() => {
-    if (!active) return
-    const t = setTimeout(() => setPhase((p) => (p + 1) % I_DUR.length), I_DUR[phase])
-    return () => clearTimeout(t)
-  }, [phase, active])
-
-  const questions = [
-    'Walk me through your system design approach',
-    'How do you handle code reviews?',
-    'Describe your experience with distributed systems',
-  ]
-
-  return (
-    <div className="relative">
-      {/* Role header */}
-      <div className="mb-3 flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100">
-          <CheckBadgeIcon className="h-4 w-4 text-violet-600" />
-        </div>
-        <div>
-          <p className="text-sm font-bold text-gray-800">Senior Software Engineer</p>
-          <p className="text-[11px] text-gray-400">Engineering · 12 questions</p>
-        </div>
-      </div>
-
-      {/* Questions that stagger in */}
-      <div className="mb-4 space-y-2">
-        {questions.map((q, i) => (
-          <div
-            key={q}
-            className="flex items-center gap-2.5 rounded-lg border border-gray-100 bg-white px-3.5 py-2.5"
-            style={{
-              opacity: phase >= 1 ? 1 : 0,
-              transform: phase >= 1 ? 'none' : 'translateX(-8px)',
-              transition: `opacity .4s ease ${0.15 + i * 0.3}s, transform .4s ease ${0.15 + i * 0.3}s`,
-            }}
-          >
-            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-violet-50 text-[10px] font-bold text-violet-500">
-              {i + 1}
-            </span>
-            <span className="text-xs text-gray-600">{q}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom bar: transitions from Ready → In Progress */}
-      <div
-        className="rounded-xl border border-gray-200 bg-white p-4"
-        style={{
-          opacity: phase >= 2 ? 1 : 0,
-          transform: phase >= 2 ? 'none' : 'translateY(8px)',
-          transition: 'opacity .4s ease, transform .4s ease',
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 shrink-0 overflow-hidden rounded-full border-2 border-violet-200">
-            <img
-              src="/lira_black_with_white_backgound.png"
-              alt=""
-              className="h-full w-full object-cover"
-            />
-          </div>
-          <div className="flex-1">
-            <p className="text-xs font-semibold text-gray-800">
-              {phase >= 3 ? 'Lira is interviewing…' : 'Lira is ready to interview'}
-            </p>
-            <p className="text-[11px] text-gray-400">
-              {phase >= 3 ? 'Question 2 of 12 · ~28 min remaining' : '12 questions prepared'}
-            </p>
-          </div>
-          <span
-            className={`rounded-full px-2.5 py-1 text-[10px] font-semibold transition-colors duration-500 ${
-              phase >= 3 ? 'bg-violet-100 text-violet-600' : 'bg-gray-100 text-gray-500'
-            }`}
-          >
-            {phase >= 3 ? 'In Progress' : 'Ready'}
-          </span>
-        </div>
-        {phase >= 3 && (
-          <div className="mt-3 h-1 w-full overflow-hidden rounded-full bg-gray-100">
-            <div
-              key="prog"
-              className="h-full rounded-full bg-violet-400"
-              style={{ animation: 'flowProgressFill 2.5s ease-out forwards' }}
-            />
-          </div>
-        )}
       </div>
     </div>
   )
@@ -1934,7 +1709,7 @@ function Features() {
     if (userPaused) return
     const timer = setInterval(() => {
       setTab((t) => {
-        const tabs: FlowTab[] = ['meetings', 'interviews', 'tasks', 'integrations']
+        const tabs: FlowTab[] = ['meetings', 'tasks', 'integrations']
         return tabs[(tabs.indexOf(t) + 1) % tabs.length]
       })
     }, TAB_CYCLE_MS)
@@ -1992,7 +1767,7 @@ function Features() {
           <div className="min-w-0 flex-1">
             <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
               <div className="relative px-5 py-5 sm:px-6 sm:py-6" style={{ minHeight: 360 }}>
-                {(['meetings', 'interviews', 'tasks', 'integrations'] as FlowTab[]).map((key) => {
+                {(['meetings', 'tasks', 'integrations'] as FlowTab[]).map((key) => {
                   const isActive = tab === key
                   return (
                     <div
@@ -2016,12 +1791,6 @@ function Features() {
                         <MeetingsGif
                           key={tab === 'meetings' ? 'on' : 'off'}
                           active={tab === 'meetings'}
-                        />
-                      )}
-                      {key === 'interviews' && (
-                        <InterviewsGif
-                          key={tab === 'interviews' ? 'on' : 'off'}
-                          active={tab === 'interviews'}
                         />
                       )}
                       {key === 'tasks' && (
@@ -2052,11 +1821,6 @@ interface UseCase {
 }
 
 const USE_CASES: UseCase[] = [
-  {
-    Icon: CheckBadgeIcon,
-    title: 'Recruiting Teams',
-    description: 'Run first-round AI interviews 24/7. Get scored candidate reports before lunch.',
-  },
   {
     Icon: BuildingOffice2Icon,
     title: 'Executive Teams',
@@ -2093,8 +1857,8 @@ function UseCases() {
           Built for every team that meets
         </h2>
         <p className="text-gray-500 max-w-md mb-12 leading-relaxed">
-          Lira adapts to your workflow. The same AI that interviews candidates runs your product
-          standups.
+          Lira adapts to your workflow. The same AI that handles customer support also runs your
+          meetings and coaches your sales team.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {USE_CASES.map(({ Icon, title, description }) => (
@@ -2263,10 +2027,6 @@ const FAQS = [
   {
     q: 'Does Lira work with platforms other than Google Meet?',
     a: 'Google Meet is fully supported today. Zoom and Microsoft Teams are on the roadmap. Reach out if you have a specific requirement.',
-  },
-  {
-    q: 'How does the AI Interview feature work?',
-    a: 'Create a role, define an evaluation rubric, and invite candidates with a meeting link. Lira joins, conducts the interview, and generates a scored evaluation report automatically.',
   },
   {
     q: 'Is my meeting data secure?',

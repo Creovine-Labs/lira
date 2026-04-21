@@ -5,7 +5,6 @@ import {
   Bars3Icon,
   BellIcon,
   BookOpenIcon,
-  BriefcaseIcon,
   BuildingOffice2Icon,
   ChatBubbleLeftEllipsisIcon,
   ChevronDownIcon,
@@ -31,7 +30,6 @@ import {
   useOrgStore,
   useKBStore,
   useDocumentStore,
-  useInterviewStore,
   useTaskStore,
   useNotifStore,
   useBotStore,
@@ -81,7 +79,7 @@ function TaskNavBadge({ pending, inProgress }: { pending: number; inProgress: nu
 
 // ── useSidebarBadges — derive per-section unread counts ───────────────────────
 function useSidebarBadges() {
-  const { entries, meetingSeenAt, interviewSeenAt, supportSeenAt } = useNotifStore()
+  const { entries, meetingSeenAt, supportSeenAt } = useNotifStore()
   const { tasks } = useTaskStore()
 
   // Task status counts for the tri-color badge
@@ -91,16 +89,12 @@ function useSidebarBadges() {
   const meetingBadge = entries.filter(
     (e) => e.kind === 'meeting_ended' && (meetingSeenAt === 0 || e.createdAt > meetingSeenAt)
   ).length
-  const interviewBadge = entries.filter(
-    (e) => e.kind === 'interview' && (interviewSeenAt === 0 || e.createdAt > interviewSeenAt)
-  ).length
   const supportBadge = entries.filter(
     (e) => e.kind === 'support_escalation' && (supportSeenAt === 0 || e.createdAt > supportSeenAt)
   ).length
   return {
     badges: {
       '/meetings': meetingBadge,
-      '/org/roles': interviewBadge,
       '/support/inbox': supportBadge,
       '/support': supportBadge,
     } as Record<string, number>,
@@ -129,7 +123,6 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
 const NAV_CORE: NavEntry[] = [
   { to: '/dashboard', icon: Squares2X2Icon, label: 'Home' },
   { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
-  { to: '/org/roles', icon: BriefcaseIcon, label: 'Interviews' },
 ]
 
 const SUPPORT_NAV_ACTIVATED: NavLeaf = {
@@ -165,7 +158,6 @@ function OrgSwitcher() {
   const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
   const clearKB = useKBStore((s) => s.clear)
   const clearDocuments = useDocumentStore((s) => s.clear)
-  const clearInterviews = useInterviewStore((s) => s.clear)
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
@@ -182,12 +174,14 @@ function OrgSwitcher() {
   }, [])
 
   function handleSwitch(orgId: string, orgName: string) {
-    if (orgId === currentOrgId) { setOpen(false); return }
+    if (orgId === currentOrgId) {
+      setOpen(false)
+      return
+    }
     setSwitching(orgName)
     setOpen(false)
     clearKB()
     clearDocuments()
-    clearInterviews()
     clearTasks()
     setCurrentOrg(orgId)
     navigate('/dashboard', { replace: true })
@@ -199,66 +193,73 @@ function OrgSwitcher() {
       {switching && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-xl">
-            <img src="/lira_black.png" alt="" className="h-5 w-5 animate-spin opacity-50" style={{ animationDuration: '1s' }} />
+            <img
+              src="/lira_black.png"
+              alt=""
+              className="h-5 w-5 animate-spin opacity-50"
+              style={{ animationDuration: '1s' }}
+            />
             <span className="text-sm font-semibold text-gray-700">Switching to {switching}…</span>
           </div>
         </div>
       )}
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
-      >
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-[11px] font-bold text-white">
-          {currentOrg?.name?.charAt(0).toUpperCase() ?? '?'}
-        </div>
-        <span className="min-w-0 flex-1 truncate text-left">
-          {currentOrg?.name ?? 'Select org'}
-        </span>
-        <ChevronUpDownIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
-      </button>
+      <div className="relative" ref={ref}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
+        >
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-[11px] font-bold text-white">
+            {currentOrg?.name?.charAt(0).toUpperCase() ?? '?'}
+          </div>
+          <span className="min-w-0 flex-1 truncate text-left">
+            {currentOrg?.name ?? 'Select org'}
+          </span>
+          <ChevronUpDownIcon className="h-3.5 w-3.5 shrink-0 text-gray-400" />
+        </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-          {organizations.length > 0 && (
-            <>
-              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                Your organizations
-              </p>
-              {organizations.map((org) => (
-                <button
-                  key={org.org_id}
-                  onClick={() => handleSwitch(org.org_id, org.name)}
-                  className={cn(
-                    'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
-                    org.org_id === currentOrgId ? 'font-semibold text-violet-700' : 'text-gray-700'
-                  )}
-                >
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
-                    {org.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="truncate">{org.name}</span>
-                  {org.org_id === currentOrgId && (
-                    <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
-                  )}
-                </button>
-              ))}
-              <div className="my-1 border-t border-gray-100" />
-            </>
-          )}
-          <button
-            onClick={() => {
-              setOpen(false)
-              navigate('/onboarding')
-            }}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
-          >
-            <PlusIcon className="h-4 w-4 text-gray-400" />
-            New organization
-          </button>
-        </div>
-      )}
-    </div>
+        {open && (
+          <div className="absolute left-0 top-full z-50 mt-1 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+            {organizations.length > 0 && (
+              <>
+                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                  Your organizations
+                </p>
+                {organizations.map((org) => (
+                  <button
+                    key={org.org_id}
+                    onClick={() => handleSwitch(org.org_id, org.name)}
+                    className={cn(
+                      'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
+                      org.org_id === currentOrgId
+                        ? 'font-semibold text-violet-700'
+                        : 'text-gray-700'
+                    )}
+                  >
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
+                      {org.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="truncate">{org.name}</span>
+                    {org.org_id === currentOrgId && (
+                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                    )}
+                  </button>
+                ))}
+                <div className="my-1 border-t border-gray-100" />
+              </>
+            )}
+            <button
+              onClick={() => {
+                setOpen(false)
+                navigate('/onboarding')
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
+            >
+              <PlusIcon className="h-4 w-4 text-gray-400" />
+              New organization
+            </button>
+          </div>
+        )}
+      </div>
     </>
   )
 }
@@ -269,7 +270,6 @@ function TopbarOrgSwitcher() {
   const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
   const clearKB = useKBStore((s) => s.clear)
   const clearDocuments = useDocumentStore((s) => s.clear)
-  const clearInterviews = useInterviewStore((s) => s.clear)
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
@@ -286,12 +286,14 @@ function TopbarOrgSwitcher() {
   }, [])
 
   function handleSwitch(orgId: string, orgName: string) {
-    if (orgId === currentOrgId) { setOpen(false); return }
+    if (orgId === currentOrgId) {
+      setOpen(false)
+      return
+    }
     setSwitching(orgName)
     setOpen(false)
     clearKB()
     clearDocuments()
-    clearInterviews()
     clearTasks()
     setCurrentOrg(orgId)
     navigate('/dashboard', { replace: true })
@@ -305,63 +307,73 @@ function TopbarOrgSwitcher() {
       {switching && (
         <div className="fixed inset-0 z-[999] flex items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-xl">
-            <img src="/lira_black.png" alt="" className="h-5 w-5 animate-spin opacity-50" style={{ animationDuration: '1s' }} />
+            <img
+              src="/lira_black.png"
+              alt=""
+              className="h-5 w-5 animate-spin opacity-50"
+              style={{ animationDuration: '1s' }}
+            />
             <span className="text-sm font-semibold text-gray-700">Switching to {switching}…</span>
           </div>
         </div>
       )}
-    <div className="relative" ref={ref}>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-1.5 rounded-md border border-gray-400/60 px-2 py-0.5 text-sm text-gray-400 transition hover:border-gray-500 hover:text-gray-500"
-      >
-        <span className="max-w-[72px] truncate sm:max-w-[120px]">{currentOrg.name}</span>
-        <ChevronDownIcon
-          className={cn('h-3 w-3 shrink-0 transition-transform duration-200', open && 'rotate-180')}
-        />
-      </button>
+      <div className="relative" ref={ref}>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="flex items-center gap-1.5 rounded-md border border-gray-400/60 px-2 py-0.5 text-sm text-gray-400 transition hover:border-gray-500 hover:text-gray-500"
+        >
+          <span className="max-w-[72px] truncate sm:max-w-[120px]">{currentOrg.name}</span>
+          <ChevronDownIcon
+            className={cn(
+              'h-3 w-3 shrink-0 transition-transform duration-200',
+              open && 'rotate-180'
+            )}
+          />
+        </button>
 
-      {open && (
-        <div className="absolute left-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
-          {organizations.length > 0 && (
-            <>
-              <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                Your organizations
-              </p>
-              {organizations.map((org) => (
-                <button
-                  key={org.org_id}
-                  onClick={() => handleSwitch(org.org_id, org.name)}
-                  className={cn(
-                    'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
-                    org.org_id === currentOrgId ? 'font-semibold text-violet-700' : 'text-gray-700'
-                  )}
-                >
-                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
-                    {org.name.charAt(0).toUpperCase()}
-                  </div>
-                  <span className="truncate">{org.name}</span>
-                  {org.org_id === currentOrgId && (
-                    <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
-                  )}
-                </button>
-              ))}
-              <div className="my-1 border-t border-gray-100" />
-            </>
-          )}
-          <button
-            onClick={() => {
-              setOpen(false)
-              navigate('/onboarding')
-            }}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
-          >
-            <PlusIcon className="h-4 w-4 text-gray-400" />
-            New organization
-          </button>
-        </div>
-      )}
-    </div>
+        {open && (
+          <div className="absolute left-0 top-full z-50 mt-1.5 w-56 rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+            {organizations.length > 0 && (
+              <>
+                <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                  Your organizations
+                </p>
+                {organizations.map((org) => (
+                  <button
+                    key={org.org_id}
+                    onClick={() => handleSwitch(org.org_id, org.name)}
+                    className={cn(
+                      'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
+                      org.org_id === currentOrgId
+                        ? 'font-semibold text-violet-700'
+                        : 'text-gray-700'
+                    )}
+                  >
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
+                      {org.name.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="truncate">{org.name}</span>
+                    {org.org_id === currentOrgId && (
+                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                    )}
+                  </button>
+                ))}
+                <div className="my-1 border-t border-gray-100" />
+              </>
+            )}
+            <button
+              onClick={() => {
+                setOpen(false)
+                navigate('/onboarding')
+              }}
+              className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
+            >
+              <PlusIcon className="h-4 w-4 text-gray-400" />
+              New organization
+            </button>
+          </div>
+        )}
+      </div>
     </>
   )
 }
@@ -370,8 +382,6 @@ function TopbarOrgSwitcher() {
 const BETA_KEYS = [
   'meetings',
   'meeting_minutes',
-  'interviews',
-  'interview_evaluations',
   'ai_tasks',
   'documents',
   'knowledge_pages',
@@ -508,7 +518,6 @@ function NotificationBell() {
   const { currentOrgId, organizations, setCurrentOrg } = useOrgStore()
   const clearKB = useKBStore((s) => s.clear)
   const clearDocuments = useDocumentStore((s) => s.clear)
-  const clearInterviews = useInterviewStore((s) => s.clear)
   const clearTasks = useTaskStore((s) => s.clear)
   const lastTerminatedAt = useBotStore((s) => s.lastTerminatedAt)
   const { entries, addNotif, removeNotif, readTaskNotifIds, meetingSeenAt, markMeetingsSeen } =
@@ -642,7 +651,6 @@ function NotificationBell() {
   const kindIcon: Record<string, React.ReactNode> = {
     task: <ClipboardDocumentListIcon className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />,
     meeting_ended: <MicrophoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />,
-    interview: <BriefcaseIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-500" />,
     support_escalation: (
       <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
     ),
@@ -686,7 +694,6 @@ function NotificationBell() {
                         if (entry.orgId && entry.orgId !== currentOrgId) {
                           clearKB()
                           clearDocuments()
-                          clearInterviews()
                           clearTasks()
                           setCurrentOrg(entry.orgId)
                         }
@@ -771,7 +778,7 @@ function AppShell() {
   }, [token, setOrganizations])
 
   const { badges, taskPending, taskInProgress } = useSidebarBadges()
-  const { markMeetingsSeen, markInterviewsSeen, markSupportSeen } = useNotifStore()
+  const { markMeetingsSeen, markSupportSeen } = useNotifStore()
   const setSummary = useUsageStore((s) => s.setSummary)
   const supportConfig = useSupportStore((s) => s.config)
   const loadSupportConfig = useSupportStore((s) => s.loadConfig)
@@ -807,7 +814,6 @@ function AppShell() {
   useEffect(() => {
     const p = location.pathname
     if (p.startsWith('/meetings') || p.startsWith('/meeting')) markMeetingsSeen()
-    else if (p.startsWith('/org/roles') || p.startsWith('/org/interviews')) markInterviewsSeen()
     else if (p.startsWith('/support')) {
       markSupportSeen()
       if (currentOrgId) markEscalationAlertsRead(currentOrgId).catch(() => {})
@@ -818,14 +824,7 @@ function AppShell() {
         setExpanded((prev) => new Set([...prev, entry.label]))
       }
     })
-  }, [
-    location.pathname,
-    markMeetingsSeen,
-    markInterviewsSeen,
-    markSupportSeen,
-    currentOrgId,
-    supportActivated,
-  ])
+  }, [location.pathname, markMeetingsSeen, markSupportSeen, currentOrgId, supportActivated])
 
   function handleSignOut() {
     clearCredentials()

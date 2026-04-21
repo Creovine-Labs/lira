@@ -141,7 +141,6 @@ const SCENES = [
   { id: 'meeting-mobile', label: 'Meeting (Mobile)', desc: 'Mobile Google Meet' },
   { id: 'integrations', label: 'Integration Cascade', desc: 'Chain reaction' },
   { id: 'integrations-connect', label: 'Connect Integrations', desc: 'App connection cards' },
-  { id: 'interview', label: 'Interview Report', desc: 'Score bars filling' },
   { id: 'sales', label: 'Sales Coaching', desc: 'Floating overlay on call' },
   { id: 'lira-speaking', label: 'Lira Speaking', desc: 'Lira center in Meet' },
   { id: 'support', label: 'Support (Desktop)', desc: 'Chat with typing' },
@@ -350,7 +349,6 @@ function PeopleIcon({ className = 'w-5 h-5' }: { className?: string }) {
 function DashboardScene({ restart }: { restart: number }) {
   const stats = [
     { label: 'Total Meetings', value: 48, icon: <MicIcon className="w-[15px] h-[15px]" /> },
-    { label: 'Interviews', value: 23, icon: <PeopleIcon className="w-[15px] h-[15px]" /> },
     { label: 'Tasks Created', value: 127, icon: <ChatIcon className="w-[15px] h-[15px]" /> },
     { label: 'People Coached', value: 16, icon: <HandIcon className="w-[15px] h-[15px]" /> },
   ]
@@ -1587,139 +1585,6 @@ function IntegrationsConnectScene({ restart }: { restart: number }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/* SCENE 8 — INTERVIEW REPORT                                               */
-/* ═══════════════════════════════════════════════════════════════════════════ */
-
-function InterviewScene({ restart }: { restart: number }) {
-  const [showScores, setShowScores] = useState(false)
-  const [showVerdict, setShowVerdict] = useState(false)
-  useEffect(() => {
-    const timers = [
-      setTimeout(() => setShowScores(true), 800),
-      setTimeout(() => setShowVerdict(true), 2800),
-    ]
-    return () => timers.forEach(clearTimeout)
-  }, [restart])
-  const scores = [
-    { label: 'Technical Depth', score: 82, color: 'bg-[#3730a3]' },
-    { label: 'Communication', score: 74, color: 'bg-sky-500' },
-    { label: 'Problem Solving', score: 80, color: 'bg-violet-500' },
-    { label: 'Culture Fit', score: 72, color: 'bg-amber-500' },
-    { label: 'Leadership', score: 81, color: 'bg-fuchsia-500' },
-  ]
-  const candidates = [
-    { name: 'Emma Wilson', score: 84, status: 'Recommended' },
-    { name: 'James Park', score: 78, status: 'Recommended' },
-    { name: 'Aisha Patel', score: 71, status: 'Review' },
-    { name: 'Carlos Mendez', score: 68, status: 'Declined' },
-    { name: 'Yuki Tanaka', score: 88, status: 'Recommended' },
-    { name: 'David Kim', score: 65, status: 'Declined' },
-  ]
-  return (
-    <div
-      key={restart}
-      className="w-full h-full bg-[#ebebeb] rounded-2xl p-8 flex gap-6 overflow-hidden"
-    >
-      <div
-        className="ld-rise w-56 shrink-0 bg-white rounded-2xl shadow-sm border border-gray-200/60 p-4"
-        style={{ animationDelay: '.1s' }}
-      >
-        <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
-          Candidates ({candidates.length})
-        </h4>
-        <div className="space-y-1.5">
-          {candidates.map((c, i) => (
-            <div
-              key={c.name}
-              className={`ld-fade flex items-center gap-2.5 rounded-lg px-3 py-2 cursor-pointer transition ${i === 0 ? 'bg-[#3730a3]/5 border border-[#3730a3]/10' : 'hover:bg-gray-50'}`}
-              style={{ animationDelay: `${0.3 + i * 0.1}s` }}
-            >
-              <FaceAvatar src={i % 2 === 0 ? FACES.adaeze : FACES.kwame} name={c.name} size={28} />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-gray-900 truncate">{c.name}</p>
-                <p
-                  className={`text-[10px] font-medium ${c.status === 'Recommended' ? 'text-emerald-500' : c.status === 'Review' ? 'text-amber-500' : 'text-gray-400'}`}
-                >
-                  {c.score}/100 · {c.status}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div
-        className="flex-1 ld-rise bg-white rounded-2xl shadow-sm border border-gray-200/60 p-8 overflow-hidden"
-        style={{ animationDelay: '.2s' }}
-      >
-        <div className="flex items-start justify-between mb-8">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">Interview Evaluation</h3>
-            <p className="text-sm text-gray-400">Senior Frontend Engineer · Conducted by Lira</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <FaceAvatar src={FACES.alex} name="Emma Wilson" size={40} />
-            <div>
-              <p className="text-sm font-semibold text-gray-900">Emma Wilson</p>
-              <p className="text-xs text-gray-400">42 min · March 28, 2026</p>
-            </div>
-          </div>
-        </div>
-        <div
-          className="ld-fade flex items-center gap-4 mb-8 p-4 rounded-xl bg-gray-50 border border-gray-100"
-          style={{ animationDelay: '.4s' }}
-        >
-          <div className="text-4xl font-black text-[#3730a3]">
-            {showScores ? <AnimatedCounter target={84} /> : '—'}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-gray-900">Overall Score</p>
-            <p className="text-xs text-gray-400">Based on 5 evaluation criteria</p>
-          </div>
-        </div>
-        <div className="space-y-4 mb-8">
-          {scores.map((s, i) => (
-            <div key={s.label} className="ld-fade" style={{ animationDelay: `${0.6 + i * 0.15}s` }}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm font-medium text-gray-700">{s.label}</span>
-                <span className="text-sm font-bold text-gray-900">
-                  {showScores ? s.score : '—'}
-                </span>
-              </div>
-              <div className="h-2.5 bg-gray-100 rounded-full overflow-hidden">
-                {showScores && (
-                  <div
-                    className={`h-full rounded-full ld-fill ${s.color}`}
-                    style={
-                      {
-                        '--fill': `${s.score}%`,
-                        animationDelay: `${0.8 + i * 0.15}s`,
-                      } as React.CSSProperties
-                    }
-                  />
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-        {showVerdict && (
-          <div className="ld-rise flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-            <div className="flex items-center gap-2">
-              <LiraAvatarImg size={24} />
-              <div>
-                <p className="text-sm font-bold text-emerald-800">Recommended for Next Round</p>
-                <p className="text-xs text-emerald-600">
-                  Strong technical depth with clear communication. Proceed to on-site.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════ */
 /* SCENE 9 — SALES COACHING                                                 */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -2278,7 +2143,6 @@ export function _WordReveal({
 const SUBTITLE_SLIDES = [
   { id: 'join' },
   { id: 'what' },
-  { id: 'interview' },
   { id: 'support' },
   { id: 'integration' },
   { id: 'sales' },
@@ -2405,33 +2269,6 @@ function SubtitleSlidesScene({ restart }: { restart: number }) {
               }}
             >
               Does
-            </div>
-          </div>
-        )
-
-      /* ── Slide 3: "Evaluate & Conduct Interviews" ── */
-      case 'interview':
-        return (
-          <div className="flex flex-col items-center" style={{ gap: '0.08em' }}>
-            <div
-              className="ld-blur-reveal font-black text-gray-900 leading-none text-center"
-              style={{
-                fontSize: 'clamp(4rem, 9vw, 7rem)',
-                letterSpacing: '-0.03em',
-                animationDelay: '0s',
-              }}
-            >
-              Evaluate &amp; Conduct
-            </div>
-            <div
-              className="ld-scale-in font-extralight italic text-gray-900 text-center"
-              style={{
-                fontSize: 'clamp(3.5rem, 7vw, 5.5rem)',
-                animationDelay: '0.35s',
-                display: 'inline-block',
-              }}
-            >
-              Interviews
             </div>
           </div>
         )
@@ -2686,8 +2523,6 @@ export function LaunchDemoPage() {
         return <IntegrationScene restart={restartKey} />
       case 'integrations-connect':
         return <IntegrationsConnectScene restart={restartKey} />
-      case 'interview':
-        return <InterviewScene restart={restartKey} />
       case 'sales':
         return <SalesCoachingScene restart={restartKey} />
       case 'lira-speaking':

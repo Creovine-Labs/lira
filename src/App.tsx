@@ -23,12 +23,7 @@ import {
   OrgEmailPage,
   IntegrationsPage,
   WebhooksPage,
-  InterviewsPage,
-  InterviewRolePage,
-  InterviewCreatePage,
-  InterviewDetailPage,
   ProductSalesPage,
-  ProductInterviewsPage,
   ProductCustomerSupportPage,
   PricingPage,
   DemoSitePage,
@@ -108,7 +103,6 @@ function App() {
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/launch-demo" element={<LaunchDemoPage />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />
-        <Route path="/products/interviews" element={<ProductInterviewsPage />} />
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />
@@ -146,12 +140,6 @@ function App() {
             <Route path="integrations" element={<IntegrationsPage />} />
             <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
-            <Route path="roles" element={<InterviewsPage />} />
-            <Route path="roles/new" element={<InterviewCreatePage />} />
-            <Route path="roles/:roleSlug" element={<InterviewRolePage />} />
-            <Route path="interviews" element={<Navigate to="/org/roles" replace />} />
-            <Route path="interviews/:interviewId/edit" element={<InterviewCreatePage />} />
-            <Route path="interviews/:interviewId" element={<InterviewDetailPage />} />
           </Route>
           <Route path="/support" element={<SupportPage />} />
           <Route path="/support/activate" element={<SupportActivatePage />} />

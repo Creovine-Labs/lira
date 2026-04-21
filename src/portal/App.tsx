@@ -157,10 +157,13 @@ export function App() {
       case 'home':
         return <PortalHome config={config} />
       case 'submit':
+        if (config.ticketsEnabled === false) return <PortalHome config={config} />
         return <SubmitTicket config={config} />
       case 'tickets':
+        if (config.trackEnabled === false) return <PortalHome config={config} />
         return <MyTickets config={config} session={session} onSession={setSession} />
       case 'ticket-detail':
+        if (config.trackEnabled === false) return <PortalHome config={config} />
         return (
           <TicketDetail
             config={config}
@@ -170,6 +173,7 @@ export function App() {
           />
         )
       case 'chat':
+        if (!config.chatEnabled) return <PortalHome config={config} />
         return <ChatPage config={config} />
       default:
         return (

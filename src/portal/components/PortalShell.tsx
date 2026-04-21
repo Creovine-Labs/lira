@@ -32,12 +32,16 @@ export function PortalShell({ config, session, onLogout, children }: PortalShell
             <a href={`/${config.orgSlug}`} className="lp-nav-link">
               Home
             </a>
-            <a href={`/${config.orgSlug}/submit`} className="lp-nav-link">
-              Submit Ticket
-            </a>
-            <a href={`/${config.orgSlug}/tickets`} className="lp-nav-link">
-              My Tickets
-            </a>
+            {(config.ticketsEnabled ?? true) && (
+              <a href={`/${config.orgSlug}/submit`} className="lp-nav-link">
+                Submit Ticket
+              </a>
+            )}
+            {(config.trackEnabled ?? true) && (
+              <a href={`/${config.orgSlug}/tickets`} className="lp-nav-link">
+                My Tickets
+              </a>
+            )}
           </nav>
 
           <div className="lp-header-right">

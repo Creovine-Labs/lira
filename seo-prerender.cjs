@@ -22,11 +22,11 @@ const DEFAULT_IMAGE = `${BASE_URL}/lira_black_with_white_backgound.png`
 const ROUTES = [
   {
     path: '/',
-    title: 'Lira AI — AI Meeting Participant, Sales Coach, Interview Agent & Customer Support',
+    title: 'Lira AI — AI Meeting Participant, Sales Coach & Customer Support',
     description:
-      'Lira AI is an intelligent meeting participant that joins your calls in real time. Automate sales coaching, first-round interviews, customer support, and meeting transcription with AI-powered voice agents.',
+      'Lira AI is an intelligent meeting participant that joins your calls in real time. Automate sales coaching, customer support, and meeting transcription with AI-powered voice agents.',
     keywords:
-      'AI meeting assistant, AI meeting participant, AI sales coaching, AI interview automation, AI customer support, real-time transcription, meeting intelligence, voice AI agent, meeting notetaker, AI meeting bot, Lira AI',
+      'AI meeting assistant, AI meeting participant, AI sales coaching, AI customer support, real-time transcription, meeting intelligence, voice AI agent, meeting notetaker, AI meeting bot, Lira AI',
   },
   {
     path: '/products/sales',
@@ -35,14 +35,6 @@ const ROUTES = [
       'Lira AI listens to every sales call in real time and tells you exactly what to say. AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and automatic CRM updates for Salesforce and HubSpot.',
     keywords:
       'AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, CRM auto-fill, Salesforce AI, HubSpot AI, sales intelligence, competitive selling AI, revenue intelligence',
-  },
-  {
-    path: '/products/interviews',
-    title: 'AI Interview Automation — Conduct, Score & Rank Candidates Automatically',
-    description:
-      'Let Lira AI run your entire first-round hiring process. Automated scheduling, AI-conducted interviews, competency scoring against custom rubrics, and evidence-backed hire/no-hire recommendations.',
-    keywords:
-      'AI interview automation, automated interviews, AI hiring tool, first-round interview AI, competency scoring, candidate evaluation AI, interview scheduling, HR automation, talent acquisition AI',
   },
   {
     path: '/products/customer-support',
@@ -56,14 +48,14 @@ const ROUTES = [
     path: '/resources',
     title: 'Resources — Guides, Tutorials, Documentation & API Reference',
     description:
-      'Everything you need to get started with Lira AI. Step-by-step guides, video tutorials, full documentation, and API reference for meetings, interviews, knowledge base, and integrations.',
+      'Everything you need to get started with Lira AI. Step-by-step guides, video tutorials, full documentation, and API reference for meetings, knowledge base, and integrations.',
     keywords: 'Lira AI documentation, API reference, meeting AI guides, getting started',
   },
   {
     path: '/tutorials',
     title: 'Tutorials — Learn Lira AI in Minutes',
     description:
-      'Video tutorials and walkthroughs to help you get the most out of Lira AI. Set up meetings, run interviews, configure sales coaching, and more.',
+      'Video tutorials and walkthroughs to help you get the most out of Lira AI. Set up meetings, configure sales coaching, and more.',
     keywords: 'Lira AI tutorials, video walkthrough, meeting AI tutorial, Lira AI demo',
   },
   {

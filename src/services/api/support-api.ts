@@ -17,6 +17,14 @@ export interface SupportConfig {
   voice_enabled: boolean
   portal_enabled?: boolean
   portal_slug?: string
+  custom_domain?: string
+  portal_color?: string
+  portal_logo_url?: string
+  portal_greeting?: string
+  portal_chat_enabled?: boolean
+  portal_voice_enabled?: boolean
+  portal_tickets_enabled?: boolean
+  portal_track_enabled?: boolean
   auto_reply_enabled: boolean
   confidence_threshold: number
   force_escalate_intents: string[]

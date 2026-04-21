@@ -9,7 +9,7 @@ export function TermsOfServicePage() {
     <MarketingLayout>
       <SEO
         title="Terms of Service"
-        description="Read the Lira AI Terms of Service. Understand your rights and obligations when using our AI meeting participant, sales coaching, interview, and customer support platform."
+        description="Read the Lira AI Terms of Service. Understand your rights and obligations when using our AI meeting participant, sales coaching, and customer support platform."
         keywords="Lira AI terms of service, terms and conditions, user agreement"
         path="/terms"
       />
@@ -65,11 +65,6 @@ export function TermsOfServicePage() {
             <li>
               <strong>AI-Powered Sales Tools:</strong> Real-time sales coaching, objection handling,
               competitive intelligence, and deal analysis during sales calls.
-            </li>
-            <li>
-              <strong>AI Interview Platform:</strong> Structured interview management with role
-              configuration, AI-assisted interview scoring, candidate evaluation, and hiring
-              pipeline management.
             </li>
             <li>
               <strong>AI Customer Support:</strong> Intelligent customer support conversation
