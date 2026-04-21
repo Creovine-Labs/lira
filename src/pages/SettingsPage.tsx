@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
   ArrowTopRightOnSquareIcon,
@@ -9,6 +9,7 @@ import {
   ClipboardDocumentIcon,
   CodeBracketIcon,
   Cog6ToothIcon,
+  GlobeAltIcon,
   CreditCardIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
@@ -751,6 +752,14 @@ function SupportSettingsSection() {
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [portalEnabled, setPortalEnabled] = useState(false)
   const [portalSlug, setPortalSlug] = useState('')
+  const [customDomain, setCustomDomain] = useState('')
+  const [portalColor, setPortalColor] = useState('#3730a3')
+  const [portalLogoUrl, setPortalLogoUrl] = useState('')
+  const [portalGreeting, setPortalGreeting] = useState('')
+  const [portalChatEnabled, setPortalChatEnabled] = useState(true)
+  const [portalVoiceEnabled, setPortalVoiceEnabled] = useState(true)
+  const [portalTicketsEnabled, setPortalTicketsEnabled] = useState(true)
+  const [portalTrackEnabled, setPortalTrackEnabled] = useState(true)
   const [widgetColor, setWidgetColor] = useState('#3730a3')
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true)
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.7)
@@ -774,6 +783,14 @@ function SupportSettingsSection() {
     setVoiceEnabled(config.voice_enabled)
     setPortalEnabled(config.portal_enabled ?? false)
     setPortalSlug(config.portal_slug ?? '')
+    setCustomDomain(config.custom_domain ?? '')
+    setPortalColor(config.portal_color ?? config.widget_color ?? '#3730a3')
+    setPortalLogoUrl(config.portal_logo_url ?? '')
+    setPortalGreeting(config.portal_greeting ?? '')
+    setPortalChatEnabled(config.portal_chat_enabled ?? config.chat_enabled ?? true)
+    setPortalVoiceEnabled(config.portal_voice_enabled ?? config.voice_enabled ?? true)
+    setPortalTicketsEnabled(config.portal_tickets_enabled ?? true)
+    setPortalTrackEnabled(config.portal_track_enabled ?? true)
     setWidgetColor(config.widget_color ?? '#3730a3')
     setAutoReplyEnabled(config.auto_reply_enabled)
     setConfidenceThreshold(config.confidence_threshold)
@@ -796,6 +813,14 @@ function SupportSettingsSection() {
         voice_enabled: voiceEnabled,
         portal_enabled: portalEnabled,
         portal_slug: portalSlug.trim() || undefined,
+        custom_domain: customDomain.trim().toLowerCase() || undefined,
+        portal_color: portalColor || undefined,
+        portal_logo_url: portalLogoUrl.trim() || undefined,
+        portal_greeting: portalGreeting.trim() || undefined,
+        portal_chat_enabled: portalChatEnabled,
+        portal_voice_enabled: portalVoiceEnabled,
+        portal_tickets_enabled: portalTicketsEnabled,
+        portal_track_enabled: portalTrackEnabled,
         widget_color: widgetColor || undefined,
         auto_reply_enabled: autoReplyEnabled,
         confidence_threshold: confidenceThreshold,
@@ -823,6 +848,14 @@ function SupportSettingsSection() {
     voiceEnabled,
     portalEnabled,
     portalSlug,
+    customDomain,
+    portalColor,
+    portalLogoUrl,
+    portalGreeting,
+    portalChatEnabled,
+    portalVoiceEnabled,
+    portalTicketsEnabled,
+    portalTrackEnabled,
     widgetColor,
     autoReplyEnabled,
     confidenceThreshold,
@@ -835,7 +868,7 @@ function SupportSettingsSection() {
     updateConfig,
   ])
 
-  const [activeTab, setActiveTab] = useState<'widget' | 'channels' | 'behavior' | 'escalation'>(
+  const [activeTab, setActiveTab] = useState<'widget' | 'channels' | 'portal' | 'behavior' | 'escalation'>(
     'widget'
   )
 
@@ -856,6 +889,7 @@ function SupportSettingsSection() {
   const SUPPORT_TABS = [
     { key: 'widget' as const, label: 'Widget', icon: CodeBracketIcon },
     { key: 'channels' as const, label: 'Channels', icon: EnvelopeIcon },
+    { key: 'portal' as const, label: 'Portal', icon: GlobeAltIcon },
     { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
     { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
   ]
@@ -999,71 +1033,16 @@ function SupportSettingsSection() {
       {/* ── Channels tab ── */}
       {activeTab === 'channels' && (
         <div className="space-y-4">
-          {/* Support Portal — listed first */}
-          <div className="rounded-lg border px-4 py-3 space-y-3">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-foreground">Support Portal</p>
-                  <a
-                    href="https://docs.liraintelligence.com/platform/customer-support/portal"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-0.5 text-[11px] font-medium text-gray-400 hover:text-[#3730a3] transition-colors"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                    Docs
-                  </a>
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Branded self-service portal — submit tickets, track status
-                </p>
-              </div>
-              <label aria-label="Toggle support portal" className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={portalEnabled}
-                  onChange={(e) => setPortalEnabled(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
-                />
-              </label>
+          {/* Support Portal — configure in Portal tab */}
+          <div
+            className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition"
+            onClick={() => setActiveTab('portal')}
+          >
+            <div className="flex items-center gap-2">
+              <GlobeAltIcon className="h-4 w-4 text-gray-400" />
+              <p className="text-sm font-medium text-gray-500">Support Portal</p>
+              <span className="text-xs text-gray-400">→ Portal tab</span>
             </div>
-            {portalEnabled && (
-              <div className="space-y-2">
-                <label
-                  htmlFor="portal-slug-input"
-                  className="block text-xs font-semibold text-gray-500"
-                >
-                  Portal URL slug
-                </label>
-                <div className="flex items-center">
-                  <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
-                    support.liraintelligence.com/
-                  </span>
-                  <input
-                    id="portal-slug-input"
-                    type="text"
-                    value={portalSlug}
-                    onChange={(e) =>
-                      setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
-                    }
-                    placeholder="my-company"
-                    className="flex-1 rounded-r-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
-                  />
-                </div>
-                {config.portal_slug && (
-                  <a
-                    href={`https://support.liraintelligence.com/${config.portal_slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
-                  >
-                    <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                    Open portal
-                  </a>
-                )}
-              </div>
-            )}
           </div>
 
           {/* Chat */}
@@ -1168,6 +1147,261 @@ function SupportSettingsSection() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* ── Portal tab ── */}
+      {activeTab === 'portal' && (
+        <div className="space-y-4">
+          {/* Access */}
+          <div className="rounded-lg border px-4 py-3 space-y-3">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-foreground">Support Portal</p>
+                <p className="text-xs text-muted-foreground">
+                  A branded page where customers submit tickets, track status, and chat.
+                </p>
+              </div>
+              <label aria-label="Toggle support portal" className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={portalEnabled}
+                  onChange={(e) => setPortalEnabled(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+              </label>
+            </div>
+
+            {portalEnabled && (
+              <div className="space-y-3 border-t border-gray-100 pt-3">
+                {/* Slug */}
+                <div>
+                  <label htmlFor="portal-slug-input" className="block text-xs font-semibold text-gray-500">
+                    Portal URL
+                  </label>
+                  <div className="mt-1 flex items-center">
+                    <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                      support.liraintelligence.com/
+                    </span>
+                    <input
+                      id="portal-slug-input"
+                      type="text"
+                      value={portalSlug}
+                      onChange={(e) =>
+                        setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                      }
+                      placeholder="my-company"
+                      className="flex-1 rounded-r-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                    />
+                  </div>
+                </div>
+
+                {config.portal_slug && (
+                  <a
+                    href={`https://support.liraintelligence.com/${config.portal_slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
+                  >
+                    <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                    Open portal
+                  </a>
+                )}
+
+                {/* Custom domain */}
+                <div className="border-t border-gray-100 pt-3">
+                  <label htmlFor="portal-custom-domain" className="block text-xs font-semibold text-gray-500">
+                    Custom Domain <span className="font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    id="portal-custom-domain"
+                    type="text"
+                    value={customDomain}
+                    onChange={(e) =>
+                      setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
+                    }
+                    placeholder="support.yourcompany.com"
+                    className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                  />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Add a CNAME from your domain to{' '}
+                    <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
+                      support.liraintelligence.com
+                    </code>, then enter it above.
+                  </p>
+                  {config.custom_domain && (
+                    <a
+                      href={`https://${config.custom_domain}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
+                    >
+                      <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                      Open {config.custom_domain}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {!portalEnabled && (
+              <p className="text-xs text-muted-foreground">
+                Enable the portal to configure its URL, branding, and features.
+              </p>
+            )}
+          </div>
+
+          {/* Branding */}
+          {portalEnabled && (
+            <>
+              <div className="rounded-lg border px-4 py-3 space-y-3">
+                <p className="text-sm font-medium text-foreground">Branding</p>
+                <p className="text-xs text-muted-foreground">Customize the portal to match your brand.</p>
+
+                {/* Portal color */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-2">Brand Color</label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={portalColor}
+                      onChange={(e) => setPortalColor(e.target.value)}
+                      className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={portalColor}
+                      onChange={(e) => {
+                        if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) setPortalColor(e.target.value)
+                      }}
+                      maxLength={7}
+                      className="w-28 rounded-xl border border-input bg-background px-3 py-1.5 font-mono text-sm outline-none focus:border-gray-900"
+                    />
+                    <div className="h-9 flex-1 rounded-lg" style={{ background: portalColor }} />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {['#3730a3','#1d4ed8','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#1a1a2e'].map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => setPortalColor(c)}
+                        className={cn(
+                          'h-7 w-7 rounded-md border-2 transition',
+                          portalColor === c ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'
+                        )}
+                        style={{ background: c }}
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Used for header, buttons, and chat bubbles. Defaults to your widget color.
+                  </p>
+                </div>
+
+                {/* Logo */}
+                <div className="border-t border-gray-100 pt-3">
+                  <label htmlFor="portal-logo-url" className="block text-xs font-semibold text-gray-500">
+                    Logo URL <span className="font-normal text-gray-400">(optional)</span>
+                  </label>
+                  <input
+                    id="portal-logo-url"
+                    type="url"
+                    value={portalLogoUrl}
+                    onChange={(e) => setPortalLogoUrl(e.target.value.trim())}
+                    placeholder="https://yourcompany.com/logo.png"
+                    className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                  />
+                  {portalLogoUrl && (
+                    <div className="mt-2 flex items-center gap-3">
+                      <img
+                        src={portalLogoUrl}
+                        alt="Logo preview"
+                        className="h-8 max-w-[120px] object-contain rounded"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                      />
+                      <span className="text-xs text-muted-foreground">Preview</span>
+                    </div>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Shown in the portal header. Use a transparent PNG or SVG.
+                  </p>
+                </div>
+              </div>
+
+              {/* Portal Greeting */}
+              <div className="rounded-lg border px-4 py-3">
+                <p className="mb-1 text-sm font-medium text-foreground">Portal Greeting</p>
+                <textarea
+                  value={portalGreeting}
+                  onChange={(e) => setPortalGreeting(e.target.value)}
+                  rows={2}
+                  placeholder={config.greeting_message ?? 'Hello! How can I help you today?'}
+                  className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900 resize-none"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Opening message on the portal. Leave blank to use your widget greeting.
+                </p>
+              </div>
+
+              {/* Features */}
+              <div className="rounded-lg border px-4 py-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Portal Features</p>
+                  <p className="text-xs text-muted-foreground">
+                    Choose which capabilities customers see on the portal.
+                  </p>
+                </div>
+                <div className="space-y-2.5">
+                  {([
+                    { id: 'p-chat', label: 'Live Chat', desc: 'Real-time chat with Lira AI', value: portalChatEnabled, set: setPortalChatEnabled },
+                    { id: 'p-voice', label: 'Voice', desc: 'Talk via voice call', value: portalVoiceEnabled, set: setPortalVoiceEnabled },
+                    { id: 'p-tickets', label: 'Submit a Request', desc: 'Submit a support ticket', value: portalTicketsEnabled, set: setPortalTicketsEnabled },
+                    { id: 'p-track', label: 'Track Tickets', desc: 'View and follow up on past requests', value: portalTrackEnabled, set: setPortalTrackEnabled },
+                  ] as const).map((f) => (
+                    <label key={f.id} className="flex items-start gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={f.value}
+                        onChange={(e) => f.set(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                      />
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">{f.label}</span>
+                        <p className="text-xs text-muted-foreground">{f.desc}</p>
+                      </div>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              {/* Customer Login */}
+              <div className="rounded-lg border px-4 py-3 space-y-3">
+                <div>
+                  <p className="text-sm font-medium text-foreground">Customer Login</p>
+                  <p className="text-xs text-muted-foreground">
+                    How customers identify themselves on the portal.
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2.5 space-y-0.5">
+                  <p className="text-xs font-semibold text-emerald-800">Magic Link — Active</p>
+                  <p className="text-xs text-emerald-700">
+                    Customers enter their email and receive a one-time sign-in link. No password required.
+                  </p>
+                </div>
+
+                <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 space-y-0.5 opacity-60">
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-semibold text-gray-700">Identity Verification / SSO</p>
+                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Coming soon</span>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Connect your own auth system. Generate a signed JWT with the customer's email — the portal trusts it automatically.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1348,7 +1582,14 @@ const SETTINGS_TABS = [
 ]
 
 function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('account')
+  const { hash } = useLocation()
+  const navigate = useNavigate()
+
+  const activeTab = (hash.slice(1) as SettingsTab) || 'account'
+
+  function setActiveTab(tab: SettingsTab) {
+    navigate({ hash: tab }, { replace: true })
+  }
 
   return (
     <div className="flex flex-col h-full">

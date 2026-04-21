@@ -168,6 +168,7 @@ function OrgSwitcher() {
   const clearInterviews = useInterviewStore((s) => s.clear)
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
+  const [switching, setSwitching] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -180,7 +181,29 @@ function OrgSwitcher() {
     return () => document.removeEventListener('mousedown', outside)
   }, [])
 
+  function handleSwitch(orgId: string, orgName: string) {
+    if (orgId === currentOrgId) { setOpen(false); return }
+    setSwitching(orgName)
+    setOpen(false)
+    clearKB()
+    clearDocuments()
+    clearInterviews()
+    clearTasks()
+    setCurrentOrg(orgId)
+    navigate('/dashboard', { replace: true })
+    setTimeout(() => setSwitching(null), 800)
+  }
+
   return (
+    <>
+      {switching && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-xl">
+            <img src="/lira_black.png" alt="" className="h-5 w-5 animate-spin opacity-50" style={{ animationDuration: '1s' }} />
+            <span className="text-sm font-semibold text-gray-700">Switching to {switching}…</span>
+          </div>
+        </div>
+      )}
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
@@ -205,16 +228,7 @@ function OrgSwitcher() {
               {organizations.map((org) => (
                 <button
                   key={org.org_id}
-                  onClick={() => {
-                    if (org.org_id !== currentOrgId) {
-                      clearKB()
-                      clearDocuments()
-                      clearInterviews()
-                      clearTasks()
-                    }
-                    setCurrentOrg(org.org_id)
-                    setOpen(false)
-                  }}
+                  onClick={() => handleSwitch(org.org_id, org.name)}
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
                     org.org_id === currentOrgId ? 'font-semibold text-violet-700' : 'text-gray-700'
@@ -245,6 +259,7 @@ function OrgSwitcher() {
         </div>
       )}
     </div>
+    </>
   )
 }
 
@@ -257,6 +272,7 @@ function TopbarOrgSwitcher() {
   const clearInterviews = useInterviewStore((s) => s.clear)
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
+  const [switching, setSwitching] = useState<string | null>(null)
   const ref = useRef<HTMLDivElement>(null)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -269,9 +285,31 @@ function TopbarOrgSwitcher() {
     return () => document.removeEventListener('mousedown', outside)
   }, [])
 
+  function handleSwitch(orgId: string, orgName: string) {
+    if (orgId === currentOrgId) { setOpen(false); return }
+    setSwitching(orgName)
+    setOpen(false)
+    clearKB()
+    clearDocuments()
+    clearInterviews()
+    clearTasks()
+    setCurrentOrg(orgId)
+    navigate('/dashboard', { replace: true })
+    setTimeout(() => setSwitching(null), 800)
+  }
+
   if (!currentOrg) return null
 
   return (
+    <>
+      {switching && (
+        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-5 py-4 shadow-xl">
+            <img src="/lira_black.png" alt="" className="h-5 w-5 animate-spin opacity-50" style={{ animationDuration: '1s' }} />
+            <span className="text-sm font-semibold text-gray-700">Switching to {switching}…</span>
+          </div>
+        </div>
+      )}
     <div className="relative" ref={ref}>
       <button
         onClick={() => setOpen((v) => !v)}
@@ -293,16 +331,7 @@ function TopbarOrgSwitcher() {
               {organizations.map((org) => (
                 <button
                   key={org.org_id}
-                  onClick={() => {
-                    if (org.org_id !== currentOrgId) {
-                      clearKB()
-                      clearDocuments()
-                      clearInterviews()
-                      clearTasks()
-                    }
-                    setCurrentOrg(org.org_id)
-                    setOpen(false)
-                  }}
+                  onClick={() => handleSwitch(org.org_id, org.name)}
                   className={cn(
                     'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
                     org.org_id === currentOrgId ? 'font-semibold text-violet-700' : 'text-gray-700'
@@ -333,6 +362,7 @@ function TopbarOrgSwitcher() {
         </div>
       )}
     </div>
+    </>
   )
 }
 

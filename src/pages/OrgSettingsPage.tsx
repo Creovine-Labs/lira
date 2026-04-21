@@ -2,15 +2,22 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
+  BuildingOffice2Icon,
+  ClipboardDocumentIcon,
+  Cog6ToothIcon,
+  LightBulbIcon,
   LockClosedIcon,
   PlusIcon,
+  RectangleStackIcon,
   TrashIcon,
+  UserGroupIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { PageLoader } from '@/components/ui/page-loader'
+import { cn } from '@/lib'
 import {
   getOrganization,
   listOrgMembers,
@@ -176,39 +183,96 @@ function OrgSettingsPage() {
     }
   }
 
+  const [activeTab, setActiveTab] = useState<'general' | 'culture' | 'products' | 'instructions'>('general')
+
   if (loading) {
     return <PageLoader />
   }
 
   const canEdit = currentRole === 'owner' || currentRole === 'admin'
 
-  return (
-    <div className="space-y-8 pb-8">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Organization Settings</h1>
-        {name && <p className="mt-0.5 text-base font-bold text-[#3730a3]">{name}</p>}
-        <p className="mt-1 text-sm text-muted-foreground">
-          Configure your organization profile. This information helps Lira provide contextualized
-          responses during meetings.
-        </p>
-      </div>
+  const ORG_TABS = [
+    { id: 'general' as const, icon: BuildingOffice2Icon, label: 'General' },
+    { id: 'culture' as const, icon: UserGroupIcon, label: 'Culture' },
+    { id: 'products' as const, icon: RectangleStackIcon, label: 'Products & Services' },
+    { id: 'instructions' as const, icon: LightBulbIcon, label: 'Instructions' },
+  ]
 
-      {/* Read-only notice for plain members */}
-      {!canEdit && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 dark:border-amber-900/40 dark:bg-amber-950/20">
-          <LockClosedIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
-          <p className="text-sm text-amber-700 dark:text-amber-300">
-            You're viewing these settings as a <strong>member</strong>. Only admins and the owner
-            can make changes. Ask your organization owner to promote you to admin if you need
-            editing access.
+  return (
+    <div className="flex flex-col h-full">
+      {/* Page header */}
+      <div className="flex items-center justify-between px-4 sm:px-6 py-5 border-b border-gray-200">
+        <div>
+          <h1 className="text-xl font-bold text-gray-900">Organization Settings</h1>
+          {name && <p className="mt-0.5 text-sm font-semibold text-[#3730a3]">{name}</p>}
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            Configure your org profile — helps Lira give contextualized responses.
           </p>
         </div>
-      )}
+      </div>
 
-      {/* Basic Info */}
-      <section className="rounded-xl border bg-card p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Basic Information</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
+      {/* Two-column layout */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* Sidebar tabs */}
+        <aside className="shrink-0 border-b border-gray-100 md:border-b-0 md:border-r md:w-48 overflow-x-auto md:overflow-y-auto">
+          <div className="flex flex-row gap-1 px-3 py-2 md:flex-col md:space-y-0.5 md:p-3">
+            {ORG_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors whitespace-nowrap',
+                  activeTab === tab.id
+                    ? 'bg-[#1A1A1A] text-white'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
+                )}
+              >
+                <tab.icon className="h-4 w-4 shrink-0" />
+                <span className="text-[13px] font-medium">{tab.label}</span>
+              </button>
+            ))}
+          </div>
+        </aside>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-6">
+
+          {/* Read-only notice */}
+          {!canEdit && (
+            <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3">
+              <LockClosedIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+              <p className="text-sm text-amber-700">
+                You're viewing as a <strong>member</strong>. Only admins and owners can edit.
+              </p>
+            </div>
+          )}
+
+          {/* ── General tab ── */}
+          {activeTab === 'general' && (
+            <section className="rounded-xl border bg-card p-6 space-y-6">
+              {/* Org ID */}
+              <div>
+                <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-gray-400">Organization ID</p>
+                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+                  <code className="flex-1 font-mono text-xs text-gray-700 truncate select-all">{currentOrgId}</code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (currentOrgId) {
+                        navigator.clipboard.writeText(currentOrgId)
+                        toast.success('Org ID copied!')
+                      }
+                    }}
+                    className="shrink-0 flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-gray-200 transition"
+                  >
+                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                    Copy
+                  </button>
+                </div>
+                <p className="mt-1 text-[11px] text-gray-400">Use this to configure the Lira widget on your website.</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Organization Name" required>
             <input
               className="input-field"
@@ -302,13 +366,51 @@ function OrgSettingsPage() {
               maxLength={1000}
             />
           </Field>
-        </div>
-      </section>
+              </div>
 
-      {/* Culture */}
-      <section className="rounded-xl border bg-card p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Company Culture</h2>
-        <div className="space-y-4">
+              {/* Danger Zone inside General tab */}
+              {canEdit && (
+                <div className="rounded-xl border border-red-200 bg-red-50/40 p-4">
+                  <h3 className="mb-1 text-sm font-semibold text-red-700">Danger Zone</h3>
+                  <p className="mb-3 text-xs text-red-600/80">Destructive actions that cannot be undone.</p>
+                  <div className="flex items-center justify-between rounded-lg border border-red-200 bg-white px-4 py-3">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">Delete this organization</p>
+                      <p className="text-xs text-gray-500">Permanently removes all members, documents, meetings, and data.</p>
+                    </div>
+                    <button
+                      onClick={() => setShowDeleteModal(true)}
+                      className="ml-4 shrink-0 rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Save */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !name.trim() || !canEdit}
+                  className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#312e81] disabled:opacity-50"
+                >
+                  {saving ? (
+                    <img src="/lira_black.png" alt="" className="h-4 w-4 animate-spin opacity-50" style={{ animationDuration: '1.2s' }} />
+                  ) : (
+                    <ArrowDownOnSquareIcon className="h-4 w-4" />
+                  )}
+                  Save
+                </button>
+              </div>
+            </section>
+          )}
+
+          {/* ── Culture tab ── */}
+          {activeTab === 'culture' && (
+            <section className="rounded-xl border bg-card p-6 space-y-4">
+              <h2 className="text-base font-semibold text-foreground">Company Culture</h2>
+                    <div className="space-y-4">
           <Field label="Communication Style">
             <input
               className="input-field"
@@ -372,13 +474,29 @@ function OrgSettingsPage() {
               </button>
             </div>
           </Field>
-        </div>
-      </section>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !canEdit}
+                  className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#312e81] disabled:opacity-50"
+                >
+                  {saving ? (
+                    <img src="/lira_black.png" alt="" className="h-4 w-4 animate-spin opacity-50" style={{ animationDuration: '1.2s' }} />
+                  ) : (
+                    <ArrowDownOnSquareIcon className="h-4 w-4" />
+                  )}
+                  Save
+                </button>
+              </div>
+            </section>
+          )}
 
-      {/* Products */}
-      <section className="rounded-xl border bg-card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Products & Services</h2>
+          {/* ── Products tab ── */}
+          {activeTab === 'products' && (
+            <section className="rounded-xl border bg-card p-6 space-y-4">
+              <div className="mb-4 flex items-center justify-between">
+                <h2 className="text-base font-semibold text-foreground">Products &amp; Services</h2>
           <button
             onClick={() =>
               setProducts([...products, { name: '', description: '', status: 'active' }])
@@ -432,21 +550,40 @@ function OrgSettingsPage() {
             ))}
           </div>
         )}
-      </section>
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !canEdit}
+                  className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#312e81] disabled:opacity-50"
+                >
+                  {saving ? (
+                    <img src="/lira_black.png" alt="" className="h-4 w-4 animate-spin opacity-50" style={{ animationDuration: '1.2s' }} />
+                  ) : (
+                    <ArrowDownOnSquareIcon className="h-4 w-4" />
+                  )}
+                  Save
+                </button>
+              </div>
+            </section>
+          )}
 
-      {/* Terminology */}
-      <section className="rounded-xl border bg-card p-6">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-foreground">Terminology</h2>
-          <button
-            onClick={() => setTerminology([...terminology, { term: '', definition: '' }])}
-            disabled={!canEdit}
-            className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
-          >
-            <PlusIcon className="h-3.5 w-3.5" />
-            Add
-          </button>
-        </div>
+          {/* ── Instructions tab ── */}
+          {activeTab === 'instructions' && (
+            <section className="rounded-xl border bg-card p-6 space-y-6">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="text-base font-semibold text-foreground">Terminology</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">Internal terms or acronyms so Lira understands your jargon.</p>
+                </div>
+                <button
+                  onClick={() => setTerminology([...terminology, { term: '', definition: '' }])}
+                  disabled={!canEdit}
+                  className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium hover:bg-muted disabled:opacity-50"
+                >
+                  <PlusIcon className="h-3.5 w-3.5" />
+                  Add
+                </button>
+              </div>
         {terminology.length === 0 ? (
           <p className="text-sm text-muted-foreground">
             Add internal terms or acronyms so Lira understands your jargon.
@@ -489,44 +626,40 @@ function OrgSettingsPage() {
             ))}
           </div>
         )}
-      </section>
 
-      {/* Custom Instructions */}
-      <section className="rounded-xl border bg-card p-6">
-        <h2 className="mb-4 text-base font-semibold text-foreground">Custom Instructions</h2>
-        <p className="mb-3 text-sm text-muted-foreground">
-          Tell Lira anything else about how to behave during your meetings.
-        </p>
+              <div className="border-t border-gray-100 pt-6">
+                <h2 className="mb-1 text-base font-semibold text-foreground">Custom Instructions</h2>
+                <p className="mb-3 text-sm text-muted-foreground">
+                  Tell Lira anything else about how to behave during your meetings.
+                </p>
         <textarea
           className="input-field min-h-[120px] resize-y"
           value={customInstructions}
           onChange={(e) => setCustomInstructions(e.target.value)}
           placeholder="e.g. Always summarize action items at the end of each meeting. Refer to our team as 'the crew'."
-          maxLength={2000}
-        />
-      </section>
+                  maxLength={2000}
+                />
+              </div>
 
-      {/* Danger Zone */}
-      {canEdit && (
-        <section className="rounded-xl border border-red-200 bg-red-50/40 p-6">
-          <h2 className="mb-1 text-base font-semibold text-red-700">Danger Zone</h2>
-          <p className="mb-4 text-sm text-red-600/80">Destructive actions that cannot be undone.</p>
-          <div className="flex items-center justify-between rounded-lg border border-red-200 bg-white px-4 py-3">
-            <div>
-              <p className="text-sm font-medium text-gray-900">Delete this organization</p>
-              <p className="text-xs text-gray-500">
-                Permanently removes all members, documents, meetings, and data.
-              </p>
-            </div>
-            <button
-              onClick={() => setShowDeleteModal(true)}
-              className="ml-4 shrink-0 rounded-lg border border-red-300 px-3 py-1.5 text-sm font-medium text-red-600 transition hover:bg-red-50"
-            >
-              Delete
-            </button>
-          </div>
-        </section>
-      )}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleSave}
+                  disabled={saving || !canEdit}
+                  className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#312e81] disabled:opacity-50"
+                >
+                  {saving ? (
+                    <img src="/lira_black.png" alt="" className="h-4 w-4 animate-spin opacity-50" style={{ animationDuration: '1.2s' }} />
+                  ) : (
+                    <ArrowDownOnSquareIcon className="h-4 w-4" />
+                  )}
+                  Save
+                </button>
+              </div>
+            </section>
+          )}
+
+        </div>
+      </div>
 
       {/* Delete confirmation modal */}
       {showDeleteModal && (
@@ -568,26 +701,6 @@ function OrgSettingsPage() {
         </div>
       )}
 
-      {/* Save */}
-      <div className="flex justify-end">
-        <button
-          onClick={handleSave}
-          disabled={saving || !name.trim() || !canEdit}
-          className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-medium text-white transition hover:bg-[#312e81] disabled:opacity-50"
-        >
-          {saving ? (
-            <img
-              src="/lira_black.png"
-              alt="Loading"
-              className="h-4 w-4 animate-spin opacity-50"
-              style={{ animationDuration: '1.2s' }}
-            />
-          ) : (
-            <ArrowDownOnSquareIcon className="h-4 w-4" />
-          )}
-          Save
-        </button>
-      </div>
     </div>
   )
 }
