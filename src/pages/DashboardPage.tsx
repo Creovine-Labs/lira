@@ -832,6 +832,125 @@ function DeployHeroBar() {
   )
 }
 
+// ── Modules Overview ──────────────────────────────────────────────────────────
+const PREFERRED_MODULE_KEY = 'lira.preferred_module'
+type PreferredModule = 'support' | 'sales' | 'meetings' | 'unsure'
+
+function ModulesOverview({
+  supportActivated,
+  supportStats,
+  supportConvs,
+  meetings,
+}: {
+  supportActivated: boolean
+  supportStats: SupportStats | null
+  supportConvs: SupportConversation[]
+  meetings: Meeting[]
+}) {
+  const navigate = useNavigate()
+  const preferred = (localStorage.getItem(PREFERRED_MODULE_KEY) ?? 'unsure') as PreferredModule
+
+  const tiles = [
+    {
+      id: 'support' as PreferredModule,
+      label: 'Customer Support',
+      accent: '#3730a3',
+      bg: 'bg-indigo-50/60',
+      ring: 'ring-indigo-200/80',
+      statusLabel: supportActivated ? 'Active' : 'Not set up',
+      statusDot: supportActivated ? '#10b981' : '#d1d5db',
+      metric: supportActivated
+        ? `${supportStats?.open_conversations ?? supportConvs.length} open tickets`
+        : 'Chat, portal, and email',
+      cta: supportActivated ? 'Open inbox' : 'Set up',
+      ctaRoute: supportActivated ? '/support' : '/support/activate',
+      icon: ChatBubbleLeftEllipsisIcon,
+    },
+    {
+      id: 'sales' as PreferredModule,
+      label: 'Sales Coaching',
+      accent: '#f59e0b',
+      bg: 'bg-amber-50/60',
+      ring: 'ring-amber-200/80',
+      statusLabel: 'Coming soon',
+      statusDot: '#d1d5db',
+      metric: 'Real-time objection handling',
+      cta: 'Learn more',
+      ctaRoute: '/meetings',
+      icon: ArrowTrendingUpIcon,
+    },
+    {
+      id: 'meetings' as PreferredModule,
+      label: 'Meetings',
+      accent: '#8b5cf6',
+      bg: 'bg-violet-50/60',
+      ring: 'ring-violet-200/80',
+      statusLabel: meetings.length > 0 ? 'Active' : 'Not set up',
+      statusDot: meetings.length > 0 ? '#10b981' : '#d1d5db',
+      metric: meetings.length > 0 ? `${meetings.length} meeting${meetings.length !== 1 ? 's' : ''}` : 'Transcribe, summarize, act',
+      cta: meetings.length > 0 ? 'Open' : 'Deploy Lira',
+      ctaRoute: '/meetings',
+      icon: VideoCameraIcon,
+    },
+  ]
+
+  // Sort so the user's preferred module comes first
+  const sorted = [...tiles].sort((a, b) => {
+    if (a.id === preferred) return -1
+    if (b.id === preferred) return 1
+    return 0
+  })
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
+      <div className="border-b border-gray-100 px-5 py-4 flex items-center justify-between">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+          Your workspace
+        </p>
+        <img src="/lira_black.png" alt="Lira" className="h-4 opacity-30" />
+      </div>
+      <div className="grid grid-cols-1 divide-y divide-gray-100 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+        {sorted.map((tile) => {
+          const { icon: Icon } = tile
+          const isPreferred = tile.id === preferred
+          return (
+            <div key={tile.id} className={cn('relative p-5', isPreferred && 'bg-gray-50/70')}>
+              {isPreferred && (
+                <span className="absolute top-3 right-3 inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-gray-900/5 text-gray-400">
+                  primary
+                </span>
+              )}
+              <div
+                className="mb-3 inline-flex h-9 w-9 items-center justify-center rounded-xl"
+                style={{ background: `${tile.accent}15`, color: tile.accent }}
+              >
+                <Icon className="h-4 w-4" />
+              </div>
+              <p className="text-sm font-bold text-gray-900 mb-1">{tile.label}</p>
+              <div className="flex items-center gap-1.5 mb-2">
+                <span
+                  className="inline-block h-1.5 w-1.5 rounded-full"
+                  style={{ background: tile.statusDot }}
+                />
+                <span className="text-[11px] text-gray-500">{tile.statusLabel}</span>
+              </div>
+              <p className="text-[11.5px] text-gray-400 mb-4 leading-snug">{tile.metric}</p>
+              <button
+                onClick={() => navigate(tile.ctaRoute)}
+                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition-colors"
+                style={{ background: `${tile.accent}12`, color: tile.accent }}
+              >
+                {tile.cta}
+                <ArrowRightIcon className="h-3 w-3" />
+              </button>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── Dashboard page ────────────────────────────────────────────────────────────
 function DashboardPage() {
   const navigate = useNavigate()
@@ -972,7 +1091,17 @@ function DashboardPage() {
           </div>
         </div>
 
-        {/* ── Dark hero card ── */}
+        {/* ── Modules overview ── */}
+        <div className="mb-4">
+          <ModulesOverview
+            supportActivated={supportActivated}
+            supportStats={supportStats}
+            supportConvs={supportConvs}
+            meetings={meetings}
+          />
+        </div>
+
+        {/* ── Deploy hero bar (Meetings expand) ── */}
         <div className="mb-4">
           <DeployHeroBar />
         </div>

@@ -16,12 +16,9 @@ import {
   ComputerDesktopIcon,
   CpuChipIcon,
   HeartIcon,
-  LightBulbIcon,
   LockClosedIcon,
-  MicrophoneIcon,
   ServerStackIcon,
   ShieldCheckIcon,
-  SparklesIcon,
   VideoCameraIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
