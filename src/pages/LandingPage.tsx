@@ -1189,7 +1189,8 @@ const HUB_STYLES = `
   .hub-ring-ccw{transform-origin:50% 50%;animation:hubSpinCCW 80s linear infinite}
   .hub-card{animation:hubFadeUp .55s cubic-bezier(.2,.7,.3,1) both}
 
-  .orbit-stage{position:absolute;inset:0}
+  /* orbit-stage is just a sizing+hover wrapper — position is handled by the parent relative div */
+  .orbit-inner{position:absolute;inset:0}
   .orbit-arm{
     position:absolute;left:50%;top:50%;width:0;height:0;
     animation:orbitArm ${ORBIT_DURATION} linear infinite;
@@ -1429,9 +1430,11 @@ function HubAndSpoke() {
 
         {/* ─── Desktop / tablet ───────────────────────────────────────────── */}
         <div
-          className="orbit-stage relative hidden md:block mx-auto"
+          className="orbit-stage relative hidden md:block mx-auto overflow-hidden"
           style={{ width: '100%', maxWidth: 820, aspectRatio: '10 / 8' }}
         >
+          {/* Inner absolutely-positioned layer for orbits + SVG */}
+          <div className="orbit-inner">
           {/* SVG: orbit rings only (cards on their own orbital track) */}
           <svg
             viewBox="0 0 1000 800"
@@ -1537,6 +1540,7 @@ function HubAndSpoke() {
               </div>
             </div>
           ))}
+          </div>{/* /orbit-inner */}
         </div>
 
         {/* ─── Mobile ─────────────────────────────────────────────────────── */}
