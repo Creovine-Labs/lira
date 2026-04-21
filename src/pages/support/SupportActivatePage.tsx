@@ -602,6 +602,7 @@ function SupportActivatePage() {
   const [greeting, setGreeting] = useState('Hi! How can we help you today?')
   const [portalEnabled, setPortalEnabled] = useState(false)
   const [portalSlug, setPortalSlug] = useState('')
+  const [portalCustomDomain, setPortalCustomDomain] = useState('')
   const [activating, setActivating] = useState(false)
   const [activated, setActivated] = useState(false)
 
@@ -787,6 +788,7 @@ function SupportActivatePage() {
         greeting_message: greeting.trim() || undefined,
         portal_enabled: portalEnabled,
         portal_slug: portalSlug.trim() || undefined,
+        custom_domain: portalCustomDomain.trim().toLowerCase() || undefined,
         escalation_email: escalationEmail.trim() || undefined,
         onboarding_completed: true,
         onboarding_step: 'complete',
@@ -805,6 +807,7 @@ function SupportActivatePage() {
     greeting,
     portalEnabled,
     portalSlug,
+    portalCustomDomain,
     escalationEmail,
     activateModule,
     updateConfig,
@@ -1246,8 +1249,37 @@ function SupportActivatePage() {
                         />
                       </div>
                       <p className="mt-1 text-xs text-gray-400">
-                        This is the URL your customers will visit. You can also CNAME your own
-                        domain later.
+                        Customers visit this URL. You can also set a custom domain below.
+                      </p>
+                    </div>
+
+                    {/* Custom domain */}
+                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 py-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-gray-600">
+                          Custom Domain{' '}
+                          <span className="font-normal text-gray-400">(optional)</span>
+                        </p>
+                        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-600">
+                          Pro
+                        </span>
+                      </div>
+                      <input
+                        id="activate-portal-custom-domain"
+                        type="text"
+                        value={portalCustomDomain}
+                        onChange={(e) =>
+                          setPortalCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
+                        }
+                        placeholder="support.yourcompany.com"
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                      />
+                      <p className="text-[11px] text-gray-400 leading-relaxed">
+                        Add a DNS CNAME from your domain pointing to{' '}
+                        <code className="rounded bg-white border border-gray-200 px-1 py-0.5 font-mono text-[10px]">
+                          support.liraintelligence.com
+                        </code>
+                        , then enter it above. Your portal will be accessible at your own URL.
                       </p>
                     </div>
 
