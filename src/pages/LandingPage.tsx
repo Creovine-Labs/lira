@@ -1146,24 +1146,6 @@ function Hero() {
         </Link>
       </div>
 
-      {/* Live trust line */}
-      <div className="mt-5 flex items-center justify-center gap-2 text-[11px] sm:text-xs text-gray-400">
-        <span className="relative inline-flex h-2 w-2">
-          <span className="absolute inset-0 rounded-full bg-green-500 opacity-75 animate-ping" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
-        </span>
-        Live on{' '}
-        <a
-          href="https://demo.liraintelligence.com"
-          target="_blank"
-          rel="noreferrer"
-          className="font-semibold text-gray-500 hover:text-gray-700 underline underline-offset-2"
-        >
-          Nimbus
-        </a>{' '}
-        — resolving tickets right now
-      </div>
-
       {/* Meeting demo */}
       <MeetingDemo />
     </section>
