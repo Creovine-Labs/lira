@@ -136,13 +136,28 @@ const ROUTES = [
     description: 'Rules and guidelines for using the Lira AI platform.',
     keywords: 'acceptable use, platform rules',
   },
+  {
+    path: '/demo',
+    canonicalUrl: 'https://demo.liraintelligence.com',
+    standaloneTitle: true,
+    noIndex: true,
+    title: 'Nimbus — Finance & Accounting Software for Growing Businesses',
+    description:
+      'Nimbus is cloud-based finance and accounting software for SMBs. Send invoices, track expenses, run reports, and manage payroll — all in one place. Start your 14-day free trial.',
+    keywords:
+      'accounting software, invoicing software, expense tracking, payroll, SMB finance, cloud accounting, Nimbus Finance, financial reporting, multi-currency invoicing, recurring billing',
+  },
 ]
 
 // ── Generate HTML for each route ─────────────────────────────────────────────
 
 function generateMeta(route) {
-  const fullTitle = route.path === '/' ? route.title : `${route.title} | ${SITE_NAME}`
-  const url = `${BASE_URL}${route.path}`
+  const fullTitle =
+    route.path === '/' || route.standaloneTitle ? route.title : `${route.title} | ${SITE_NAME}`
+  const url = route.canonicalUrl ?? `${BASE_URL}${route.path}`
+  const robots = route.noIndex
+    ? 'noindex, nofollow'
+    : 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'
   const ogType = route.type === 'article' ? 'article' : 'website'
 
   return `
@@ -151,7 +166,7 @@ function generateMeta(route) {
     <meta name="description" content="${route.description}" />
     <meta name="keywords" content="${route.keywords}" />
     <link rel="canonical" href="${url}" />
-    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="robots" content="${robots}" />
     <meta property="og:type" content="${ogType}" />
     <meta property="og:url" content="${url}" />
     <meta property="og:title" content="${fullTitle}" />
