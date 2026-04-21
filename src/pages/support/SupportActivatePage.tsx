@@ -1213,9 +1213,6 @@ function SupportActivatePage() {
                     <div className="flex items-center gap-2">
                       <GlobeAltIcon className="h-4 w-4 text-gray-500" />
                       <span className="text-sm font-medium text-gray-800">Support Portal</span>
-                      <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-semibold text-indigo-600">
-                        NEW
-                      </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">
                       Full-page support experience — ticket creation, tracking &amp; live chat

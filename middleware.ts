@@ -1,22 +1,31 @@
 import { next, rewrite } from '@vercel/edge'
 
 export const config = {
-  // Only run on the root path — avoids touching assets, APIs, and sub-routes.
-  matcher: '/',
+  // Run on all paths so we can handle /support on the demo host too.
+  matcher: '/(.*)',
 }
 
 /**
- * Serve the prerendered Nimbus demo page (`/demo/index.html`) when the
- * request arrives on the `demo.liraintelligence.com` host. This ensures
- * crawlers and server-side scrapers see Nimbus metadata (title, description,
- * OG tags) instead of Lira's default landing page HTML.
+ * Demo host routing:
+ *  - /support  → redirect to the Nimbus support portal
+ *  - /          → rewrite to prerendered Nimbus demo HTML
  */
 export default function middleware(request: Request) {
   const host = request.headers.get('host') ?? ''
   if (host === 'demo.liraintelligence.com') {
     const url = new URL(request.url)
-    url.pathname = '/demo/index.html'
-    return rewrite(url)
+
+    // /support or /support/* → redirect to portal
+    if (url.pathname === '/support' || url.pathname.startsWith('/support/')) {
+      const portalUrl = new URL(url.pathname.replace(/^\/support/, ''), 'https://support.liraintelligence.com/nimbus')
+      return Response.redirect(portalUrl.toString(), 302)
+    }
+
+    // Root → serve prerendered Nimbus page
+    if (url.pathname === '/') {
+      url.pathname = '/demo/index.html'
+      return rewrite(url)
+    }
   }
   return next()
 }
