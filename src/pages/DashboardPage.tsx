@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import {
   ArrowRightIcon,
   BookOpenIcon,
-  BriefcaseIcon,
   ChatBubbleLeftEllipsisIcon,
   ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
@@ -22,7 +21,6 @@ import {
   getBotStatus,
   getDashboardStats,
   listActiveBots,
-  listInterviews,
   listMeetings,
   listTasks,
   muteBotApi,
@@ -32,7 +30,6 @@ import {
   type Meeting,
   type MeetingType,
   type TaskRecord,
-  type Interview,
   type DashboardStats,
 } from '@/services/api'
 import {
@@ -232,19 +229,17 @@ function RecentTasks({ tasks }: { tasks: TaskRecord[] }) {
 }
 
 // ── Activity panel (tabbed) ───────────────────────────────────────────────────
-type Tab = 'meetings' | 'tasks' | 'interviews' | 'support'
+type Tab = 'meetings' | 'tasks' | 'support'
 
 function ActivityPanel({
   meetings,
   tasks,
-  interviews,
   supportConversations,
   supportActivated,
   navigate,
 }: {
   meetings: Meeting[]
   tasks: TaskRecord[]
-  interviews: Interview[]
   supportConversations: SupportConversation[]
   supportActivated: boolean
   navigate: (path: string) => void
@@ -254,7 +249,6 @@ function ActivityPanel({
   const tabs: { id: Tab; label: string; count?: number }[] = [
     { id: 'meetings', label: 'Meetings', count: meetings.length || undefined },
     { id: 'tasks', label: 'Tasks', count: tasks.length || undefined },
-    { id: 'interviews', label: 'Interviews', count: interviews.length || undefined },
     ...(supportActivated
       ? [
           {
@@ -324,47 +318,6 @@ function ActivityPanel({
               >
                 View all tasks <ArrowRightIcon className="h-3 w-3" />
               </button>
-            )}
-          </div>
-        )}
-
-        {/* ── Interviews ── */}
-        {tab === 'interviews' && (
-          <div>
-            {interviews.length === 0 ? (
-              <div className="flex flex-col items-center gap-2 py-8 text-center">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gray-100">
-                  <BriefcaseIcon className="h-5 w-5 text-gray-400" />
-                </div>
-                <p className="text-sm text-gray-400">No interviews yet</p>
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {[...new Set(interviews.map((iv) => iv.title))].slice(0, 10).map((role) => {
-                    const count = interviews.filter((iv) => iv.title === role).length
-                    return (
-                      <button
-                        key={role}
-                        onClick={() => navigate('/org/roles')}
-                        className="flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm font-medium text-gray-700 transition hover:border-[#3730a3]/30 hover:bg-[#3730a3]/5 hover:text-[#3730a3]"
-                      >
-                        <BriefcaseIcon className="h-3.5 w-3.5" />
-                        {role}
-                        <span className="rounded-full bg-gray-200 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">
-                          {count}
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
-                <button
-                  onClick={() => navigate('/org/roles')}
-                  className="mt-3 flex items-center gap-1 text-xs font-semibold text-[#3730a3] transition hover:text-[#312e81]"
-                >
-                  Manage interview roles <ArrowRightIcon className="h-3 w-3" />
-                </button>
-              </>
             )}
           </div>
         )}
@@ -853,13 +806,6 @@ function DeployHeroBar() {
       <div className="mt-5 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-white/30">
         <span>Also:</span>
         <button
-          onClick={() => navigate('/org/roles')}
-          className="text-white/50 transition hover:text-white"
-        >
-          Conduct interviews
-        </button>
-        <span>·</span>
-        <button
           onClick={() => navigate('/support')}
           className="text-white/50 transition hover:text-white"
         >
@@ -896,7 +842,6 @@ function DashboardPage() {
 
   const [meetings, setMeetings] = useState<Meeting[]>([])
   const [tasks, setTasks] = useState<TaskRecord[]>([])
-  const [interviews, setInterviews] = useState<Interview[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [supportStats, setSupportStats] = useState<SupportStats | null>(null)
   const [supportConvs, setSupportConvs] = useState<SupportConversation[]>([])
@@ -927,8 +872,6 @@ function DashboardPage() {
 
     setTasks([])
 
-    setInterviews([])
-
     setLoading(true)
 
     // Stats card numbers come from the dedicated stats endpoint (single call)
@@ -943,9 +886,6 @@ function DashboardPage() {
           .then((r) => (Array.isArray(r) ? r : ((r as { tasks: TaskRecord[] }).tasks ?? [])))
           .catch(() => [] as TaskRecord[])
       : Promise.resolve([] as TaskRecord[])
-    const interviewP = currentOrgId
-      ? listInterviews(currentOrgId).catch(() => [] as Interview[])
-      : Promise.resolve([] as Interview[])
 
     // Support data (only if activated)
     const supportStatsP =
@@ -957,14 +897,13 @@ function DashboardPage() {
         ? listConversations(currentOrgId, 'open').catch(() => [] as SupportConversation[])
         : Promise.resolve([] as SupportConversation[])
 
-    Promise.all([statsP, meetingP, taskP, interviewP, supportStatsP, supportConvsP]).then(
-      ([s, m, t, iv, ss, sc]) => {
+    Promise.all([statsP, meetingP, taskP, supportStatsP, supportConvsP]).then(
+      ([s, m, t, ss, sc]) => {
         m.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         t.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         setStats(s)
         setMeetings(m)
         setTasks(t)
-        setInterviews(iv)
         setSupportStats(ss)
         setSupportConvs(sc)
         setLoading(false)
@@ -1055,13 +994,6 @@ function DashboardPage() {
             onClick={() => navigate('/org/tasks')}
           />
           <StatCard
-            label="Interviews"
-            value={stats?.interviews_total ?? interviews.length}
-            icon={BriefcaseIcon}
-            accent="indigo"
-            onClick={() => navigate('/org/roles')}
-          />
-          <StatCard
             label="Open tickets"
             value={
               supportActivated ? (supportStats?.open_conversations ?? supportConvs.length) : '—'
@@ -1090,12 +1022,6 @@ function DashboardPage() {
                 accent
               />
               <QuickAction
-                icon={BriefcaseIcon}
-                label="Start an interview"
-                description="AI-assisted candidate interview"
-                onClick={() => navigate('/org/roles')}
-              />
-              <QuickAction
                 icon={ChatBubbleLeftEllipsisIcon}
                 label="Support inbox"
                 description="AI-powered customer support"
@@ -1121,7 +1047,6 @@ function DashboardPage() {
             <ActivityPanel
               meetings={meetings}
               tasks={tasks}
-              interviews={interviews}
               supportConversations={supportConvs}
               supportActivated={supportActivated}
               navigate={navigate}

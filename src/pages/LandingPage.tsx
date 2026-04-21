@@ -7,7 +7,6 @@ import {
   ArrowTrendingUpIcon,
   BookOpenIcon,
   BuildingOffice2Icon,
-  CheckBadgeIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CodeBracketIcon,
