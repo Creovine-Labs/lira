@@ -1135,7 +1135,7 @@ function Hero() {
       {/* Sub */}
       <p className="mx-auto mt-6 sm:mt-8 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
         Lira is a Conversational Intelligence platform. One AI agent across your customer support,
-        sales calls, and meetings — grounded in your knowledge, responding in real time.
+        sales calls, and meetings, grounded in your knowledge, responding in real time.
       </p>
 
       {/* Dual CTA */}
@@ -1168,7 +1168,7 @@ function InAction() {
           Live demo
         </p>
         <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
-          Watch Lira handle it — in real time.
+          Watch Lira handle it, in real time.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
           Switch between Customer Support, Meetings, and Sales. Same engine, same knowledge, three surfaces.
@@ -1179,206 +1179,35 @@ function InAction() {
   )
 }
 
-// ─── Hub & Spoke ──────────────────────────────────────────────────────────────
-
-const ORBIT_DURATION = '44s'
+// ─── Hub & Spoke (compact, static) ───────────────────────────────────────────
 
 const HUB_STYLES = `
-  @keyframes hubGlow{0%,100%{box-shadow:0 0 0 0 rgba(55,48,163,.35),0 24px 60px -12px rgba(55,48,163,.45)}50%{box-shadow:0 0 0 18px rgba(55,48,163,0),0 24px 60px -12px rgba(55,48,163,.6)}}
-  @keyframes hubSpinCW{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
-  @keyframes hubSpinCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
-  @keyframes hubFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-
-  /* Orbital motion: the arm rotates around the hub, the card counter-rotates to stay upright. */
-  @keyframes orbitArm{from{transform:rotate(var(--start,0deg))}to{transform:rotate(calc(var(--start,0deg) + 360deg))}}
-  @keyframes orbitCardUpright{from{transform:translate(-50%,-50%) rotate(calc(var(--start,0deg) * -1))}to{transform:translate(-50%,-50%) rotate(calc(var(--start,0deg) * -1 - 360deg))}}
-
-  .hub-glow{animation:hubGlow 3.2s ease-in-out infinite}
-  .hub-ring-cw{transform-origin:50% 50%;animation:hubSpinCW 60s linear infinite}
-  .hub-ring-ccw{transform-origin:50% 50%;animation:hubSpinCCW 80s linear infinite}
-  .hub-card{animation:hubFadeUp .55s cubic-bezier(.2,.7,.3,1) both}
-
-  /* orbit-stage is just a sizing+hover wrapper — position is handled by the parent relative div */
-  .orbit-inner{position:absolute;inset:0}
-  .orbit-arm{
-    position:absolute;left:50%;top:50%;width:0;height:0;
-    animation:orbitArm ${ORBIT_DURATION} linear infinite;
-  }
-  .orbit-card-wrapper{
-    position:absolute;left:var(--radius,300px);top:0;
-    animation:orbitCardUpright ${ORBIT_DURATION} linear infinite;
-    transform:translate(-50%,-50%);
-  }
-  .orbit-stage:hover .orbit-arm,
-  .orbit-stage:hover .orbit-card-wrapper{animation-play-state:paused}
-
-  @media (prefers-reduced-motion:reduce){
-    .hub-glow,.hub-ring-cw,.hub-ring-ccw,.hub-card,.orbit-arm,.orbit-card-wrapper{animation:none}
-    .orbit-card-wrapper{transform:translate(-50%,-50%) rotate(calc(var(--start,0deg) * -1))}
-  }
+  @keyframes hubGlowSoft{0%,100%{box-shadow:0 0 0 0 rgba(55,48,163,.28),0 18px 44px -14px rgba(55,48,163,.45)}50%{box-shadow:0 0 0 10px rgba(55,48,163,0),0 18px 44px -14px rgba(55,48,163,.55)}}
+  @keyframes hubPulse{0%,100%{opacity:.5}50%{opacity:1}}
+  @keyframes hubDash{to{stroke-dashoffset:-32}}
+  .hub-core{animation:hubGlowSoft 3.6s ease-in-out infinite}
+  .hub-pulse{animation:hubPulse 2.4s ease-in-out infinite}
+  .hub-line{stroke-dasharray:4 6;animation:hubDash 3s linear infinite}
+  @media (prefers-reduced-motion:reduce){.hub-core,.hub-pulse,.hub-line{animation:none}}
 `
 
 type Spoke = {
   id: string
   label: string
   description: string
-  events: string[]
   accent: string
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
 
-const SPOKES: Record<'support' | 'tasks' | 'meetings' | 'knowledge', Spoke> = {
-  support: {
-    id: 'support',
-    label: 'Customer Support',
-    description: 'Chat, portal, email',
-    events: [
-      'Resolved ticket #2841 — refund processed',
-      'Escalated billing issue to Kwame',
-      'Synced conversation to HubSpot',
-      'Answered 3 tickets in 4 seconds',
-    ],
-    accent: '#3730a3',
-    Icon: HeartIcon,
-  },
-  tasks: {
-    id: 'tasks',
-    label: 'Task Execution',
-    description: 'Acts on every conversation',
-    events: [
-      'Created Linear ticket LIR-428',
-      'Updated HubSpot deal — stage: Negotiation',
-      'Booked follow-up via Google Calendar',
-      'Posted action items to #eng-standup',
-    ],
-    accent: '#f59e0b',
-    Icon: BoltIcon,
-  },
-  meetings: {
-    id: 'meetings',
-    label: 'Meetings',
-    description: 'Joins. Listens. Acts.',
-    events: [
-      'Extracted 3 action items from Sprint Planning',
-      'Summarized 42-min call in 120 words',
-      'Flagged competitor mention — Acme',
-      'Sent recap to 8 attendees',
-    ],
-    accent: '#8b5cf6',
-    Icon: VideoCameraIcon,
-  },
-  knowledge: {
-    id: 'knowledge',
-    label: 'Knowledge',
-    description: 'Grounded in your docs',
-    events: [
-      'Indexed 14 help-center articles',
-      'Answered policy question from PDF',
-      'Learned new refund rule',
-      'Cached 2,104 knowledge chunks',
-    ],
-    accent: '#10b981',
-    Icon: BookOpenIcon,
-  },
-}
-
-function SpokeEventTicker({ events, accent }: { events: string[]; accent: string }) {
-  const [idx, setIdx] = useState(0)
-  useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % events.length), 3000)
-    return () => clearInterval(id)
-  }, [events.length])
-  return (
-    <div className="relative h-4 overflow-hidden">
-      {events.map((e, i) => (
-        <div
-          key={i}
-          className="absolute inset-0 text-[10.5px] font-medium leading-4 tracking-[-0.005em] transition-all duration-500"
-          style={{
-            opacity: i === idx ? 1 : 0,
-            transform: `translateY(${(i - idx) * 6}px)`,
-            color: accent,
-          }}
-        >
-          {e}
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function GlassSpokeCard({
-  spoke,
-  compact = false,
-}: {
-  spoke: Spoke
-  compact?: boolean
-}) {
-  const { Icon } = spoke
-  return (
-    <div
-      className={`relative rounded-2xl overflow-hidden ${compact ? 'w-full p-3.5' : 'w-[212px] p-4'}`}
-      style={{
-        // Glassmorphic stack
-        background:
-          'linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.58) 100%)',
-        backdropFilter: 'blur(14px) saturate(140%)',
-        WebkitBackdropFilter: 'blur(14px) saturate(140%)',
-        boxShadow:
-          '0 1px 0 rgba(255,255,255,0.9) inset, 0 0 0 1px rgba(255,255,255,0.55) inset, 0 8px 32px -8px rgba(16,24,40,0.18), 0 2px 6px -2px rgba(16,24,40,0.08)',
-      }}
-    >
-      {/* Subtle color wash using the accent */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: `radial-gradient(ellipse 80% 60% at 0% 0%, ${spoke.accent}22, transparent 60%)`,
-        }}
-      />
-      {/* Accent bar */}
-      <div
-        className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
-        style={{ background: spoke.accent, opacity: 0.85 }}
-      />
-      <div className="relative pl-2.5">
-        <div className="flex items-center gap-2 mb-2">
-          <div
-            className="flex h-6 w-6 items-center justify-center rounded-md ring-1"
-            style={{
-              background: `${spoke.accent}1f`,
-              color: spoke.accent,
-              boxShadow: `inset 0 1px 0 rgba(255,255,255,0.6)`,
-              // @ts-expect-error ringColor inline
-              '--tw-ring-color': `${spoke.accent}33`,
-            }}
-          >
-            <Icon className="h-3.5 w-3.5" />
-          </div>
-          <p className="text-[11px] font-bold tracking-[-0.01em] text-gray-900">{spoke.label}</p>
-        </div>
-        <p className="text-[10.5px] text-gray-500 mb-2.5 tracking-[-0.005em]">
-          {spoke.description}
-        </p>
-        <SpokeEventTicker events={spoke.events} accent={spoke.accent} />
-      </div>
-    </div>
-  )
-}
+const SPOKES_LIST: Spoke[] = [
+  { id: 'support', label: 'Customer Support', description: 'Chat, portal, and email resolved in seconds.', accent: '#3730a3' },
+  { id: 'sales', label: 'Sales Coaching', description: 'Real-time objection handling, CRM auto-fill.', accent: '#f59e0b' },
+  { id: 'meetings', label: 'Meetings', description: 'Joins, contributes, closes the loop.', accent: '#8b5cf6' },
+  { id: 'knowledge', label: 'Knowledge', description: 'Grounded in your docs, tickets, and history.', accent: '#10b981' },
+]
 
 function HubAndSpoke() {
-  const HUB_SIZE = 176 // px
-  // 4 cards equally spaced; rotate them so Support starts at the top.
-  // Orbit radius in CSS px for desktop container; the container maintains aspect
-  // ratio 10:8 so a 260px orbit fits within both axes.
-  const ORBITERS = [
-    { key: 'support',   start: -90, radius: 280 },
-    { key: 'tasks',     start: 0,   radius: 280 },
-    { key: 'meetings',  start: 90,  radius: 280 },
-    { key: 'knowledge', start: 180, radius: 280 },
-  ] as const
-
   return (
-    <section className="relative py-24 sm:py-32 px-6 overflow-hidden">
+    <section className="relative py-20 sm:py-24 px-6 overflow-hidden">
       <style>{HUB_STYLES}</style>
 
       {/* Background ambient */}
@@ -1386,137 +1215,48 @@ function HubAndSpoke() {
         className="absolute inset-0 -z-10 opacity-60"
         style={{
           background:
-            'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(55,48,163,0.07), transparent 70%)',
-        }}
-      />
-      <div
-        className="absolute inset-0 -z-10 opacity-[0.22]"
-        style={{
-          backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(16,24,40,0.25) 1px, transparent 0)',
-          backgroundSize: '28px 28px',
-          maskImage:
-            'radial-gradient(ellipse 55% 45% at 50% 50%, #000 40%, transparent 75%)',
-          WebkitMaskImage:
-            'radial-gradient(ellipse 55% 45% at 50% 50%, #000 40%, transparent 75%)',
+            'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(55,48,163,0.06), transparent 70%)',
         }}
       />
 
       <div className="mx-auto max-w-5xl">
         {/* Section header */}
-        <div className="text-center mb-14 sm:mb-20">
+        <div className="text-center mb-10 sm:mb-14">
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-4">
             One platform
           </p>
           <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
             Built on a single{' '}
-            <span className="relative whitespace-nowrap text-[#3730a3]">
-              Conversational Intelligence
-              <svg
-                className="absolute left-0 right-0 -bottom-1 w-full h-2"
-                viewBox="0 0 300 8"
-                preserveAspectRatio="none"
-                aria-hidden
-              >
-                <path
-                  d="M2 5 Q 75 1, 150 4 T 298 4"
-                  stroke="#3730a3"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity="0.35"
-                />
-              </svg>
-            </span>{' '}
-            engine.
+            <span className="text-[#3730a3]">Conversational Intelligence</span> engine.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
             Lira hears, understands, and{' '}
             <em className="not-italic text-gray-700 font-semibold">acts on</em> every business
-            conversation — grounded in your shared knowledge.
+            conversation, grounded in your shared knowledge.
           </p>
         </div>
 
-        {/* ─── Desktop / tablet ───────────────────────────────────────────── */}
-        <div
-          className="orbit-stage relative hidden md:block mx-auto overflow-hidden"
-          style={{ width: '100%', maxWidth: 820, aspectRatio: '10 / 8' }}
-        >
-          {/* Inner absolutely-positioned layer for orbits + SVG */}
-          <div className="orbit-inner">
-          {/* SVG: orbit rings only (cards on their own orbital track) */}
-          <svg
-            viewBox="0 0 1000 800"
-            preserveAspectRatio="xMidYMid meet"
-            className="absolute inset-0 w-full h-full"
-            style={{ overflow: 'visible' }}
-          >
-            {/* Inner slow ring */}
-            <g className="hub-ring-cw" style={{ transformOrigin: '500px 400px' }}>
-              <circle
-                cx="500"
-                cy="400"
-                r="170"
-                fill="none"
-                stroke="#3730a3"
-                strokeOpacity="0.2"
-                strokeWidth="1.2"
-                strokeDasharray="2 9"
-              />
-            </g>
-            {/* Mid ring */}
-            <g className="hub-ring-ccw" style={{ transformOrigin: '500px 400px' }}>
-              <circle
-                cx="500"
-                cy="400"
-                r="240"
-                fill="none"
-                stroke="#3730a3"
-                strokeOpacity="0.14"
-                strokeWidth="1"
-                strokeDasharray="1 12"
-              />
-            </g>
-            {/* Outer ring — orbital track for the cards (very subtle) */}
-            <circle
-              cx="500"
-              cy="400"
-              r="340"
-              fill="none"
-              stroke="#3730a3"
-              strokeOpacity="0.08"
-              strokeWidth="1"
-              strokeDasharray="3 6"
-            />
-          </svg>
-
+        {/* ─── Desktop: hub center + 4 spokes with SVG connectors ────────── */}
+        <div className="hidden md:block relative mx-auto" style={{ maxWidth: 900 }}>
           {/* Center hub */}
-          <div
-            className="absolute hub-glow rounded-full"
-            style={{
-              width: HUB_SIZE,
-              height: HUB_SIZE,
-              left: `calc(50% - ${HUB_SIZE / 2}px)`,
-              top: `calc(50% - ${HUB_SIZE / 2}px)`,
-              background:
-                'radial-gradient(circle at 30% 25%, #6366f1 0%, #3730a3 45%, #1e1b4b 100%)',
-              zIndex: 2,
-            }}
-          >
-            <div className="absolute inset-2 rounded-full ring-1 ring-white/10" />
-            <div className="absolute inset-4 rounded-full ring-1 ring-white/5" />
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 backdrop-blur-sm mb-2.5">
-                <img
-                  src="/lira_black_with_white_backgound.png"
-                  alt=""
-                  className="h-7 w-7 rounded-full"
-                />
-              </div>
-              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/55 mb-1">
-                Lira Engine
+          <div className="flex justify-center">
+            <div
+              className="hub-core relative flex h-32 w-32 flex-col items-center justify-center rounded-3xl text-center px-3"
+              style={{
+                background:
+                  'linear-gradient(140deg, #3730a3 0%, #1e1b4b 100%)',
+              }}
+            >
+              <div className="absolute inset-[3px] rounded-[22px] ring-1 ring-white/10" />
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt=""
+                className="h-8 w-8 rounded-lg mb-1.5"
+              />
+              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/60">
+                Lira engine
               </p>
-              <p className="text-[12px] font-bold text-white leading-[1.15] tracking-[-0.01em]">
+              <p className="text-[11px] font-bold text-white leading-tight tracking-[-0.01em] mt-0.5">
                 Conversational
                 <br />
                 Intelligence
@@ -1524,61 +1264,89 @@ function HubAndSpoke() {
             </div>
           </div>
 
-          {/* Orbiting cards — each one rotates on an arm; content counter-rotates to stay upright */}
-          {ORBITERS.map(({ key, start, radius }) => (
-            <div
-              key={key}
-              className="orbit-arm"
-              style={
-                {
-                  ['--start' as string]: `${start}deg`,
-                  zIndex: 3,
-                } as React.CSSProperties
-              }
-            >
+          {/* SVG connectors */}
+          <svg
+            className="absolute left-0 right-0 mx-auto pointer-events-none"
+            style={{ top: '50%', width: '100%', height: 80 }}
+            viewBox="0 0 900 80"
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            {/* 4 curved connectors from center (top) to each card below */}
+            {[130, 370, 530, 770].map((x, i) => (
+              <path
+                key={i}
+                d={`M 450 0 Q 450 40, ${x} 72`}
+                stroke="#3730a3"
+                strokeOpacity="0.35"
+                strokeWidth="1.25"
+                fill="none"
+                className="hub-line"
+                style={{ animationDelay: `${i * 0.25}s` }}
+              />
+            ))}
+          </svg>
+
+          {/* 4 spoke cards in a row */}
+          <div className="mt-20 grid grid-cols-4 gap-4">
+            {SPOKES_LIST.map((s) => (
               <div
-                className="orbit-card-wrapper"
-                style={
-                  {
-                    ['--start' as string]: `${start}deg`,
-                    ['--radius' as string]: `${radius}px`,
-                  } as React.CSSProperties
-                }
+                key={s.id}
+                className="relative rounded-xl bg-white ring-1 ring-gray-200/80 p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_10px_24px_-14px_rgba(16,24,40,0.12)]"
               >
-                <GlassSpokeCard spoke={SPOKES[key]} />
+                <div className="flex items-center gap-2 mb-1.5">
+                  <span
+                    className="hub-pulse inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ background: s.accent }}
+                  />
+                  <p className="text-[12px] font-black tracking-[-0.01em] text-gray-900">
+                    {s.label}
+                  </p>
+                </div>
+                <p className="text-[11.5px] text-gray-500 leading-snug">{s.description}</p>
               </div>
-            </div>
-          ))}
-          </div>{/* /orbit-inner */}
+            ))}
+          </div>
         </div>
 
-        {/* ─── Mobile ─────────────────────────────────────────────────────── */}
+        {/* ─── Mobile: hub on top, 2×2 grid below ─────────────────────────── */}
         <div className="md:hidden">
-          <div className="relative flex items-center justify-center mb-6">
+          <div className="flex justify-center mb-6">
             <div
-              className="hub-glow relative flex h-28 w-28 flex-col items-center justify-center rounded-full text-center"
+              className="hub-core relative flex h-24 w-24 flex-col items-center justify-center rounded-2xl text-center"
               style={{
                 background:
-                  'radial-gradient(circle at 30% 25%, #6366f1 0%, #3730a3 45%, #1e1b4b 100%)',
+                  'linear-gradient(140deg, #3730a3 0%, #1e1b4b 100%)',
               }}
             >
-              <div className="absolute inset-2 rounded-full ring-1 ring-white/10" />
               <img
                 src="/lira_black_with_white_backgound.png"
                 alt=""
-                className="h-7 w-7 rounded-full mb-1"
+                className="h-7 w-7 rounded-md mb-1"
               />
-              <p className="text-[8.5px] font-bold text-white/55 uppercase tracking-[0.2em]">
+              <p className="text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/60">
                 Lira
               </p>
-              <p className="text-[10px] font-bold text-white leading-tight">
-                Conv. Intelligence
-              </p>
+              <p className="text-[10px] font-bold text-white leading-tight">CI Engine</p>
             </div>
           </div>
-          <div className="space-y-3">
-            {(['support', 'tasks', 'meetings', 'knowledge'] as const).map((k) => (
-              <GlassSpokeCard key={k} spoke={SPOKES[k]} compact />
+          <div className="grid grid-cols-2 gap-2.5">
+            {SPOKES_LIST.map((s) => (
+              <div
+                key={s.id}
+                className="relative rounded-xl bg-white ring-1 ring-gray-200/80 p-3.5"
+              >
+                <div className="flex items-center gap-1.5 mb-1">
+                  <span
+                    className="hub-pulse inline-block h-1.5 w-1.5 rounded-full"
+                    style={{ background: s.accent }}
+                  />
+                  <p className="text-[11.5px] font-black text-gray-900 leading-tight">
+                    {s.label}
+                  </p>
+                </div>
+                <p className="text-[10.5px] text-gray-500 leading-snug">{s.description}</p>
+              </div>
             ))}
           </div>
         </div>
@@ -1591,52 +1359,111 @@ function HubAndSpoke() {
 // ─── How Lira thinks — Listen · Understand · Act ───────────────────────────
 
 const THINK_STYLES = `
-  @keyframes thinkPulse{0%,100%{box-shadow:0 0 0 0 currentColor}50%{box-shadow:0 0 0 10px transparent}}
   @keyframes thinkFlow{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
   @keyframes thinkRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  .think-pulse{animation:thinkPulse 2.4s ease-in-out infinite}
+  @keyframes waveBar{0%,100%{transform:scaleY(.35)}50%{transform:scaleY(1)}}
+  @keyframes nodePulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1)}}
+  @keyframes nodeLink{from{stroke-dashoffset:20}to{stroke-dashoffset:0}}
+  @keyframes checkPop{0%{opacity:0;transform:translateY(4px) scale(.85)}60%{opacity:1;transform:translateY(0) scale(1.04)}100%{opacity:1;transform:translateY(0) scale(1)}}
   .think-flow-1{stroke-dasharray:4 6;stroke-dashoffset:200;animation:thinkFlow 3s linear infinite}
   .think-chip{animation:thinkRise .5s cubic-bezier(.2,.7,.3,1) both}
+  .wave-bar{transform-origin:center bottom;animation:waveBar 1.1s ease-in-out infinite}
+  .node-dot{animation:nodePulse 1.8s ease-in-out infinite}
+  .node-link{stroke-dasharray:2 4;animation:nodeLink 2s linear infinite}
+  .check-pop{animation:checkPop .55s cubic-bezier(.2,.7,.3,1) both}
+  @media (prefers-reduced-motion:reduce){.think-flow-1,.think-chip,.wave-bar,.node-dot,.node-link,.check-pop{animation:none}}
 `
 
+type ThinkVisual = 'wave' | 'graph' | 'checks'
+
 type ThinkStep = {
+  stepNum: string
   eyebrow: string
   title: string
   description: string
   accent: string
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  visual: ThinkVisual
   chips: string[]
 }
 
 const THINK_STEPS: ThinkStep[] = [
   {
-    eyebrow: '01 · Listen',
-    title: 'Streaming audio + text in real time',
+    stepNum: '01',
+    eyebrow: 'Listen',
+    title: 'Streaming audio and text in real time',
     description:
-      'Amazon Nova Sonic captures live voice. Chat, portal, email, and meeting transcripts stream into the same pipeline — with speaker attribution.',
+      'Amazon Nova Sonic captures live voice. Chat, portal, email, and meeting transcripts stream into the same pipeline, with speaker attribution.',
     accent: '#3730a3',
-    Icon: MicrophoneIcon,
+    visual: 'wave',
     chips: ['Nova Sonic', 'Diarization', 'Chat · Email · Portal'],
   },
   {
-    eyebrow: '02 · Understand',
+    stepNum: '02',
+    eyebrow: 'Understand',
     title: 'Grounded reasoning against your knowledge',
     description:
-      'Intent, sentiment, and entities extracted. Responses are retrieved from your docs, past tickets, and CRM — never hallucinated.',
+      'Intent, sentiment, and entities extracted. Responses are retrieved from your docs, past tickets, and CRM, never hallucinated.',
     accent: '#8b5cf6',
-    Icon: LightBulbIcon,
+    visual: 'graph',
     chips: ['Intent + NLU', 'RAG on your docs', 'Past conversation memory'],
   },
   {
-    eyebrow: '03 · Act',
+    stepNum: '03',
+    eyebrow: 'Act',
     title: 'Tool use. Real actions. Closed loops.',
     description:
-      'Lira doesn\'t stop at a summary. It resolves the ticket, updates the CRM, creates the Linear issue, and posts to Slack — on its own.',
+      'Lira doesn\'t stop at a summary. It resolves the ticket, updates the CRM, creates the Linear issue, and posts to Slack, on its own.',
     accent: '#f59e0b',
-    Icon: BoltIcon,
+    visual: 'checks',
     chips: ['Create ticket', 'Update CRM', 'Send follow-up', 'Post to Slack'],
   },
 ]
+
+function ThinkVisualEl({ visual, accent }: { visual: ThinkVisual; accent: string }) {
+  if (visual === 'wave') {
+    return (
+      <div className="flex items-end gap-1 h-10">
+        {[0.2, 0.0, 0.35, 0.1, 0.25].map((d, i) => (
+          <span
+            key={i}
+            className="wave-bar inline-block w-1.5 rounded-sm"
+            style={{ height: '100%', background: accent, animationDelay: `${d}s` }}
+          />
+        ))}
+      </div>
+    )
+  }
+  if (visual === 'graph') {
+    return (
+      <svg viewBox="0 0 90 40" className="h-10 w-[90px]" aria-hidden>
+        <line x1="10" y1="30" x2="45" y2="12" stroke={accent} strokeOpacity="0.5" strokeWidth="1.25" className="node-link" />
+        <line x1="45" y1="12" x2="80" y2="28" stroke={accent} strokeOpacity="0.5" strokeWidth="1.25" className="node-link" style={{ animationDelay: '.4s' }} />
+        <line x1="10" y1="30" x2="80" y2="28" stroke={accent} strokeOpacity="0.35" strokeWidth="1.25" className="node-link" style={{ animationDelay: '.8s' }} />
+        <circle cx="10" cy="30" r="3.2" fill={accent} className="node-dot" />
+        <circle cx="45" cy="12" r="3.6" fill={accent} className="node-dot" style={{ animationDelay: '.3s' }} />
+        <circle cx="80" cy="28" r="3.2" fill={accent} className="node-dot" style={{ animationDelay: '.6s' }} />
+      </svg>
+    )
+  }
+  // checks
+  return (
+    <div className="flex flex-col gap-1 h-10 justify-center">
+      {[0, 0.18, 0.36].map((delay, i) => (
+        <div
+          key={i}
+          className="check-pop flex items-center gap-1.5"
+          style={{ animationDelay: `${delay}s` }}
+        >
+          <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
+            <circle cx="6" cy="6" r="6" fill={accent} fillOpacity="0.18" />
+            <path d="M3.5 6.2 L5.2 7.8 L8.5 4.5" stroke={accent} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+          </svg>
+          <span className="inline-block h-[3px] rounded-full" style={{ width: 34 - i * 6, background: `${accent}55` }} />
+        </div>
+      ))}
+    </div>
+  )
+}
 
 function HowLiraThinks() {
   return (
@@ -1649,7 +1476,7 @@ function HowLiraThinks() {
             How Lira thinks
           </p>
           <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
-            From sound waves to shipped actions — in seconds.
+            From sound waves to shipped actions, in seconds.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
             Three stages. One real-time pipeline. This is what separates a Conversational Intelligence
@@ -1680,36 +1507,42 @@ function HowLiraThinks() {
 
           <div className="grid md:grid-cols-3 gap-6 md:gap-8 relative">
             {THINK_STEPS.map((step, i) => {
-              const { Icon } = step
               return (
                 <div
                   key={step.eyebrow}
-                  className="relative rounded-2xl bg-white ring-1 ring-gray-200/80 p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(16,24,40,0.12)]"
+                  className="relative overflow-hidden rounded-2xl bg-white ring-1 ring-gray-200/80 p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(16,24,40,0.12)]"
                 >
-                  {/* Icon circle */}
+                  {/* Big typographic step number, watermark style */}
                   <div
-                    className="think-pulse inline-flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
+                    aria-hidden
+                    className="absolute -top-3 right-4 select-none font-black tracking-[-0.04em] leading-none"
                     style={{
-                      background: `linear-gradient(135deg, ${step.accent}18, ${step.accent}0a)`,
+                      fontSize: 112,
                       color: step.accent,
+                      opacity: 0.08,
                     }}
                   >
-                    <Icon className="h-6 w-6" />
+                    {step.stepNum}
+                  </div>
+
+                  {/* Per-step animated visual */}
+                  <div className="mb-5 relative z-[1]">
+                    <ThinkVisualEl visual={step.visual} accent={step.accent} />
                   </div>
 
                   <p
-                    className="text-[10.5px] font-bold uppercase tracking-[0.22em] mb-2"
+                    className="relative z-[1] text-[10.5px] font-bold uppercase tracking-[0.22em] mb-2"
                     style={{ color: step.accent }}
                   >
-                    {step.eyebrow}
+                    {step.stepNum} · {step.eyebrow}
                   </p>
-                  <h3 className="text-lg font-black tracking-[-0.01em] text-gray-900 mb-3 leading-snug">
+                  <h3 className="relative z-[1] text-lg font-black tracking-[-0.01em] text-gray-900 mb-3 leading-snug">
                     {step.title}
                   </h3>
-                  <p className="text-sm text-gray-500 leading-relaxed mb-5">{step.description}</p>
+                  <p className="relative z-[1] text-sm text-gray-500 leading-relaxed mb-5">{step.description}</p>
 
                   {/* Example chips */}
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="relative z-[1] flex flex-wrap gap-1.5">
                     {step.chips.map((chip, ci) => (
                       <span
                         key={chip}
@@ -1725,11 +1558,6 @@ function HowLiraThinks() {
                         {chip}
                       </span>
                     ))}
-                  </div>
-
-                  {/* Step number badge */}
-                  <div className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-white text-[11px] font-black tracking-tight ring-4 ring-white">
-                    {i + 1}
                   </div>
                 </div>
               )
@@ -1762,11 +1590,11 @@ type ChatTurn =
   | { role: 'action'; text: string; icon: 'check' | 'bolt' }
 
 const CHAT_SCRIPT: ChatTurn[] = [
-  { role: 'user', name: 'Priya · customer', text: 'Hi — I was charged twice for order #2841. Can I get a refund?' },
+  { role: 'user', name: 'Priya · customer', text: 'Hi, I was charged twice for order #2841. Can I get a refund?' },
   {
     role: 'lira',
     text:
-      "Hi Priya — I see the duplicate charge on #2841 from Apr 19. Per our policy, duplicate charges are refunded instantly. I've processed a refund of $48.00 to your card ending 4421. You should see it within 1-3 business days.",
+      "Hi Priya, I see the duplicate charge on #2841 from Apr 19. Per our policy, duplicate charges are refunded instantly. I've processed a refund of $48.00 to your card ending 4421. You should see it within 1-3 business days.",
     sources: ['refund-policy.md', 'Order #2841'],
   },
   { role: 'action', icon: 'bolt', text: 'Refund issued via Stripe · confirmation email sent' },
@@ -1870,7 +1698,7 @@ function SupportChatDemo() {
               <div key={i} className="chat-bubble flex justify-start">
                 <div className="max-w-[86%]">
                   <p className="text-[10px] font-semibold text-[#3730a3] mb-1 flex items-center gap-1.5">
-                    <SparklesIcon className="h-3 w-3" />
+                    <img src="/lira_logo.png" alt="" className="h-3.5 w-3.5 rounded-sm" />
                     Lira · 0.8s
                   </p>
                   <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-indigo-50 to-white ring-1 ring-indigo-100 px-4 py-2.5 text-sm text-gray-800 leading-relaxed">
@@ -1966,7 +1794,7 @@ function SupportShowcase() {
             <span className="text-[#3730a3]">Ground every answer.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-            Most CI platforms listen to your support calls. Lira answers them — chat, portal, email —
+            Most CI platforms listen to your support calls. Lira answers them across chat, portal, and email,
             grounded in your documentation and past conversations.
           </p>
         </div>
@@ -1996,7 +1824,7 @@ function SupportShowcase() {
                   <p className="text-sm text-white/70 font-semibold">median</p>
                 </div>
                 <p className="text-sm text-white/75 leading-relaxed">
-                  Time from ticket opened to first resolution response — grounded in your knowledge
+                  Time from ticket opened to first resolution response, grounded in your knowledge
                   base.
                 </p>
               </div>
@@ -2126,17 +1954,6 @@ function SecurityStrip() {
   )
 }
 
-function MidCTA() {
-  return (
-    <section className="py-20 px-6 text-center">
-      <p className="mx-auto max-w-xl text-base text-gray-500 leading-relaxed">
-        Most AI tools <em>listen</em> to conversations. Lira <strong>runs</strong> them. One
-        engine answering your customers, coaching your sellers, and closing loops after every
-        meeting — all grounded in your knowledge.
-      </p>
-    </section>
-  )
-}
 // ─── Feature Flows (animated GIF-style demos) ───────────────────────────────
 
 const FLOW_DEMO_STYLES = `
@@ -2699,7 +2516,7 @@ function Features() {
           See how Lira works
         </h2>
         <p className="mb-10 max-w-lg leading-relaxed text-gray-500">
-          From live conversations to actions in your stack — watch every step happen automatically.
+          From live conversations to actions in your stack. Watch every step happen automatically.
         </p>
 
         <div className="flex flex-col gap-6 md:flex-row md:gap-10">
@@ -2786,7 +2603,7 @@ const USE_CASES: UseCase[] = [
   {
     Icon: HeartIcon,
     title: 'Customer Support',
-    description: 'Resolve tickets in seconds across chat, portal, and email — grounded in your docs.',
+    description: 'Resolve tickets in seconds across chat, portal, and email, grounded in your docs.',
   },
   {
     Icon: ArrowTrendingUpIcon,
@@ -2801,7 +2618,7 @@ const USE_CASES: UseCase[] = [
   {
     Icon: CodeBracketIcon,
     title: 'Engineering Teams',
-    description: 'Incident reviews, sprint planning — Lira surfaces decisions and creates Linear tickets.',
+    description: 'Incident reviews, sprint planning. Lira surfaces decisions and creates Linear tickets.',
   },
   {
     Icon: BookOpenIcon,
@@ -2811,47 +2628,47 @@ const USE_CASES: UseCase[] = [
   {
     Icon: BoltIcon,
     title: 'Client Success',
-    description: 'Every QBR followed up. Action items extracted, assigned, and sent — automatically.',
+    description: 'Every QBR followed up. Action items extracted, assigned, and sent automatically.',
   },
 ]
 
 // ─── Integrations grid ──────────────────────────────────────────────────────
 
-const INTEGRATION_GROUPS: { label: string; items: { name: string; tone: string }[] }[] = [
+const INTEGRATION_GROUPS: { label: string; items: { name: string; slug: string }[] }[] = [
   {
     label: 'Communication',
     items: [
-      { name: 'Slack', tone: '#611f69' },
-      { name: 'Microsoft Teams', tone: '#5059c9' },
-      { name: 'Google Meet', tone: '#00897b' },
-      { name: 'Zoom', tone: '#2d8cff' },
+      { name: 'Slack', slug: 'slack' },
+      { name: 'Microsoft Teams', slug: 'microsoftteams' },
+      { name: 'Google Meet', slug: 'googlemeet' },
+      { name: 'Zoom', slug: 'zoom' },
     ],
   },
   {
     label: 'CRM & Helpdesk',
     items: [
-      { name: 'HubSpot', tone: '#ff7a59' },
-      { name: 'Salesforce', tone: '#00a1e0' },
-      { name: 'Zendesk', tone: '#03363d' },
-      { name: 'Intercom', tone: '#1f8ded' },
+      { name: 'HubSpot', slug: 'hubspot' },
+      { name: 'Salesforce', slug: 'salesforce' },
+      { name: 'Zendesk', slug: 'zendesk' },
+      { name: 'Intercom', slug: 'intercom' },
     ],
   },
   {
     label: 'Productivity',
     items: [
-      { name: 'Linear', tone: '#5e6ad2' },
-      { name: 'Jira', tone: '#0052cc' },
-      { name: 'Notion', tone: '#111111' },
-      { name: 'Google Workspace', tone: '#0f9d58' },
+      { name: 'Linear', slug: 'linear' },
+      { name: 'Jira', slug: 'jira' },
+      { name: 'Notion', slug: 'notion' },
+      { name: 'Google Workspace', slug: 'google' },
     ],
   },
   {
     label: 'Identity & Cloud',
     items: [
-      { name: 'AWS Nova Sonic', tone: '#ff9900' },
-      { name: 'Microsoft 365', tone: '#d83b01' },
-      { name: 'Okta', tone: '#007dc1' },
-      { name: 'GitHub', tone: '#24292e' },
+      { name: 'AWS', slug: 'amazonaws' },
+      { name: 'Microsoft 365', slug: 'microsoft' },
+      { name: 'Okta', slug: 'okta' },
+      { name: 'GitHub', slug: 'github' },
     ],
   },
 ]
@@ -2881,7 +2698,7 @@ function IntegrationsGrid() {
             Lira lives where your conversations already happen.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base text-gray-500 leading-relaxed">
-            Drop Lira into the tools your team uses today. OAuth in one click — no agents to install,
+            Drop Lira into the tools your team uses today. OAuth in one click, no agents to install,
             no schemas to migrate.
           </p>
         </div>
@@ -2901,11 +2718,13 @@ function IntegrationsGrid() {
                     key={it.name}
                     className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-gray-50 transition-colors"
                   >
-                    <span
-                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-black text-white"
-                      style={{ background: it.tone }}
-                    >
-                      {it.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+                    <span className="inline-flex h-7 w-7 items-center justify-center rounded-md bg-gray-50 ring-1 ring-gray-200/80">
+                      <img
+                        src={`https://cdn.simpleicons.org/${it.slug}`}
+                        alt={it.name}
+                        loading="lazy"
+                        className="h-4 w-4"
+                      />
                     </span>
                     <span className="text-[13px] font-semibold text-gray-700">{it.name}</span>
                   </div>
@@ -2931,7 +2750,7 @@ function UseCases() {
           One platform. Every team that talks to customers.
         </h2>
         <p className="text-gray-500 max-w-md mb-12 leading-relaxed">
-          The same engine that resolves support tickets coaches your sales team and runs your meetings — grounded in the same shared knowledge.
+          The same engine that resolves support tickets coaches your sales team and runs your meetings, grounded in the same shared knowledge.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {USE_CASES.map(({ Icon, title, description }) => (
@@ -2974,7 +2793,7 @@ const TESTIMONIALS = [
     name: 'Sofia R.',
     role: 'Head of Support · NovaTech',
     quote:
-      'Lira resolves 60% of our inbound tickets before a human even sees them — and when it escalates, the context is already perfect. Our CSAT went up, not down.',
+      'Lira resolves 60% of our inbound tickets before a human even sees them, and when it escalates, the context is already perfect. Our CSAT went up, not down.',
   },
 ]
 
@@ -3095,11 +2914,11 @@ function Testimonials() {
 const FAQS = [
   {
     q: 'What is Conversational Intelligence?',
-    a: "It's the category of software that captures, understands, and acts on your business conversations — calls, meetings, chats, tickets, emails. Lira is a CI platform, meaning a single engine powers customer support, sales coaching, and meetings. One brain, one memory of your business.",
+    a: "It's the category of software that captures, understands, and acts on your business conversations: calls, meetings, chats, tickets, emails. Lira is a CI platform, meaning a single engine powers customer support, sales coaching, and meetings. One brain, one memory of your business.",
   },
   {
     q: 'What makes Lira different from a note-taker like Otter or Fireflies?',
-    a: "Note-takers listen and transcribe. Lira listens, understands, and acts — it resolves tickets, updates your CRM, creates Linear tickets, and sends follow-ups automatically. The conversation is the input; the executed action is the output.",
+    a: "Note-takers listen and transcribe. Lira listens, understands, and acts. It resolves tickets, updates your CRM, creates Linear tickets, and sends follow-ups automatically. The conversation is the input; the executed action is the output.",
   },
   {
     q: 'How does the customer support agent work?',
@@ -3107,7 +2926,7 @@ const FAQS = [
   },
   {
     q: 'Where does Lira get its knowledge from?',
-    a: "From whatever you give it — help-center articles, PDFs, Notion, Google Docs, past conversations. It indexes them into a semantic knowledge base grounded in your organization, so responses stay accurate and on-brand.",
+    a: "From whatever you give it: help-center articles, PDFs, Notion, Google Docs, past conversations. It indexes them into a semantic knowledge base grounded in your organization, so responses stay accurate and on-brand.",
   },
   {
     q: 'Is my data secure?',
@@ -3156,7 +2975,7 @@ function FinalCTA() {
         Your conversations deserve better than a transcript
       </h2>
       <p className="mx-auto max-w-md text-gray-500 mb-8 leading-relaxed">
-        Start with Customer Support — free. Lira resolves tickets, updates your CRM, and books follow-ups while your team sleeps.
+        Start with Customer Support, free. Lira resolves tickets, updates your CRM, and books follow-ups while your team sleeps.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
@@ -3183,8 +3002,8 @@ export function LandingPage() {
   return (
     <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: '#ebebeb' }}>
       <SEO
-        title="Lira — Conversational Intelligence Platform"
-        description="Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings — grounded in your knowledge and responding in real time."
+        title="Lira · Conversational Intelligence Platform"
+        description="Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings, grounded in your knowledge and responding in real time."
         keywords="conversational intelligence platform, AI customer support agent, AI support automation, real-time sales coaching AI, AI meeting assistant, voice AI agent, knowledge-grounded AI, conversational AI for SaaS, Lira AI"
         path="/"
       />
@@ -3194,7 +3013,6 @@ export function LandingPage() {
       <HowLiraThinks />
       <InAction />
       <SupportShowcase />
-      <MidCTA />
       <Features />
       <IntegrationsGrid />
       <UseCases />

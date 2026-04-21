@@ -22,9 +22,9 @@ const DEFAULT_IMAGE = `${BASE_URL}/lira_black_with_white_backgound.png`
 const ROUTES = [
   {
     path: '/',
-    title: 'Lira — Conversational Intelligence Platform',
+    title: 'Lira · Conversational Intelligence Platform',
     description:
-      'Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings — grounded in your knowledge and responding in real time.',
+      'Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings, grounded in your knowledge and responding in real time.',
     keywords:
       'conversational intelligence platform, AI customer support agent, AI support automation, real-time sales coaching AI, AI meeting assistant, voice AI agent, knowledge-grounded AI, conversational AI for SaaS, AI agent grounded in knowledge base, Lira AI',
   },
