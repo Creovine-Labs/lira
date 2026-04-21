@@ -8,11 +8,20 @@ import {
   BoltIcon,
   BookOpenIcon,
   BuildingOffice2Icon,
+  ChatBubbleLeftRightIcon,
+  CheckCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CodeBracketIcon,
   ComputerDesktopIcon,
+  CpuChipIcon,
   HeartIcon,
+  LightBulbIcon,
+  LockClosedIcon,
+  MicrophoneIcon,
+  ServerStackIcon,
+  ShieldCheckIcon,
+  SparklesIcon,
   VideoCameraIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -1579,6 +1588,544 @@ function HubAndSpoke() {
 }
 
 
+// ─── How Lira thinks — Listen · Understand · Act ───────────────────────────
+
+const THINK_STYLES = `
+  @keyframes thinkPulse{0%,100%{box-shadow:0 0 0 0 currentColor}50%{box-shadow:0 0 0 10px transparent}}
+  @keyframes thinkFlow{from{stroke-dashoffset:200}to{stroke-dashoffset:0}}
+  @keyframes thinkRise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .think-pulse{animation:thinkPulse 2.4s ease-in-out infinite}
+  .think-flow-1{stroke-dasharray:4 6;stroke-dashoffset:200;animation:thinkFlow 3s linear infinite}
+  .think-chip{animation:thinkRise .5s cubic-bezier(.2,.7,.3,1) both}
+`
+
+type ThinkStep = {
+  eyebrow: string
+  title: string
+  description: string
+  accent: string
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  chips: string[]
+}
+
+const THINK_STEPS: ThinkStep[] = [
+  {
+    eyebrow: '01 · Listen',
+    title: 'Streaming audio + text in real time',
+    description:
+      'Amazon Nova Sonic captures live voice. Chat, portal, email, and meeting transcripts stream into the same pipeline — with speaker attribution.',
+    accent: '#3730a3',
+    Icon: MicrophoneIcon,
+    chips: ['Nova Sonic', 'Diarization', 'Chat · Email · Portal'],
+  },
+  {
+    eyebrow: '02 · Understand',
+    title: 'Grounded reasoning against your knowledge',
+    description:
+      'Intent, sentiment, and entities extracted. Responses are retrieved from your docs, past tickets, and CRM — never hallucinated.',
+    accent: '#8b5cf6',
+    Icon: LightBulbIcon,
+    chips: ['Intent + NLU', 'RAG on your docs', 'Past conversation memory'],
+  },
+  {
+    eyebrow: '03 · Act',
+    title: 'Tool use. Real actions. Closed loops.',
+    description:
+      'Lira doesn\'t stop at a summary. It resolves the ticket, updates the CRM, creates the Linear issue, and posts to Slack — on its own.',
+    accent: '#f59e0b',
+    Icon: BoltIcon,
+    chips: ['Create ticket', 'Update CRM', 'Send follow-up', 'Post to Slack'],
+  },
+]
+
+function HowLiraThinks() {
+  return (
+    <section className="relative py-24 sm:py-28 px-6 border-t border-gray-200/60 bg-gradient-to-b from-white via-indigo-50/20 to-white">
+      <style>{THINK_STYLES}</style>
+
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center mb-16">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-4">
+            How Lira thinks
+          </p>
+          <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
+            From sound waves to shipped actions — in seconds.
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
+            Three stages. One real-time pipeline. This is what separates a Conversational Intelligence
+            platform from a note-taker.
+          </p>
+        </div>
+
+        {/* Horizontal pipeline: 3 steps with connecting line on md+ */}
+        <div className="relative">
+          {/* Connecting line behind cards (desktop only) */}
+          <svg
+            className="hidden md:block absolute left-0 right-0 top-10 h-4 w-full pointer-events-none"
+            viewBox="0 0 1000 16"
+            preserveAspectRatio="none"
+            aria-hidden
+          >
+            <line
+              x1="80"
+              y1="8"
+              x2="920"
+              y2="8"
+              stroke="#6366f1"
+              strokeOpacity="0.3"
+              strokeWidth="1.5"
+              className="think-flow-1"
+            />
+          </svg>
+
+          <div className="grid md:grid-cols-3 gap-6 md:gap-8 relative">
+            {THINK_STEPS.map((step, i) => {
+              const { Icon } = step
+              return (
+                <div
+                  key={step.eyebrow}
+                  className="relative rounded-2xl bg-white ring-1 ring-gray-200/80 p-7 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(16,24,40,0.12)]"
+                >
+                  {/* Icon circle */}
+                  <div
+                    className="think-pulse inline-flex h-14 w-14 items-center justify-center rounded-2xl mb-5"
+                    style={{
+                      background: `linear-gradient(135deg, ${step.accent}18, ${step.accent}0a)`,
+                      color: step.accent,
+                    }}
+                  >
+                    <Icon className="h-6 w-6" />
+                  </div>
+
+                  <p
+                    className="text-[10.5px] font-bold uppercase tracking-[0.22em] mb-2"
+                    style={{ color: step.accent }}
+                  >
+                    {step.eyebrow}
+                  </p>
+                  <h3 className="text-lg font-black tracking-[-0.01em] text-gray-900 mb-3 leading-snug">
+                    {step.title}
+                  </h3>
+                  <p className="text-sm text-gray-500 leading-relaxed mb-5">{step.description}</p>
+
+                  {/* Example chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {step.chips.map((chip, ci) => (
+                      <span
+                        key={chip}
+                        className="think-chip inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold ring-1"
+                        style={{
+                          background: `${step.accent}0d`,
+                          color: step.accent,
+                          // @ts-expect-error ring color inline
+                          '--tw-ring-color': `${step.accent}26`,
+                          animationDelay: `${0.3 + i * 0.15 + ci * 0.08}s`,
+                        }}
+                      >
+                        {chip}
+                      </span>
+                    ))}
+                  </div>
+
+                  {/* Step number badge */}
+                  <div className="absolute -top-3 -right-3 flex h-8 w-8 items-center justify-center rounded-full bg-gray-900 text-white text-[11px] font-black tracking-tight ring-4 ring-white">
+                    {i + 1}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Support Showcase — the wedge ───────────────────────────────────────────
+
+const SUPPORT_SHOW_STYLES = `
+  @keyframes chatBubbleIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+  @keyframes chatTypeDot{0%,20%{opacity:.3}40%{opacity:1}60%,100%{opacity:.3}}
+  @keyframes counterTick{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes sparkle{0%,100%{opacity:0;transform:scale(.5)}50%{opacity:1;transform:scale(1)}}
+  .chat-bubble{animation:chatBubbleIn .45s cubic-bezier(.2,.7,.3,1) both}
+  .chat-typing-dot{animation:chatTypeDot 1.4s ease-in-out infinite}
+  .chat-typing-dot:nth-child(2){animation-delay:.15s}
+  .chat-typing-dot:nth-child(3){animation-delay:.3s}
+  .counter-tick{animation:counterTick .5s ease-out both}
+  .sparkle{animation:sparkle 2s ease-in-out infinite}
+`
+
+type ChatTurn =
+  | { role: 'user'; text: string; name?: string }
+  | { role: 'lira'; text: string; sources?: string[] }
+  | { role: 'action'; text: string; icon: 'check' | 'bolt' }
+
+const CHAT_SCRIPT: ChatTurn[] = [
+  { role: 'user', name: 'Priya · customer', text: 'Hi — I was charged twice for order #2841. Can I get a refund?' },
+  {
+    role: 'lira',
+    text:
+      "Hi Priya — I see the duplicate charge on #2841 from Apr 19. Per our policy, duplicate charges are refunded instantly. I've processed a refund of $48.00 to your card ending 4421. You should see it within 1-3 business days.",
+    sources: ['refund-policy.md', 'Order #2841'],
+  },
+  { role: 'action', icon: 'bolt', text: 'Refund issued via Stripe · confirmation email sent' },
+  { role: 'action', icon: 'check', text: 'Ticket #2841 resolved · synced to HubSpot' },
+]
+
+function useScriptedChat(script: ChatTurn[], perStepMs = 2200) {
+  const [visible, setVisible] = useState(1)
+  const [typing, setTyping] = useState<'lira' | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    const timers: ReturnType<typeof setTimeout>[] = []
+
+    const advance = (idx: number) => {
+      if (cancelled) return
+      if (idx >= script.length) {
+        // Loop: pause, then restart
+        timers.push(
+          setTimeout(() => {
+            setVisible(1)
+            setTyping(null)
+            advance(1)
+          }, 5500),
+        )
+        return
+      }
+      const next = script[idx]
+      if (next.role === 'lira') {
+        setTyping('lira')
+        timers.push(
+          setTimeout(() => {
+            if (cancelled) return
+            setTyping(null)
+            setVisible(idx + 1)
+            advance(idx + 1)
+          }, 1500),
+        )
+      } else {
+        timers.push(
+          setTimeout(() => {
+            if (cancelled) return
+            setVisible(idx + 1)
+            advance(idx + 1)
+          }, perStepMs),
+        )
+      }
+    }
+    advance(1)
+    return () => {
+      cancelled = true
+      timers.forEach(clearTimeout)
+    }
+  }, [script, perStepMs])
+
+  return { visible, typing }
+}
+
+function SupportChatDemo() {
+  const { visible, typing } = useScriptedChat(CHAT_SCRIPT)
+  const shown = CHAT_SCRIPT.slice(0, visible)
+
+  return (
+    <div className="relative rounded-3xl bg-white ring-1 ring-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_24px_60px_-20px_rgba(16,24,40,0.2)] overflow-hidden">
+      {/* Header */}
+      <div className="flex items-center gap-2.5 border-b border-gray-100 px-5 py-3.5 bg-gradient-to-r from-indigo-50/60 to-white">
+        <div className="flex gap-1.5">
+          <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
+          <div className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+          <div className="h-2.5 w-2.5 rounded-full bg-green-400" />
+        </div>
+        <div className="flex items-center gap-2 mx-auto text-[11px] font-semibold text-gray-600">
+          <span className="relative inline-flex h-2 w-2">
+            <span className="absolute inset-0 rounded-full bg-green-500 opacity-75 animate-ping" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-green-500" />
+          </span>
+          support.acme.com
+        </div>
+        <div className="w-12" />
+      </div>
+
+      {/* Chat stream */}
+      <div className="px-5 py-5 space-y-3.5 min-h-[380px]">
+        {shown.map((turn, i) => {
+          if (turn.role === 'user') {
+            return (
+              <div key={i} className="chat-bubble flex justify-end">
+                <div className="max-w-[82%]">
+                  <p className="text-[10px] font-semibold text-gray-400 mb-1 text-right">
+                    {turn.name}
+                  </p>
+                  <div className="rounded-2xl rounded-tr-sm bg-gray-900 px-4 py-2.5 text-sm text-white leading-relaxed">
+                    {turn.text}
+                  </div>
+                </div>
+              </div>
+            )
+          }
+          if (turn.role === 'lira') {
+            return (
+              <div key={i} className="chat-bubble flex justify-start">
+                <div className="max-w-[86%]">
+                  <p className="text-[10px] font-semibold text-[#3730a3] mb-1 flex items-center gap-1.5">
+                    <SparklesIcon className="h-3 w-3" />
+                    Lira · 0.8s
+                  </p>
+                  <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-indigo-50 to-white ring-1 ring-indigo-100 px-4 py-2.5 text-sm text-gray-800 leading-relaxed">
+                    {turn.text}
+                  </div>
+                  {turn.sources && (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {turn.sources.map((src) => (
+                        <span
+                          key={src}
+                          className="inline-flex items-center gap-1 rounded-md bg-white ring-1 ring-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-500"
+                        >
+                          <BookOpenIcon className="h-2.5 w-2.5" />
+                          {src}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          }
+          // action
+          const Icon = turn.icon === 'bolt' ? BoltIcon : CheckCircleIcon
+          const color = turn.icon === 'bolt' ? '#f59e0b' : '#10b981'
+          return (
+            <div key={i} className="chat-bubble flex justify-center">
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-[11px] font-semibold ring-1"
+                style={{
+                  background: `${color}12`,
+                  color,
+                  // @ts-expect-error ring color inline
+                  '--tw-ring-color': `${color}33`,
+                }}
+              >
+                <Icon className="h-3.5 w-3.5" />
+                {turn.text}
+              </div>
+            </div>
+          )
+        })}
+
+        {/* Typing indicator */}
+        {typing === 'lira' && (
+          <div className="chat-bubble flex justify-start">
+            <div className="rounded-2xl rounded-tl-sm bg-gradient-to-br from-indigo-50 to-white ring-1 ring-indigo-100 px-4 py-3 inline-flex items-center gap-1.5">
+              <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-indigo-400" />
+              <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-indigo-400" />
+              <span className="chat-typing-dot h-1.5 w-1.5 rounded-full bg-indigo-400" />
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const SUPPORT_LOGOS: { name: string; label: string }[] = [
+  { name: 'slack', label: 'Slack' },
+  { name: 'hubspot', label: 'HubSpot' },
+  { name: 'zendesk', label: 'Zendesk' },
+  { name: 'linear', label: 'Linear' },
+  { name: 'salesforce', label: 'Salesforce' },
+  { name: 'microsoft-teams', label: 'Teams' },
+]
+
+function SupportShowcase() {
+  return (
+    <section
+      id="support"
+      className="relative py-24 sm:py-28 px-6 border-t border-gray-200/60 overflow-hidden"
+    >
+      <style>{SUPPORT_SHOW_STYLES}</style>
+
+      {/* Ambient accent */}
+      <div
+        className="absolute inset-0 -z-10 opacity-50"
+        style={{
+          background:
+            'radial-gradient(ellipse 50% 40% at 85% 30%, rgba(55,48,163,0.08), transparent 70%)',
+        }}
+      />
+
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center mb-14">
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-[#3730a3]/8 ring-1 ring-[#3730a3]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#3730a3] mb-4">
+            <HeartIcon className="h-3 w-3" />
+            Customer Support · the wedge
+          </p>
+          <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
+            Resolve tickets in seconds.{' '}
+            <span className="text-[#3730a3]">Ground every answer.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
+            Most CI platforms listen to your support calls. Lira answers them — chat, portal, email —
+            grounded in your documentation and past conversations.
+          </p>
+        </div>
+
+        <div className="grid lg:grid-cols-[1.1fr,0.9fr] gap-8 lg:gap-12 items-start">
+          {/* LEFT: chat demo */}
+          <SupportChatDemo />
+
+          {/* RIGHT: metrics + capabilities */}
+          <div className="flex flex-col gap-5">
+            {/* Headline metric card */}
+            <div className="relative rounded-3xl bg-gradient-to-br from-[#1e1b4b] via-[#3730a3] to-[#4338ca] p-7 text-white overflow-hidden shadow-[0_24px_60px_-20px_rgba(55,48,163,0.6)]">
+              <div
+                className="absolute inset-0 opacity-20"
+                style={{
+                  backgroundImage:
+                    'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.4) 1px, transparent 0)',
+                  backgroundSize: '20px 20px',
+                }}
+              />
+              <div className="relative">
+                <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-white/60 mb-3">
+                  Live on demo.liraintelligence.com
+                </p>
+                <div className="flex items-baseline gap-2 mb-2">
+                  <p className="text-5xl sm:text-6xl font-black tracking-tight">&lt;30s</p>
+                  <p className="text-sm text-white/70 font-semibold">median</p>
+                </div>
+                <p className="text-sm text-white/75 leading-relaxed">
+                  Time from ticket opened to first resolution response — grounded in your knowledge
+                  base.
+                </p>
+              </div>
+            </div>
+
+            {/* Stat grid */}
+            <div className="grid grid-cols-3 gap-3">
+              {[
+                { stat: '60%', label: 'auto-resolved' },
+                { stat: '24/7', label: 'always on' },
+                { stat: '4ch', label: 'chat · portal · email · widget' },
+              ].map((s) => (
+                <div
+                  key={s.label}
+                  className="rounded-2xl bg-white ring-1 ring-gray-200/80 px-4 py-3.5 shadow-sm"
+                >
+                  <p className="text-2xl font-black tracking-tight text-gray-900">{s.stat}</p>
+                  <p className="text-[11px] text-gray-500 mt-0.5 leading-tight">{s.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Integrations row */}
+            <div className="rounded-2xl bg-white ring-1 ring-gray-200/80 p-5 shadow-sm">
+              <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-3">
+                Plugs into your stack
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {SUPPORT_LOGOS.map((l) => (
+                  <span
+                    key={l.name}
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-gray-50 ring-1 ring-gray-200 px-2.5 py-1.5 text-[11px] font-semibold text-gray-700"
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                    {l.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* CTA */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <a
+                href="https://demo.liraintelligence.com/support"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-all active:scale-95 shadow-sm"
+              >
+                <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                See it handle a ticket
+                <ArrowRightIcon className="h-3.5 w-3.5" />
+              </a>
+              <Link
+                to="/signup"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all active:scale-95"
+              >
+                Start free
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Security & Trust strip ─────────────────────────────────────────────────
+
+const SECURITY_ITEMS: {
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
+  title: string
+  body: string
+}[] = [
+  {
+    Icon: LockClosedIcon,
+    title: 'Encryption everywhere',
+    body: 'TLS 1.2+ in transit, AES-256 at rest. Zero-trust between services.',
+  },
+  {
+    Icon: ShieldCheckIcon,
+    title: 'OAuth 2.0 PKCE',
+    body: 'Integrations use scoped, revocable tokens. No passwords stored, ever.',
+  },
+  {
+    Icon: ServerStackIcon,
+    title: 'Your data, your control',
+    body: 'Strict org isolation. Delete everything from settings at any time. GDPR-aligned.',
+  },
+  {
+    Icon: CpuChipIcon,
+    title: 'We never train on your data',
+    body: 'Zero retention for model training. OWASP Top 10 hardened. Built on AWS.',
+  },
+]
+
+function SecurityStrip() {
+  return (
+    <section id="security" className="relative py-20 px-6 border-t border-gray-200/60 bg-gray-50/60">
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center mb-12">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 mb-3">
+            Security & trust
+          </p>
+          <h2 className="mx-auto max-w-2xl text-2xl sm:text-3xl md:text-4xl font-black tracking-[-0.02em] text-gray-900 leading-[1.1]">
+            Enterprise-grade from day one.
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {SECURITY_ITEMS.map(({ Icon, title, body }) => (
+            <div
+              key={title}
+              className="rounded-2xl bg-white ring-1 ring-gray-200/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_4px_16px_-8px_rgba(16,24,40,0.06)]"
+            >
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white mb-4">
+                <Icon className="h-4.5 w-4.5" />
+              </div>
+              <h3 className="text-[13px] font-black tracking-tight text-gray-900 mb-1.5">
+                {title}
+              </h3>
+              <p className="text-[12px] text-gray-500 leading-relaxed">{body}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function MidCTA() {
   return (
     <section className="py-20 px-6 text-center">
@@ -2536,12 +3083,15 @@ export function LandingPage() {
       <MarketingNavbar />
       <Hero />
       <HubAndSpoke />
+      <HowLiraThinks />
       <InAction />
+      <SupportShowcase />
       <MidCTA />
       <Features />
       <UseCases />
       <Testimonials />
       <FAQ />
+      <SecurityStrip />
       <FinalCTA />
       <MarketingFooter />
     </div>
