@@ -117,6 +117,10 @@ class LiraSupportWidget {
   private customerTypingTimeout: ReturnType<typeof setTimeout> | null = null
   private unreadCount = 0
 
+  // Streaming reply state — set when a reply_start arrives, cleared on reply_end
+  private streamingMessageId: string | null = null
+  private streamingBubbleEl: HTMLElement | null = null
+
   // DOM references
   private host: HTMLElement
   private shadow: ShadowRoot
@@ -1002,6 +1006,48 @@ class LiraSupportWidget {
       case 'typing':
         this.isTyping = true
         this.render()
+        break
+
+      case 'reply_start': {
+        // Streaming reply about to begin — create empty lira message, stop typing dots
+        this.isTyping = false
+        const id = msg.message_id ?? `lira_${Date.now()}`
+        this.streamingMessageId = id
+        this.messages.push({
+          id,
+          role: 'lira',
+          body: '',
+          timestamp: new Date().toISOString(),
+        })
+        this.seenMessageIds.add(id)
+        this.render()
+        // Locate the last lira bubble in the rendered DOM so chunks can append into it
+        const bubbles = this.messagesEl?.querySelectorAll<HTMLElement>('.lira-msg.lira') ?? []
+        this.streamingBubbleEl = bubbles.length > 0 ? bubbles[bubbles.length - 1] : null
+        break
+      }
+
+      case 'reply_chunk': {
+        // Append delta to the active streaming message. Direct DOM update
+        // to avoid re-rendering the whole widget on every token.
+        if (!msg.body) break
+        const activeMsg = this.messages.find((m) => m.id === this.streamingMessageId)
+        if (activeMsg) activeMsg.body += msg.body
+        if (this.streamingBubbleEl) {
+          this.streamingBubbleEl.textContent =
+            activeMsg?.body ?? this.streamingBubbleEl.textContent + msg.body
+          // Keep pinned to bottom while streaming
+          if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight
+        }
+        if (this.view === 'launcher') this.unreadCount++
+        break
+      }
+
+      case 'reply_end':
+        // Persist the finalized message and clear streaming refs
+        this.streamingMessageId = null
+        this.streamingBubbleEl = null
+        saveMessages(this.config.orgId, this.messages, this.convId)
         break
 
       case 'reply':

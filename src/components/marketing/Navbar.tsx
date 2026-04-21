@@ -222,6 +222,16 @@ export function MarketingNavbar() {
                 Blog
               </Link>
             </li>
+
+            {/* Pricing */}
+            <li>
+              <Link
+                to="/pricing"
+                className="inline-flex items-center rounded-full bg-gray-900 px-4 py-1.5 text-sm font-black text-white hover:bg-gray-700 transition-colors"
+              >
+                Pricing
+              </Link>
+            </li>
           </ul>
 
           {/* Desktop right CTAs */}

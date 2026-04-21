@@ -28,6 +28,14 @@
     <lastmod>2026-04-11</lastmod>
   </url>
 
+  <!-- Pricing -->
+  <url>
+    <loc>https://liraintelligence.com/pricing</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <lastmod>2026-04-21</lastmod>
+  </url>
+
   <!-- Resources & Learning -->
   <url>
     <loc>https://liraintelligence.com/resources</loc>

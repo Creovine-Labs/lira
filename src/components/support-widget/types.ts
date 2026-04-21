@@ -30,6 +30,9 @@ export interface ChatMessage {
 export interface IncomingWsMessage {
   type:
     | 'reply'
+    | 'reply_start'
+    | 'reply_chunk'
+    | 'reply_end'
     | 'status'
     | 'error'
     | 'escalated'
@@ -43,6 +46,8 @@ export interface IncomingWsMessage {
   status?: string
   sender_name?: string
   sender_avatar?: string
+  /** Groups reply_start / reply_chunk / reply_end events into a single message */
+  message_id?: string
 }
 
 export interface OutgoingWsMessage {

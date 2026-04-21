@@ -30,6 +30,8 @@ import {
   ProductSalesPage,
   ProductInterviewsPage,
   ProductCustomerSupportPage,
+  PricingPage,
+  DemoSitePage,
   ResourcesPage,
   TutorialsPage,
   BlogPage,
@@ -103,6 +105,8 @@ function App() {
         <Route path="/products/sales" element={<ProductSalesPage />} />
         <Route path="/products/interviews" element={<ProductInterviewsPage />} />
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/demo" element={<DemoSitePage />} />
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/tutorials" element={<TutorialsPage />} />
         <Route path="/blog" element={<BlogPage />} />

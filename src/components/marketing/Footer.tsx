@@ -105,7 +105,7 @@ export function MarketingFooter() {
               { label: 'Sales', href: '/products/sales' },
               { label: 'Interviews', href: '/products/interviews' },
               { label: 'Customer Support', href: '/products/customer-support' },
-              { label: 'Pricing', href: '/#pricing' },
+              { label: 'Pricing', href: '/pricing' },
             ].map(({ label, href }) => (
               <Link
                 key={label}
