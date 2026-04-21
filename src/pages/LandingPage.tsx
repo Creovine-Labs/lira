@@ -20,7 +20,6 @@ import {
   ServerStackIcon,
   ShieldCheckIcon,
   VideoCameraIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { MarketingNavbar, MarketingFooter } from '@/components/marketing'
 
@@ -1008,87 +1007,6 @@ function MeetingDemo() {
             </div>
           </div>
         </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Meeting Intent Modal ────────────────────────────────────────────────────
-
-function MeetingModal({ url, onClose }: { url: string; onClose: () => void }) {
-  const navigate = useNavigate()
-
-  const handleStart = () => {
-    navigate(`/signup?meetingUrl=${encodeURIComponent(url)}`)
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
-      style={{ background: 'rgba(0,0,0,0.50)', backdropFilter: 'blur(8px)' }}
-      role="presentation"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-    >
-      <div
-        className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl px-8 py-10 text-center"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="meeting-modal-title"
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-300 hover:text-gray-500 transition"
-          aria-label="Close"
-        >
-          <XMarkIcon className="w-5 h-5" />
-        </button>
-
-        {/* Lira avatar */}
-        <div className="mx-auto mb-5 w-14 h-14 rounded-2xl overflow-hidden shadow-md">
-          <img
-            src="/lira_black_with_white_backgound.png"
-            alt="Lira"
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Headline */}
-        <h2
-          id="meeting-modal-title"
-          className="text-xl font-black tracking-tight text-gray-900 mb-2"
-        >
-          Lira is ready to join your call.
-        </h2>
-
-        {/* Meeting URL preview */}
-        <div className="mx-auto mb-5 flex items-center gap-2 rounded-xl bg-gray-50 border border-gray-200 px-3 py-2">
-          <VideoCameraIcon className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-          <span className="text-xs text-gray-500 truncate">{url}</span>
-        </div>
-
-        {/* Body */}
-        <p className="text-sm text-gray-500 leading-relaxed mb-7">
-          Create your account and Lira will join this meeting immediately after sign-up.
-        </p>
-
-        {/* Primary CTA */}
-        <button
-          onClick={handleStart}
-          className="w-full rounded-xl bg-[#3730a3] text-white text-sm font-semibold py-3 hover:bg-[#312e81] transition flex items-center justify-center gap-2"
-        >
-          Get started
-          <ArrowRightIcon className="w-4 h-4" />
-        </button>
-
-        {/* Dismiss */}
-        <button
-          onClick={onClose}
-          className="mt-4 text-xs text-gray-400 hover:text-gray-600 transition"
-        >
-          Maybe later
-        </button>
       </div>
     </div>
   )
