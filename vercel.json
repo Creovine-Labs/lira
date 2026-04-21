@@ -5,7 +5,7 @@
     {
       "source": "/",
       "has": [{ "type": "host", "value": "demo.liraintelligence.com" }],
-      "destination": "/demo"
+      "destination": "/demo/index.html"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
