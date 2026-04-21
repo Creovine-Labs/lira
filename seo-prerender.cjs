@@ -22,11 +22,11 @@ const DEFAULT_IMAGE = `${BASE_URL}/lira_black_with_white_backgound.png`
 const ROUTES = [
   {
     path: '/',
-    title: 'Lira AI — AI Meeting Participant, Sales Coach & Customer Support',
+    title: 'Lira — Conversational Intelligence Platform',
     description:
-      'Lira AI is an intelligent meeting participant that joins your calls in real time. Automate sales coaching, customer support, and meeting transcription with AI-powered voice agents.',
+      'Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings — grounded in your knowledge and responding in real time.',
     keywords:
-      'AI meeting assistant, AI meeting participant, AI sales coaching, AI customer support, real-time transcription, meeting intelligence, voice AI agent, meeting notetaker, AI meeting bot, Lira AI',
+      'conversational intelligence platform, AI customer support agent, AI support automation, real-time sales coaching AI, AI meeting assistant, voice AI agent, knowledge-grounded AI, conversational AI for SaaS, AI agent grounded in knowledge base, Lira AI',
   },
   {
     path: '/products/sales',

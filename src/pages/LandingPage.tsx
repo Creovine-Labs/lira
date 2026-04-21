@@ -1145,8 +1145,26 @@ function Hero() {
           Start free
         </Link>
       </div>
+    </section>
+  )
+}
 
-      {/* Meeting demo */}
+// ─── In Action ────────────────────────────────────────────────────────────
+
+function InAction() {
+  return (
+    <section className="relative py-20 sm:py-24 px-4 sm:px-6">
+      <div className="mx-auto max-w-6xl text-center mb-10">
+        <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-3">
+          Live demo
+        </p>
+        <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
+          Watch Lira handle it — in real time.
+        </h2>
+        <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
+          Switch between Customer Support, Meetings, and Sales. Same engine, same knowledge, three surfaces.
+        </p>
+      </div>
       <MeetingDemo />
     </section>
   )
@@ -2134,7 +2152,7 @@ function Features() {
           See how Lira works
         </h2>
         <p className="mb-10 max-w-lg leading-relaxed text-gray-500">
-          From meetings to integrations — watch how Lira handles every step, automatically.
+          From live conversations to actions in your stack — watch every step happen automatically.
         </p>
 
         <div className="flex flex-col gap-6 md:flex-row md:gap-10">
@@ -2219,30 +2237,34 @@ interface UseCase {
 
 const USE_CASES: UseCase[] = [
   {
-    Icon: BuildingOffice2Icon,
-    title: 'Executive Teams',
-    description:
-      'Every decision becomes a tracked task. Nothing falls through after the meeting ends.',
+    Icon: HeartIcon,
+    title: 'Customer Support',
+    description: 'Resolve tickets in seconds across chat, portal, and email — grounded in your docs.',
   },
   {
     Icon: ArrowTrendingUpIcon,
     title: 'Sales Teams',
-    description: 'Lira joins discovery calls, takes notes, and pushes deal insights to your CRM.',
+    description: 'Real-time objection coaching. CRM auto-fill. Deal insights pushed to HubSpot and Salesforce.',
+  },
+  {
+    Icon: BuildingOffice2Icon,
+    title: 'Executive Teams',
+    description: 'Every decision becomes a tracked action. Follow-ups posted to Slack before the call ends.',
   },
   {
     Icon: CodeBracketIcon,
     title: 'Engineering Teams',
-    description: 'Incident reviews, sprint planning — Lira surfaces decisions and creates tickets.',
+    description: 'Incident reviews, sprint planning — Lira surfaces decisions and creates Linear tickets.',
   },
   {
     Icon: BookOpenIcon,
-    title: 'Training & Onboarding',
-    description: 'Lira answers policy questions and tracks new hire progress automatically.',
+    title: 'Knowledge & Onboarding',
+    description: 'Lira answers policy questions from your docs and tracks new-hire progress automatically.',
   },
   {
-    Icon: HeartIcon,
+    Icon: BoltIcon,
     title: 'Client Success',
-    description: 'Every QBR followed up. Next steps extracted, assigned, and sent automatically.',
+    description: 'Every QBR followed up. Action items extracted, assigned, and sent — automatically.',
   },
 ]
 
@@ -2251,11 +2273,10 @@ function UseCases() {
     <section id="use-cases" className="py-20 px-6 border-t border-gray-200">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
-          Built for every team that meets
+          One platform. Every team that talks to customers.
         </h2>
         <p className="text-gray-500 max-w-md mb-12 leading-relaxed">
-          Lira adapts to your workflow. The same AI that handles customer support also runs your
-          meetings and coaches your sales team.
+          The same engine that resolves support tickets coaches your sales team and runs your meetings — grounded in the same shared knowledge.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {USE_CASES.map(({ Icon, title, description }) => (
@@ -2296,9 +2317,9 @@ const TESTIMONIALS = [
   {
     initials: 'SR',
     name: 'Sofia R.',
-    role: 'Head of Talent · NovaTech',
+    role: 'Head of Support · NovaTech',
     quote:
-      'Lira took over initial screening, scored candidates against our rubric, and cut our time-to-hire by 40%. Genuinely transformative.',
+      'Lira resolves 60% of our inbound tickets before a human even sees them — and when it escalates, the context is already perfect. Our CSAT went up, not down.',
   },
 ]
 
@@ -2311,7 +2332,7 @@ function Testimonials() {
     <section className="py-20 px-6 border-t border-gray-200 overflow-hidden">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-16">
-          Teams that stopped drowning in meetings
+          Teams building on Lira
         </h2>
 
         {/* Arc carousel */}
@@ -2418,24 +2439,28 @@ function Testimonials() {
 
 const FAQS = [
   {
-    q: 'How does Lira join my meetings?',
-    a: 'Lira deploys a browser-based bot that joins Google Meet using your meeting link. It appears as a voice participant and uses Amazon Nova Sonic for real-time interaction. No plugins required.',
+    q: 'What is Conversational Intelligence?',
+    a: "It's the category of software that captures, understands, and acts on your business conversations — calls, meetings, chats, tickets, emails. Lira is a CI platform, meaning a single engine powers customer support, sales coaching, and meetings. One brain, one memory of your business.",
   },
   {
-    q: 'Does Lira work with platforms other than Google Meet?',
-    a: 'Google Meet is fully supported today. Zoom and Microsoft Teams are on the roadmap. Reach out if you have a specific requirement.',
+    q: 'What makes Lira different from a note-taker like Otter or Fireflies?',
+    a: "Note-takers listen and transcribe. Lira listens, understands, and acts — it resolves tickets, updates your CRM, creates Linear tickets, and sends follow-ups automatically. The conversation is the input; the executed action is the output.",
   },
   {
-    q: 'Is my meeting data secure?',
-    a: 'Yes. All transcripts are encrypted at rest and in transit. We never use your data to train models. Delete everything from your account settings at any time.',
+    q: 'How does the customer support agent work?',
+    a: "Plug in a chat widget, share a portal link, or forward emails. Lira answers in seconds using your documentation and past tickets, escalates to a human the moment it's the right call, and syncs everything to Slack, HubSpot, or Zendesk.",
   },
   {
-    q: "Can I customise Lira's voice and persona?",
-    a: 'Enterprise: custom AI name, voice, and system persona. Team: configure wake word, communication style, and suggestion behaviour.',
+    q: 'Where does Lira get its knowledge from?',
+    a: "From whatever you give it — help-center articles, PDFs, Notion, Google Docs, past conversations. It indexes them into a semantic knowledge base grounded in your organization, so responses stay accurate and on-brand.",
   },
   {
-    q: 'What integrations does Lira support?',
-    a: 'Slack, outbound webhooks, and a REST API out of the box. Jira, Linear, Notion, and HubSpot integrations are in progress.',
+    q: 'Is my data secure?',
+    a: "TLS 1.2+ in transit, AES-256 at rest, OAuth 2.0 PKCE for integrations, and strict org isolation. We never use your data to train models. You can delete everything from settings at any time. GDPR-aligned and OWASP Top 10 hardened.",
+  },
+  {
+    q: 'What integrations are supported?',
+    a: "Slack, Google Workspace, Microsoft 365, HubSpot, Salesforce, Linear, Jira, Zendesk, and outbound webhooks. Amazon Nova Sonic powers real-time voice; Nova Lite powers reasoning and tool use.",
   },
 ]
 
@@ -2473,10 +2498,10 @@ function FinalCTA() {
   return (
     <section className="py-24 px-6 border-t border-gray-200 text-center">
       <h2 className="mx-auto max-w-xl text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-4">
-        Stop letting your meetings go to waste
+        Your conversations deserve better than a transcript
       </h2>
       <p className="mx-auto max-w-md text-gray-500 mb-8 leading-relaxed">
-        Every decision your team makes deserves a follow-through. Lira makes sure it happens.
+        Start with Customer Support — free. Lira resolves tickets, updates your CRM, and books follow-ups while your team sleeps.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
@@ -2484,7 +2509,7 @@ function FinalCTA() {
           className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
         >
           <ComputerDesktopIcon className="h-3.5 w-3.5" />
-          Try the Beta — it's free
+          Start free
         </Link>
         <a
           href="mailto:hello@creovine.com"
@@ -2511,6 +2536,7 @@ export function LandingPage() {
       <MarketingNavbar />
       <Hero />
       <HubAndSpoke />
+      <InAction />
       <MidCTA />
       <Features />
       <UseCases />
