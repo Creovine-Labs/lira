@@ -2815,6 +2815,114 @@ const USE_CASES: UseCase[] = [
   },
 ]
 
+// ─── Integrations grid ──────────────────────────────────────────────────────
+
+const INTEGRATION_GROUPS: { label: string; items: { name: string; tone: string }[] }[] = [
+  {
+    label: 'Communication',
+    items: [
+      { name: 'Slack', tone: '#611f69' },
+      { name: 'Microsoft Teams', tone: '#5059c9' },
+      { name: 'Google Meet', tone: '#00897b' },
+      { name: 'Zoom', tone: '#2d8cff' },
+    ],
+  },
+  {
+    label: 'CRM & Helpdesk',
+    items: [
+      { name: 'HubSpot', tone: '#ff7a59' },
+      { name: 'Salesforce', tone: '#00a1e0' },
+      { name: 'Zendesk', tone: '#03363d' },
+      { name: 'Intercom', tone: '#1f8ded' },
+    ],
+  },
+  {
+    label: 'Productivity',
+    items: [
+      { name: 'Linear', tone: '#5e6ad2' },
+      { name: 'Jira', tone: '#0052cc' },
+      { name: 'Notion', tone: '#111111' },
+      { name: 'Google Workspace', tone: '#0f9d58' },
+    ],
+  },
+  {
+    label: 'Identity & Cloud',
+    items: [
+      { name: 'AWS Nova Sonic', tone: '#ff9900' },
+      { name: 'Microsoft 365', tone: '#d83b01' },
+      { name: 'Okta', tone: '#007dc1' },
+      { name: 'GitHub', tone: '#24292e' },
+    ],
+  },
+]
+
+function IntegrationsGrid() {
+  return (
+    <section
+      id="integrations"
+      className="relative py-24 px-6 border-t border-gray-200/60 overflow-hidden"
+    >
+      <div
+        className="absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, rgba(15,23,42,0.05) 1px, transparent 0)',
+          backgroundSize: '28px 28px',
+          maskImage: 'radial-gradient(ellipse 70% 60% at 50% 50%, #000 40%, transparent 80%)',
+        }}
+      />
+
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center mb-14">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 mb-3">
+            Works with your stack
+          </p>
+          <h2 className="mx-auto max-w-2xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
+            Lira lives where your conversations already happen.
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base text-gray-500 leading-relaxed">
+            Drop Lira into the tools your team uses today. OAuth in one click — no agents to install,
+            no schemas to migrate.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {INTEGRATION_GROUPS.map((group) => (
+            <div
+              key={group.label}
+              className="rounded-2xl bg-white ring-1 ring-gray-200/80 p-5 shadow-[0_1px_2px_rgba(0,0,0,0.03),0_8px_24px_-12px_rgba(16,24,40,0.08)]"
+            >
+              <p className="text-[10.5px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-4">
+                {group.label}
+              </p>
+              <div className="space-y-2">
+                {group.items.map((it) => (
+                  <div
+                    key={it.name}
+                    className="flex items-center gap-2.5 rounded-lg px-2.5 py-2 hover:bg-gray-50 transition-colors"
+                  >
+                    <span
+                      className="inline-flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-black text-white"
+                      style={{ background: it.tone }}
+                    >
+                      {it.name.split(' ').map((w) => w[0]).join('').slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="text-[13px] font-semibold text-gray-700">{it.name}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-10 text-center text-xs text-gray-400">
+          + REST API & webhooks for everything else.
+        </p>
+      </div>
+    </section>
+  )
+}
+
 function UseCases() {
   return (
     <section id="use-cases" className="py-20 px-6 border-t border-gray-200">
@@ -3088,6 +3196,7 @@ export function LandingPage() {
       <SupportShowcase />
       <MidCTA />
       <Features />
+      <IntegrationsGrid />
       <UseCases />
       <Testimonials />
       <FAQ />
