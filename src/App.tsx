@@ -89,6 +89,11 @@ function AuthExpiryGuard() {
 }
 
 function App() {
+  // demo subdomain — render Nimbus demo page directly, bypassing the main router
+  if (window.location.hostname === 'demo.liraintelligence.com') {
+    return <DemoSitePage />
+  }
+
   return (
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
       <Routes>
