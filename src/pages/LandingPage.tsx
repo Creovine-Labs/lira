@@ -1172,17 +1172,21 @@ function Hero() {
 // ─── Hub & Spoke ──────────────────────────────────────────────────────────────
 
 const HUB_STYLES = `
-  @keyframes hubDraw{from{stroke-dashoffset:240}to{stroke-dashoffset:0}}
-  @keyframes hubPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.92}}
-  @keyframes hubDot{0%{transform:translate(var(--fx,0),var(--fy,0)) scale(.3);opacity:0}20%{opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(1);opacity:0}}
-  @keyframes hubFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
-  .hub-draw{stroke-dasharray:240;stroke-dashoffset:240;animation:hubDraw 1.6s ease-out forwards}
-  .hub-pulse{animation:hubPulse 2.4s ease-in-out infinite}
-  .hub-particle{animation:hubDot 2.2s linear infinite}
-  .hub-card{animation:hubFadeUp .5s ease-out both}
+  @keyframes hubDraw{from{stroke-dashoffset:var(--len,600)}to{stroke-dashoffset:0}}
+  @keyframes hubGlow{0%,100%{box-shadow:0 0 0 0 rgba(55,48,163,.35),0 24px 60px -12px rgba(55,48,163,.45)}50%{box-shadow:0 0 0 18px rgba(55,48,163,0),0 24px 60px -12px rgba(55,48,163,.6)}}
+  @keyframes hubSpinCW{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+  @keyframes hubSpinCCW{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+  @keyframes hubParticle{0%{offset-distance:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+  @keyframes hubFadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+  .hub-line{stroke-dasharray:var(--len,600);stroke-dashoffset:var(--len,600);animation:hubDraw 1.4s cubic-bezier(.2,.7,.3,1) forwards}
+  .hub-glow{animation:hubGlow 3.2s ease-in-out infinite}
+  .hub-ring-cw{transform-origin:50% 50%;animation:hubSpinCW 60s linear infinite}
+  .hub-ring-ccw{transform-origin:50% 50%;animation:hubSpinCCW 80s linear infinite}
+  .hub-particle{offset-rotate:0deg;animation:hubParticle 3.4s ease-in-out infinite}
+  .hub-card{animation:hubFadeUp .55s cubic-bezier(.2,.7,.3,1) both}
   @media (prefers-reduced-motion:reduce){
-    .hub-draw{stroke-dashoffset:0;animation:none}
-    .hub-pulse,.hub-particle,.hub-card{animation:none}
+    .hub-line{stroke-dashoffset:0;animation:none}
+    .hub-glow,.hub-ring-cw,.hub-ring-ccw,.hub-particle,.hub-card{animation:none}
   }
 `
 
@@ -1192,13 +1196,11 @@ type Spoke = {
   description: string
   events: string[]
   accent: string
-  bg: string
-  pos: 'top' | 'right' | 'bottom' | 'left'
-  primary?: boolean
+  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
 }
 
-const SPOKES: Spoke[] = [
-  {
+const SPOKES: Record<'support' | 'sales' | 'meetings' | 'knowledge', Spoke> = {
+  support: {
     id: 'support',
     label: 'Customer Support',
     description: 'Chat, portal, email',
@@ -1209,25 +1211,22 @@ const SPOKES: Spoke[] = [
       'Answered 3 tickets in 4 seconds',
     ],
     accent: '#3730a3',
-    bg: 'bg-[#3730a3] text-white',
-    pos: 'top',
-    primary: true,
+    Icon: HeartIcon,
   },
-  {
+  sales: {
     id: 'sales',
     label: 'Sales',
     description: 'Real-time objection handling',
     events: [
-      'Detected pricing objection → surfaced ROI card',
+      'Detected pricing objection — surfaced ROI card',
       'Logged discovery call to Salesforce',
       'Flagged competitor mention — Acme',
       'Drafted follow-up email',
     ],
     accent: '#0ea5e9',
-    bg: 'bg-white text-gray-900 border border-gray-200',
-    pos: 'right',
+    Icon: ArrowTrendingUpIcon,
   },
-  {
+  meetings: {
     id: 'meetings',
     label: 'Meetings',
     description: 'Joins. Listens. Acts.',
@@ -1238,40 +1237,47 @@ const SPOKES: Spoke[] = [
       'Posted recap to #eng-standup',
     ],
     accent: '#8b5cf6',
-    bg: 'bg-white text-gray-900 border border-gray-200',
-    pos: 'bottom',
+    Icon: VideoCameraIcon,
   },
-  {
+  knowledge: {
     id: 'knowledge',
     label: 'Knowledge',
     description: 'Grounded in your docs',
     events: [
-      'Indexed 14 new help-center articles',
+      'Indexed 14 help-center articles',
       'Answered policy question from PDF',
       'Learned new refund rule',
       'Cached 2,104 knowledge chunks',
     ],
     accent: '#10b981',
-    bg: 'bg-white text-gray-900 border border-gray-200',
-    pos: 'left',
+    Icon: BookOpenIcon,
   },
-]
+}
+
+// Shared coordinate system — everything uses percentages of the same container.
+// Hub at (50%, 50%). Endpoints are where the line meets the card edge.
+const NODES = {
+  support:   { x: 50, y: 12,  primary: true },   // top
+  sales:     { x: 88, y: 50 },                    // right
+  meetings:  { x: 50, y: 88 },                    // bottom
+  knowledge: { x: 12, y: 50 },                    // left
+}
 
 function SpokeEventTicker({ events, accent }: { events: string[]; accent: string }) {
   const [idx, setIdx] = useState(0)
   useEffect(() => {
-    const id = setInterval(() => setIdx((i) => (i + 1) % events.length), 2800)
+    const id = setInterval(() => setIdx((i) => (i + 1) % events.length), 3000)
     return () => clearInterval(id)
   }, [events.length])
   return (
-    <div className="relative h-5 overflow-hidden text-[10.5px] font-medium leading-5 opacity-90">
+    <div className="relative h-4 overflow-hidden">
       {events.map((e, i) => (
         <div
           key={i}
-          className="absolute inset-0 transition-all duration-500"
+          className="absolute inset-0 text-[10.5px] font-medium leading-4 tracking-[-0.005em] transition-all duration-500"
           style={{
             opacity: i === idx ? 1 : 0,
-            transform: `translateY(${(i - idx) * 8}px)`,
+            transform: `translateY(${(i - idx) * 6}px)`,
             color: accent,
           }}
         >
@@ -1282,101 +1288,248 @@ function SpokeEventTicker({ events, accent }: { events: string[]; accent: string
   )
 }
 
-function HubAndSpoke() {
+function SpokeCard({
+  spoke,
+  compact = false,
+  className = '',
+  style,
+}: {
+  spoke: Spoke
+  compact?: boolean
+  className?: string
+  style?: React.CSSProperties
+}) {
+  const { Icon } = spoke
   return (
-    <section className="relative py-20 sm:py-28 px-6">
+    <div
+      className={`group relative overflow-hidden rounded-2xl bg-white/95 backdrop-blur-sm ring-1 ring-gray-200/80 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_8px_24px_-8px_rgba(16,24,40,0.08)] ${compact ? 'w-full p-3.5' : 'w-[212px] p-4'} ${className}`}
+      style={style}
+    >
+      {/* Accent bar */}
+      <div
+        className="absolute left-0 top-3 bottom-3 w-[3px] rounded-full"
+        style={{ background: spoke.accent }}
+      />
+      <div className="pl-2.5">
+        <div className="flex items-center gap-2 mb-2">
+          <div
+            className="flex h-6 w-6 items-center justify-center rounded-md"
+            style={{ background: `${spoke.accent}14`, color: spoke.accent }}
+          >
+            <Icon className="h-3.5 w-3.5" />
+          </div>
+          <p className="text-[11px] font-bold tracking-[-0.01em] text-gray-900">{spoke.label}</p>
+        </div>
+        <p className="text-[10.5px] text-gray-400 mb-2.5 tracking-[-0.005em]">{spoke.description}</p>
+        <SpokeEventTicker events={spoke.events} accent={spoke.accent} />
+      </div>
+    </div>
+  )
+}
+
+function HubAndSpoke() {
+  // Keep the hub diameter constant and drop the lines a bit short of the
+  // hub so we don't visually collide with the center node.
+  const HUB_SIZE = 176 // px
+  return (
+    <section className="relative py-24 sm:py-32 px-6 overflow-hidden">
       <style>{HUB_STYLES}</style>
+
+      {/* Background ambient */}
+      <div
+        className="absolute inset-0 -z-10 opacity-60"
+        style={{
+          background:
+            'radial-gradient(ellipse 60% 50% at 50% 45%, rgba(55,48,163,0.06), transparent 70%)',
+        }}
+      />
+      <div
+        className="absolute inset-0 -z-10 opacity-[0.25]"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, rgba(16,24,40,0.25) 1px, transparent 0)',
+          backgroundSize: '28px 28px',
+          maskImage:
+            'radial-gradient(ellipse 50% 40% at 50% 50%, #000 40%, transparent 75%)',
+          WebkitMaskImage:
+            'radial-gradient(ellipse 50% 40% at 50% 50%, #000 40%, transparent 75%)',
+        }}
+      />
+
       <div className="mx-auto max-w-5xl">
-        <div className="text-center mb-10 sm:mb-14">
-          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[.2em] text-[#3730a3] mb-3">
+        {/* Section header */}
+        <div className="text-center mb-14 sm:mb-20">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-4">
             One platform
           </p>
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-gray-900">
+          <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
             Built on a single{' '}
-            <span className="text-[#3730a3]">Conversational Intelligence</span> engine.
+            <span className="relative whitespace-nowrap text-[#3730a3]">
+              Conversational Intelligence
+              <svg
+                className="absolute left-0 right-0 -bottom-1 w-full h-2"
+                viewBox="0 0 300 8"
+                preserveAspectRatio="none"
+                aria-hidden
+              >
+                <path
+                  d="M2 5 Q 75 1, 150 4 T 298 4"
+                  stroke="#3730a3"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity="0.35"
+                />
+              </svg>
+            </span>{' '}
+            engine.
           </h2>
-          <p className="mx-auto mt-4 max-w-2xl text-base text-gray-500 leading-relaxed">
-            Lira hears, understands, and <em>acts on</em> every business conversation — chats,
-            calls, and meetings — grounded in your shared knowledge.
+          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
+            Lira hears, understands, and <em className="not-italic text-gray-700 font-semibold">acts on</em>{' '}
+            every business conversation — grounded in your shared knowledge.
           </p>
         </div>
 
-        {/* Desktop: SVG hub */}
-        <div className="relative hidden md:block" style={{ height: 520 }}>
+        {/* ─── Desktop / tablet ───────────────────────────────────────────── */}
+        <div
+          className="relative hidden md:block mx-auto"
+          style={{ width: '100%', maxWidth: 860, aspectRatio: '10 / 7' }}
+        >
+          {/* SVG connectors + orbit rings — viewBox matches aspect ratio so px == % */}
           <svg
-            viewBox="0 0 800 520"
+            viewBox="0 0 1000 700"
+            preserveAspectRatio="none"
             className="absolute inset-0 w-full h-full"
             style={{ overflow: 'visible' }}
           >
-            {/* Spokes */}
-            {[
-              { x: 400, y: 60, color: SPOKES[0].accent, w: 3 },
-              { x: 740, y: 260, color: SPOKES[1].accent, w: 2 },
-              { x: 400, y: 460, color: SPOKES[2].accent, w: 2 },
-              { x: 60, y: 260, color: SPOKES[3].accent, w: 2 },
-            ].map((p, i) => (
-              <line
-                key={i}
-                x1="400"
-                y1="260"
-                x2={p.x}
-                y2={p.y}
-                stroke={p.color}
-                strokeWidth={p.w}
-                strokeLinecap="round"
-                opacity="0.55"
-                className="hub-draw"
-                style={{ animationDelay: `${i * 0.15}s` }}
-              />
-            ))}
-            {/* Animated particles traveling along each spoke */}
-            {[
-              { tx: 0, ty: -200, color: SPOKES[0].accent, delay: '0s' },
-              { tx: 340, ty: 0, color: SPOKES[1].accent, delay: '0.7s' },
-              { tx: 0, ty: 200, color: SPOKES[2].accent, delay: '1.1s' },
-              { tx: -340, ty: 0, color: SPOKES[3].accent, delay: '1.5s' },
-            ].map((p, i) => (
+            <defs>
+              {Object.values(SPOKES).map((s) => (
+                <linearGradient
+                  key={s.id}
+                  id={`grad-${s.id}`}
+                  x1="50%"
+                  y1="50%"
+                  x2="0%"
+                  y2="0%"
+                >
+                  <stop offset="0%" stopColor={s.accent} stopOpacity="0.15" />
+                  <stop offset="100%" stopColor={s.accent} stopOpacity="0.9" />
+                </linearGradient>
+              ))}
+            </defs>
+
+            {/* Orbit rings (centered at 500,350) */}
+            <g className="hub-ring-cw" style={{ transformOrigin: '500px 350px' }}>
               <circle
-                key={i}
-                cx="400"
-                cy="260"
-                r="4"
-                fill={p.color}
+                cx="500"
+                cy="350"
+                r="150"
+                fill="none"
+                stroke="#3730a3"
+                strokeOpacity="0.18"
+                strokeWidth="1.2"
+                strokeDasharray="2 8"
+              />
+            </g>
+            <g className="hub-ring-ccw" style={{ transformOrigin: '500px 350px' }}>
+              <circle
+                cx="500"
+                cy="350"
+                r="220"
+                fill="none"
+                stroke="#3730a3"
+                strokeOpacity="0.12"
+                strokeWidth="1"
+                strokeDasharray="1 10"
+              />
+            </g>
+
+            {/* Connector lines — hub (500,350) → endpoint; stop short of card */}
+            {(
+              [
+                { id: 'support',   x: 500, y: 140 },
+                { id: 'sales',     x: 810, y: 350 },
+                { id: 'meetings',  x: 500, y: 560 },
+                { id: 'knowledge', x: 190, y: 350 },
+              ] as const
+            ).map((p, i) => {
+              const accent = SPOKES[p.id].accent
+              return (
+                <g key={p.id}>
+                  <line
+                    x1="500"
+                    y1="350"
+                    x2={p.x}
+                    y2={p.y}
+                    stroke={`url(#grad-${p.id})`}
+                    strokeWidth={p.id === 'support' ? 2.2 : 1.8}
+                    strokeLinecap="round"
+                    className="hub-line"
+                    style={
+                      {
+                        ['--len' as string]: '420',
+                        animationDelay: `${0.15 * i}s`,
+                      } as React.CSSProperties
+                    }
+                  />
+                  {/* Endpoint dot */}
+                  <circle cx={p.x} cy={p.y} r="3.5" fill={accent} opacity="0.9" />
+                </g>
+              )
+            })}
+
+            {/* Traveling particles (using CSS offset-path) */}
+            {(
+              [
+                { id: 'support', path: 'M 500 350 L 500 140', delay: 0 },
+                { id: 'sales', path: 'M 500 350 L 810 350', delay: 0.8 },
+                { id: 'meetings', path: 'M 500 350 L 500 560', delay: 1.4 },
+                { id: 'knowledge', path: 'M 500 350 L 190 350', delay: 2.0 },
+              ] as const
+            ).map((p) => (
+              <circle
+                key={`p-${p.id}`}
+                r="3.5"
+                fill={SPOKES[p.id].accent}
                 className="hub-particle"
                 style={
                   {
-                    ['--tx' as string]: `${p.tx}px`,
-                    ['--ty' as string]: `${p.ty}px`,
-                    animationDelay: p.delay,
+                    offsetPath: `path('${p.path}')`,
+                    animationDelay: `${p.delay + 1.2}s`,
                   } as React.CSSProperties
                 }
               />
             ))}
           </svg>
 
-          {/* Center hub */}
+          {/* Center hub — precisely centered with fixed size */}
           <div
-            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hub-pulse"
-            style={{ zIndex: 2 }}
+            className="absolute hub-glow rounded-full"
+            style={{
+              width: HUB_SIZE,
+              height: HUB_SIZE,
+              left: `calc(50% - ${HUB_SIZE / 2}px)`,
+              top: `calc(50% - ${HUB_SIZE / 2}px)`,
+              background:
+                'radial-gradient(circle at 30% 25%, #6366f1 0%, #3730a3 45%, #1e1b4b 100%)',
+            }}
           >
-            <div
-              className="relative flex flex-col items-center justify-center rounded-3xl shadow-[0_20px_60px_rgba(55,48,163,0.35)]"
-              style={{
-                background: 'linear-gradient(135deg, #3730a3 0%, #1e1b4b 100%)',
-                width: 168,
-                height: 168,
-                padding: 20,
-              }}
-            >
-              <img
-                src="/lira_black_with_white_backgound.png"
-                alt="Lira"
-                className="h-10 w-10 rounded-full mb-2"
-              />
-              <p className="text-[10px] uppercase tracking-[.18em] font-bold text-white/60 mb-0.5">
-                Lira
+            {/* Inner ring */}
+            <div className="absolute inset-2 rounded-full ring-1 ring-white/10" />
+            <div className="absolute inset-4 rounded-full ring-1 ring-white/5" />
+            {/* Content */}
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 backdrop-blur-sm mb-2.5">
+                <img
+                  src="/lira_black_with_white_backgound.png"
+                  alt=""
+                  className="h-7 w-7 rounded-full"
+                />
+              </div>
+              <p className="text-[9px] font-bold uppercase tracking-[0.22em] text-white/55 mb-1">
+                Lira Engine
               </p>
-              <p className="text-[11px] font-bold text-white text-center leading-tight">
+              <p className="text-[12px] font-bold text-white leading-[1.15] tracking-[-0.01em]">
                 Conversational
                 <br />
                 Intelligence
@@ -1384,92 +1537,66 @@ function HubAndSpoke() {
             </div>
           </div>
 
-          {/* Spoke cards (absolute positioned around hub) */}
-          {/* Top — Support (primary, larger) */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 hub-card"
-            style={{ top: -12, animationDelay: '1.6s', zIndex: 3 }}
-          >
-            <SpokeCard spoke={SPOKES[0]} />
-          </div>
-          {/* Right — Sales */}
-          <div
-            className="absolute right-0 top-1/2 -translate-y-1/2 hub-card"
-            style={{ animationDelay: '1.75s', zIndex: 3 }}
-          >
-            <SpokeCard spoke={SPOKES[1]} />
-          </div>
-          {/* Bottom — Meetings */}
-          <div
-            className="absolute left-1/2 -translate-x-1/2 bottom-0 hub-card"
-            style={{ animationDelay: '1.9s', zIndex: 3 }}
-          >
-            <SpokeCard spoke={SPOKES[2]} />
-          </div>
-          {/* Left — Knowledge */}
-          <div
-            className="absolute left-0 top-1/2 -translate-y-1/2 hub-card"
-            style={{ animationDelay: '2.05s', zIndex: 3 }}
-          >
-            <SpokeCard spoke={SPOKES[3]} />
-          </div>
+          {/* Spoke cards — positioned by percentage of the same container */}
+          {(
+            [
+              { node: NODES.support,   key: 'support',   delay: '1.6s' },
+              { node: NODES.sales,     key: 'sales',     delay: '1.75s' },
+              { node: NODES.meetings,  key: 'meetings',  delay: '1.9s' },
+              { node: NODES.knowledge, key: 'knowledge', delay: '2.05s' },
+            ] as const
+          ).map(({ node, key, delay }) => (
+            <div
+              key={key}
+              className="absolute hub-card"
+              style={{
+                left: `${node.x}%`,
+                top: `${node.y}%`,
+                transform: 'translate(-50%, -50%)',
+                animationDelay: delay,
+                zIndex: 3,
+              }}
+            >
+              <SpokeCard spoke={SPOKES[key]} />
+            </div>
+          ))}
         </div>
 
-        {/* Mobile: stacked vertical */}
-        <div className="md:hidden space-y-3">
-          <div
-            className="relative flex items-center gap-3 rounded-2xl p-4 shadow-[0_10px_30px_rgba(55,48,163,0.25)]"
-            style={{ background: 'linear-gradient(135deg, #3730a3 0%, #1e1b4b 100%)' }}
-          >
-            <img
-              src="/lira_black_with_white_backgound.png"
-              alt=""
-              className="h-8 w-8 rounded-full shrink-0"
-            />
-            <div>
-              <p className="text-[9px] uppercase tracking-[.15em] font-bold text-white/60">Lira</p>
-              <p className="text-sm font-bold text-white leading-tight">
-                Conversational Intelligence
+        {/* ─── Mobile ─────────────────────────────────────────────────────── */}
+        <div className="md:hidden">
+          <div className="relative flex items-center justify-center mb-6">
+            <div
+              className="hub-glow relative flex h-28 w-28 flex-col items-center justify-center rounded-full text-center"
+              style={{
+                background:
+                  'radial-gradient(circle at 30% 25%, #6366f1 0%, #3730a3 45%, #1e1b4b 100%)',
+              }}
+            >
+              <div className="absolute inset-2 rounded-full ring-1 ring-white/10" />
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt=""
+                className="h-7 w-7 rounded-full mb-1"
+              />
+              <p className="text-[8.5px] font-bold text-white/55 uppercase tracking-[0.2em]">
+                Lira
+              </p>
+              <p className="text-[10px] font-bold text-white leading-tight">
+                Conv. Intelligence
               </p>
             </div>
           </div>
-          {SPOKES.map((s) => (
-            <div key={s.id} className="ml-4 border-l-2 border-gray-200 pl-4 py-1">
-              <SpokeCard spoke={s} compact />
-            </div>
-          ))}
+          <div className="space-y-3">
+            {(['support', 'sales', 'meetings', 'knowledge'] as const).map((k) => (
+              <SpokeCard key={k} spoke={SPOKES[k]} compact />
+            ))}
+          </div>
         </div>
       </div>
     </section>
   )
 }
 
-function SpokeCard({ spoke, compact = false }: { spoke: Spoke; compact?: boolean }) {
-  const size = spoke.primary && !compact ? 'w-[220px]' : compact ? 'w-full' : 'w-[200px]'
-  return (
-    <div
-      className={`${size} rounded-2xl p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.10)] ${spoke.bg}`}
-    >
-      <div className="flex items-center gap-2 mb-1.5">
-        <span
-          className="inline-flex h-2 w-2 rounded-full"
-          style={{ background: spoke.primary ? '#ffffff' : spoke.accent }}
-        />
-        <p
-          className={`text-[11px] font-bold tracking-wide ${spoke.primary ? 'text-white' : 'text-gray-900'}`}
-        >
-          {spoke.label}
-        </p>
-      </div>
-      <p
-        className={`text-[10px] mb-2 ${spoke.primary ? 'text-white/70' : 'text-gray-400'}`}
-      >
-        {spoke.description}
-      </p>
-      <SpokeEventTicker events={spoke.events} accent={spoke.primary ? '#ffffff' : spoke.accent} />
-    </div>
-  )
-}
 
 function MidCTA() {
   return (
