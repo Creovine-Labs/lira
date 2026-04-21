@@ -1254,9 +1254,6 @@ function SupportActivatePage() {
                             }`}
                           >
                             Custom
-                            <span className="rounded-full bg-violet-100 px-1.5 py-px text-[9px] font-semibold text-violet-600">
-                              Pro
-                            </span>
                           </button>
                         </div>
                       </div>

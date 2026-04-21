@@ -98,8 +98,13 @@ function OrgEmailPage() {
         setDomainStatus(data.domain_verified ? 'verified' : 'pending')
         setDomainInput(data.custom_domain ?? '')
       }
-    } catch {
-      toast.error('Failed to load email settings')
+    } catch (err) {
+      // 404 = no config row exists yet — render the page in empty/new state
+      if (err instanceof Error && err.message.startsWith('404:')) {
+        setConfig(null)
+      } else {
+        toast.error('Failed to load email settings')
+      }
     } finally {
       setLoading(false)
     }
@@ -178,7 +183,40 @@ function OrgEmailPage() {
 
   if (loading) return <PageLoader />
 
-  const isDirty =
+  // No config yet (404) — show a soft empty state without erroring
+  if (!config) {
+    return (
+      <div className="min-h-full bg-[#ebebeb] px-5 py-7">
+        <div className="mx-auto max-w-2xl">
+          <div className="mb-6">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+              Workspace
+            </p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Email</h1>
+          </div>
+          <div className="rounded-2xl border border-white/60 bg-white px-8 py-12 shadow-sm text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
+              <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              </svg>
+            </div>
+            <h2 className="text-lg font-semibold text-gray-800">Email not configured yet</h2>
+            <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
+              Email settings will be available once you activate the Customer Support module for this workspace.
+            </p>
+            <a
+              href="/support/activate"
+              className="mt-6 inline-flex items-center gap-2 rounded-xl bg-[#0f0f0f] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#1a1a1a] transition"
+            >
+              Go to Support Activation
+            </a>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+
     fromName !== (config?.from_name ?? '') ||
     notificationsEnabled !== config?.email_notifications_enabled ||
     aiReplyEnabled !== (config?.ai_reply_enabled ?? true) ||
