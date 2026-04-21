@@ -1168,13 +1168,316 @@ function Hero() {
     </section>
   )
 }
+
+// ─── Hub & Spoke ──────────────────────────────────────────────────────────────
+
+const HUB_STYLES = `
+  @keyframes hubDraw{from{stroke-dashoffset:240}to{stroke-dashoffset:0}}
+  @keyframes hubPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.08);opacity:.92}}
+  @keyframes hubDot{0%{transform:translate(var(--fx,0),var(--fy,0)) scale(.3);opacity:0}20%{opacity:1}100%{transform:translate(var(--tx),var(--ty)) scale(1);opacity:0}}
+  @keyframes hubFadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .hub-draw{stroke-dasharray:240;stroke-dashoffset:240;animation:hubDraw 1.6s ease-out forwards}
+  .hub-pulse{animation:hubPulse 2.4s ease-in-out infinite}
+  .hub-particle{animation:hubDot 2.2s linear infinite}
+  .hub-card{animation:hubFadeUp .5s ease-out both}
+  @media (prefers-reduced-motion:reduce){
+    .hub-draw{stroke-dashoffset:0;animation:none}
+    .hub-pulse,.hub-particle,.hub-card{animation:none}
+  }
+`
+
+type Spoke = {
+  id: string
+  label: string
+  description: string
+  events: string[]
+  accent: string
+  bg: string
+  pos: 'top' | 'right' | 'bottom' | 'left'
+  primary?: boolean
+}
+
+const SPOKES: Spoke[] = [
+  {
+    id: 'support',
+    label: 'Customer Support',
+    description: 'Chat, portal, email',
+    events: [
+      'Resolved ticket #2841 — refund processed',
+      'Escalated billing issue to Kwame',
+      'Synced conversation to HubSpot',
+      'Answered 3 tickets in 4 seconds',
+    ],
+    accent: '#3730a3',
+    bg: 'bg-[#3730a3] text-white',
+    pos: 'top',
+    primary: true,
+  },
+  {
+    id: 'sales',
+    label: 'Sales',
+    description: 'Real-time objection handling',
+    events: [
+      'Detected pricing objection → surfaced ROI card',
+      'Logged discovery call to Salesforce',
+      'Flagged competitor mention — Acme',
+      'Drafted follow-up email',
+    ],
+    accent: '#0ea5e9',
+    bg: 'bg-white text-gray-900 border border-gray-200',
+    pos: 'right',
+  },
+  {
+    id: 'meetings',
+    label: 'Meetings',
+    description: 'Joins. Listens. Acts.',
+    events: [
+      'Extracted 3 action items from Sprint Planning',
+      'Created Linear ticket LIR-428',
+      'Summarized 42-min call in 120 words',
+      'Posted recap to #eng-standup',
+    ],
+    accent: '#8b5cf6',
+    bg: 'bg-white text-gray-900 border border-gray-200',
+    pos: 'bottom',
+  },
+  {
+    id: 'knowledge',
+    label: 'Knowledge',
+    description: 'Grounded in your docs',
+    events: [
+      'Indexed 14 new help-center articles',
+      'Answered policy question from PDF',
+      'Learned new refund rule',
+      'Cached 2,104 knowledge chunks',
+    ],
+    accent: '#10b981',
+    bg: 'bg-white text-gray-900 border border-gray-200',
+    pos: 'left',
+  },
+]
+
+function SpokeEventTicker({ events, accent }: { events: string[]; accent: string }) {
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setIdx((i) => (i + 1) % events.length), 2800)
+    return () => clearInterval(id)
+  }, [events.length])
+  return (
+    <div className="relative h-5 overflow-hidden text-[10.5px] font-medium leading-5 opacity-90">
+      {events.map((e, i) => (
+        <div
+          key={i}
+          className="absolute inset-0 transition-all duration-500"
+          style={{
+            opacity: i === idx ? 1 : 0,
+            transform: `translateY(${(i - idx) * 8}px)`,
+            color: accent,
+          }}
+        >
+          {e}
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function HubAndSpoke() {
+  return (
+    <section className="relative py-20 sm:py-28 px-6">
+      <style>{HUB_STYLES}</style>
+      <div className="mx-auto max-w-5xl">
+        <div className="text-center mb-10 sm:mb-14">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-[.2em] text-[#3730a3] mb-3">
+            One platform
+          </p>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight text-gray-900">
+            Built on a single{' '}
+            <span className="text-[#3730a3]">Conversational Intelligence</span> engine.
+          </h2>
+          <p className="mx-auto mt-4 max-w-2xl text-base text-gray-500 leading-relaxed">
+            Lira hears, understands, and <em>acts on</em> every business conversation — chats,
+            calls, and meetings — grounded in your shared knowledge.
+          </p>
+        </div>
+
+        {/* Desktop: SVG hub */}
+        <div className="relative hidden md:block" style={{ height: 520 }}>
+          <svg
+            viewBox="0 0 800 520"
+            className="absolute inset-0 w-full h-full"
+            style={{ overflow: 'visible' }}
+          >
+            {/* Spokes */}
+            {[
+              { x: 400, y: 60, color: SPOKES[0].accent, w: 3 },
+              { x: 740, y: 260, color: SPOKES[1].accent, w: 2 },
+              { x: 400, y: 460, color: SPOKES[2].accent, w: 2 },
+              { x: 60, y: 260, color: SPOKES[3].accent, w: 2 },
+            ].map((p, i) => (
+              <line
+                key={i}
+                x1="400"
+                y1="260"
+                x2={p.x}
+                y2={p.y}
+                stroke={p.color}
+                strokeWidth={p.w}
+                strokeLinecap="round"
+                opacity="0.55"
+                className="hub-draw"
+                style={{ animationDelay: `${i * 0.15}s` }}
+              />
+            ))}
+            {/* Animated particles traveling along each spoke */}
+            {[
+              { tx: 0, ty: -200, color: SPOKES[0].accent, delay: '0s' },
+              { tx: 340, ty: 0, color: SPOKES[1].accent, delay: '0.7s' },
+              { tx: 0, ty: 200, color: SPOKES[2].accent, delay: '1.1s' },
+              { tx: -340, ty: 0, color: SPOKES[3].accent, delay: '1.5s' },
+            ].map((p, i) => (
+              <circle
+                key={i}
+                cx="400"
+                cy="260"
+                r="4"
+                fill={p.color}
+                className="hub-particle"
+                style={
+                  {
+                    ['--tx' as string]: `${p.tx}px`,
+                    ['--ty' as string]: `${p.ty}px`,
+                    animationDelay: p.delay,
+                  } as React.CSSProperties
+                }
+              />
+            ))}
+          </svg>
+
+          {/* Center hub */}
+          <div
+            className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hub-pulse"
+            style={{ zIndex: 2 }}
+          >
+            <div
+              className="relative flex flex-col items-center justify-center rounded-3xl shadow-[0_20px_60px_rgba(55,48,163,0.35)]"
+              style={{
+                background: 'linear-gradient(135deg, #3730a3 0%, #1e1b4b 100%)',
+                width: 168,
+                height: 168,
+                padding: 20,
+              }}
+            >
+              <img
+                src="/lira_black_with_white_backgound.png"
+                alt="Lira"
+                className="h-10 w-10 rounded-full mb-2"
+              />
+              <p className="text-[10px] uppercase tracking-[.18em] font-bold text-white/60 mb-0.5">
+                Lira
+              </p>
+              <p className="text-[11px] font-bold text-white text-center leading-tight">
+                Conversational
+                <br />
+                Intelligence
+              </p>
+            </div>
+          </div>
+
+          {/* Spoke cards (absolute positioned around hub) */}
+          {/* Top — Support (primary, larger) */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 hub-card"
+            style={{ top: -12, animationDelay: '1.6s', zIndex: 3 }}
+          >
+            <SpokeCard spoke={SPOKES[0]} />
+          </div>
+          {/* Right — Sales */}
+          <div
+            className="absolute right-0 top-1/2 -translate-y-1/2 hub-card"
+            style={{ animationDelay: '1.75s', zIndex: 3 }}
+          >
+            <SpokeCard spoke={SPOKES[1]} />
+          </div>
+          {/* Bottom — Meetings */}
+          <div
+            className="absolute left-1/2 -translate-x-1/2 bottom-0 hub-card"
+            style={{ animationDelay: '1.9s', zIndex: 3 }}
+          >
+            <SpokeCard spoke={SPOKES[2]} />
+          </div>
+          {/* Left — Knowledge */}
+          <div
+            className="absolute left-0 top-1/2 -translate-y-1/2 hub-card"
+            style={{ animationDelay: '2.05s', zIndex: 3 }}
+          >
+            <SpokeCard spoke={SPOKES[3]} />
+          </div>
+        </div>
+
+        {/* Mobile: stacked vertical */}
+        <div className="md:hidden space-y-3">
+          <div
+            className="relative flex items-center gap-3 rounded-2xl p-4 shadow-[0_10px_30px_rgba(55,48,163,0.25)]"
+            style={{ background: 'linear-gradient(135deg, #3730a3 0%, #1e1b4b 100%)' }}
+          >
+            <img
+              src="/lira_black_with_white_backgound.png"
+              alt=""
+              className="h-8 w-8 rounded-full shrink-0"
+            />
+            <div>
+              <p className="text-[9px] uppercase tracking-[.15em] font-bold text-white/60">Lira</p>
+              <p className="text-sm font-bold text-white leading-tight">
+                Conversational Intelligence
+              </p>
+            </div>
+          </div>
+          {SPOKES.map((s) => (
+            <div key={s.id} className="ml-4 border-l-2 border-gray-200 pl-4 py-1">
+              <SpokeCard spoke={s} compact />
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SpokeCard({ spoke, compact = false }: { spoke: Spoke; compact?: boolean }) {
+  const size = spoke.primary && !compact ? 'w-[220px]' : compact ? 'w-full' : 'w-[200px]'
+  return (
+    <div
+      className={`${size} rounded-2xl p-3.5 shadow-[0_10px_30px_rgba(0,0,0,0.10)] ${spoke.bg}`}
+    >
+      <div className="flex items-center gap-2 mb-1.5">
+        <span
+          className="inline-flex h-2 w-2 rounded-full"
+          style={{ background: spoke.primary ? '#ffffff' : spoke.accent }}
+        />
+        <p
+          className={`text-[11px] font-bold tracking-wide ${spoke.primary ? 'text-white' : 'text-gray-900'}`}
+        >
+          {spoke.label}
+        </p>
+      </div>
+      <p
+        className={`text-[10px] mb-2 ${spoke.primary ? 'text-white/70' : 'text-gray-400'}`}
+      >
+        {spoke.description}
+      </p>
+      <SpokeEventTicker events={spoke.events} accent={spoke.primary ? '#ffffff' : spoke.accent} />
+    </div>
+  )
+}
+
 function MidCTA() {
   return (
     <section className="py-20 px-6 text-center">
-      <p className="mx-auto max-w-lg text-base text-gray-500 leading-relaxed">
-        One AI. Every conversation that matters. Meetings, sales calls, customer support. Lira is
-        already in the room, taking notes, answering questions, and keeping your team moving. No
-        setup. No plugins. Just paste a link.
+      <p className="mx-auto max-w-xl text-base text-gray-500 leading-relaxed">
+        Most AI tools <em>listen</em> to conversations. Lira <strong>runs</strong> them. One
+        engine answering your customers, coaching your sellers, and closing loops after every
+        meeting — all grounded in your knowledge.
       </p>
     </section>
   )
@@ -2117,6 +2420,7 @@ export function LandingPage() {
       />
       <MarketingNavbar />
       <Hero />
+      <HubAndSpoke />
       <MidCTA />
       <Features />
       <UseCases />
