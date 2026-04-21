@@ -217,6 +217,7 @@ function OrgEmailPage() {
   }
 
 
+  const isDirty =
     fromName !== (config?.from_name ?? '') ||
     notificationsEnabled !== config?.email_notifications_enabled ||
     aiReplyEnabled !== (config?.ai_reply_enabled ?? true) ||
