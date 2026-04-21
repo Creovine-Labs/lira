@@ -1225,62 +1225,90 @@ function SupportActivatePage() {
 
                 {portalEnabled && (
                   <div className="border-t border-gray-100 px-4 py-3 space-y-3">
-                    {/* Portal slug */}
+                    {/* Portal URL — toggle between Default and Custom */}
                     <div>
-                      <label
-                        htmlFor="activate-portal-slug"
-                        className="mb-1 block text-xs font-semibold text-gray-500"
-                      >
-                        Portal URL
-                      </label>
-                      <div className="flex items-center gap-0">
-                        <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-400">
-                          support.liraintelligence.com/
-                        </span>
-                        <input
-                          id="activate-portal-slug"
-                          type="text"
-                          value={portalSlug}
-                          onChange={(e) =>
-                            setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
-                          }
-                          placeholder={portalSlugFinal}
-                          className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
-                        />
+                      <div className="mb-2 flex items-center justify-between">
+                        <span className="text-xs font-semibold text-gray-500">Portal URL</span>
+                        {/* Toggle pill */}
+                        <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 text-[11px] font-medium">
+                          <button
+                            type="button"
+                            onClick={() => setPortalCustomDomain('')}
+                            className={`rounded-md px-3 py-1 transition-colors ${
+                              !portalCustomDomain
+                                ? 'bg-white text-gray-800 shadow-sm'
+                                : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                          >
+                            Default
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setPortalCustomDomain((v) => v || ' ')
+                            }
+                            className={`flex items-center gap-1 rounded-md px-3 py-1 transition-colors ${
+                              portalCustomDomain
+                                ? 'bg-white text-gray-800 shadow-sm'
+                                : 'text-gray-400 hover:text-gray-600'
+                            }`}
+                          >
+                            Custom
+                            <span className="rounded-full bg-violet-100 px-1.5 py-px text-[9px] font-semibold text-violet-600">
+                              Pro
+                            </span>
+                          </button>
+                        </div>
                       </div>
-                      <p className="mt-1 text-xs text-gray-400">
-                        Customers visit this URL. You can also set a custom domain below.
-                      </p>
-                    </div>
 
-                    {/* Custom domain */}
-                    <div className="rounded-xl border border-dashed border-gray-200 bg-gray-50/60 px-4 py-3 space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-gray-600">
-                          Custom Domain{' '}
-                          <span className="font-normal text-gray-400">(optional)</span>
-                        </p>
-                        <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-semibold text-violet-600">
-                          Pro
-                        </span>
-                      </div>
-                      <input
-                        id="activate-portal-custom-domain"
-                        type="text"
-                        value={portalCustomDomain}
-                        onChange={(e) =>
-                          setPortalCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
-                        }
-                        placeholder="support.yourcompany.com"
-                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
-                      />
-                      <p className="text-[11px] text-gray-400 leading-relaxed">
-                        Add a DNS CNAME from your domain pointing to{' '}
-                        <code className="rounded bg-white border border-gray-200 px-1 py-0.5 font-mono text-[10px]">
-                          support.liraintelligence.com
-                        </code>
-                        , then enter it above. Your portal will be accessible at your own URL.
-                      </p>
+                      {!portalCustomDomain ? (
+                        /* Default domain panel */
+                        <div className="flex items-center gap-0">
+                          <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-400">
+                            support.liraintelligence.com/
+                          </span>
+                          <input
+                            id="activate-portal-slug"
+                            type="text"
+                            value={portalSlug}
+                            onChange={(e) =>
+                              setPortalSlug(
+                                e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
+                              )
+                            }
+                            placeholder={portalSlugFinal}
+                            className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                          />
+                        </div>
+                      ) : (
+                        /* Custom domain panel */
+                        <div>
+                          <input
+                            id="activate-portal-custom-domain"
+                            type="text"
+                            value={portalCustomDomain.trim()}
+                            onChange={(e) =>
+                              setPortalCustomDomain(
+                                e.target.value.toLowerCase().replace(/\s/g, ''),
+                              )
+                            }
+                            placeholder="support.yourcompany.com"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                          />
+                          <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
+                            Add a DNS CNAME from{' '}
+                            <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
+                              support.yourcompany.com
+                            </code>{' '}
+                            pointing to{' '}
+                            <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
+                              support.liraintelligence.com
+                            </code>
+                            , then enter your domain above. Your default URL still works — this
+                            adds an alias.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     {/* Portal preview mockup */}
