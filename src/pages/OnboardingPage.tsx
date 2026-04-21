@@ -438,7 +438,7 @@ function OnboardingPage() {
             <>
               <SparkleGraphic />
               <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
-                One platform for every meeting, every decision, every team.
+                One platform for every conversation your business has.
               </p>
             </>
           ) : step === 'success' ? (
@@ -487,7 +487,7 @@ function OnboardingPage() {
                     You're all set.
                   </h1>
                   <p className="text-base text-gray-500">
-                    Your organization is ready. Connect your meetings and let Lira get to work.
+                    Your workspace is live. Let's set up your first module and put Lira to work.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-[#3730a3]/20 bg-[#3730a3]/5 px-6 py-5">
@@ -521,7 +521,7 @@ function OnboardingPage() {
                     Lira works best when your whole team is on board. Share the code below so
                     teammates can join{' '}
                     <span className="font-medium text-gray-700">{createdOrgName}</span> and start
-                    collaborating right away — tasks, meeting notes, and notifications will flow to
+                    collaborating right away — tasks, summaries, and notifications will flow to
                     the right people.
                   </p>
                 </div>
@@ -717,7 +717,7 @@ function OnboardingPage() {
                     What industry are you in?
                   </h1>
                   <p className="mt-2 text-sm text-gray-500">
-                    Lira uses this to understand your organization's context during meetings and
+                    Lira uses this to understand your business across every conversation and
                     deliver smarter, more relevant responses.
                   </p>
                 </div>
@@ -792,8 +792,8 @@ function OnboardingPage() {
                   <p className="mt-2 text-sm text-gray-500">
                     These fields are <span className="font-medium text-gray-700">optional</span> —
                     you can always add or update them later from your Knowledge Base. The more
-                    context you give Lira, the smarter and more relevant its responses will be in
-                    your meetings.
+                    context you give Lira, the smarter and more relevant its responses will be
+                    across every conversation.
                   </p>
                 </div>
                 <div className="space-y-4">

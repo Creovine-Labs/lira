@@ -402,7 +402,7 @@ function LoginForm({
             <>
               <AuthSparkle />
               <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
-                One platform for every meeting, every decision, every team.
+                One platform for every conversation your business has.
               </p>
             </>
           ) : (
