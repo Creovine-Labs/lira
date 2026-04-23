@@ -351,7 +351,7 @@ function generateNimbusHtml(orgId) {
       <h2 class="text-center mt-3">Works with the tools you already use</h2>
       <div class="integrations-grid">
         <div class="int-card"><h3>Stripe</h3><p>Accept cards, ACH, and Apple Pay. Payouts reconciled automatically.</p></div>
-        <div class="int-card"><h3>QuickBooks Online</h3><p>Two-way sync of invoices, payments, and chart of accounts.</p></div>
+        <div class="int-card"><h3>QuickBooks Online</h3><p>Yes, Nimbus integrates with QuickBooks Online. Two-way sync of invoices, payments, and chart of accounts. Real-time reconciliation — no manual exports needed.</p></div>
         <div class="int-card"><h3>Xero</h3><p>Push nightly or trigger sync on every invoice.</p></div>
         <div class="int-card"><h3>Slack</h3><p>Get pinged in #finance when invoices are paid, overdue, or disputed.</p></div>
         <div class="int-card"><h3>Google Workspace</h3><p>SSO, calendar-based billing, and Drive attachments on invoices.</p></div>
@@ -466,7 +466,7 @@ function generateNimbusHtml(orgId) {
         <div class="faq-item"><h3>Can I import data from QuickBooks, Xero, or FreshBooks?</h3><p>Yes. One-click imports from QuickBooks Online, Xero, FreshBooks, and Wave. CSV imports for any other tool. Historical data up to 24 months is preserved.</p></div>
         <div class="faq-item"><h3>Where is my data stored?</h3><p>All customer data is stored in AWS us-east-1 (N. Virginia) by default. EU customers can request data residency in eu-west-1 (Ireland) at no extra cost — available on Growth and Business plans.</p></div>
         <div class="faq-item"><h3>Is Nimbus SOC 2 compliant?</h3><p>Yes. We are SOC 2 Type II certified with annual audits by Prescient Assurance. Request our latest SOC 2 report from legal@nimbus.finance. We are also GDPR compliant with a signed DPA available on request.</p></div>
-        <div class="faq-item"><h3>Do you integrate with QuickBooks?</h3><p>Yes — QuickBooks Online with two-way sync of invoices, payments, and chart of accounts. We also support Xero, FreshBooks, and Wave.</p></div>
+        <div class="faq-item"><h3>Do you integrate with QuickBooks?</h3><p>Yes, Nimbus integrates with QuickBooks Online. The integration supports two-way sync of invoices, payments, and chart of accounts in real time. You can connect QuickBooks under Settings → Integrations. We also integrate with Xero, FreshBooks, and Wave for accounting sync.</p></div>
         <div class="faq-item"><h3>What happens if I go over my user limit?</h3><p>Nothing breaks. We notify you by email and in-app. You have 14 days to remove users or upgrade. We never auto-upgrade your plan.</p></div>
         <div class="faq-item"><h3>Do you support multi-entity accounting?</h3><p>Yes, on the Business plan. Run up to 10 legal entities under one login, with inter-company invoices, consolidated reporting, and separate tax profiles per entity.</p></div>
         <div class="faq-item"><h3>Is there a mobile app?</h3><p>Yes. iOS and Android apps are free with any plan. Create invoices, approve expenses, upload receipts, and view cash flow from your phone. Offline mode syncs when you're back online.</p></div>
