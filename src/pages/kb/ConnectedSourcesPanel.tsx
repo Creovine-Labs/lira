@@ -301,7 +301,10 @@ function SourceFileGrid({
   alreadyImported: DocumentRecord[]
 }) {
   const importedNames = new Set(alreadyImported.map((d) => d.filename))
-  const availableFiles = files.filter((f) => !importedNames.has(f.name))
+  const isPdf = (f: ConnectedFile) =>
+    f.mimeType === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
+  const availableFiles = files.filter((f) => !importedNames.has(f.name) && !isPdf(f))
+  const pdfCount = files.filter(isPdf).length
 
   return (
     <div className="mt-4">
@@ -320,6 +323,14 @@ function SourceFileGrid({
         )}
       </div>
 
+      {pdfCount > 0 && (
+        <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
+          <span className="font-semibold">{pdfCount} PDF{pdfCount !== 1 ? 's' : ''} skipped.</span>{' '}
+          Lira doesn’t index PDFs — they’re often image-based and produce poor-quality text.
+          Export them to Google Docs or DOCX and re-import, or paste the content into a note.
+        </div>
+      )}
+
       {files.length === 0 ? (
         <p className="py-6 text-center text-xs text-gray-400">
           No document files found in this source.
@@ -329,6 +340,7 @@ function SourceFileGrid({
           {files.map((file) => {
             const isImported = importedNames.has(file.name)
             const isImporting = importingFiles.has(file.id)
+            const fileIsPdf = isPdf(file)
 
             return (
               <div
@@ -337,7 +349,9 @@ function SourceFileGrid({
                   'group relative flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition',
                   isImported
                     ? 'border-emerald-200 bg-emerald-50/40'
-                    : 'border-gray-200 hover:border-[#3730a3]/40 hover:bg-gray-50'
+                    : fileIsPdf
+                      ? 'border-amber-200 bg-amber-50/40 opacity-70'
+                      : 'border-gray-200 hover:border-[#3730a3]/40 hover:bg-gray-50'
                 )}
               >
                 {file.webUrl ? (
@@ -390,6 +404,10 @@ function SourceFileGrid({
                     <span className="flex items-center gap-1 text-[10px] font-semibold text-emerald-500">
                       <CheckCircleIcon className="h-3 w-3" />
                       Imported
+                    </span>
+                  ) : fileIsPdf ? (
+                    <span className="text-[10px] font-semibold text-amber-600" title="Lira doesn’t index PDFs">
+                      Not supported
                     </span>
                   ) : isImporting ? (
                     <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-500">

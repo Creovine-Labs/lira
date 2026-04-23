@@ -41,6 +41,9 @@ const MAX_FILE_SIZE = 25 * 1024 * 1024
 
 function isFileAccepted(file: File): string | null {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
+  if (ext === 'pdf') {
+    return `PDFs aren’t supported — they’re often image-based and produce poor-quality text. Please export “${file.name}” to DOCX, TXT, or Markdown, or paste the content using “Write a note directly” above.`
+  }
   if (!ACCEPTED_EXTENSIONS.has(ext)) {
     return `Unsupported file type: .${ext}. Accepted: DOCX, TXT, MD, CSV, XLSX`
   }
@@ -283,7 +286,7 @@ function DocumentsPanel() {
               className="mb-2 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
             />
             <textarea
-              placeholder="Write your note here… e.g. product details, pricing, policies, FAQs. The AI will use this to answer customer questions."
+              placeholder="Write your note here… e.g. product details, pricing, policies, FAQs. Lira will use this to answer customer questions."
               value={noteBody}
               onChange={(e) => setNoteBody(e.target.value)}
               rows={6}
