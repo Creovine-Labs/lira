@@ -8,7 +8,9 @@ import {
   DocumentIcon,
   DocumentTextIcon,
   ExclamationCircleIcon,
+  PencilSquareIcon,
   TrashIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
@@ -33,14 +35,14 @@ const STATUS_CONFIG: Record<
   failed: { icon: ExclamationCircleIcon, color: 'text-red-500', label: 'Failed' },
 }
 
-const ACCEPTED_TYPES = '.pdf,.docx,.doc,.txt,.md,.csv,.xlsx'
-const ACCEPTED_EXTENSIONS = new Set(['pdf', 'docx', 'doc', 'txt', 'md', 'csv', 'xlsx'])
-const MAX_FILE_SIZE = 50 * 1024 * 1024
+const ACCEPTED_TYPES = '.docx,.doc,.txt,.md,.csv,.xlsx'
+const ACCEPTED_EXTENSIONS = new Set(['docx', 'doc', 'txt', 'md', 'csv', 'xlsx'])
+const MAX_FILE_SIZE = 25 * 1024 * 1024
 
 function isFileAccepted(file: File): string | null {
   const ext = file.name.split('.').pop()?.toLowerCase() ?? ''
   if (!ACCEPTED_EXTENSIONS.has(ext)) {
-    return `Unsupported file type: .${ext}. Accepted: PDF, DOCX, TXT, MD, CSV, XLSX`
+    return `Unsupported file type: .${ext}. Accepted: DOCX, TXT, MD, CSV, XLSX`
   }
   if (file.size > MAX_FILE_SIZE) {
     return `File too large (${formatBytes(file.size)}). Maximum: ${formatBytes(MAX_FILE_SIZE)}`
@@ -68,6 +70,10 @@ function DocumentsPanel() {
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [connectionLost, setConnectionLost] = useState(false)
+  const [noteOpen, setNoteOpen] = useState(false)
+  const [noteTitle, setNoteTitle] = useState('')
+  const [noteBody, setNoteBody] = useState('')
+  const [noteSaving, setNoteSaving] = useState(false)
   const pollErrorCount = useRef(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -176,6 +182,27 @@ function DocumentsPanel() {
     }
   }
 
+  async function handleSaveNote() {
+    if (!currentOrgId || !noteBody.trim()) return
+    setNoteSaving(true)
+    try {
+      const title = noteTitle.trim() || 'Note'
+      const md = noteTitle.trim() ? `# ${noteTitle.trim()}\n\n${noteBody.trim()}` : noteBody.trim()
+      const blob = new Blob([md], { type: 'text/markdown' })
+      const file = new File([blob], `${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`, { type: 'text/markdown' })
+      const doc = await uploadDocument(currentOrgId, file)
+      addDocument(doc)
+      toast.success('Note saved and indexing')
+      setNoteTitle('')
+      setNoteBody('')
+      setNoteOpen(false)
+    } catch (err) {
+      toast.error(`Failed to save note: ${err instanceof Error ? err.message : 'Unknown error'}`)
+    } finally {
+      setNoteSaving(false)
+    }
+  }
+
   function onDrop(e: React.DragEvent) {
     e.preventDefault()
     setDragging(false)
@@ -235,6 +262,58 @@ function DocumentsPanel() {
 
       {/* Upload zone */}
       <div className="mb-5 rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
+
+        {/* Write note toggle */}
+        {noteOpen ? (
+          <div className="mb-4">
+            <div className="mb-2 flex items-center justify-between">
+              <p className="text-xs font-semibold text-gray-700">Write a note directly</p>
+              <button
+                onClick={() => { setNoteOpen(false); setNoteTitle(''); setNoteBody('') }}
+                className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <XMarkIcon className="h-4 w-4" />
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Title (optional)"
+              value={noteTitle}
+              onChange={(e) => setNoteTitle(e.target.value)}
+              className="mb-2 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+            />
+            <textarea
+              placeholder="Write your note here… e.g. product details, pricing, policies, FAQs. The AI will use this to answer customer questions."
+              value={noteBody}
+              onChange={(e) => setNoteBody(e.target.value)}
+              rows={6}
+              className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 resize-y"
+            />
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <p className="text-xs text-gray-400">Saved as a Markdown file and indexed automatically.</p>
+              <button
+                onClick={handleSaveNote}
+                disabled={noteSaving || !noteBody.trim()}
+                className="flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                {noteSaving ? (
+                  <img src="/lira_black.png" alt="" className="h-3 w-3 animate-spin opacity-50" style={{ animationDuration: '1.2s' }} />
+                ) : (
+                  <PencilSquareIcon className="h-3.5 w-3.5" />
+                )}
+                Save note
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button
+            onClick={() => setNoteOpen(true)}
+            className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#3730a3]/30 bg-[#3730a3]/5 px-4 py-2.5 text-sm font-medium text-[#3730a3] transition hover:bg-[#3730a3]/10"
+          >
+            <PencilSquareIcon className="h-4 w-4" />
+            Write a note directly
+          </button>
+        )}
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -259,7 +338,7 @@ function DocumentsPanel() {
               browse
             </button>
           </p>
-          <p className="mt-1 text-xs text-gray-400">PDF, DOCX, TXT, MD, CSV, XLSX — max 25 MB</p>
+          <p className="mt-1 text-xs text-gray-400">DOCX, TXT, MD, CSV, XLSX — max 25 MB</p>
           <input
             ref={fileInputRef}
             type="file"
