@@ -6,34 +6,34 @@
 
 ## Setup (one-time)
 
-- [ ] Nimbus org created at `https://liraintelligence.com`
-- [ ] Copy the Nimbus **org ID** (format: `org-xxxxxxxx-xxxx-...`) → paste in chat so we can swap `VITE_DEMO_ORG_ID` in Vercel and redeploy
-- [ ] Confirm `https://demo.liraintelligence.com` loads the Nimbus page (not Lira)
-- [ ] Confirm widget bubble is visible in bottom-right of demo page
-- [ ] Open DevTools → Network → filter `widget.js` → confirm 200 from `widget.liraintelligence.com`
+- ✅ Nimbus org created at `https://liraintelligence.com`
+- ✅ Copy the Nimbus **org ID** (format: `org-xxxxxxxx-xxxx-...`) → paste in chat so we can swap `VITE_DEMO_ORG_ID` in Vercel and redeploy
+- ✅ Confirm `https://demo.liraintelligence.com` loads the Nimbus page (not Lira)
+- ✅ Confirm widget bubble is visible in bottom-right of demo page
+- ✅ Open DevTools → Network → filter `widget.js` → confirm 200 from `widget.liraintelligence.com`
 
 ---
 
-## Phase 1 — Organization & profile
+## Phase 1 — Organization & profile ✅
 
-- [ ] **Org settings** — name, logo, website, description all saved correctly
-- [ ] **"Let Lira write it"** generates a Nimbus-accurate description (finance/accounting, not Lira)
-- [ ] **Members** — invite a second email (use a secondary Gmail) → invite email arrives → accept flow works
-- [ ] **Roles** — demote the invited member to "agent" → permissions reflect correctly
-- [ ] **Billing** — current plan is visible, upgrade CTA works (don't actually upgrade)
+- ✅ **Org settings** — name, logo, website, description all saved correctly
+- ✅ **"Let Lira write it"** generates a Nimbus-accurate description (finance/accounting, not Lira)
+- ✅ **Members** — invite a second email (use a secondary Gmail) → invite email arrives → accept flow works
+- ✅ **Roles** — demote the invited member to "agent" → permissions reflect correctly
+- ✅ **Billing** — current plan is visible, upgrade CTA works (don't actually upgrade)
 
 ---
 
-## Phase 2 — Knowledge base (KB) ingestion
+## Phase 2 — Knowledge base (KB) ingestion ✅
 
-- [ ] **Add source** → URL → `https://demo.liraintelligence.com` → submit
-- [ ] KB job appears in queue / shows progress
-- [ ] Job completes within reasonable time (< 2 min for a single page)
-- [ ] **Chunks appear** in KB dashboard — expected: 30–60 chunks covering about, features, integrations, pricing, FAQ, billing policy, contact
-- [ ] **Search** a specific query inside KB UI (e.g. "refund policy") → returns chunks about the 30-day money-back guarantee
-- [ ] **Re-crawl** works (no duplicate chunks; updates existing or cleanly replaces)
-- [ ] **Add second source** → a specific sub-page (e.g. `https://demo.liraintelligence.com/#pricing`) → handles gracefully
-- [ ] **Delete source** → chunks removed from KB
+- ✅ **Add source** → URL → `https://demo.liraintelligence.com` → submit
+- ✅ KB job appears in queue / shows progress
+- ✅ Job completes within reasonable time (< 2 min for a single page)
+- ✅ **Chunks appear** in KB dashboard — expected: 30–60 chunks covering about, features, integrations, pricing, FAQ, billing policy, contact
+- ✅ **Search** a specific query inside KB UI (e.g. "refund policy") → returns chunks about the 30-day money-back guarantee
+- ✅ **Re-crawl** works (no duplicate chunks; updates existing or cleanly replaces)
+- ✅ **Add second source** → a specific sub-page (e.g. `https://demo.liraintelligence.com/#pricing`) → handles gracefully
+- ✅ **Delete source** → chunks removed from KB
 
 ---
 
@@ -41,13 +41,13 @@
 
 Open `https://demo.liraintelligence.com` in a private/incognito window (fresh visitor) and work through this conversation script:
 
-### 3a. Simple factual Q&A (grounded)
+### 3a. Simple factual Q&A (grounded) ❌
 
-- [ ] "What does Nimbus do?" → answer matches KB (finance/accounting for SMBs)
-- [ ] "How much does Nimbus cost?" → returns 3 tiers ($19 / $49 / $129)
-- [ ] "Do you integrate with QuickBooks?" → confirms QuickBooks Online
-- [ ] "What's your refund policy?" → 30-day money-back guarantee
-- [ ] "Where is your data stored?" → AWS us-east-1 / eu-west-1
+- ✅ "What does Nimbus do?" → answer matches KB (finance/accounting for SMBs)
+- ✅ "How much does Nimbus cost?" → returns 3 tiers ($19 / $49 / $129)
+- ❌ "Do you integrate with QuickBooks?" → "I don't have that info right now. Let me check with the team."
+- ❌ "What's your refund policy?" → "I don't have the refund policy details right now."
+- ❌ "Where is your data stored?" → escalated to human instead of answering
 
 ### 3b. Multi-turn
 
@@ -78,6 +78,30 @@ Open `https://demo.liraintelligence.com` in a private/incognito window (fresh vi
 - [ ] Refresh page → existing conversation persists (or cleanly starts new with opt-in)
 - [ ] Open new tab → same session OR new session per your intended behavior — document which
 - [ ] Close widget then reopen → history intact
+
+### 3g. Retrieval quality gate — reranker trigger criteria
+
+> Run this pass **after completing 3a–3d**. It determines whether Tier 2 (Cohere/Voyage reranker) is needed. Score every question asked during 3a–3d:
+
+**Scoring criteria per question:**
+- **Pass** — Lira's answer was grounded in KB and verifiably correct
+- **Partial** — answer was roughly right but missed a key detail (counts as 0.5 failure)
+- **Fail** — answer was wrong, hallucinated, or "I don't know" when the KB had the answer
+
+**Trigger thresholds:**
+
+| Retrieval failure rate | Action |
+| ---------------------- | ------ |
+| < 5% | Ship as-is. Tier 2 deferred. |
+| 5–15% | Add reranker (Cohere `rerank-english-v3.0` or Voyage `rerank-2`), feature-flagged |
+| > 15% | Audit KB content gaps first, then add reranker |
+
+**How to measure:**
+- [ ] Count total questions asked across 3a–3d (target ≥ 20)
+- [ ] Log each Fail or Partial in the triage log with the question text and what was wrong
+- [ ] Calculate: `(fails + 0.5 × partials) / total × 100`
+- [ ] Record final % in the triage log
+- [ ] If ≥ 5% → open Tier 2 implementation ticket
 
 ---
 
@@ -171,9 +195,15 @@ Open `https://demo.liraintelligence.com` in a private/incognito window (fresh vi
 
 ## Triage log
 
+> Current position: **Phase 3b** (3a complete, Tier 1 RAG deployed 2025-04-23)
+
 | Phase | Item | Status | Notes |
 | ----- | ---- | ------ | ----- |
-|       |      |        |       |
+| Setup | All setup items | ✅ | Nimbus org live, demo page confirmed |
+| 1 | Org profile, members, billing | ✅ | All items passed |
+| 2 | KB ingestion (crawl, search, re-crawl, delete) | ✅ | All items passed |
+| 3a | Simple factual Q&A | ❌ | 2/5 passed. QuickBooks, refund policy, data storage all failed with "I don't have that info" — retrieval gap investigation needed |
+| 3g | Retrieval quality gate | ⏳ | Complete after 3b–3d; ≥5% failure rate triggers Tier 2 reranker |
 
 ---
 

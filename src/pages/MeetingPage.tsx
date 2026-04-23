@@ -106,7 +106,7 @@ function MeetingPage() {
                   onKeyDown={(e) => e.key === 'Enter' && handleStart()}
                 />
                 <p className="mt-1 text-xs text-slate-500">
-                  Say this name during the meeting to get the AI’s attention
+                  Say this name during the meeting to get Lira's attention
                 </p>
               </div>
               {/* Link to organization */}
@@ -389,7 +389,7 @@ function AiCard({ status, aiName }: { status: AiStatus; aiName: string }) {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-semibold">{aiName}</p>
-          <p className="text-xs text-slate-400">AI Meeting Participant — say “{aiName}” to speak</p>
+          <p className="text-xs text-slate-400">Lira Meeting Participant — say "{aiName}" to speak</p>
         </div>
 
         {/* Status pill */}
@@ -581,7 +581,7 @@ function Controls({
       {/* MicrophoneIcon hint */}
       <p className="mt-2 text-center text-xs text-slate-500">
         {micOn
-          ? `Microphone is on — say "${aiName}" to get the AI's attention`
+          ? `Microphone is on — say "${aiName}" to get Lira's attention`
           : 'Tap the mic button to start speaking'}
       </p>
     </footer>
