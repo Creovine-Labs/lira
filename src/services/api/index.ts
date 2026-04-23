@@ -765,7 +765,7 @@ export async function getDashboardStats(orgId: string): Promise<DashboardStats> 
 export async function triggerCrawl(
   orgId: string,
   url: string,
-  options?: { max_pages?: number; max_depth?: number; include_urls?: string[] }
+  options?: { max_pages?: number; include_urls?: string[] }
 ): Promise<void> {
   await apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}/crawl`, {
     method: 'POST',

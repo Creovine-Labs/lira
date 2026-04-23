@@ -36,7 +36,6 @@ function CrawlPanel() {
     useKBStore()
 
   const [crawlUrl, setCrawlUrl] = useState('')
-  const [maxPages, setMaxPages] = useState(20)
   const [crawling, setCrawling] = useState(false)
   const [crawlError, setCrawlError] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
@@ -106,7 +105,7 @@ function CrawlPanel() {
     setCrawling(true)
     setCrawlError(null)
     try {
-      await triggerCrawl(currentOrgId, crawlUrl.trim(), { max_pages: maxPages })
+      await triggerCrawl(currentOrgId, crawlUrl.trim(), { max_pages: 100 })
       setCrawlStatus({ status: 'crawling', pages_crawled: 0 })
       toast.success('Crawl started!')
       startStatusPolling()
@@ -264,21 +263,6 @@ function CrawlPanel() {
               }}
               disabled={isCrawling}
             />
-            <div className="flex items-center gap-2">
-              <label htmlFor="crawl-max-pages" className="whitespace-nowrap text-xs text-white/40">
-                Max pages:
-              </label>
-              <input
-                id="crawl-max-pages"
-                type="number"
-                className="w-20 rounded-xl border border-white/20 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] disabled:opacity-40"
-                min={1}
-                max={50}
-                value={maxPages}
-                onChange={(e) => setMaxPages(Math.min(50, Math.max(1, Number(e.target.value))))}
-                disabled={isCrawling}
-              />
-            </div>
             <button
               onClick={handleCrawl}
               disabled={crawling || isCrawling || !crawlUrl.trim()}
