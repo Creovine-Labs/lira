@@ -283,14 +283,13 @@ function generateNimbusHtml(orgId) {
       </a>
       <nav class="nav-links">
         <a href="#product">Product</a>
-        <a href="#pricing">Pricing</a>
-        <a href="#security">Security</a>
-        <a href="#faq">FAQ</a>
-        <a href="#help">Help</a>
+        <a href="/integrations">Integrations</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/faq">FAQ</a>
       </nav>
       <div style="display:flex;gap:12px;align-items:center;">
-        <a href="#pricing" style="font-size:0.875rem;font-weight:500;color:#475569;">Log in</a>
-        <a href="#pricing" class="btn-primary">Start free</a>
+        <a href="/pricing" style="font-size:0.875rem;font-weight:500;color:#475569;">Log in</a>
+        <a href="/pricing" class="btn-primary">Start free</a>
       </div>
     </div>
   </header>
@@ -498,9 +497,9 @@ function generateNimbusHtml(orgId) {
       <div style="font-weight:700;font-size:1rem;color:#fff;">Nimbus</div>
       <div style="margin-top:8px;">Finance &amp; accounting software for growing teams.</div>
       <div class="footer-links">
-        <a href="#pricing">Pricing</a>
-        <a href="#security">Security</a>
-        <a href="#faq">FAQ</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/integrations">Integrations</a>
+        <a href="/faq">FAQ</a>
         <a href="mailto:support@nimbus.finance">support@nimbus.finance</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="/terms">Terms of Service</a>
@@ -521,6 +520,386 @@ function generateNimbusHtml(orgId) {
 </html>`
 }
 
+// ── Nimbus sub-pages (KB-crawlable dedicated pages) ─────────────────────────
+// A real customer website has separate pages for integrations, pricing, and FAQ.
+// Each page is crawled independently by the KB — no single-page chunk limits.
+// These pages mirror that structure so any fix here is a real-website fix.
+
+const NIMBUS_CSS = `
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; background: #fafaf7; color: #0f172a; line-height: 1.6; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; }
+    header { background: rgba(255,255,255,0.85); backdrop-filter: blur(10px); border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 40; }
+    .nav-inner { display: flex; align-items: center; justify-content: space-between; padding: 16px 24px; max-width: 1100px; margin: 0 auto; }
+    .nav-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1.1rem; }
+    .nav-links { display: flex; gap: 32px; font-size: 0.875rem; font-weight: 500; color: #475569; }
+    .nav-links a:hover { color: #0f172a; }
+    .btn-primary { background: #0f172a; color: #fff; padding: 8px 18px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; }
+    section { padding: 80px 24px; }
+    .section-label { font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #94a3b8; text-align: center; }
+    h1 { font-size: clamp(1.75rem, 4vw, 2.75rem); font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+    h2 { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 700; letter-spacing: -0.01em; }
+    h3 { font-size: 1rem; font-weight: 600; }
+    .subtitle { color: #475569; max-width: 600px; margin: 0 auto; }
+    .page-hero { text-align: center; padding: 64px 24px 56px; background: linear-gradient(180deg, #fff 0%, #fafaf7 100%); border-bottom: 1px solid #e2e8f0; }
+    .btn-outline { border: 1px solid #cbd5e1; padding: 10px 22px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; color: #334155; }
+    .pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 24px; margin-top: 48px; }
+    .pricing-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 32px; }
+    .pricing-card.highlight { background: #0f172a; color: #fff; border-color: #0f172a; }
+    .pricing-card .plan-name { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.6; }
+    .pricing-card .price { font-size: 2.5rem; font-weight: 800; margin-top: 12px; }
+    .pricing-card .price span { font-size: 0.9rem; font-weight: 400; opacity: 0.6; }
+    .pricing-card .seats { font-size: 0.8rem; opacity: 0.6; margin-top: 4px; }
+    .pricing-card ul { margin-top: 24px; list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .pricing-card ul li { font-size: 0.875rem; }
+    .pricing-card ul li::before { content: "• "; }
+    .pricing-card .btn-plan { display: block; text-align: center; margin-top: 28px; padding: 10px 20px; border-radius: 9999px; font-size: 0.875rem; font-weight: 600; }
+    .pricing-card:not(.highlight) .btn-plan { background: #0f172a; color: #fff; }
+    .pricing-card.highlight .btn-plan { background: #fff; color: #0f172a; }
+    .faq-list { max-width: 760px; margin: 48px auto 0; display: flex; flex-direction: column; gap: 0; }
+    .faq-item { border-bottom: 1px solid #e2e8f0; padding: 24px 0; }
+    .faq-item h3 { font-size: 0.95rem; color: #0f172a; }
+    .faq-item p { margin-top: 8px; font-size: 0.875rem; color: #475569; }
+    .integrations-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-top: 48px; }
+    .int-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; }
+    .int-card h3 { font-size: 0.95rem; margin-bottom: 8px; }
+    .int-card p { font-size: 0.875rem; color: #475569; }
+    .bg-slate { background: #f8fafc; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+    .text-center { text-align: center; }
+    .mt-4 { margin-top: 16px; }
+    .mt-3 { margin-top: 12px; }
+    footer { background: #0f172a; color: #94a3b8; padding: 48px 24px; font-size: 0.8rem; text-align: center; }
+    footer a { color: #cbd5e1; }
+    .footer-links { display: flex; gap: 24px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+`
+
+function nimbusNav() {
+  return `
+  <header>
+    <div class="nav-inner">
+      <a href="/" class="nav-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" width="24" height="24" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 16a4 4 0 0 1 0-8 5 5 0 0 1 9.6-1.4A5.5 5.5 0 0 1 19 16H4z"/>
+        </svg>
+        Nimbus
+      </a>
+      <nav class="nav-links">
+        <a href="/">Product</a>
+        <a href="/integrations">Integrations</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/faq">FAQ</a>
+      </nav>
+      <a href="/pricing" class="btn-primary">Start free</a>
+    </div>
+  </header>`
+}
+
+function nimbusFooter(orgId) {
+  return `
+  <footer>
+    <div class="container">
+      <div style="font-weight:700;font-size:1rem;color:#fff;">Nimbus</div>
+      <div style="margin-top:8px;">Finance &amp; accounting software for growing teams.</div>
+      <div class="footer-links">
+        <a href="/pricing">Pricing</a>
+        <a href="/integrations">Integrations</a>
+        <a href="/faq">FAQ</a>
+        <a href="mailto:support@nimbus.finance">support@nimbus.finance</a>
+        <a href="/privacy">Privacy Policy</a>
+        <a href="/terms">Terms of Service</a>
+      </div>
+      <div style="margin-top:24px;opacity:0.5;">&copy; 2026 Nimbus Finance, Inc. All rights reserved.</div>
+    </div>
+  </footer>
+  <script src="https://widget.liraintelligence.com/v1/widget.js" data-org-id="${orgId}" data-position="bottom-right" async></script>`
+}
+
+function generateNimbusIntegrationsHtml(orgId) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Integrations — Nimbus Finance</title>
+  <meta name="description" content="Nimbus integrates with QuickBooks Online, Xero, Stripe, Plaid, Slack, HubSpot, Google Workspace, Zapier, and more. Two-way sync, real-time reconciliation." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://demo.liraintelligence.com/integrations" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>${NIMBUS_CSS}</style>
+</head>
+<body>
+${nimbusNav()}
+
+  <section class="page-hero">
+    <div class="section-label">Integrations</div>
+    <h1 class="mt-3">Works with the tools you already use</h1>
+    <p class="subtitle mt-4">Connect Nimbus to your accounting, payment, banking, and communication tools. All integrations are included on every plan — no extra fees.</p>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="integrations-grid">
+
+        <div class="int-card">
+          <h3>QuickBooks Online</h3>
+          <p>Yes, Nimbus integrates with QuickBooks Online. Two-way sync of invoices, payments, and chart of accounts in real time. Connect under Settings → Integrations → QuickBooks. Reconciliation runs automatically — no manual exports needed. Available on Growth and Business plans.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Xero</h3>
+          <p>Two-way sync with Xero. Push invoices nightly or trigger sync on every transaction. Automatically match bank feeds and journal entries. Available on Growth and Business plans.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>FreshBooks</h3>
+          <p>Import your existing FreshBooks data with one click — customers, invoices, and payment history up to 24 months. Switch to Nimbus without losing history.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Wave</h3>
+          <p>One-click import from Wave. Customer records, invoice numbers, and payment history all preserved. CSV import also available for any other accounting tool.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Stripe</h3>
+          <p>Accept cards, ACH, and Apple Pay. Payouts reconciled automatically in Nimbus. Payment links embedded in invoices so customers pay with one click.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Plaid</h3>
+          <p>Connect any US, UK, or EU bank account via Plaid. Balances refreshed every 2 hours. Encrypted end-to-end. Transactions reconcile nightly against your invoices and expenses.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Slack</h3>
+          <p>Get pinged in your #finance channel when invoices are paid, overdue, or disputed. Custom notification rules per workspace. Set up in under 2 minutes.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>HubSpot</h3>
+          <p>Auto-create a Nimbus customer when a HubSpot deal moves to Closed Won. Sync contact details, company, and deal amount. Avoid double data entry across sales and finance.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Google Workspace</h3>
+          <p>Single sign-on via Google. Calendar-based billing for time-tracked projects. Attach Google Drive documents directly to invoices.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Zapier</h3>
+          <p>800+ no-code triggers and actions. Build automations between Nimbus and any tool we don't natively support. No developer needed.</p>
+        </div>
+
+        <div class="int-card">
+          <h3>Braintree / GoCardless / Paddle</h3>
+          <p>Alternative payment processors for recurring billing. Proration, dunning, and failed-payment recovery handled automatically by Nimbus regardless of payment provider.</p>
+        </div>
+
+      </div>
+
+      <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:32px;max-width:640px;margin:48px auto 0;text-align:center;">
+        <h3 style="font-size:1.1rem;">Questions about a specific integration?</h3>
+        <p style="font-size:0.875rem;color:#475569;margin-top:8px;">Ask our AI support agent — click the chat bubble in the bottom-right corner 24/7, or email <a href="mailto:support@nimbus.finance" style="color:#3730a3;">support@nimbus.finance</a>.</p>
+      </div>
+    </div>
+  </section>
+
+${nimbusFooter(orgId)}
+</body>
+</html>`
+}
+
+function generateNimbusPricingHtml(orgId) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Pricing — Nimbus Finance</title>
+  <meta name="description" content="Nimbus pricing: Starter $19/month (3 users), Growth $49/month (15 users), Business $129/month (unlimited users). 14-day free trial. No credit card required." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://demo.liraintelligence.com/pricing" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>${NIMBUS_CSS}</style>
+</head>
+<body>
+${nimbusNav()}
+
+  <section class="page-hero">
+    <div class="section-label">Pricing</div>
+    <h1 class="mt-3">Simple pricing. No seat tax.</h1>
+    <p class="subtitle mt-4">All plans include unlimited invoices, unlimited expenses, and a free accountant seat. Save 20% with annual billing. 14-day free trial on every plan — no credit card required.</p>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="pricing-grid">
+        <div class="pricing-card">
+          <div class="plan-name">Starter</div>
+          <div class="price">$19<span>/mo</span></div>
+          <div class="seats">Up to 3 users · billed monthly</div>
+          <ul>
+            <li>Unlimited invoices and expenses</li>
+            <li>Receipt OCR + mileage tracking</li>
+            <li>Stripe + ACH payments</li>
+            <li>Basic cash-flow reporting</li>
+            <li>Email support (24h SLA)</li>
+          </ul>
+          <a href="/" class="btn-plan">Start free trial</a>
+        </div>
+        <div class="pricing-card highlight">
+          <div class="plan-name">Growth — Most Popular</div>
+          <div class="price">$49<span>/mo</span></div>
+          <div class="seats">Up to 15 users · billed monthly</div>
+          <ul>
+            <li>Everything in Starter, plus:</li>
+            <li>Recurring billing &amp; subscriptions</li>
+            <li>Multi-currency (136 supported)</li>
+            <li>QuickBooks Online / Xero two-way sync</li>
+            <li>Slack notifications</li>
+            <li>Priority chat support (4h SLA)</li>
+          </ul>
+          <a href="/" class="btn-plan">Start free trial</a>
+        </div>
+        <div class="pricing-card">
+          <div class="plan-name">Business</div>
+          <div class="price">$129<span>/mo</span></div>
+          <div class="seats">Unlimited users · billed monthly</div>
+          <ul>
+            <li>Everything in Growth, plus:</li>
+            <li>SSO (SAML, OIDC)</li>
+            <li>Audit log export</li>
+            <li>Custom approval workflows</li>
+            <li>Multi-entity consolidation (up to 10)</li>
+            <li>Dedicated success manager</li>
+            <li>99.95% uptime SLA</li>
+          </ul>
+          <a href="/" class="btn-plan">Start free trial</a>
+        </div>
+      </div>
+
+      <div style="max-width:640px;margin:48px auto 0;">
+        <h3 style="font-size:1rem;text-align:center;">Frequently asked pricing questions</h3>
+        <div class="faq-list" style="margin-top:24px;">
+          <div class="faq-item"><h3>Is there a free trial?</h3><p>Yes. Every plan includes a 14-day free trial. No credit card required to start.</p></div>
+          <div class="faq-item"><h3>Do you offer an annual discount?</h3><p>Yes. Pay annually and save 20% on any plan. Switch between monthly and annual at any time from Settings → Billing.</p></div>
+          <div class="faq-item"><h3>What is your refund policy?</h3><p>Cancel within 30 days of your first paid charge and we refund the full amount, no questions asked. This is our 30-day money-back guarantee. After 30 days we prorate refunds for annual plans.</p></div>
+          <div class="faq-item"><h3>What happens if I go over my user limit?</h3><p>Nothing breaks. We notify you by email and in-app. You have 14 days to remove users or upgrade. We never auto-upgrade your plan.</p></div>
+          <div class="faq-item"><h3>Can I switch plans at any time?</h3><p>Yes. Upgrade or downgrade at any time from Settings → Billing. Upgrades take effect immediately, prorated for the current billing period.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+${nimbusFooter(orgId)}
+</body>
+</html>`
+}
+
+function generateNimbusFaqHtml(orgId) {
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FAQ — Nimbus Finance</title>
+  <meta name="description" content="Frequently asked questions about Nimbus: pricing, QuickBooks integration, refund policy, data storage, free trial, cancellation, and more." />
+  <meta name="robots" content="noindex, nofollow" />
+  <link rel="canonical" href="https://demo.liraintelligence.com/faq" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>${NIMBUS_CSS}</style>
+</head>
+<body>
+${nimbusNav()}
+
+  <section class="page-hero">
+    <div class="section-label">FAQ</div>
+    <h1 class="mt-3">Frequently asked questions</h1>
+    <p class="subtitle mt-4">Can't find your answer? Ask our AI support agent — click the chat bubble in the bottom-right corner, available 24/7.</p>
+  </section>
+
+  <section>
+    <div class="container">
+      <div class="faq-list">
+
+        <div class="faq-item">
+          <h3>How long is the free trial and do I need a credit card?</h3>
+          <p>Nimbus is free for 14 days on any plan. No credit card required to start. On day 14 you pick a plan or your account is paused — we never auto-charge without an explicit action.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What does Nimbus cost and what's the difference between the plans?</h3>
+          <p>Starter is $19/month for up to 3 users — includes unlimited invoices, expenses, and reporting. Growth is $49/month for up to 15 users — adds recurring billing, multi-currency, and QuickBooks/Xero sync. Business is $129/month for unlimited users — adds SSO, advanced permissions, audit logs, custom approval workflows, multi-entity consolidation, and priority support. See the full <a href="/pricing" style="color:#3730a3;">pricing page</a>.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Do you offer an annual discount?</h3>
+          <p>Yes. Pay annually and save 20% on any plan. Switch between monthly and annual at any time from Settings → Billing.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What is your refund policy?</h3>
+          <p>Yes. Cancel within 30 days of your first paid charge and we refund the full amount, no questions asked. After 30 days we prorate refunds for annual plans. Monthly plans are not prorated past the 30-day window. This is our 30-day money-back guarantee.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How do I cancel my subscription?</h3>
+          <p>Go to Settings → Billing → Cancel subscription. Your account stays active until the end of the billing period. You can export all your data at any time — we keep a read-only copy for 90 days after cancellation.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Do you integrate with QuickBooks?</h3>
+          <p>Yes, Nimbus integrates with QuickBooks Online. The integration provides two-way sync of invoices, payments, and chart of accounts in real time. Connect QuickBooks under Settings → Integrations → QuickBooks. Available on Growth ($49/month) and Business ($129/month) plans. We also integrate with Xero, FreshBooks, and Wave. See the full <a href="/integrations" style="color:#3730a3;">integrations page</a>.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Can I import data from QuickBooks, Xero, or FreshBooks?</h3>
+          <p>Yes. One-click imports from QuickBooks Online, Xero, FreshBooks, and Wave. CSV imports for any other tool. Historical data up to 24 months is preserved. No data is lost during migration.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Where is my data stored?</h3>
+          <p>All customer data is stored in AWS us-east-1 (N. Virginia) by default. EU customers can request data residency in eu-west-1 (Ireland) at no extra cost — available on Growth and Business plans.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Is Nimbus SOC 2 compliant?</h3>
+          <p>Yes. We are SOC 2 Type II certified with annual audits by Prescient Assurance. Request our latest SOC 2 report from legal@nimbus.finance. We are also GDPR compliant with a signed DPA available on request.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>What happens if I go over my user limit?</h3>
+          <p>Nothing breaks. We notify you by email and in-app. You have 14 days to remove users or upgrade. We never auto-upgrade your plan.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Do you support multi-entity accounting?</h3>
+          <p>Yes, on the Business plan. Run up to 10 legal entities under one login, with inter-company invoices, consolidated reporting, and separate tax profiles per entity.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>Is there a mobile app?</h3>
+          <p>Yes. iOS and Android apps are free with any plan. Create invoices, approve expenses, upload receipts, and view cash flow from your phone. Offline mode syncs when you're back online.</p>
+        </div>
+
+        <div class="faq-item">
+          <h3>How do I contact support?</h3>
+          <p>The fastest way is the chat bubble in the bottom-right corner — our AI agent answers instantly 24/7 and escalates to a human when needed. You can also email support@nimbus.finance (Mon–Fri, 9am–6pm GMT, 4-hour response) or book a call at nimbus.finance/book.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+${nimbusFooter(orgId)}
+</body>
+</html>`
+}
+
 function run() {
   const indexHtml = fs.readFileSync(path.join(DIST, 'index.html'), 'utf-8')
   let created = 0
@@ -532,13 +911,26 @@ function run() {
     // Skip root – the index.html already has these tags
     if (route.path === '/') continue
 
-    // Demo route → write a complete standalone Nimbus page (not just the SPA shell)
-    // so the KB crawler can index all content: pricing, FAQ, refund policy, security, etc.
+    // Demo route → write the main Nimbus page + dedicated sub-pages so the KB
+    // crawler has separate focused URLs for integrations, pricing, and FAQ.
+    // This mirrors a real multi-page website — no single-page chunk limits.
     if (route.path === '/demo') {
       const routeDir = path.join(DIST, route.path)
       fs.mkdirSync(routeDir, { recursive: true })
       fs.writeFileSync(path.join(routeDir, 'index.html'), generateNimbusHtml(demoOrgId), 'utf-8')
-      created++
+
+      // Sub-pages: each crawled independently by the KB
+      const subPages = [
+        { dir: 'integrations', html: generateNimbusIntegrationsHtml(demoOrgId) },
+        { dir: 'pricing', html: generateNimbusPricingHtml(demoOrgId) },
+        { dir: 'faq', html: generateNimbusFaqHtml(demoOrgId) },
+      ]
+      for (const sub of subPages) {
+        const subDir = path.join(routeDir, sub.dir)
+        fs.mkdirSync(subDir, { recursive: true })
+        fs.writeFileSync(path.join(subDir, 'index.html'), sub.html, 'utf-8')
+      }
+      created += 4
       continue
     }
 

@@ -45,6 +45,21 @@ export default function middleware(request: Request) {
       })
     }
 
+    // Sub-pages → dedicated static HTML (crawled independently by the KB)
+    // This mirrors a real multi-page website: each topic has its own URL.
+    if (url.pathname === '/integrations' || url.pathname === '/integrations/') {
+      url.pathname = '/demo/integrations/index.html'
+      return rewrite(url)
+    }
+    if (url.pathname === '/pricing' || url.pathname === '/pricing/') {
+      url.pathname = '/demo/pricing/index.html'
+      return rewrite(url)
+    }
+    if (url.pathname === '/faq' || url.pathname === '/faq/') {
+      url.pathname = '/demo/faq/index.html'
+      return rewrite(url)
+    }
+
     // Root → serve prerendered Nimbus page
     if (url.pathname === '/') {
       url.pathname = '/demo/index.html'
