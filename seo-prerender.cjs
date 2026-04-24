@@ -180,7 +180,7 @@ function generateMeta(route) {
 // The middleware rewrites demo.liraintelligence.com/ → /demo/index.html, so
 // this is what both crawlers and real visitors receive.
 
-function generateNimbusHtml(orgId) {
+function generateNimbusHtml(orgId, widgetSecret) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -271,6 +271,11 @@ function generateNimbusHtml(orgId) {
   </style>
 </head>
 <body>
+
+  <!-- Verified test visitor banner (only appears with ?visitor=test) -->
+  <div id="lira-test-visitor-banner" style="display:none;position:sticky;top:0;z-index:50;background:#fbbf24;color:#0f172a;padding:8px 16px;font-size:0.875rem;font-weight:600;text-align:center;border-bottom:1px solid #f59e0b;">
+    Signed in as Jane Smith (jane@nimbus.test) — verified test customer mode
+  </div>
 
   <!-- Navigation -->
   <header>
@@ -509,12 +514,63 @@ function generateNimbusHtml(orgId) {
   </footer>
 
   <!-- Lira support widget -->
-  <script
-    src="https://widget.liraintelligence.com/v1/widget.js"
-    data-org-id="${orgId}"
-    data-position="bottom-right"
-    async
-  ></script>
+  <script>
+    (function() {
+      var ORG_ID = ${JSON.stringify(orgId)};
+      var WIDGET_SECRET = ${JSON.stringify(widgetSecret || '')};
+      var TEST_EMAIL = 'jane@nimbus.test';
+      var TEST_NAME = 'Jane Smith';
+
+      function hexFromBuffer(buf) {
+        var bytes = new Uint8Array(buf);
+        var s = '';
+        for (var i = 0; i < bytes.length; i++) {
+          s += bytes[i].toString(16).padStart(2, '0');
+        }
+        return s;
+      }
+
+      async function hmacSha256Hex(secret, msg) {
+        var enc = new TextEncoder();
+        var key = await crypto.subtle.importKey(
+          'raw', enc.encode(secret),
+          { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+        );
+        var sig = await crypto.subtle.sign('HMAC', key, enc.encode(msg));
+        return hexFromBuffer(sig);
+      }
+
+      async function mount() {
+        var params = new URLSearchParams(window.location.search);
+        var orgFromQuery = params.get('org');
+        var orgId = orgFromQuery || ORG_ID;
+        var testMode = params.get('visitor') === 'test';
+
+        var script = document.createElement('script');
+        script.src = 'https://widget.liraintelligence.com/v1/widget.js';
+        script.async = true;
+        script.setAttribute('data-org-id', orgId);
+        script.setAttribute('data-position', 'bottom-right');
+
+        if (testMode && WIDGET_SECRET) {
+          try {
+            var sig = await hmacSha256Hex(WIDGET_SECRET, TEST_EMAIL);
+            script.setAttribute('data-email', TEST_EMAIL);
+            script.setAttribute('data-name', TEST_NAME);
+            script.setAttribute('data-sig', sig);
+            var banner = document.getElementById('lira-test-visitor-banner');
+            if (banner) banner.style.display = 'block';
+          } catch (e) {
+            console.error('[nimbus] failed to sign test visitor', e);
+          }
+        }
+
+        document.body.appendChild(script);
+      }
+
+      mount();
+    })();
+  </script>
 
 </body>
 </html>`
@@ -906,6 +962,7 @@ function run() {
 
   // Nimbus org ID used in the static demo page widget script
   const demoOrgId = process.env.VITE_DEMO_ORG_ID || 'org-bfad94de-859d-4475-bcae-0107deaca433'
+  const demoWidgetSecret = (process.env.VITE_DEMO_WIDGET_SECRET || '').replace(/\n$/, '')
 
   for (const route of ROUTES) {
     // Skip root – the index.html already has these tags
@@ -917,7 +974,7 @@ function run() {
     if (route.path === '/demo') {
       const routeDir = path.join(DIST, route.path)
       fs.mkdirSync(routeDir, { recursive: true })
-      fs.writeFileSync(path.join(routeDir, 'index.html'), generateNimbusHtml(demoOrgId), 'utf-8')
+      fs.writeFileSync(path.join(routeDir, 'index.html'), generateNimbusHtml(demoOrgId, demoWidgetSecret), 'utf-8')
 
       // Sub-pages: each crawled independently by the KB
       const subPages = [

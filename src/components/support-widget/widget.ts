@@ -101,6 +101,8 @@ class LiraSupportWidget {
   private messages: ChatMessage[] = []
   private isTyping = false
   private isResolved = false
+  private isEscalated = false
+  private reNotifyCount = 0
   private socket: WidgetSocket | null = null
   private visitorId: string
   private csatSubmitted = false
@@ -1088,7 +1090,47 @@ class LiraSupportWidget {
     const body = this.inputEl?.value.trim()
     if (!body) return
 
-    // Add to local messages
+    // Clear input early so the UI feels instant
+    if (this.inputEl) {
+      this.inputEl.value = ''
+      this.inputEl.style.height = 'auto'
+    }
+
+    // Re-notify intercept — only active after escalation
+    if (this.isEscalated && body.toLowerCase() === 'still waiting?') {
+      // Always show what the customer typed
+      this.messages.push({
+        id: `local_${Date.now()}`,
+        role: 'customer',
+        body,
+        timestamp: new Date().toISOString(),
+      })
+
+      if (this.reNotifyCount < 3) {
+        this.reNotifyCount++
+        // Send to backend so the assigned agent sees a new message and gets re-alerted
+        this.socket?.send({ type: 'message', body, name: this.config.visitorName, email: this.config.visitorEmail })
+        this.messages.push({
+          id: `renotify_${Date.now()}`,
+          role: 'system',
+          body: 'Got it. The team has been notified again.',
+          timestamp: new Date().toISOString(),
+        })
+      } else {
+        // 4th+ attempt — soft block, no additional WS spam
+        this.messages.push({
+          id: `renotify_max_${Date.now()}`,
+          role: 'system',
+          body: 'The team has already been notified. They will get back to you as soon as possible.',
+          timestamp: new Date().toISOString(),
+        })
+      }
+
+      this.render()
+      return
+    }
+
+    // Normal message flow
     this.messages.push({
       id: `local_${Date.now()}`,
       role: 'customer',
@@ -1103,12 +1145,6 @@ class LiraSupportWidget {
       name: this.config.visitorName,
       email: this.config.visitorEmail,
     })
-
-    // Clear input
-    if (this.inputEl) {
-      this.inputEl.value = ''
-      this.inputEl.style.height = 'auto'
-    }
 
     this.render()
   }
@@ -1223,14 +1259,30 @@ class LiraSupportWidget {
 
       case 'escalated':
         this.isTyping = false
+        // Clean up any orphaned empty streaming bubble (agent called escalate mid-stream)
+        if (this.streamingMessageId) {
+          this.messages = this.messages.filter(
+            (m) => m.id !== this.streamingMessageId || m.body.trim().length > 0
+          )
+          this.streamingMessageId = null
+          this.streamingBubbleEl = null
+        }
+        this.isEscalated = true
         if (msg.body) {
           this.messages.push({
-            id: `sys_${Date.now()}`,
+            id: `esc_${Date.now()}`,
             role: 'agent',
             body: msg.body,
             timestamp: new Date().toISOString(),
           })
         }
+        // Subtle follow-up hint — keeps the conversation feeling natural
+        this.messages.push({
+          id: `esc_hint_${Date.now()}`,
+          role: 'system',
+          body: 'If you don\'t get a reply, type "Still waiting?" and we will send the team another alert.',
+          timestamp: new Date().toISOString(),
+        })
         // Start HTTP polling so agent replies reach the customer even if WS drops
         this.startPolling()
         this.render()
@@ -1336,19 +1388,7 @@ class LiraSupportWidget {
       }
 
       case 'action_result': {
-        // Tiny chip showing a tool ran (success/fail).
-        if (!msg.tool_name) break
-        this.appendChatMessage({
-          id: `act_${Date.now()}`,
-          role: 'system',
-          body: msg.label ?? msg.tool_name,
-          timestamp: new Date().toISOString(),
-          actionResult: {
-            tool_name: msg.tool_name,
-            ok: Boolean(msg.ok),
-            label: msg.label ?? msg.tool_name,
-          },
-        })
+        // Tool call results are internal plumbing — not shown to the customer.
         break
       }
 

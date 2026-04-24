@@ -35,6 +35,17 @@ fi
 echo "▶ Installing dependencies (if needed)…"
 npm install --silent
 
+echo "▶ Pulling production env vars from Vercel…"
+vercel env pull .env.vercel.production --environment=production --yes 2>/dev/null || true
+if [ -f .env.vercel.production ]; then
+  # Strip literal \n that vercel env pull sometimes appends to values
+  sed -i '' 's/\\n"$/"/' .env.vercel.production
+  set -a
+  # shellcheck disable=SC1091
+  source .env.vercel.production
+  set +a
+fi
+
 echo "▶ Building for production…"
 npm run build
 
@@ -51,4 +62,5 @@ fi
 echo "▶ Deploying to Vercel production…"
 vercel deploy --prebuilt --prod
 
+rm -f .env.vercel.production
 echo "✅  Deploy complete → https://liraintelligence.com"

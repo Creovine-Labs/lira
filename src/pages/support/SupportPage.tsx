@@ -7,6 +7,7 @@ import {
   BoltIcon,
   ChartBarIcon,
   Cog6ToothIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
 import { useOrgStore } from '@/app/store'

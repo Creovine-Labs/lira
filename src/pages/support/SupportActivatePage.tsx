@@ -1196,6 +1196,28 @@ function SupportActivatePage() {
                         Updates in the preview as you type
                       </p>
                     </div>
+
+                    {/* ── Embed code preview ──────────────────── */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold text-gray-500">Embed snippet</p>
+                      <p className="text-xs text-gray-400">
+                        Paste this before <code className="font-mono text-gray-500">&lt;/body&gt;</code> on every page where you want the widget.
+                      </p>
+                      <div className="relative">
+                        <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">{embedCode}</pre>
+                        <button
+                          type="button"
+                          onClick={() => { navigator.clipboard.writeText(embedCode); toast.success('Copied!') }}
+                          className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                        >
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                          Copy
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-gray-400">
+                        To let Lira greet customers by name, generate an <strong className="font-medium text-gray-500">HMAC signature</strong> server-side and pass <code className="font-mono">data-email</code>, <code className="font-mono">data-name</code>, and <code className="font-mono">data-sig</code>. After activation, grab your <strong className="font-medium text-gray-500">widget secret</strong> from <strong className="font-medium text-gray-500">Support → Settings</strong>.
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>

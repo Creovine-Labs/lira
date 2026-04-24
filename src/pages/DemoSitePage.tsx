@@ -76,7 +76,7 @@ function useLiraWidget(): { testVisitor: boolean } {
       script.setAttribute('data-position', 'bottom-right')
 
       if (visitorMode) {
-        const demoSecret = (env as unknown as Record<string, string | undefined>).VITE_DEMO_WIDGET_SECRET
+        const demoSecret = env.VITE_DEMO_WIDGET_SECRET
         if (demoSecret) {
           const sig = await hmacSha256(demoSecret, TEST_VISITOR_EMAIL)
           script.setAttribute('data-email', TEST_VISITOR_EMAIL)
