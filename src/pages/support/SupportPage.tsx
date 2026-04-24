@@ -6,8 +6,7 @@ import {
   CpuChipIcon,
   BoltIcon,
   ChartBarIcon,
-  BookOpenIcon,
-  PuzzlePieceIcon,
+  Cog6ToothIcon,
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
 import { useOrgStore } from '@/app/store'
@@ -15,17 +14,17 @@ import { useSupportStore } from '@/app/store/support-store'
 import { SupportInboxPanel } from './SupportInboxPage'
 import { SupportCustomersPanel } from './SupportCustomersPage'
 import { SupportActionsPanel } from './SupportActionsPage'
-import { SupportToolPacksPanel } from './SupportToolPacksPage'
 import { SupportProactivePanel } from './SupportProactivePage'
 import { SupportAnalyticsPanel } from './SupportAnalyticsPage'
+import { SupportSettingsPanel } from './SupportSettingsPage'
 
 const TABS = [
   { key: 'inbox', label: 'Inbox', icon: InboxIcon },
   { key: 'customers', label: 'Customers', icon: UserGroupIcon },
   { key: 'actions', label: 'Actions', icon: CpuChipIcon },
-  { key: 'tools', label: 'Tools', icon: PuzzlePieceIcon },
   { key: 'proactive', label: 'Proactive', icon: BoltIcon },
   { key: 'analytics', label: 'Analytics', icon: ChartBarIcon },
+  { key: 'settings', label: 'Settings', icon: Cog6ToothIcon },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -108,9 +107,9 @@ function SupportPage() {
         {activeTab === 'inbox' && <SupportInboxPanel />}
         {activeTab === 'customers' && <SupportCustomersPanel />}
         {activeTab === 'actions' && <SupportActionsPanel />}
-        {activeTab === 'tools' && <SupportToolPacksPanel />}
         {activeTab === 'proactive' && <SupportProactivePanel />}
         {activeTab === 'analytics' && <SupportAnalyticsPanel />}
+        {activeTab === 'settings' && <SupportSettingsPanel />}
       </div>
     </div>
   )

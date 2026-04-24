@@ -1443,6 +1443,24 @@ function SupportActivatePage() {
                   <strong>Settings → Integrations</strong>.
                 </p>
               </div>
+
+              {/* Support agent tool packs */}
+              <div>
+                <p className="text-sm font-semibold text-gray-700 mb-2">Support agent tools</p>
+                <p className="text-xs text-gray-500 mb-2">
+                  Connect external services so Lira can take actions on behalf of customers — e.g. look up account data, create tickets, or send notifications.
+                </p>
+                <a
+                  href="/org/integrations"
+                  className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium text-gray-800">Third-party integrations</span>
+                    <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">optional</span>
+                  </div>
+                  <span className="text-xs font-medium text-[#3730a3]">Configure in Integrations →</span>
+                </a>
+              </div>
             </div>
           )}
 

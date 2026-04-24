@@ -5178,9 +5178,6 @@ function SalesforceCard({ orgId }: { orgId: string }) {
     </div>
   )
 }
-
-// ── Main page ─────────────────────────────────────────────────────────────────
-
 export default function IntegrationsPage() {
   const orgId = useOrgStore((s) => s.currentOrgId)
   useConnectionCallback()

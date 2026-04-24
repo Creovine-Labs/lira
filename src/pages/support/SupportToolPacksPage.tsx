@@ -35,29 +35,7 @@ interface PackCatalogEntry {
 }
 
 const CATALOG: PackCatalogEntry[] = [
-  {
-    id: 'stripe',
-    name: 'Stripe',
-    vendor: 'Stripe Inc.',
-    description:
-      'Lets Lira look up subscriptions, list invoices, generate billing portal links, and (with confirmation) cancel subscriptions for verified customers.',
-    tools: [
-      'stripe_get_subscription',
-      'stripe_get_recent_invoices',
-      'stripe_create_billing_portal_link',
-      'stripe_cancel_subscription',
-    ],
-    fields: [
-      {
-        key: 'secret_key',
-        label: 'Secret API key',
-        placeholder: 'sk_live_… or sk_test_…',
-        secret: true,
-      },
-    ],
-    icon: CreditCardIcon,
-    helpUrl: 'https://dashboard.stripe.com/apikeys',
-  },
+  // Payment provider packs will be added here once a payment platform decision is made
 ]
 
 function SupportToolPacksPage() {

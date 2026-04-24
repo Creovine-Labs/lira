@@ -34,6 +34,8 @@ export interface SupportConfig {
   greeting_message?: string
   sla_hours?: number
   widget_color?: string
+  /** Per-org HMAC secret for verified visitor identity. Owner/admin only. */
+  widget_secret?: string
   max_conversations_per_month: number
   max_ai_replies_per_month: number
   conversations_this_month: number
@@ -280,6 +282,14 @@ export async function updateSupportConfig(
     method: 'PUT',
     body: JSON.stringify(updates),
   })
+}
+
+export async function rotateWidgetSecret(orgId: string): Promise<string> {
+  const data = await supportFetch<{ widget_secret: string }>(
+    `/lira/v1/support/config/orgs/${encodeURIComponent(orgId)}/rotate-widget-secret`,
+    { method: 'POST' }
+  )
+  return data.widget_secret
 }
 
 // ── Customer API ──────────────────────────────────────────────────────────────

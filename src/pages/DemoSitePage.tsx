@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { env } from '@/env'
 
 /**
@@ -22,6 +22,9 @@ const WIDGET_SRC = 'https://widget.liraintelligence.com/v1/widget.js'
 const WIDGET_SCRIPT_ID = 'lira-support-widget'
 const FALLBACK_ORG_ID = 'demo-org-replace-me'
 
+const TEST_VISITOR_EMAIL = 'jane@nimbus.test'
+const TEST_VISITOR_NAME = 'Jane Smith'
+
 function resolveOrgId(): string {
   if (typeof window !== 'undefined') {
     const params = new URLSearchParams(window.location.search)
@@ -33,26 +36,68 @@ function resolveOrgId(): string {
   return FALLBACK_ORG_ID
 }
 
-function useLiraWidget(): void {
+function isTestVisitorMode(): boolean {
+  if (typeof window === 'undefined') return false
+  return new URLSearchParams(window.location.search).get('visitor') === 'test'
+}
+
+/** Compute HMAC-SHA256 client-side (demo only — never do this in production with a real secret) */
+async function hmacSha256(secret: string, message: string): Promise<string> {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  )
+  const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+function useLiraWidget(): { testVisitor: boolean } {
+  const [testVisitor, setTestVisitor] = useState(false)
+
   useEffect(() => {
     const orgId = resolveOrgId()
+    const visitorMode = isTestVisitorMode()
 
-    const existing = document.getElementById(WIDGET_SCRIPT_ID)
-    if (existing) existing.remove()
+    async function mount() {
+      const existing = document.getElementById(WIDGET_SCRIPT_ID)
+      if (existing) existing.remove()
 
-    const script = document.createElement('script')
-    script.id = WIDGET_SCRIPT_ID
-    script.src = WIDGET_SRC
-    script.async = true
-    script.setAttribute('data-org-id', orgId)
-    script.setAttribute('data-position', 'bottom-right')
-    document.body.appendChild(script)
+      const script = document.createElement('script')
+      script.id = WIDGET_SCRIPT_ID
+      script.src = WIDGET_SRC
+      script.async = true
+      script.setAttribute('data-org-id', orgId)
+      script.setAttribute('data-position', 'bottom-right')
+
+      if (visitorMode) {
+        const demoSecret = (env as unknown as Record<string, string | undefined>).VITE_DEMO_WIDGET_SECRET
+        if (demoSecret) {
+          const sig = await hmacSha256(demoSecret, TEST_VISITOR_EMAIL)
+          script.setAttribute('data-email', TEST_VISITOR_EMAIL)
+          script.setAttribute('data-name', TEST_VISITOR_NAME)
+          script.setAttribute('data-sig', sig)
+          setTestVisitor(true)
+        }
+      }
+
+      document.body.appendChild(script)
+    }
+
+    void mount()
 
     return () => {
-      script.remove()
+      document.getElementById(WIDGET_SCRIPT_ID)?.remove()
       document.querySelectorAll('[id^="lira-widget"]').forEach((el) => el.remove())
     }
   }, [])
+
+  return { testVisitor }
 }
 
 const LOGOS = ['Arcadia', 'Northwind', 'Kite & Co', 'Halcyon', 'Foxglove', 'Lumen Studio']
@@ -199,13 +244,20 @@ const GETTING_STARTED = [
 ]
 
 export function DemoSitePage() {
-  useLiraWidget()
+  const { testVisitor } = useLiraWidget()
 
   return (
     <div
       style={{ fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif' }}
       className="min-h-screen bg-[#fafaf7] text-slate-900"
     >
+      {/* ── Test visitor banner ──────────────────────────────────────────── */}
+      {testVisitor && (
+        <div className="sticky top-0 z-50 flex items-center justify-center gap-2 bg-amber-400 px-4 py-2 text-xs font-semibold text-amber-900">
+          <svg viewBox="0 0 16 16" fill="currentColor" className="h-3.5 w-3.5"><path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zm-.75 4.5a.75.75 0 011.5 0v3.25a.75.75 0 01-1.5 0V5.5zm.75 6a.875.875 0 100-1.75.875.875 0 000 1.75z" clipRule="evenodd" /></svg>
+          Signed in as <strong>Jane Smith</strong> (jane@nimbus.test) — verified test customer mode
+        </div>
+      )}
       {/* ── Nav ─────────────────────────────────────────────────────────── */}
       <header className="border-b border-slate-200 bg-white/80 backdrop-blur sticky top-0 z-40">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
