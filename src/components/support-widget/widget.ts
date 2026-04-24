@@ -859,6 +859,24 @@ class LiraSupportWidget {
   }
 
   private buildMessageEl(msg: ChatMessage): HTMLElement {
+    if (msg.actionResult) {
+      const chip = document.createElement('div')
+      chip.className = `lira-action-chip ${msg.actionResult.ok ? 'ok' : 'fail'}`
+      const dot = document.createElement('span')
+      dot.className = 'lira-action-dot'
+      dot.textContent = msg.actionResult.ok ? '✓' : '✗'
+      const label = document.createElement('span')
+      label.textContent = msg.actionResult.label
+      chip.appendChild(dot)
+      chip.appendChild(label)
+      return chip
+    }
+    if (msg.card) {
+      return this.buildCardEl(msg)
+    }
+    if (msg.confirm) {
+      return this.buildConfirmEl(msg)
+    }
     if (msg.role === 'customer') {
       const el = document.createElement('div')
       el.className = 'lira-msg customer'
@@ -903,6 +921,103 @@ class LiraSupportWidget {
     row.appendChild(avatarDiv)
     row.appendChild(bodyDiv)
     return row
+  }
+
+  private buildCardEl(msg: ChatMessage): HTMLElement {
+    const card = msg.card!
+    const wrap = document.createElement('div')
+    wrap.className = 'lira-card'
+    if (card.title) {
+      const h = document.createElement('div')
+      h.className = 'lira-card-title'
+      h.textContent = card.title
+      if (card.badge) {
+        const b = document.createElement('span')
+        b.className = `lira-card-badge tone-${card.badge.tone ?? 'neutral'}`
+        b.textContent = card.badge.text
+        h.appendChild(b)
+      }
+      wrap.appendChild(h)
+    }
+    if (card.body) {
+      const b = document.createElement('div')
+      b.className = 'lira-card-body'
+      b.textContent = card.body
+      wrap.appendChild(b)
+    }
+    if (card.fields && card.fields.length > 0) {
+      const dl = document.createElement('dl')
+      dl.className = 'lira-card-fields'
+      for (const f of card.fields) {
+        const dt = document.createElement('dt'); dt.textContent = f.label
+        const dd = document.createElement('dd'); dd.textContent = f.value
+        dl.appendChild(dt); dl.appendChild(dd)
+      }
+      wrap.appendChild(dl)
+    }
+    if (card.buttons && card.buttons.length > 0) {
+      const row = document.createElement('div')
+      row.className = 'lira-card-buttons'
+      for (const btn of card.buttons) {
+        const b = document.createElement('button')
+        b.className = `lira-card-btn ${btn.style ?? 'secondary'}`
+        b.textContent = btn.label
+        b.onclick = () => this.handleCardButtonClick(btn.action)
+        row.appendChild(b)
+      }
+      wrap.appendChild(row)
+    }
+    return wrap
+  }
+
+  private buildConfirmEl(msg: ChatMessage): HTMLElement {
+    const c = msg.confirm!
+    const wrap = document.createElement('div')
+    wrap.className = 'lira-confirm'
+    const t = document.createElement('div'); t.className = 'lira-confirm-title'; t.textContent = c.title
+    const b = document.createElement('div'); b.className = 'lira-confirm-body'; b.textContent = c.body
+    wrap.appendChild(t); wrap.appendChild(b)
+    if (c.resolved) {
+      const status = document.createElement('div')
+      status.className = `lira-confirm-status ${c.resolved}`
+      status.textContent = c.resolved === 'approved' ? 'Approved' : 'Cancelled'
+      wrap.appendChild(status)
+      return wrap
+    }
+    const row = document.createElement('div')
+    row.className = 'lira-confirm-buttons'
+    const approve = document.createElement('button')
+    approve.className = 'lira-card-btn primary'
+    approve.textContent = 'Approve'
+    approve.onclick = () => this.respondToConfirm(msg, true)
+    const cancel = document.createElement('button')
+    cancel.className = 'lira-card-btn secondary'
+    cancel.textContent = 'Cancel'
+    cancel.onclick = () => this.respondToConfirm(msg, false)
+    row.appendChild(approve); row.appendChild(cancel)
+    wrap.appendChild(row)
+    return wrap
+  }
+
+  private respondToConfirm(msg: ChatMessage, approved: boolean): void {
+    if (!msg.confirm || msg.confirm.resolved) return
+    msg.confirm.resolved = approved ? 'approved' : 'declined'
+    this.socket?.send({
+      type: 'confirm_response',
+      pending_id: msg.confirm.pending_id,
+      approved,
+    })
+    this.render()
+  }
+
+  private handleCardButtonClick(action: string): void {
+    // Convention: actions starting with `open:` open the URL in a new tab.
+    if (action.startsWith('open:')) {
+      try { window.open(action.slice(5), '_blank', 'noopener') } catch { /* blocked */ }
+      return
+    }
+    // Otherwise: send the action back as a customer message so the agent can react.
+    this.socket?.send({ type: 'message', body: action })
   }
 
   private startNewConversation(): void {
@@ -1179,6 +1294,71 @@ class LiraSupportWidget {
         })
         this.render()
         break
+
+      case 'card': {
+        // Generative UI card from a tool result.
+        this.isTyping = false
+        this.appendChatMessage({
+          id: `card_${Date.now()}`,
+          role: 'lira',
+          body: '',
+          timestamp: new Date().toISOString(),
+          card: {
+            title: msg.title,
+            body: msg.body,
+            fields: msg.fields,
+            badge: msg.badge,
+            buttons: msg.buttons,
+          },
+        })
+        if (this.view === 'launcher') this.unreadCount++
+        break
+      }
+
+      case 'confirm': {
+        // HITL prompt — render Approve/Cancel buttons.
+        this.isTyping = false
+        if (!msg.pending_id || !msg.tool_name) break
+        this.appendChatMessage({
+          id: `confirm_${msg.pending_id}`,
+          role: 'lira',
+          body: '',
+          timestamp: new Date().toISOString(),
+          confirm: {
+            pending_id: msg.pending_id,
+            tool_name: msg.tool_name,
+            title: msg.title ?? 'Confirm action',
+            body: msg.body ?? 'Proceed?',
+          },
+        })
+        if (this.view === 'launcher') this.unreadCount++
+        break
+      }
+
+      case 'action_result': {
+        // Tiny chip showing a tool ran (success/fail).
+        if (!msg.tool_name) break
+        this.appendChatMessage({
+          id: `act_${Date.now()}`,
+          role: 'system',
+          body: msg.label ?? msg.tool_name,
+          timestamp: new Date().toISOString(),
+          actionResult: {
+            tool_name: msg.tool_name,
+            ok: Boolean(msg.ok),
+            label: msg.label ?? msg.tool_name,
+          },
+        })
+        break
+      }
+
+      case 'navigate': {
+        // Open the url in a new tab; do not auto-redirect the host page.
+        if (msg.url) {
+          try { window.open(msg.url, msg.target ?? '_blank', 'noopener') } catch { /* popup blocked */ }
+        }
+        break
+      }
     }
   }
 

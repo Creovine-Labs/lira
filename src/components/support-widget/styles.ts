@@ -601,5 +601,94 @@ export function getWidgetStyles(primaryColor: string): string {
       padding: 24px 20px;
       overflow-y: auto;
     }
+
+    /* ── Generative UI: action chip ─────────────────────────── */
+    .lira-action-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      align-self: flex-start;
+      margin: 4px 0 4px 36px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: #f3f4f6;
+      color: #4b5563;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    .lira-action-chip.ok { background: #ecfdf5; color: #047857; }
+    .lira-action-chip.fail { background: #fef2f2; color: #b91c1c; }
+    .lira-action-dot {
+      display: inline-flex;
+      width: 14px; height: 14px;
+      align-items: center; justify-content: center;
+      border-radius: 999px;
+      background: currentColor; color: #fff;
+      font-size: 9px; font-weight: 700;
+    }
+
+    /* ── Generative UI: card ─────────────────────────────────── */
+    .lira-card {
+      align-self: flex-start;
+      margin: 6px 0 6px 36px;
+      max-width: 78%;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 14px 14px 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .lira-card-title {
+      display: flex; align-items: center; justify-content: space-between;
+      font-weight: 600; font-size: 13px; color: #111827;
+      margin-bottom: 6px;
+    }
+    .lira-card-badge {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      padding: 2px 8px; border-radius: 999px; letter-spacing: 0.04em;
+    }
+    .lira-card-badge.tone-success { background: #ecfdf5; color: #047857; }
+    .lira-card-badge.tone-warn { background: #fef3c7; color: #92400e; }
+    .lira-card-badge.tone-error { background: #fef2f2; color: #b91c1c; }
+    .lira-card-badge.tone-neutral { background: #f3f4f6; color: #4b5563; }
+    .lira-card-body { font-size: 13px; color: #374151; margin-bottom: 8px; }
+    .lira-card-fields {
+      display: grid; grid-template-columns: max-content 1fr;
+      gap: 4px 12px; margin: 6px 0; font-size: 12px;
+    }
+    .lira-card-fields dt { color: #6b7280; }
+    .lira-card-fields dd { color: #111827; margin: 0; font-weight: 500; }
+    .lira-card-buttons { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .lira-card-btn {
+      border: none; padding: 7px 14px; border-radius: 8px;
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      font-family: inherit;
+    }
+    .lira-card-btn.primary { background: var(--lira-primary, #3730a3); color: #fff; }
+    .lira-card-btn.primary:hover { filter: brightness(1.08); }
+    .lira-card-btn.secondary { background: #f3f4f6; color: #374151; }
+    .lira-card-btn.secondary:hover { background: #e5e7eb; }
+    .lira-card-btn.danger { background: #ef4444; color: #fff; }
+    .lira-card-btn.danger:hover { background: #dc2626; }
+
+    /* ── Generative UI: confirm ─────────────────────────────── */
+    .lira-confirm {
+      align-self: flex-start;
+      margin: 6px 0 6px 36px;
+      max-width: 78%;
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 12px;
+      padding: 12px 14px;
+    }
+    .lira-confirm-title { font-weight: 600; font-size: 13px; color: #92400e; margin-bottom: 4px; }
+    .lira-confirm-body { font-size: 13px; color: #78350f; margin-bottom: 10px; }
+    .lira-confirm-buttons { display: flex; gap: 8px; }
+    .lira-confirm-status {
+      font-size: 12px; font-weight: 600; padding: 6px 10px;
+      border-radius: 6px; display: inline-block;
+    }
+    .lira-confirm-status.approved { background: #ecfdf5; color: #047857; }
+    .lira-confirm-status.declined { background: #f3f4f6; color: #6b7280; }
   `
 }

@@ -25,6 +25,29 @@ export interface ChatMessage {
   timestamp: string
   sender_name?: string // agent's first name
   sender_avatar?: string // agent's profile picture URL
+  /** Optional generative-UI card rendered alongside the body. */
+  card?: AgentCard
+  /** Optional inline confirm prompt (HITL). */
+  confirm?: AgentConfirm
+  /** Optional action result chip (success/fail of a tool call). */
+  actionResult?: { tool_name: string; ok: boolean; label: string }
+}
+
+export interface AgentCard {
+  title?: string
+  body?: string
+  fields?: Array<{ label: string; value: string }>
+  badge?: { text: string; tone?: 'success' | 'warn' | 'error' | 'neutral' }
+  buttons?: Array<{ label: string; action: string; style?: 'primary' | 'secondary' | 'danger' }>
+}
+
+export interface AgentConfirm {
+  pending_id: string
+  tool_name: string
+  title: string
+  body: string
+  /** Set once the customer clicks Approve or Cancel. */
+  resolved?: 'approved' | 'declined'
 }
 
 export interface IncomingWsMessage {
@@ -41,6 +64,10 @@ export interface IncomingWsMessage {
     | 'agent_reply'
     | 'handback'
     | 'proactive'
+    | 'card'
+    | 'confirm'
+    | 'action_result'
+    | 'navigate'
   body?: string
   conv_id?: string
   status?: string
@@ -48,13 +75,26 @@ export interface IncomingWsMessage {
   sender_avatar?: string
   /** Groups reply_start / reply_chunk / reply_end events into a single message */
   message_id?: string
+  // ── card / confirm / action_result / navigate fields ──────────────────
+  title?: string
+  fields?: Array<{ label: string; value: string }>
+  badge?: { text: string; tone?: 'success' | 'warn' | 'error' | 'neutral' }
+  buttons?: Array<{ label: string; action: string; style?: 'primary' | 'secondary' | 'danger' }>
+  pending_id?: string
+  tool_name?: string
+  ok?: boolean
+  label?: string
+  url?: string
+  target?: '_self' | '_blank'
 }
 
 export interface OutgoingWsMessage {
-  type: 'message' | 'typing' | 'end'
+  type: 'message' | 'typing' | 'end' | 'confirm_response'
   body?: string
   name?: string
   email?: string
+  pending_id?: string
+  approved?: boolean
 }
 
 export type WidgetView = 'launcher' | 'pre-chat' | 'chat' | 'csat'

@@ -597,3 +597,45 @@ export async function sendProactiveMessage(
   )
   return data.conversation
 }
+
+// ── Tool-pack admin API ───────────────────────────────────────────────────────
+
+export interface ToolPack {
+  pack_id: string
+  enabled: boolean
+  /** Secrets are redacted server-side as `sk_test_…abcd`. */
+  config: Record<string, string>
+  updated_at: string
+}
+
+export async function listToolPacks(orgId: string): Promise<ToolPack[]> {
+  const data = await supportFetch<{ packs: ToolPack[] }>(
+    `/lira/v1/support/tool-packs/orgs/${encodeURIComponent(orgId)}`
+  )
+  return data.packs
+}
+
+export async function getToolPack(orgId: string, packId: string): Promise<ToolPack | null> {
+  const data = await supportFetch<{ pack: ToolPack | null }>(
+    `/lira/v1/support/tool-packs/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(packId)}`
+  )
+  return data.pack
+}
+
+export async function upsertToolPack(
+  orgId: string,
+  packId: string,
+  body: { enabled: boolean; config: Record<string, string> }
+): Promise<ToolPack> {
+  return supportFetch<ToolPack>(
+    `/lira/v1/support/tool-packs/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(packId)}`,
+    { method: 'PUT', body: JSON.stringify(body) }
+  )
+}
+
+export async function disableToolPack(orgId: string, packId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/tool-packs/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(packId)}`,
+    { method: 'DELETE' }
+  )
+}

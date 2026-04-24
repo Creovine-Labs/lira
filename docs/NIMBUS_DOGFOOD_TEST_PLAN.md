@@ -41,18 +41,19 @@
 
 Open `https://demo.liraintelligence.com` in a private/incognito window (fresh visitor) and work through this conversation script:
 
-### 3a. Simple factual Q&A (grounded) ❌
+### 3a. Simple factual Q&A (grounded) ✅
 
 - ✅ "What does Nimbus do?" → answer matches KB (finance/accounting for SMBs)
 - ✅ "How much does Nimbus cost?" → returns 3 tiers ($19 / $49 / $129)
-- ❌ "Do you integrate with QuickBooks?" → "I don't have that info right now. Let me check with the team."
-- ❌ "What's your refund policy?" → "I don't have the refund policy details right now."
-- ❌ "Where is your data stored?" → escalated to human instead of answering
+- ✅ "Do you integrate with QuickBooks?" → correctly confirms QuickBooks/Xero integrations
+- ✅ "What's your refund policy?" → correctly returns 30-day money-back guarantee details
+- ✅ "Where is your data stored?" → correctly answers from KB (no longer force-escalated)
 
-### 3b. Multi-turn
+### 3b. Multi-turn ✅
 
-- [ ] Ask "Which plan is best for a 5-person team?" → then "and if we grow to 20?" → context carried correctly
-- [ ] Ask about a feature, then ask "does that come with the Starter plan?" → answer respects prior context
+- ✅ Ask "Which plan is best for a 5-person team?" → Growth plan ($49/mo, up to 15 users) — grounded in KB
+- ✅ "and if we grow to 20?" → Business plan recommended, 14-day upgrade window mentioned — context carried correctly
+- ✅ "does multicurrency and autopilot billing come with the Starter plan?" → correctly says no, Growth plan required — prior feature context respected
 
 ### 3c. Streaming
 
@@ -102,6 +103,36 @@ Open `https://demo.liraintelligence.com` in a private/incognito window (fresh vi
 - [ ] Calculate: `(fails + 0.5 × partials) / total × 100`
 - [ ] Record final % in the triage log
 - [ ] If ≥ 5% → open Tier 2 implementation ticket
+
+---
+
+### 3h. Agentic actions (Tier 1 verification)
+
+These tests exercise the new agent runtime (`lira-support-agent.service.ts`), generative-UI message types, the HITL confirm gate, and the Stripe pack. They require:
+- Nimbus widget embedded with `visitorEmail` + `visitorSig` (HMAC) so the visitor lands in `verified_customer` scope.
+- Stripe pack enabled for the Nimbus org via `PUT /lira/v1/support/tool-packs/orgs/$ORG/stripe { enabled: true, config: { secret_key: "sk_test_..." } }`.
+- A test Stripe customer that matches the verified visitor email, with at least one active subscription and one invoice.
+
+**Built-in tools (no integration required):**
+- [ ] Anonymous visitor: ask a factual question → confirm `kb_search` tool fires (look for the small action chip under the bubble).
+- [ ] Verified visitor: "what's on file for me?" → Lira calls `get_customer_profile`, replies by name + tier.
+- [ ] "I want to talk to a person" → `escalate_to_human` runs, escalation card appears, internal Slack/email ticket fires.
+- [ ] "Please open a ticket about my export bug" → confirm card appears → click Approve → ticket opens, success card shows.
+- [ ] Same as above → click Cancel → no ticket created, agent acknowledges.
+
+**Stripe pack:**
+- [ ] "What's my plan?" → `stripe_get_subscription` runs, card shows plan / status / next billing date.
+- [ ] "Show me my recent invoices" → `stripe_get_recent_invoices` card lists last 5 with amounts.
+- [ ] "I need to update my card" → `stripe_create_billing_portal_link` returns a card with an "Open billing portal" button → click → new tab opens to Stripe.
+- [ ] "Cancel my subscription" → confirm card → Approve → `stripe_cancel_subscription` runs → "Cancelled" card with period-end date.
+- [ ] Verify in the Stripe dashboard the subscription is marked `cancel_at_period_end=true`.
+
+**HITL safety:**
+- [ ] Anonymous (unverified) visitor asks "cancel my subscription" → tool MUST be unavailable; agent should explain it can't act without a verified login.
+- [ ] Confirm card pending → close the widget → reopen → confirm card still actionable (in-process state survived).
+- [ ] Confirm card pending > 5 min → click Approve → expired-pending error returned cleanly.
+
+**Pass bar:** every flow completes without a developer touching the backend. The widget shows a card or action chip for every tool call (no silent failures).
 
 ---
 
@@ -195,14 +226,15 @@ Open `https://demo.liraintelligence.com` in a private/incognito window (fresh vi
 
 ## Triage log
 
-> Current position: **Phase 3b** (3a complete, Tier 1 RAG deployed 2025-04-23)
+> Current position: **Phase 3c** (3a–3b complete, 2026-04-24)
 
 | Phase | Item | Status | Notes |
 | ----- | ---- | ------ | ----- |
 | Setup | All setup items | ✅ | Nimbus org live, demo page confirmed |
 | 1 | Org profile, members, billing | ✅ | All items passed |
 | 2 | KB ingestion (crawl, search, re-crawl, delete) | ✅ | All items passed |
-| 3a | Simple factual Q&A | ❌ | 2/5 passed. QuickBooks, refund policy, data storage all failed with "I don't have that info" — retrieval gap investigation needed |
+| 3a | Simple factual Q&A | ✅ | 5/5 passed after: full-text chunking, FAQ pre-processing, block-element `\n\n` injection, overlap skipped for Q&A chunks, `data_privacy` removed from force-escalate |
+| 3b | Multi-turn context | ✅ | 3/3 passed. Plan recommendation, growth scenario, feature-plan cross-check all grounded and context-carried correctly. Fix: `hybridSearch` inner threshold `Math.max(..., 0.5)` floor removed, now passes `minScore: 0.3` directly to Qdrant |
 | 3g | Retrieval quality gate | ⏳ | Complete after 3b–3d; ≥5% failure rate triggers Tier 2 reranker |
 
 ---
