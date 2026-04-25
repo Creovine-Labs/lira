@@ -64,6 +64,7 @@ export interface IncomingWsMessage {
     | 'agent_reply'
     | 'handback'
     | 'proactive'
+    | 'history'
     | 'card'
     | 'confirm'
     | 'action_result'
@@ -79,6 +80,14 @@ export interface IncomingWsMessage {
   title?: string
   fields?: Array<{ label: string; value: string }>
   badge?: { text: string; tone?: 'success' | 'warn' | 'error' | 'neutral' }
+  messages?: Array<{
+    id: string
+    role: ChatMessage['role']
+    body: string
+    timestamp: string
+    sender_name?: string
+    sender_avatar?: string
+  }>
   buttons?: Array<{ label: string; action: string; style?: 'primary' | 'secondary' | 'danger' }>
   pending_id?: string
   tool_name?: string

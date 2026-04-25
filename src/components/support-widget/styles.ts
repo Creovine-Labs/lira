@@ -57,13 +57,19 @@ export function getWidgetStyles(primaryColor: string): string {
     }
     .lira-unread-badge {
       position: absolute;
-      top: 2px;
-      right: 2px;
-      width: 14px;
-      height: 14px;
+      top: -3px;
+      right: -3px;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 5px;
       border-radius: 50%;
       background: #ef4444;
       border: 2px solid #fff;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 16px;
+      text-align: center;
       pointer-events: none;
       animation: lira-badge-pop 0.3s ease-out;
     }

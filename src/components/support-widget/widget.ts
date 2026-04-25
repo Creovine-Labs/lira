@@ -60,16 +60,23 @@ function getStorageKey(orgId: string): string {
   return `lira_chat_${orgId}`
 }
 
-function saveMessages(orgId: string, messages: ChatMessage[], convId: string | null): void {
+function saveMessages(
+  orgId: string,
+  messages: ChatMessage[],
+  convId: string | null,
+  unreadCount: number
+): void {
   try {
-    const payload = JSON.stringify({ messages, convId, ts: Date.now() })
+    const payload = JSON.stringify({ messages, convId, unreadCount, ts: Date.now() })
     localStorage.setItem(getStorageKey(orgId), payload)
   } catch {
     /* quota exceeded or unavailable */
   }
 }
 
-function loadMessages(orgId: string): { messages: ChatMessage[]; convId: string | null } | null {
+function loadMessages(
+  orgId: string
+): { messages: ChatMessage[]; convId: string | null; unreadCount: number } | null {
   try {
     const raw = localStorage.getItem(getStorageKey(orgId))
     if (!raw) return null
@@ -79,10 +86,22 @@ function loadMessages(orgId: string): { messages: ChatMessage[]; convId: string 
       localStorage.removeItem(getStorageKey(orgId))
       return null
     }
-    return { messages: data.messages ?? [], convId: data.convId ?? null }
+    return {
+      messages: data.messages ?? [],
+      convId: data.convId ?? null,
+      unreadCount: Number(data.unreadCount ?? 0),
+    }
   } catch {
     return null
   }
+}
+
+function latestMessageTimestamp(messages: ChatMessage[]): string | null {
+  let latest: string | null = null
+  for (const msg of messages) {
+    if (!latest || msg.timestamp > latest) latest = msg.timestamp
+  }
+  return latest
 }
 
 function clearStoredMessages(orgId: string): void {
@@ -143,6 +162,7 @@ class LiraSupportWidget {
     if (stored) {
       this.messages = stored.messages
       this.convId = stored.convId
+      this.unreadCount = stored.unreadCount
       for (const m of this.messages) this.seenMessageIds.add(m.id)
     }
 
@@ -158,6 +178,7 @@ class LiraSupportWidget {
 
     document.body.appendChild(this.host)
     this.render()
+    if (this.convId) this.startPolling()
 
     // Fetch org config (name, logo, color) eagerly so the launcher button reflects the brand color
     this.fetchWidgetConfig()
@@ -221,7 +242,7 @@ class LiraSupportWidget {
 
     // Persist messages to localStorage after every render that has messages
     if (this.messages.length > 0) {
-      saveMessages(this.config.orgId, this.messages, this.convId)
+      saveMessages(this.config.orgId, this.messages, this.convId, this.unreadCount)
     }
   }
 
@@ -234,6 +255,7 @@ class LiraSupportWidget {
     if (this.unreadCount > 0) {
       const badge = document.createElement('span')
       badge.className = 'lira-unread-badge'
+      badge.textContent = this.unreadCount > 9 ? '9+' : String(this.unreadCount)
       btn.appendChild(badge)
     }
     this.shadow.appendChild(btn)
@@ -857,7 +879,7 @@ class LiraSupportWidget {
         if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight
       })
     }
-    saveMessages(this.config.orgId, this.messages, this.convId)
+    saveMessages(this.config.orgId, this.messages, this.convId, this.unreadCount)
   }
 
   private buildMessageEl(msg: ChatMessage): HTMLElement {
@@ -1053,6 +1075,7 @@ class LiraSupportWidget {
 
     this.view = 'chat'
     this.unreadCount = 0
+    if (this.convId) this.startPolling()
 
     // Connect WebSocket on first open
     if (!this.socket) {
@@ -1082,7 +1105,6 @@ class LiraSupportWidget {
 
   private close(): void {
     this.view = 'launcher'
-    this.stopPolling()
     this.render()
   }
 
@@ -1151,7 +1173,12 @@ class LiraSupportWidget {
 
   private handleIncoming(msg: IncomingWsMessage): void {
     // Always capture conv_id when the server provides it
-    if (msg.conv_id) this.convId = msg.conv_id
+    if (msg.conv_id) {
+      this.convId = msg.conv_id
+      if (!this.isResolved) this.startPolling()
+    }
+    if (msg.status === 'escalated') this.isEscalated = true
+    if (msg.status === 'resolved') this.isResolved = true
 
     switch (msg.type) {
       case 'typing':
@@ -1198,8 +1225,28 @@ class LiraSupportWidget {
         // Persist the finalized message and clear streaming refs
         this.streamingMessageId = null
         this.streamingBubbleEl = null
-        saveMessages(this.config.orgId, this.messages, this.convId)
+        saveMessages(this.config.orgId, this.messages, this.convId, this.unreadCount)
         break
+
+      case 'history': {
+        if (!Array.isArray(msg.messages)) break
+        this.seenMessageIds.clear()
+        this.messages = msg.messages.map((m) => ({
+          id: m.id,
+          role: m.role,
+          body: m.body,
+          timestamp: m.timestamp,
+          sender_name: m.sender_name,
+          sender_avatar: m.sender_avatar,
+        }))
+        for (const m of this.messages) this.seenMessageIds.add(m.id)
+        this.isEscalated = msg.status === 'escalated'
+        this.isResolved = msg.status === 'resolved'
+        this.lastPollTime = latestMessageTimestamp(this.messages)
+        if (!this.isResolved && this.convId) this.startPolling()
+        this.render()
+        break
+      }
 
       case 'reply':
         this.isTyping = false
@@ -1424,7 +1471,6 @@ class LiraSupportWidget {
 
   private startPolling(): void {
     if (this.pollInterval || !this.convId) return
-    this.lastPollTime = new Date().toISOString()
 
     this.pollInterval = setInterval(async () => {
       if (!this.convId) return
@@ -1462,7 +1508,17 @@ class LiraSupportWidget {
             updated = true
           }
         }
-        this.lastPollTime = new Date().toISOString()
+        this.lastPollTime = latestMessageTimestamp([
+          ...this.messages,
+          ...data.messages.map((m) => ({
+            id: m.id,
+            role: 'agent' as const,
+            body: m.body,
+            timestamp: m.timestamp,
+            sender_name: m.sender_name,
+            sender_avatar: m.sender_avatar,
+          })),
+        ]) ?? new Date().toISOString()
         if (updated) this.render()
       } catch {
         // ignore fetch errors — will retry next interval
