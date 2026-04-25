@@ -95,6 +95,16 @@ function SupportConversationPage() {
     loadConversation(currentOrgId, convId)
   }, [currentOrgId, convId, loadConversation])
 
+  // Real-time poll: refresh conversation messages every 4s when viewing an open/escalated conversation
+  useEffect(() => {
+    if (!currentOrgId || !convId) return
+    if (conv?.status === 'resolved') return
+    const id = setInterval(() => {
+      loadConversation(currentOrgId, convId)
+    }, 4000)
+    return () => clearInterval(id)
+  }, [currentOrgId, convId, conv?.status, loadConversation])
+
   const handleSendReply = useCallback(async () => {
     if (!currentOrgId || !convId || !replyBody.trim()) return
     setSending(true)

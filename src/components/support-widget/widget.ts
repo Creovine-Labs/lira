@@ -1271,7 +1271,7 @@ class LiraSupportWidget {
         if (msg.body) {
           this.messages.push({
             id: `esc_${Date.now()}`,
-            role: 'agent',
+            role: 'lira',
             body: msg.body,
             timestamp: new Date().toISOString(),
           })
@@ -1290,7 +1290,18 @@ class LiraSupportWidget {
 
       case 'status':
         this.isTyping = false
-        if (msg.status === 'resolved') {
+        if (msg.status === 'escalated') {
+          // Human has the conversation — show a quiet system acknowledgement, no AI noise
+          if (msg.body) {
+            this.messages.push({
+              id: `esc_ack_${Date.now()}`,
+              role: 'system',
+              body: msg.body,
+              timestamp: new Date().toISOString(),
+            })
+            this.render()
+          }
+        } else if (msg.status === 'resolved') {
           this.stopPolling()
           this.isResolved = true
           this.messages.push({

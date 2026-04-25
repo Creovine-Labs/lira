@@ -94,6 +94,16 @@ function SupportInboxPanel() {
     loadStats(currentOrgId)
   }, [currentOrgId, loadConversations, loadStats])
 
+  // Real-time poll: refresh conversation list + stats every 5s
+  useEffect(() => {
+    if (!currentOrgId) return
+    const id = setInterval(() => {
+      loadConversations(currentOrgId, statusFilter ?? undefined)
+      loadStats(currentOrgId)
+    }, 5000)
+    return () => clearInterval(id)
+  }, [currentOrgId, statusFilter, loadConversations, loadStats])
+
   // Redirect to activate if not activated or no config exists
   useEffect(() => {
     if (!configLoading && (!config || !config.activated)) {
