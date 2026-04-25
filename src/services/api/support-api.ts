@@ -114,6 +114,9 @@ export interface SupportConversation {
   updated_at: string
   resolved_at?: string
   customer?: CustomerProfile
+  // Real-time state injected by the API at fetch time
+  customer_is_typing?: boolean
+  customer_last_seen_at?: string
 }
 
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'

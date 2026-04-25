@@ -1,20 +1,64 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams, useLocation, useSearchParams } from 'react-router-dom'
+import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowLeftIcon,
+  BookOpenIcon,
+  BuildingOffice2Icon,
   CheckCircleIcon,
+  ChatBubbleLeftRightIcon,
+  ClockIcon,
   ExclamationTriangleIcon,
   PaperAirplaneIcon,
-  UserCircleIcon,
-  BookOpenIcon,
-  TrashIcon,
   TagIcon,
+  TrashIcon,
+  UserCircleIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import { cn } from '@/lib'
+import type {
+  ConversationMessage,
+  ConversationStatus,
+  SupportConversation,
+} from '@/services/api/support-api'
+
+type ComposerTab = 'reply' | 'escalate'
+
+const STATUS_TONES: Record<
+  ConversationStatus,
+  { label: string; badge: string; dot: string; panel: string; text: string }
+> = {
+  open: {
+    label: 'Open',
+    badge: 'border-blue-200 bg-blue-50 text-blue-700',
+    dot: 'bg-blue-500',
+    panel: 'border-blue-100 bg-blue-50/60',
+    text: 'text-blue-700',
+  },
+  pending: {
+    label: 'Pending',
+    badge: 'border-amber-200 bg-amber-50 text-amber-700',
+    dot: 'bg-amber-500',
+    panel: 'border-amber-100 bg-amber-50/70',
+    text: 'text-amber-700',
+  },
+  escalated: {
+    label: 'Human takeover',
+    badge: 'border-red-200 bg-red-50 text-red-700',
+    dot: 'bg-red-500',
+    panel: 'border-red-100 bg-red-50/70',
+    text: 'text-red-700',
+  },
+  resolved: {
+    label: 'Resolved',
+    badge: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    dot: 'bg-emerald-500',
+    panel: 'border-emerald-100 bg-emerald-50/70',
+    text: 'text-emerald-700',
+  },
+}
 
 function SupportConversationPage() {
   const navigate = useNavigate()
@@ -26,7 +70,6 @@ function SupportConversationPage() {
   const clearOrgStore = useOrgStore((s) => s.clear)
   const isFromNotifications = location.pathname.startsWith('/support/notifications/')
 
-  // Org mismatch detection from email deep links (?org=...&orgName=...)
   const linkedOrgId = searchParams.get('org')
   const linkedOrgName = searchParams.get('orgName')
   const [showOrgMismatch, setShowOrgMismatch] = useState(false)
@@ -34,20 +77,17 @@ function SupportConversationPage() {
   useEffect(() => {
     if (!linkedOrgId || !currentOrgId) return
     if (linkedOrgId === currentOrgId) {
-      // Correct org — strip query params for a clean URL
       if (searchParams.has('org')) {
         navigate(location.pathname, { replace: true })
       }
       return
     }
-    // Check if the user has the linked org in their org list
-    const matchedOrg = organizations.find((o) => o.org_id === linkedOrgId)
+
+    const matchedOrg = organizations.find((org) => org.org_id === linkedOrgId)
     if (matchedOrg) {
-      // User belongs to this org — switch automatically
       setCurrentOrg(linkedOrgId)
       navigate(location.pathname, { replace: true })
     } else {
-      // Wrong account or no access — show modal
       setShowOrgMismatch(true)
     }
   }, [
@@ -79,23 +119,27 @@ function SupportConversationPage() {
   } = useSupportStore()
   const [replyBody, setReplyBody] = useState('')
   const [sending, setSending] = useState(false)
-  const [activeTab, setActiveTab] = useState<'reply' | 'escalate' | 'note'>('reply')
+  const [activeTab, setActiveTab] = useState<ComposerTab>('reply')
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [escalateReason, setEscalateReason] = useState('')
   const [newTag, setNewTag] = useState('')
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // "Hand to Lira" only clickable once a human agent has replied
   const hasHumanReply = useMemo(
-    () => conv?.messages.some((m) => m.role === 'agent') ?? false,
+    () => conv?.messages.some((message) => message.role === 'agent') ?? false,
     [conv?.messages]
   )
+
+  const title = useMemo(() => (conv ? getConversationTitle(conv) : 'Conversation'), [conv])
+  const customerDisplay = useMemo(() => (conv ? getCustomerDisplay(conv) : null), [conv])
+  const latestMessage = conv?.messages[conv.messages.length - 1]
+  const lastCustomerMessage = useMemo(() => (conv ? getLastCustomerMessage(conv) : null), [conv])
 
   useEffect(() => {
     if (!currentOrgId || !convId) return
     loadConversation(currentOrgId, convId)
   }, [currentOrgId, convId, loadConversation])
 
-  // Real-time poll: refresh conversation messages every 4s when viewing an open/escalated conversation
   useEffect(() => {
     if (!currentOrgId || !convId) return
     if (conv?.status === 'resolved') return
@@ -156,7 +200,7 @@ function SupportConversationPage() {
     try {
       await deleteConversation(currentOrgId, convId)
       toast.success('Conversation deleted')
-      navigate('/support/inbox')
+      navigate('/support')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete')
     }
@@ -186,7 +230,7 @@ function SupportConversationPage() {
         await updateTags(
           currentOrgId,
           convId,
-          existing.filter((t) => t !== tag)
+          existing.filter((value) => value !== tag)
         )
       } catch {
         toast.error('Failed to remove tag')
@@ -209,39 +253,40 @@ function SupportConversationPage() {
 
   if (!conv) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
+      <div className="flex min-h-full items-center justify-center bg-[#f4f4f5]">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
       </div>
     )
   }
 
-  // Org mismatch modal — shown when the user clicks "Reply in Lira" from email but is in the wrong org/account
   if (showOrgMismatch) {
     const displayName = linkedOrgName || linkedOrgId || 'the correct organization'
     return (
-      <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
-        <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-8 shadow-lg text-center">
+      <div className="flex min-h-full items-center justify-center bg-[#f4f4f5] px-4">
+        <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
             <ExclamationTriangleIcon className="h-6 w-6 text-amber-500" />
           </div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-2">Wrong Organization</h2>
-          <p className="text-sm text-gray-600 mb-1">This conversation belongs to:</p>
-          <p className="text-base font-bold text-indigo-700 mb-4">{displayName}</p>
-          <p className="text-sm text-gray-500 mb-6">
+          <h2 className="mb-2 text-lg font-semibold text-gray-950">Wrong organization</h2>
+          <p className="mb-1 text-sm text-gray-600">This conversation belongs to:</p>
+          <p className="mb-4 text-base font-bold text-[#3730a3]">{displayName}</p>
+          <p className="mb-6 text-sm text-gray-500">
             Please log in with an account that has access to this organization.
           </p>
           <button
+            type="button"
             onClick={handleLogoutAndRedirect}
-            className="w-full rounded-lg bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#312e81] transition"
+            className="w-full rounded-md bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
           >
             Log in to {displayName}
           </button>
           <button
+            type="button"
             onClick={() => {
               setShowOrgMismatch(false)
-              navigate('/support/inbox', { replace: true })
+              navigate('/support', { replace: true })
             }}
-            className="mt-3 w-full rounded-lg border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 transition"
+            className="mt-3 w-full rounded-md border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-600 transition hover:bg-gray-50"
           >
             Stay in current organization
           </button>
@@ -250,359 +295,613 @@ function SupportConversationPage() {
     )
   }
 
+  const statusTone = STATUS_TONES[conv.status]
+  const tags = conv.tags ?? []
+
   return (
-    <div className="flex min-h-full bg-[#ebebeb]">
-      {/* Main conversation area */}
-      <div className="flex flex-1 flex-col px-5 py-7">
-        <div className="mx-auto w-full max-w-3xl">
-          {/* Back + header */}
-          <div className="mb-5 flex items-center gap-3">
+    <div className="min-h-full bg-[#f4f4f5] text-gray-950">
+      <header className="sticky top-0 z-20 border-b border-gray-200/80 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl flex-col gap-4 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
             <button
-              onClick={() =>
-                navigate(isFromNotifications ? '/support/notifications' : '/support/inbox')
-              }
-              className="rounded-lg p-1.5 text-gray-400 hover:bg-white hover:text-gray-600 transition"
+              type="button"
+              onClick={() => navigate(isFromNotifications ? '/support/notifications' : '/support')}
+              className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
+              aria-label="Back to support inbox"
             >
               <ArrowLeftIcon className="h-4 w-4" />
             </button>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
+            <div className="min-w-0">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
                 {conv.display_id && (
-                  <span className="shrink-0 text-xs font-bold text-gray-300">
+                  <span className="rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-[11px] font-bold text-gray-500">
                     #{conv.display_id}
                   </span>
                 )}
-                <h1 className="truncate text-lg font-extrabold text-gray-900">
-                  {conv.subject ??
-                    conv.intent ??
-                    conv.messages.find((m) => m.role === 'customer')?.body.slice(0, 60) ??
-                    'Conversation'}
-                </h1>
+                <StatusBadge status={conv.status} />
               </div>
-              <p className="text-xs text-gray-400">
-                {conv.customer?.name && conv.customer.name !== 'Visitor'
-                  ? conv.customer.name
-                  : conv.customer?.email
-                    ? conv.customer.email.split('@')[0].replace(/[._-]/g, ' ')
-                    : conv.channel === 'voice'
-                      ? 'Voice caller'
-                      : 'Website visitor'}
-                {conv.intent && (
-                  <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-500">
-                    {conv.intent}
-                  </span>
-                )}
+              <h1 className="max-w-3xl truncate text-xl font-bold tracking-normal text-gray-950 lg:text-2xl">
+                {title}
+              </h1>
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-medium text-gray-500">
+                <span>{customerDisplay?.name ?? 'Unknown customer'}</span>
+                <span className="hidden h-1 w-1 rounded-full bg-gray-300 sm:inline-block" />
+                <span className="capitalize">{conv.channel}</span>
+                <span className="hidden h-1 w-1 rounded-full bg-gray-300 sm:inline-block" />
+                <span>Updated {timeAgo(conv.updated_at)}</span>
               </p>
             </div>
-            <div className="flex items-center gap-2">
-              {conv.status === 'escalated' && (
-                <button
-                  onClick={handleHandback}
-                  disabled={!hasHumanReply}
-                  title={
-                    hasHumanReply
-                      ? 'Let Lira continue this conversation'
-                      : 'Reply to the customer first before handing back to Lira'
-                  }
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-gray-900 bg-white px-3 py-2 text-xs font-semibold text-gray-900 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  <img src="/lira_black.png" alt="Lira" className="h-3.5 w-3.5 object-contain" />
-                  Hand to Lira
-                </button>
-              )}
-              {conv.status !== 'resolved' && (
-                <button
-                  onClick={handleResolve}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-green-50 px-3 py-2 text-xs font-semibold text-green-700 hover:bg-green-100 transition"
-                >
-                  <CheckCircleIcon className="h-3.5 w-3.5" />
-                  Resolve
-                </button>
-              )}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 lg:justify-end">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen(true)}
+              className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-950"
+            >
+              <UserCircleIcon className="h-4 w-4" />
+              Details
+            </button>
+            {conv.status === 'escalated' && (
               <button
-                onClick={handleDelete}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
-                title="Delete conversation"
+                type="button"
+                onClick={handleHandback}
+                disabled={!hasHumanReply}
+                title={
+                  hasHumanReply
+                    ? 'Let Lira continue this conversation'
+                    : 'Reply to the customer first before handing back to Lira'
+                }
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-900 bg-white px-3 text-xs font-semibold text-gray-950 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <TrashIcon className="h-3.5 w-3.5" />
+                <img src="/lira_black.png" alt="" className="h-3.5 w-3.5 object-contain" />
+                Hand to Lira
               </button>
-              <span
-                className={cn(
-                  'rounded-md px-2 py-1 text-[10px] font-bold uppercase',
-                  conv.status === 'open'
-                    ? 'bg-blue-100 text-blue-700'
-                    : conv.status === 'pending'
-                      ? 'bg-amber-100 text-amber-700'
-                      : conv.status === 'escalated'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-green-100 text-green-700'
-                )}
+            )}
+            {conv.status !== 'resolved' && (
+              <button
+                type="button"
+                onClick={handleResolve}
+                className="inline-flex h-9 items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 text-xs font-semibold text-emerald-700 transition hover:bg-emerald-100"
               >
-                {conv.status}
-              </span>
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="mb-4 flex flex-wrap items-center gap-1.5">
-            <TagIcon className="h-3.5 w-3.5 text-gray-300" />
-            {conv.tags?.map((tag) => (
-              <span
-                key={tag}
-                className="group inline-flex items-center gap-1 rounded-full bg-gray-100 px-2.5 py-0.5 text-[11px] font-medium text-gray-600"
-              >
-                {tag}
-                <button
-                  onClick={() => handleRemoveTag(tag)}
-                  className="hidden text-gray-400 hover:text-red-500 group-hover:inline"
-                >
-                  <XMarkIcon className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
-            <input
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddTag()}
-              placeholder="Add tag…"
-              className="w-20 border-none bg-transparent text-[11px] text-gray-400 placeholder:text-gray-300 focus:outline-none"
-            />
-          </div>
-
-          {/* Messages */}
-          <div className="mb-4 space-y-3">
-            {conv.messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={cn(
-                  'rounded-2xl p-4',
-                  msg.role === 'customer'
-                    ? 'border border-gray-100 bg-white'
-                    : msg.role === 'lira'
-                      ? 'border border-indigo-100 bg-indigo-50'
-                      : 'border border-amber-100 bg-amber-50'
-                )}
-              >
-                <div className="mb-1 flex items-center gap-2">
-                  {msg.role === 'lira' ? (
-                    <img src="/lira_black.png" alt="Lira" className="h-4 w-4 object-contain" />
-                  ) : msg.role === 'agent' && msg.sender_avatar ? (
-                    <img
-                      src={msg.sender_avatar}
-                      alt={msg.sender_name ?? 'Agent'}
-                      className="h-4 w-4 rounded-full object-cover"
-                    />
-                  ) : msg.role === 'agent' ? (
-                    <UserCircleIcon className="h-3.5 w-3.5 text-amber-600" />
-                  ) : (
-                    <UserCircleIcon className="h-3.5 w-3.5 text-gray-400" />
-                  )}
-                  <span className="text-xs font-semibold text-gray-600">
-                    {msg.role === 'customer'
-                      ? (conv.customer?.name ?? 'Customer')
-                      : msg.role === 'lira'
-                        ? 'Lira'
-                        : (msg.sender_name ?? 'Agent')}
-                  </span>
-                  <span className="text-[10px] text-gray-300">
-                    {new Date(msg.timestamp).toLocaleString()}
-                  </span>
-                  {msg.metadata?.confidence != null && (
-                    <span className="ml-auto text-[10px] text-gray-300">
-                      {Math.round(msg.metadata.confidence * 100)}% confidence
-                    </span>
-                  )}
-                </div>
-                <p className="whitespace-pre-wrap text-sm text-gray-700">{msg.body}</p>
-                {msg.metadata?.grounded_in && msg.metadata.grounded_in.length > 0 && (
-                  <div className="mt-2 flex items-center gap-1 text-[10px] text-gray-400">
-                    <BookOpenIcon className="h-3 w-3" />
-                    {msg.metadata.grounded_in.length} source(s) used
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Action tabs */}
-          <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
-            <div className="flex border-b border-gray-100">
-              {(['reply', 'escalate', 'note'] as const).map((tab) => (
-                <button
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={cn(
-                    'flex-1 py-2.5 text-xs font-semibold capitalize transition',
-                    activeTab === tab
-                      ? 'border-b-2 border-[#3730a3] text-[#3730a3]'
-                      : 'text-gray-400 hover:text-gray-600'
-                  )}
-                >
-                  {tab === 'note' ? 'Internal Note' : tab}
-                </button>
-              ))}
-            </div>
-
-            <div className="p-4">
-              {conv.status === 'resolved' ? (
-                <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-center">
-                  <p className="text-sm font-medium text-green-700">
-                    This conversation is resolved
-                  </p>
-                  <p className="mt-0.5 text-xs text-green-600">
-                    No further messages can be sent. Re-open the conversation to reply.
-                  </p>
-                </div>
-              ) : (
-                <>
-                  {activeTab === 'reply' && (
-                    <div className="space-y-3">
-                      <textarea
-                        value={replyBody}
-                        onChange={(e) => handleReplyChange(e.target.value)}
-                        placeholder="Type your reply…"
-                        rows={3}
-                        className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
-                      />
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleSendReply}
-                          disabled={sending || !replyBody.trim()}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-[#312e81] disabled:opacity-50 transition"
-                        >
-                          <PaperAirplaneIcon className="h-3.5 w-3.5" />
-                          {sending ? 'Sending…' : 'Send Reply'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'escalate' && (
-                    <div className="space-y-3">
-                      <textarea
-                        value={escalateReason}
-                        onChange={(e) => setEscalateReason(e.target.value)}
-                        placeholder="Reason for escalation…"
-                        rows={3}
-                        className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
-                      />
-                      <div className="flex justify-end">
-                        <button
-                          onClick={handleEscalate}
-                          disabled={!escalateReason.trim()}
-                          className="inline-flex items-center gap-1.5 rounded-xl bg-red-50 px-4 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 transition"
-                        >
-                          <ExclamationTriangleIcon className="h-3.5 w-3.5" />
-                          Escalate
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {activeTab === 'note' && (
-                    <div className="space-y-3">
-                      <textarea
-                        placeholder="Internal note (not visible to customers)…"
-                        rows={3}
-                        className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
-                      />
-                      <p className="text-[10px] text-gray-400">
-                        Internal notes are for your team only
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+                <CheckCircleIcon className="h-4 w-4" />
+                Resolve
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={handleDelete}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 shadow-sm transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+              title="Delete conversation"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Right sidebar — customer info */}
-      <aside className="hidden w-72 shrink-0 border-l border-gray-200 bg-white p-5 lg:block">
-        <h3 className="mb-4 text-xs font-bold uppercase tracking-widest text-gray-400">Customer</h3>
-        {conv.customer ? (
-          <div className="space-y-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-500">
-                {conv.customer.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-gray-900">{conv.customer.name}</p>
-                <p className="text-xs text-gray-400">{conv.customer.email}</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-xs">
-              <InfoRow label="Tier" value={conv.customer.tier} />
-              <InfoRow label="Company" value={conv.customer.company ?? '—'} />
-              <InfoRow label="Conversations" value={String(conv.customer.total_conversations)} />
-              <InfoRow label="Escalations" value={String(conv.customer.total_escalations)} />
-            </div>
-          </div>
-        ) : (
-          <p className="text-xs text-gray-400">No customer data</p>
-        )}
-
-        {/* CSAT */}
-        {conv.csat_score && (
-          <>
-            <h3 className="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-              Customer Satisfaction
-            </h3>
-            <div className="flex items-center gap-2">
-              <span className="text-lg text-amber-500">
-                {'★'.repeat(conv.csat_score)}
-                {'☆'.repeat(5 - conv.csat_score)}
-              </span>
-              <span className="text-xs font-semibold text-gray-600">{conv.csat_score}/5</span>
-            </div>
-          </>
-        )}
-
-        {/* Channel */}
-        <h3 className="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-          Channel
-        </h3>
-        <p className="text-xs font-medium text-gray-600 capitalize">{conv.channel}</p>
-
-        {/* Actions taken */}
-        {conv.action_ids.length > 0 && (
-          <>
-            <h3 className="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-              Actions
-            </h3>
-            <p className="text-xs text-gray-500">{conv.action_ids.length} action(s) executed</p>
-          </>
-        )}
-
-        {/* Knowledge sources */}
-        {conv.knowledge_sources.length > 0 && (
-          <>
-            <h3 className="mb-3 mt-6 text-xs font-bold uppercase tracking-widest text-gray-400">
-              Sources
-            </h3>
-            <div className="space-y-1">
-              {conv.knowledge_sources.map((src) => (
-                <div key={src} className="flex items-center gap-1.5 text-xs text-gray-500">
-                  <BookOpenIcon className="h-3 w-3 text-gray-300" />
-                  <span className="truncate">{src}</span>
+      <div className="mx-auto w-full max-w-5xl px-5 py-5">
+        <main className="min-w-0 space-y-4">
+          {(lastCustomerMessage || conv.summary) && (
+            <section className={cn('rounded-lg border px-4 py-3 shadow-sm', statusTone.panel)}>
+              <div className="flex items-start gap-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-white text-gray-700 shadow-sm ring-1 ring-black/5">
+                  <ChatBubbleLeftRightIcon className="h-4 w-4" />
                 </div>
-              ))}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm leading-6 text-gray-800">
+                    {conv.summary ?? lastCustomerMessage?.body}
+                  </p>
+                </div>
+              </div>
+            </section>
+          )}
+
+          <section className="rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
+              <h2 className="text-sm font-bold text-gray-950">Conversation</h2>
+              {latestMessage && (
+                <span className="rounded-md bg-gray-100 px-2 py-1 text-[11px] font-semibold text-gray-500">
+                  Latest {timeAgo(latestMessage.timestamp)}
+                </span>
+              )}
             </div>
-          </>
+            <div className="space-y-4 px-4 py-4">
+              {conv.messages.map((message, index) => {
+                const isLastMsg = index === conv.messages.length - 1
+                const isAgentOrLira = message.role === 'agent' || message.role === 'lira'
+                // Show "Seen" on the most recent agent/lira message if customer viewed it after
+                const showSeen =
+                  isAgentOrLira &&
+                  isLastMsg &&
+                  !!conv.customer_last_seen_at &&
+                  conv.customer_last_seen_at >= message.timestamp
+                return (
+                  <TimelineMessage
+                    key={message.id}
+                    message={message}
+                    customerName={customerDisplay?.name ?? 'Customer'}
+                    isLast={isLastMsg}
+                    showSeen={showSeen}
+                    seenAt={showSeen ? conv.customer_last_seen_at : undefined}
+                  />
+                )
+              })}
+              {conv.customer_is_typing && (
+                <div className="flex items-center gap-2 pl-1 pt-1">
+                  <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-xs font-bold text-gray-400">
+                    {(customerDisplay?.name ?? 'C').charAt(0).toUpperCase()}
+                  </div>
+                  <div className="flex items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 shadow-sm">
+                    <span className="inline-flex gap-1">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:0ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:150ms]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:300ms]" />
+                    </span>
+                    <span className="ml-1.5 text-[11px] font-medium text-gray-400">
+                      {customerDisplay?.name ?? 'Customer'} is typing…
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className="sticky bottom-4 z-10 rounded-lg border border-gray-200 bg-white p-3 shadow-lg shadow-gray-900/5">
+            {conv.status === 'resolved' ? (
+              <div className="rounded-md border border-emerald-100 bg-emerald-50 px-4 py-3 text-center">
+                <p className="text-sm font-semibold text-emerald-700">Conversation resolved</p>
+              </div>
+            ) : (
+              <>
+                {activeTab === 'reply' && (
+                  <div className="flex flex-col gap-2">
+                    <textarea
+                      value={replyBody}
+                      onChange={(event) => handleReplyChange(event.target.value)}
+                      placeholder="Type your reply..."
+                      rows={2}
+                      className="min-h-14 w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm leading-6 text-gray-900 placeholder:text-gray-400 focus:border-[#3730a3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3730a3]/10"
+                    />
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('escalate')}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 text-xs font-semibold text-gray-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-700"
+                      >
+                        <ExclamationTriangleIcon className="h-3.5 w-3.5" />
+                        Escalate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSendReply}
+                        disabled={sending || !replyBody.trim()}
+                        className="inline-flex h-9 items-center gap-2 rounded-md bg-[#3730a3] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <PaperAirplaneIcon className="h-4 w-4" />
+                        {sending ? 'Sending...' : 'Send reply'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {activeTab === 'escalate' && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-bold text-gray-950">Escalate to a human</p>
+                      <button
+                        type="button"
+                        onClick={() => setActiveTab('reply')}
+                        className="text-xs font-semibold text-gray-500 transition hover:text-gray-950"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                    <textarea
+                      value={escalateReason}
+                      onChange={(event) => setEscalateReason(event.target.value)}
+                      placeholder="Reason for escalation..."
+                      rows={2}
+                      className="min-h-14 w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm leading-6 text-gray-900 placeholder:text-gray-400 focus:border-red-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-100"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={handleEscalate}
+                        disabled={!escalateReason.trim()}
+                        className="inline-flex h-9 items-center gap-2 rounded-md border border-red-200 bg-red-50 px-4 text-xs font-semibold text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <ExclamationTriangleIcon className="h-4 w-4" />
+                        Escalate
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+          </section>
+        </main>
+
+        {detailsOpen && (
+          <div className="fixed inset-0 z-30 flex justify-end bg-gray-950/20 backdrop-blur-sm">
+            <button
+              type="button"
+              onClick={() => setDetailsOpen(false)}
+              className="absolute inset-0 cursor-default"
+              aria-label="Close details"
+            />
+            <aside className="relative h-full w-full max-w-md overflow-y-auto border-l border-gray-200 bg-white p-5 shadow-2xl">
+              <div className="mb-5 flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-gray-950">Details</p>
+                  <p className="mt-1 text-xs text-gray-500">Customer context, tags, and sources</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailsOpen(false)}
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-500 transition hover:bg-gray-50 hover:text-gray-950"
+                  aria-label="Close details"
+                >
+                  <XMarkIcon className="h-4 w-4" />
+                </button>
+              </div>
+
+              <section className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg bg-gray-950 text-sm font-bold text-white">
+                    {customerDisplay?.initials ?? 'CV'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-gray-950">
+                      {customerDisplay?.name ?? 'Website visitor'}
+                    </p>
+                    <p className="mt-0.5 truncate text-xs text-gray-500">
+                      {conv.customer?.email ?? customerDisplay?.email ?? 'No email captured'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  <MiniStat label="Tier" value={conv.customer?.tier ?? 'Standard'} />
+                  <MiniStat
+                    label="CSAT"
+                    value={conv.csat_score ? `${conv.csat_score}/5` : 'None'}
+                  />
+                  <MiniStat label="Conversations" value={conv.customer?.total_conversations ?? 1} />
+                  <MiniStat label="Escalations" value={conv.customer?.total_escalations ?? 0} />
+                </div>
+              </section>
+
+              <SidebarSection title="Customer details">
+                <InfoRow
+                  icon={<BuildingOffice2Icon className="h-4 w-4" />}
+                  label="Company"
+                  value={conv.customer?.company ?? 'Unknown'}
+                />
+                <InfoRow
+                  icon={<UserCircleIcon className="h-4 w-4" />}
+                  label="Customer ID"
+                  value={conv.customer_id}
+                  truncate
+                />
+                <InfoRow
+                  icon={<ClockIcon className="h-4 w-4" />}
+                  label="Created"
+                  value={formatDateTime(conv.created_at)}
+                />
+                <InfoRow
+                  icon={<ClockIcon className="h-4 w-4" />}
+                  label="Updated"
+                  value={formatDateTime(conv.updated_at)}
+                />
+              </SidebarSection>
+
+              <SidebarSection title="Tags">
+                <TagEditor
+                  tags={tags}
+                  newTag={newTag}
+                  onNewTagChange={setNewTag}
+                  onAddTag={handleAddTag}
+                  onRemoveTag={handleRemoveTag}
+                />
+              </SidebarSection>
+
+              {conv.knowledge_sources.length > 0 && (
+                <SidebarSection title="Knowledge sources">
+                  <div className="space-y-2">
+                    {conv.knowledge_sources.map((source) => (
+                      <div
+                        key={source}
+                        className="flex min-w-0 items-center gap-2 rounded-md border border-gray-100 bg-gray-50 px-2.5 py-2 text-xs text-gray-600"
+                      >
+                        <BookOpenIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                        <span className="truncate">{source}</span>
+                      </div>
+                    ))}
+                  </div>
+                </SidebarSection>
+              )}
+            </aside>
+          </div>
         )}
-      </aside>
+      </div>
     </div>
   )
 }
 
-function InfoRow({ label, value }: { label: string; value: string }) {
+function StatusBadge({ status }: { status: ConversationStatus }) {
+  const tone = STATUS_TONES[status]
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-gray-400">{label}</span>
-      <span className="font-medium text-gray-700">{value}</span>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] font-bold uppercase tracking-wide',
+        tone.badge
+      )}
+    >
+      <span className={cn('h-1.5 w-1.5 rounded-full', tone.dot)} />
+      {tone.label}
+    </span>
+  )
+}
+
+function TimelineMessage({
+  message,
+  customerName,
+  isLast,
+  showSeen,
+  seenAt,
+}: {
+  message: ConversationMessage
+  customerName: string
+  isLast: boolean
+  showSeen?: boolean
+  seenAt?: string
+}) {
+  const isCustomer = message.role === 'customer'
+  const isLira = message.role === 'lira'
+  const senderName = isCustomer ? customerName : isLira ? 'Lira' : (message.sender_name ?? 'Agent')
+  const avatar = getMessageAvatar(message, senderName)
+
+  return (
+    <div className="relative flex gap-3">
+      {!isLast && <div className="absolute left-4 top-10 h-[calc(100%+1rem)] w-px bg-gray-200" />}
+      <div
+        className={cn(
+          'relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-xs font-bold shadow-sm',
+          isCustomer
+            ? 'border-gray-200 bg-white text-gray-600'
+            : isLira
+              ? 'border-indigo-100 bg-indigo-50 text-indigo-700'
+              : 'border-amber-100 bg-amber-50 text-amber-700'
+        )}
+      >
+        {avatar}
+      </div>
+      <article
+        className={cn(
+          'min-w-0 flex-1 rounded-lg border p-4 shadow-sm',
+          isCustomer
+            ? 'border-gray-200 bg-white'
+            : isLira
+              ? 'border-indigo-100 bg-indigo-50/80'
+              : 'border-amber-100 bg-amber-50/80'
+        )}
+      >
+        <div className="mb-2 flex flex-wrap items-center gap-2">
+          <span className="text-sm font-bold text-gray-950">{senderName}</span>
+          <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500 ring-1 ring-black/5">
+            {isCustomer ? 'Customer' : isLira ? 'Lira' : 'Agent'}
+          </span>
+          <span className="ml-auto text-[11px] font-medium text-gray-400">
+            {formatLongDateTime(message.timestamp)}
+          </span>
+        </div>
+        <p className="whitespace-pre-wrap text-sm leading-6 text-gray-700">{message.body}</p>
+        {showSeen && seenAt && (
+          <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+            Seen {timeAgo(seenAt)}
+          </div>
+        )}
+        {message.metadata?.grounded_in && message.metadata.grounded_in.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-black/5 pt-3 text-[11px] font-medium text-gray-500">
+            <span className="inline-flex items-center gap-1">
+              <BookOpenIcon className="h-3.5 w-3.5" />
+              {message.metadata.grounded_in.length} sources
+            </span>
+          </div>
+        )}
+      </article>
     </div>
   )
+}
+
+function SidebarSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <h3 className="mb-3 text-[11px] font-bold uppercase tracking-widest text-gray-400">
+        {title}
+      </h3>
+      {children}
+    </section>
+  )
+}
+
+function InfoRow({
+  icon,
+  label,
+  value,
+  truncate = false,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  truncate?: boolean
+}) {
+  return (
+    <div className="flex items-center gap-3 py-2">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-500">
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">{label}</p>
+        <p className={cn('text-sm font-semibold text-gray-800', truncate && 'truncate')}>{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function MiniStat({ label, value }: { label: string; value: string | number }) {
+  return (
+    <div className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+      <p className="truncate text-sm font-bold capitalize text-gray-950">{value}</p>
+      <p className="mt-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-400">{label}</p>
+    </div>
+  )
+}
+
+function TagEditor({
+  tags,
+  newTag,
+  onNewTagChange,
+  onAddTag,
+  onRemoveTag,
+}: {
+  tags: string[]
+  newTag: string
+  onNewTagChange: (value: string) => void
+  onAddTag: () => void
+  onRemoveTag: (tag: string) => void
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex flex-wrap gap-1.5">
+        {tags.length === 0 && (
+          <span className="rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-500">
+            No tags
+          </span>
+        )}
+        {tags.map((tag) => (
+          <span
+            key={tag}
+            className="group inline-flex items-center gap-1 rounded-md bg-gray-950 px-2 py-1 text-xs font-semibold text-white"
+          >
+            {tag}
+            <button
+              type="button"
+              onClick={() => onRemoveTag(tag)}
+              className="rounded-sm text-white/60 transition hover:text-white"
+              aria-label={`Remove ${tag} tag`}
+            >
+              <XMarkIcon className="h-3.5 w-3.5" />
+            </button>
+          </span>
+        ))}
+      </div>
+      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2 focus-within:border-[#3730a3] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#3730a3]/10">
+        <TagIcon className="h-4 w-4 shrink-0 text-gray-400" />
+        <input
+          value={newTag}
+          onChange={(event) => onNewTagChange(event.target.value)}
+          onKeyDown={(event) => event.key === 'Enter' && onAddTag()}
+          placeholder="Add tag"
+          className="min-w-0 flex-1 border-none bg-transparent text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none"
+        />
+      </div>
+    </div>
+  )
+}
+
+function getConversationTitle(conv: SupportConversation): string {
+  return (
+    conv.subject ??
+    conv.intent ??
+    conv.messages.find((message) => message.role === 'customer')?.body.slice(0, 80) ??
+    'Conversation'
+  )
+}
+
+function getCustomerDisplay(conv: SupportConversation) {
+  const customerName =
+    conv.customer?.name && conv.customer.name !== 'Visitor'
+      ? conv.customer.name
+      : conv.customer?.email
+        ? conv.customer.email.split('@')[0].replace(/[._-]/g, ' ')
+        : conv.channel === 'voice'
+          ? 'Voice caller'
+          : 'Website visitor'
+
+  return {
+    name: toTitleCase(customerName),
+    email: conv.customer?.email,
+    initials: getInitials(customerName),
+  }
+}
+
+function getLastCustomerMessage(conv: SupportConversation): ConversationMessage | null {
+  for (let index = conv.messages.length - 1; index >= 0; index -= 1) {
+    const message = conv.messages[index]
+    if (message.role === 'customer') return message
+  }
+  return null
+}
+
+function getMessageAvatar(message: ConversationMessage, senderName: string) {
+  if (message.role === 'lira') {
+    return <img src="/lira_black.png" alt="" className="h-4 w-4 object-contain" />
+  }
+
+  if (message.role === 'agent' && message.sender_avatar) {
+    return (
+      <img src={message.sender_avatar} alt="" className="h-full w-full rounded-lg object-cover" />
+    )
+  }
+
+  if (message.role === 'agent') return 'A'
+  return getInitials(senderName)
+}
+
+function getInitials(value: string): string {
+  const parts = value.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return 'CV'
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase()
+  return `${parts[0][0]}${parts[1][0]}`.toUpperCase()
+}
+
+function toTitleCase(value: string): string {
+  return value.replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function timeAgo(dateStr: string): string {
+  const ms = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(ms / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  return `${days}d ago`
+}
+
+function formatDateTime(dateStr: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(dateStr))
+}
+
+function formatLongDateTime(dateStr: string): string {
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(dateStr))
 }
 
 export { SupportConversationPage }
