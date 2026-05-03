@@ -28,6 +28,8 @@ test-results
 !public/lira_logo.png
 !public/favicon.png
 !public/apple-touch-icon.png
+!public/landing-v2/
+!public/landing-v2/*.png
 .env
 .env.local
 .env.*.local
