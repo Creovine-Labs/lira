@@ -1028,12 +1028,12 @@ function Hero() {
           <span className="absolute inset-0 rounded-full bg-[#3730a3] opacity-75 animate-ping" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[#3730a3]" />
         </span>
-        Conversational Intelligence Platform
+        AI Customer Support for SaaS
       </div>
 
       {/* Headline */}
       <h1 className="mx-auto max-w-4xl text-4xl sm:text-5xl md:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
-        Every conversation.
+        The support AI that doesn't
         <br />
         <span
           className="inline-block -rotate-[1.2deg] translate-y-1 text-white px-3 sm:px-5 py-0.5 sm:py-1 rounded-lg ai-badge"
@@ -1042,32 +1042,32 @@ function Hero() {
             boxShadow: '3px 5px 0px rgba(0,0,0,0.22), inset 0 1px 0 rgba(255,255,255,0.08)',
           }}
         >
-          Intelligently
-        </span>{' '}
-        handled.
+          wait for tickets.
+        </span>
       </h1>
 
       {/* Sub */}
       <p className="mx-auto mt-6 sm:mt-8 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-        Lira is a Conversational Intelligence platform. One AI agent across your customer support,
-        sales calls, and meetings, grounded in your knowledge, responding in real time.
+        Intercom and Zendesk answer tickets. Lira prevents them. One AI that meets prospects,
+        converts trials, supports customers, and stops churn — proactive, voice-native, with
+        lifetime memory, and built for SaaS.
       </p>
 
       {/* Dual CTA */}
       <div className="mx-auto mt-8 sm:mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-        <button
-          onClick={scrollToSupport}
-          className="inline-flex items-center gap-2 rounded-2xl bg-[#3730a3] px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#312e81] active:scale-95 transition-all"
-        >
-          See it handle a ticket
-          <ArrowRightIcon className="h-4 w-4" />
-        </button>
         <Link
           to="/signup"
+          className="inline-flex items-center gap-2 rounded-2xl bg-[#3730a3] px-6 py-3 text-sm font-semibold text-white shadow-md hover:bg-[#312e81] active:scale-95 transition-all"
+        >
+          Start free — no card needed
+          <ArrowRightIcon className="h-4 w-4" />
+        </Link>
+        <button
+          onClick={scrollToSupport}
           className="inline-flex items-center gap-2 rounded-2xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 active:scale-95 transition-all"
         >
-          Get started
-        </Link>
+          See it handle a ticket
+        </button>
       </div>
     </section>
   )
@@ -1086,7 +1086,8 @@ function InAction() {
           Watch Lira handle it, in real time.
         </h2>
         <p className="mx-auto mt-4 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-          Switch between Customer Support, Meetings, and Sales. Same engine, same knowledge, three surfaces.
+          Watch Lira handle a full support interaction — identify the customer, resolve the issue,
+          and update the CRM. No human required.
         </p>
       </div>
       <MeetingDemo />
@@ -1114,10 +1115,31 @@ type Spoke = {
 }
 
 const SPOKES_LIST: Spoke[] = [
-  { id: 'support', label: 'Customer Support', description: 'Chat, portal, and email resolved in seconds.', accent: '#3730a3' },
-  { id: 'sales', label: 'Sales Coaching', description: 'Real-time objection handling, CRM auto-fill.', accent: '#f59e0b' },
-  { id: 'meetings', label: 'Meetings', description: 'Joins, contributes, closes the loop.', accent: '#8b5cf6' },
-  { id: 'knowledge', label: 'Knowledge', description: 'Grounded in your docs, tickets, and history.', accent: '#10b981' },
+  {
+    id: 'proactive',
+    label: 'Proactive Outreach',
+    description:
+      'Reaches out before customers feel the pain — payment failures, trial drops, API spikes.',
+    accent: '#3730a3',
+  },
+  {
+    id: 'actions',
+    label: 'Autonomous Actions',
+    description: 'Initiates refunds, creates Linear tickets, pings Slack — no human in the loop.',
+    accent: '#f59e0b',
+  },
+  {
+    id: 'memory',
+    label: 'Lifetime Memory',
+    description: 'Every customer has a persistent profile across chat, email, voice, and WhatsApp.',
+    accent: '#8b5cf6',
+  },
+  {
+    id: 'pricing',
+    label: 'Flat Pricing',
+    description: 'One monthly fee. Unlimited interactions. Never pay per ticket or per resolution.',
+    accent: '#10b981',
+  },
 ]
 
 function HubAndSpoke() {
@@ -1138,16 +1160,16 @@ function HubAndSpoke() {
         {/* Section header */}
         <div className="text-center mb-10 sm:mb-14">
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-4">
-            One platform
+            Built different
           </p>
           <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
-            Built on a single{' '}
-            <span className="text-[#3730a3]">Conversational Intelligence</span> engine.
+            The AI your customers{' '}
+            <span className="text-[#3730a3]">never have to explain themselves to again.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-            Lira hears, understands, and{' '}
-            <em className="not-italic text-gray-700 font-semibold">acts on</em> every business
-            conversation, grounded in your shared knowledge.
+            Most support tools reset on every session. Lira remembers every customer, every
+            conversation, every action taken — and uses that context to resolve issues faster, reach
+            out proactively, and build relationships that last.
           </p>
         </div>
 
@@ -1158,8 +1180,7 @@ function HubAndSpoke() {
             <div
               className="hub-core relative flex h-32 w-32 flex-col items-center justify-center rounded-3xl text-center px-3"
               style={{
-                background:
-                  'linear-gradient(140deg, #3730a3 0%, #1e1b4b 100%)',
+                background: 'linear-gradient(140deg, #3730a3 0%, #1e1b4b 100%)',
               }}
             >
               <div className="absolute inset-[3px] rounded-[22px] ring-1 ring-white/10" />
@@ -1172,9 +1193,9 @@ function HubAndSpoke() {
                 Lira engine
               </p>
               <p className="text-[11px] font-bold text-white leading-tight tracking-[-0.01em] mt-0.5">
-                Conversational
+                Customer
                 <br />
-                Intelligence
+                Relationship
               </p>
             </div>
           </div>
@@ -1230,8 +1251,7 @@ function HubAndSpoke() {
             <div
               className="hub-core relative flex h-24 w-24 flex-col items-center justify-center rounded-2xl text-center"
               style={{
-                background:
-                  'linear-gradient(140deg, #3730a3 0%, #1e1b4b 100%)',
+                background: 'linear-gradient(140deg, #3730a3 0%, #1e1b4b 100%)',
               }}
             >
               <img
@@ -1242,7 +1262,7 @@ function HubAndSpoke() {
               <p className="text-[8.5px] font-bold uppercase tracking-[0.2em] text-white/60">
                 Lira
               </p>
-              <p className="text-[10px] font-bold text-white leading-tight">CI Engine</p>
+              <p className="text-[10px] font-bold text-white leading-tight">Support AI</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-2.5">
@@ -1256,9 +1276,7 @@ function HubAndSpoke() {
                     className="hub-pulse inline-block h-1.5 w-1.5 rounded-full"
                     style={{ background: s.accent }}
                   />
-                  <p className="text-[11.5px] font-black text-gray-900 leading-tight">
-                    {s.label}
-                  </p>
+                  <p className="text-[11.5px] font-black text-gray-900 leading-tight">{s.label}</p>
                 </div>
                 <p className="text-[10.5px] text-gray-500 leading-snug">{s.description}</p>
               </div>
@@ -1269,7 +1287,6 @@ function HubAndSpoke() {
     </section>
   )
 }
-
 
 // ─── How Lira thinks — Listen · Understand · Act ───────────────────────────
 
@@ -1304,33 +1321,33 @@ type ThinkStep = {
 const THINK_STEPS: ThinkStep[] = [
   {
     stepNum: '01',
-    eyebrow: 'Listen',
-    title: 'Streaming audio and text in real time',
+    eyebrow: 'Identify',
+    title: 'Customer identity resolved instantly',
     description:
-      'Amazon Nova Sonic captures live voice. Chat, portal, email, and meeting transcripts stream into the same pipeline, with speaker attribution.',
+      'Inbound message from any channel — chat, email, voice, WhatsApp — is matched to a persistent CustomerProfile. Lira loads full interaction history, CRM data, churn risk score, and lifecycle stage before generating a single word.',
     accent: '#3730a3',
     visual: 'wave',
-    chips: ['Nova Sonic', 'Diarization', 'Chat · Email · Portal'],
+    chips: ['Chat · Email · Voice · WhatsApp', 'CRM sync', 'Lifetime memory'],
   },
   {
     stepNum: '02',
-    eyebrow: 'Understand',
-    title: 'Grounded reasoning against your knowledge',
+    eyebrow: 'Resolve',
+    title: 'Grounded answer or autonomous action chain',
     description:
-      'Intent, sentiment, and entities extracted. Responses are retrieved from your docs, past tickets, and CRM, never hallucinated.',
+      'Intent classified. If it’s answerable — Lira replies, grounded in your docs and past tickets, never hallucinated. If it requires action — Lira initiates the refund, creates the ticket, pings Slack — all in a single autonomous chain.',
     accent: '#8b5cf6',
     visual: 'graph',
-    chips: ['Intent + NLU', 'RAG on your docs', 'Past conversation memory'],
+    chips: ['RAG on your docs', 'Intent classification', 'Multi-step action chains'],
   },
   {
     stepNum: '03',
-    eyebrow: 'Act',
-    title: 'Tool use. Real actions. Closed loops.',
+    eyebrow: 'Remember & Act',
+    title: 'Outcome logged. Relationship updated.',
     description:
-      'Lira doesn\'t stop at a summary. It resolves the ticket, updates the CRM, creates the Linear issue, and posts to Slack, on its own.',
+      'Resolution logged to the CustomerProfile. Sentiment trend updated. If the AI couldn’t resolve it — a structured ticket with full context is routed to the right human team. And next time this customer reaches out, Lira already knows.',
     accent: '#f59e0b',
     visual: 'checks',
-    chips: ['Create ticket', 'Update CRM', 'Send follow-up', 'Post to Slack'],
+    chips: ['Update CustomerProfile', 'Route to right team', 'Self-improving knowledge'],
   },
 ]
 
@@ -1351,12 +1368,55 @@ function ThinkVisualEl({ visual, accent }: { visual: ThinkVisual; accent: string
   if (visual === 'graph') {
     return (
       <svg viewBox="0 0 90 40" className="h-10 w-[90px]" aria-hidden>
-        <line x1="10" y1="30" x2="45" y2="12" stroke={accent} strokeOpacity="0.5" strokeWidth="1.25" className="node-link" />
-        <line x1="45" y1="12" x2="80" y2="28" stroke={accent} strokeOpacity="0.5" strokeWidth="1.25" className="node-link" style={{ animationDelay: '.4s' }} />
-        <line x1="10" y1="30" x2="80" y2="28" stroke={accent} strokeOpacity="0.35" strokeWidth="1.25" className="node-link" style={{ animationDelay: '.8s' }} />
+        <line
+          x1="10"
+          y1="30"
+          x2="45"
+          y2="12"
+          stroke={accent}
+          strokeOpacity="0.5"
+          strokeWidth="1.25"
+          className="node-link"
+        />
+        <line
+          x1="45"
+          y1="12"
+          x2="80"
+          y2="28"
+          stroke={accent}
+          strokeOpacity="0.5"
+          strokeWidth="1.25"
+          className="node-link"
+          style={{ animationDelay: '.4s' }}
+        />
+        <line
+          x1="10"
+          y1="30"
+          x2="80"
+          y2="28"
+          stroke={accent}
+          strokeOpacity="0.35"
+          strokeWidth="1.25"
+          className="node-link"
+          style={{ animationDelay: '.8s' }}
+        />
         <circle cx="10" cy="30" r="3.2" fill={accent} className="node-dot" />
-        <circle cx="45" cy="12" r="3.6" fill={accent} className="node-dot" style={{ animationDelay: '.3s' }} />
-        <circle cx="80" cy="28" r="3.2" fill={accent} className="node-dot" style={{ animationDelay: '.6s' }} />
+        <circle
+          cx="45"
+          cy="12"
+          r="3.6"
+          fill={accent}
+          className="node-dot"
+          style={{ animationDelay: '.3s' }}
+        />
+        <circle
+          cx="80"
+          cy="28"
+          r="3.2"
+          fill={accent}
+          className="node-dot"
+          style={{ animationDelay: '.6s' }}
+        />
       </svg>
     )
   }
@@ -1371,9 +1431,19 @@ function ThinkVisualEl({ visual, accent }: { visual: ThinkVisual; accent: string
         >
           <svg viewBox="0 0 12 12" className="h-3 w-3" aria-hidden>
             <circle cx="6" cy="6" r="6" fill={accent} fillOpacity="0.18" />
-            <path d="M3.5 6.2 L5.2 7.8 L8.5 4.5" stroke={accent} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            <path
+              d="M3.5 6.2 L5.2 7.8 L8.5 4.5"
+              stroke={accent}
+              strokeWidth="1.4"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
           </svg>
-          <span className="inline-block h-[3px] rounded-full" style={{ width: 34 - i * 6, background: `${accent}55` }} />
+          <span
+            className="inline-block h-[3px] rounded-full"
+            style={{ width: 34 - i * 6, background: `${accent}55` }}
+          />
         </div>
       ))}
     </div>
@@ -1388,14 +1458,14 @@ function HowLiraThinks() {
       <div className="mx-auto max-w-6xl">
         <div className="text-center mb-16">
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-4">
-            How Lira thinks
+            How Lira works
           </p>
           <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
-            From sound waves to shipped actions, in seconds.
+            From inbound message to resolved ticket. In seconds.
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-            Three stages. One real-time pipeline. This is what separates a Conversational Intelligence
-            platform from a note-taker.
+            Three stages. One real-time pipeline. This is what separates a proactive AI relationship
+            engine from a chatbot with a knowledge base.
           </p>
         </div>
 
@@ -1454,7 +1524,9 @@ function HowLiraThinks() {
                   <h3 className="relative z-[1] text-lg font-black tracking-[-0.01em] text-gray-900 mb-3 leading-snug">
                     {step.title}
                   </h3>
-                  <p className="relative z-[1] text-sm text-gray-500 leading-relaxed mb-5">{step.description}</p>
+                  <p className="relative z-[1] text-sm text-gray-500 leading-relaxed mb-5">
+                    {step.description}
+                  </p>
 
                   {/* Example chips */}
                   <div className="relative z-[1] flex flex-wrap gap-1.5">
@@ -1505,11 +1577,14 @@ type ChatTurn =
   | { role: 'action'; text: string; icon: 'check' | 'bolt' }
 
 const CHAT_SCRIPT: ChatTurn[] = [
-  { role: 'user', name: 'Priya · customer', text: 'Hi, I was charged twice for order #2841. Can I get a refund?' },
+  {
+    role: 'user',
+    name: 'Priya · customer',
+    text: 'Hi, I was charged twice for order #2841. Can I get a refund?',
+  },
   {
     role: 'lira',
-    text:
-      "Hi Priya, I see the duplicate charge on #2841 from Apr 19. Per our policy, duplicate charges are refunded instantly. I've processed a refund of $48.00 to your card ending 4421. You should see it within 1-3 business days.",
+    text: "Hi Priya, I see the duplicate charge on #2841 from Apr 19. Per our policy, duplicate charges are refunded instantly. I've processed a refund of $48.00 to your card ending 4421. You should see it within 1-3 business days.",
     sources: ['refund-policy.md', 'Order #2841'],
   },
   { role: 'action', icon: 'bolt', text: 'Refund issued via Stripe · confirmation email sent' },
@@ -1533,7 +1608,7 @@ function useScriptedChat(script: ChatTurn[], perStepMs = 2200) {
             setVisible(1)
             setTyping(null)
             advance(1)
-          }, 5500),
+          }, 5500)
         )
         return
       }
@@ -1546,7 +1621,7 @@ function useScriptedChat(script: ChatTurn[], perStepMs = 2200) {
             setTyping(null)
             setVisible(idx + 1)
             advance(idx + 1)
-          }, 1500),
+          }, 1500)
         )
       } else {
         timers.push(
@@ -1554,7 +1629,7 @@ function useScriptedChat(script: ChatTurn[], perStepMs = 2200) {
             if (cancelled) return
             setVisible(idx + 1)
             advance(idx + 1)
-          }, perStepMs),
+          }, perStepMs)
         )
       }
     }
@@ -1675,10 +1750,10 @@ function SupportChatDemo() {
 const SUPPORT_LOGOS: { name: string; label: string }[] = [
   { name: 'slack', label: 'Slack' },
   { name: 'hubspot', label: 'HubSpot' },
-  { name: 'zendesk', label: 'Zendesk' },
-  { name: 'linear', label: 'Linear' },
   { name: 'salesforce', label: 'Salesforce' },
-  { name: 'microsoft-teams', label: 'Teams' },
+  { name: 'linear', label: 'Linear' },
+  { name: 'whatsapp', label: 'WhatsApp' },
+  { name: 'stripe', label: 'Stripe' },
 ]
 
 function SupportShowcase() {
@@ -1702,15 +1777,15 @@ function SupportShowcase() {
         <div className="text-center mb-14">
           <p className="inline-flex items-center gap-1.5 rounded-full bg-[#3730a3]/8 ring-1 ring-[#3730a3]/15 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-[#3730a3] mb-4">
             <HeartIcon className="h-3 w-3" />
-            Customer Support · the wedge
+            AI Customer Support
           </p>
           <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
-            Resolve tickets in seconds.{' '}
-            <span className="text-[#3730a3]">Ground every answer.</span>
+            Resolve. Remember. <span className="text-[#3730a3]">Never start from scratch.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
-            Most CI platforms listen to your support calls. Lira answers them across chat, portal, and email,
-            grounded in your documentation and past conversations.
+            Every other tool resets on every session. Lira walks into every conversation already
+            knowing your customer’s history, tier, sentiment, and open issues — and resolves their
+            problem in under 30 seconds.
           </p>
         </div>
 
@@ -1748,9 +1823,9 @@ function SupportShowcase() {
             {/* Stat grid */}
             <div className="grid grid-cols-3 gap-3">
               {[
-                { stat: '60%', label: 'auto-resolved' },
-                { stat: '24/7', label: 'always on' },
-                { stat: '4ch', label: 'chat · portal · email · widget' },
+                { stat: '< 30s', label: 'median response time' },
+                { stat: '> 70%', label: 'autonomous resolution target' },
+                { stat: 'Flat', label: 'monthly fee — unlimited interactions' },
               ].map((s) => (
                 <div
                   key={s.label}
@@ -1789,14 +1864,14 @@ function SupportShowcase() {
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gray-900 px-5 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition-all active:scale-95 shadow-sm"
               >
                 <ChatBubbleLeftRightIcon className="h-4 w-4" />
-                See it handle a ticket
+                See Lira resolve a ticket live
                 <ArrowRightIcon className="h-3.5 w-3.5" />
               </a>
               <Link
                 to="/signup"
                 className="inline-flex items-center justify-center gap-2 rounded-2xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 hover:border-gray-400 hover:bg-gray-50 transition-all active:scale-95"
               >
-                Get started
+                Start free — deploy in 10 min
               </Link>
             </div>
           </div>
@@ -1837,7 +1912,10 @@ const SECURITY_ITEMS: {
 
 function SecurityStrip() {
   return (
-    <section id="security" className="relative py-20 px-6 border-t border-gray-200/60 bg-gray-50/60">
+    <section
+      id="security"
+      className="relative py-20 px-6 border-t border-gray-200/60 bg-gray-50/60"
+    >
       <div className="mx-auto max-w-6xl">
         <div className="text-center mb-12">
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-gray-500 mb-3">
@@ -1864,6 +1942,114 @@ function SecurityStrip() {
             </div>
           ))}
         </div>
+      </div>
+    </section>
+  )
+}
+
+// ─── Competitive Pricing Comparison ──────────────────────────────────────────
+
+const PRICING_COMPARE = [
+  {
+    name: 'Intercom',
+    model: '$29/seat/mo + $0.99 per outcome',
+    cost1k: '~$1,020/mo at 1,000 resolutions',
+    verdict: 'Punishes growth',
+    bad: true,
+  },
+  {
+    name: 'Gorgias',
+    model: '$60/mo + $0.90–$1 per automated interaction',
+    cost1k: '~$960/mo at 1,000 automations',
+    verdict: 'E-commerce only, not built for SaaS',
+    bad: true,
+  },
+  {
+    name: 'Zendesk',
+    model: '$55/agent/mo (up to $115/agent)',
+    cost1k: 'Bill grows as your team grows',
+    verdict: 'Generic — no SaaS lifecycle management',
+    bad: true,
+  },
+  {
+    name: 'Lira',
+    model: 'One flat monthly fee',
+    cost1k: 'Same price at 100 or 10,000 interactions',
+    verdict: 'Purpose-built for SaaS — flat, predictable, unlimited',
+    bad: false,
+  },
+]
+
+function PricingComparison() {
+  return (
+    <section className="relative py-24 sm:py-28 px-6 border-t border-gray-200/60 overflow-hidden bg-gray-50/50">
+      <div
+        className="absolute inset-0 -z-10 opacity-40"
+        style={{
+          background:
+            'radial-gradient(ellipse 50% 40% at 50% 0%, rgba(55,48,163,0.07), transparent 70%)',
+        }}
+      />
+
+      <div className="mx-auto max-w-6xl">
+        <div className="text-center mb-14">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-[#3730a3] mb-4">
+            Pricing model
+          </p>
+          <h2 className="mx-auto max-w-3xl text-3xl sm:text-4xl md:text-5xl font-black tracking-[-0.02em] text-gray-900 leading-[1.08]">
+            They charge per ticket. We charge <span className="text-[#3730a3]">once.</span>
+          </h2>
+          <p className="mx-auto mt-5 max-w-2xl text-base sm:text-lg text-gray-500 leading-relaxed">
+            Gorgias charges $1 per automated interaction. Intercom charges $0.99 per outcome on top
+            of per-seat fees. The better your AI performs, the higher your bill. Lira flips this
+            completely — one flat monthly fee, unlimited interactions, no overage penalties.
+          </p>
+        </div>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {PRICING_COMPARE.map((p) => (
+            <div
+              key={p.name}
+              className={`relative rounded-2xl p-5 ring-1 shadow-sm ${
+                p.bad
+                  ? 'bg-white ring-gray-200/80'
+                  : 'bg-gradient-to-br from-[#1e1b4b] via-[#3730a3] to-[#4338ca] ring-[#3730a3]/40 shadow-[0_16px_48px_-16px_rgba(55,48,163,0.5)]'
+              }`}
+            >
+              {!p.bad && (
+                <div className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-white/20 text-white">
+                  Recommended
+                </div>
+              )}
+              <p className={`text-sm font-black mb-3 ${p.bad ? 'text-gray-900' : 'text-white'}`}>
+                {p.name}
+              </p>
+              <p
+                className={`text-[12px] leading-snug mb-2 font-semibold ${p.bad ? 'text-gray-700' : 'text-white/90'}`}
+              >
+                {p.model}
+              </p>
+              <p
+                className={`text-[11px] leading-snug mb-4 ${p.bad ? 'text-gray-400' : 'text-white/60'}`}
+              >
+                {p.cost1k}
+              </p>
+              <div
+                className={`flex items-start gap-1.5 text-[11px] font-semibold leading-snug ${
+                  p.bad ? 'text-red-500' : 'text-emerald-300'
+                }`}
+              >
+                <span className="mt-px shrink-0">{p.bad ? '✗' : '✓'}</span>
+                {p.verdict}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <p className="mt-8 text-center text-xs text-gray-400">
+          Pricing data based on published rates as of April 2026. Lira plans start at a flat monthly
+          fee — contact us for exact tiers.
+        </p>
       </div>
     </section>
   )
@@ -2518,32 +2704,38 @@ const USE_CASES: UseCase[] = [
   {
     Icon: HeartIcon,
     title: 'Customer Support',
-    description: 'Resolve tickets in seconds across chat, portal, and email, grounded in your docs.',
+    description:
+      'Resolve tickets in seconds across chat, portal, email, and WhatsApp. Grounded in your docs, escalates with full context.',
+  },
+  {
+    Icon: BoltIcon,
+    title: 'Trial Conversion',
+    description:
+      'Lira watches product usage and reaches out at the exact moment a trial user is most likely to upgrade.',
   },
   {
     Icon: ArrowTrendingUpIcon,
-    title: 'Sales Teams',
-    description: 'Real-time objection coaching. CRM auto-fill. Deal insights pushed to HubSpot and Salesforce.',
-  },
-  {
-    Icon: BuildingOffice2Icon,
-    title: 'Executive Teams',
-    description: 'Every decision becomes a tracked action. Follow-ups posted to Slack before the call ends.',
+    title: 'Churn Prevention',
+    description:
+      'Detects at-risk signals — dropping usage, failed payments, NPS dips — and re-engages before the customer cancels.',
   },
   {
     Icon: CodeBracketIcon,
-    title: 'Engineering Teams',
-    description: 'Incident reviews, sprint planning. Lira surfaces decisions and creates Linear tickets.',
+    title: 'Expansion Revenue',
+    description:
+      'Surfaces upsell opportunities automatically when customers hit feature or usage limits.',
   },
   {
     Icon: BookOpenIcon,
     title: 'Knowledge & Onboarding',
-    description: 'Lira answers policy questions from your docs and tracks new-hire progress automatically.',
+    description:
+      'Lira answers onboarding questions from your docs and guides new users to their first value moment.',
   },
   {
-    Icon: BoltIcon,
-    title: 'Client Success',
-    description: 'Every QBR followed up. Action items extracted, assigned, and sent automatically.',
+    Icon: BuildingOffice2Icon,
+    title: 'Renewals & Success',
+    description:
+      'Proactively checks in before renewal dates. Action items extracted, assigned, and posted to Slack.',
   },
 ]
 
@@ -2662,10 +2854,11 @@ function UseCases() {
     <section id="use-cases" className="py-20 px-6 border-t border-gray-200">
       <div className="mx-auto max-w-6xl">
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
-          One platform. Every team that talks to customers.
+          One AI. The entire customer lifecycle.
         </h2>
         <p className="text-gray-500 max-w-md mb-12 leading-relaxed">
-          The same engine that resolves support tickets coaches your sales team and runs your meetings, grounded in the same shared knowledge.
+          From trial to renewal, Lira handles every touchpoint — proactively and autonomously, with
+          full memory of every customer.
         </p>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {USE_CASES.map(({ Icon, title, description }) => (
@@ -2690,25 +2883,25 @@ function UseCases() {
 
 const TESTIMONIALS = [
   {
+    initials: 'FK',
+    name: 'Femi K.',
+    role: 'Head of Customer Success · Fintech startup',
+    quote:
+      "Lira reached out to 47 customers about a failed payment batch before any of them filed a ticket. Three of them would have churned. It's the most ROI-positive thing we've shipped this year.",
+  },
+  {
+    initials: 'MR',
+    name: 'María R.',
+    role: 'CTO · SaaS startup, Mexico',
+    quote:
+      "We switched from Intercom and cut our support costs by 60%. The flat pricing model is a game changer — we scaled from 200 to 2,000 customers and the bill didn't move.",
+  },
+  {
     initials: 'AL',
     name: 'Amara L.',
-    role: 'VP of People · Brightwave',
+    role: 'VP Customer Experience · B2B SaaS',
     quote:
-      'We used to lose 2 hours after every all-hands capturing follow-ups. With Lira, the action list is in Slack before the call even ends.',
-  },
-  {
-    initials: 'DK',
-    name: 'David K.',
-    role: 'CTO · Axiom Labs',
-    quote:
-      "I uploaded our architecture docs and Lira can now answer 'what does service X do?' mid-meeting better than most of my engineers.",
-  },
-  {
-    initials: 'SR',
-    name: 'Sofia R.',
-    role: 'Head of Support · NovaTech',
-    quote:
-      'Lira resolves 60% of our inbound tickets before a human even sees them, and when it escalates, the context is already perfect. Our CSAT went up, not down.',
+      'Our CSAT went from 3.7 to 4.4 after deploying Lira. Not because we added headcount — because Lira actually remembers every customer. No more "can you explain your problem again?"',
   },
 ]
 
@@ -2721,7 +2914,7 @@ function Testimonials() {
     <section className="py-20 px-6 border-t border-gray-200 overflow-hidden">
       <div className="mx-auto max-w-4xl text-center">
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-16">
-          Teams building on Lira
+          What SaaS teams say
         </h2>
 
         {/* Arc carousel */}
@@ -2828,28 +3021,28 @@ function Testimonials() {
 
 const FAQS = [
   {
-    q: 'What is Conversational Intelligence?',
-    a: "It's the category of software that captures, understands, and acts on your business conversations: calls, meetings, chats, tickets, emails. Lira is a CI platform, meaning a single engine powers customer support, sales coaching, and meetings. One brain, one memory of your business.",
+    q: 'How is Lira different from Intercom or Zendesk?',
+    a: 'Intercom and Zendesk wait for your customers to file tickets. Lira monitors your product event stream and reaches out proactively before customers feel pain. It also takes full action chains — updating CRM fields, processing refunds, creating Linear tickets — not just sending canned responses. And it charges a flat monthly fee instead of per-seat or per-interaction.',
   },
   {
-    q: 'What makes Lira different from a note-taker like Otter or Fireflies?',
-    a: "Note-takers listen and transcribe. Lira listens, understands, and acts. It resolves tickets, updates your CRM, creates Linear tickets, and sends follow-ups automatically. The conversation is the input; the executed action is the output.",
+    q: 'Why is flat pricing better than Gorgias or Intercom?',
+    a: "Gorgias charges $0.90–$1 per automated interaction on top of the monthly base. Intercom charges per seat plus $0.99 per AI outcome. The better your automation performs, the higher your bill. Lira's flat monthly fee means your support cost stays fixed whether you have 100 or 10,000 conversations. Scale without penalty.",
   },
   {
-    q: 'How does the customer support agent work?',
-    a: "Plug in a chat widget, share a portal link, or forward emails. Lira answers in seconds using your documentation and past tickets, escalates to a human the moment it's the right call, and syncs everything to Slack, HubSpot, or Zendesk.",
+    q: "What does 'proactive support' actually mean?",
+    a: "Lira connects to your product's event stream via webhook. When a payment fails, it reaches out before the customer realizes. When usage drops, it checks in. When a trial is expiring, it offers help. In many cases, Lira resolves the issue before the customer even notices something went wrong.",
   },
   {
-    q: 'Where does Lira get its knowledge from?',
-    a: "From whatever you give it: help-center articles, PDFs, Notion, Google Docs, past conversations. It indexes them into a semantic knowledge base grounded in your organization, so responses stay accurate and on-brand.",
+    q: 'Does Lira work on WhatsApp?',
+    a: "Yes, natively. Lira captures a customer's WhatsApp number from any channel — chat, email, or voice — and continues the full relationship there with complete context. In Latin America and Southeast Asia, WhatsApp has 90%+ open rates, making it the highest-converting support channel available.",
   },
   {
-    q: 'Is my data secure?',
-    a: "TLS 1.2+ in transit, AES-256 at rest, OAuth 2.0 PKCE for integrations, and strict org isolation. We never use your data to train models. You can delete everything from settings at any time. GDPR-aligned and OWASP Top 10 hardened.",
+    q: 'How long does it take to deploy?',
+    a: "Under 10 minutes. Drop one script tag into your site and Lira's chat widget is live. Connect your knowledge base, set escalation rules, and you're resolving tickets autonomously the same day. A full REST API is also available for deeper integrations.",
   },
   {
-    q: 'What integrations are supported?',
-    a: "Slack, Google Workspace, Microsoft 365, HubSpot, Salesforce, Linear, Jira, Zendesk, and outbound webhooks. Amazon Nova Sonic powers real-time voice; Nova Lite powers reasoning and tool use.",
+    q: 'Is my customer data secure?',
+    a: 'TLS 1.2+ in transit, AES-256 at rest, OAuth 2.0 PKCE for integrations, and strict org-level data isolation. Every AI decision is logged with a full reasoning trace for auditability. GDPR-aligned, OWASP Top 10 hardened, and we never train models on your data.',
   },
 ]
 
@@ -2887,18 +3080,19 @@ function FinalCTA() {
   return (
     <section className="py-24 px-6 border-t border-gray-200 text-center">
       <h2 className="mx-auto max-w-xl text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-4">
-        Your conversations deserve better than a transcript
+        Deploy in 10 minutes. No developer required.
       </h2>
       <p className="mx-auto max-w-md text-gray-500 mb-8 leading-relaxed">
-        Start with Customer Support. Lira resolves tickets, updates your CRM, and books follow-ups while your team sleeps.
+        One script tag. Your AI support agent is live — answering questions, routing tickets,
+        reaching out proactively, and building customer relationships while you sleep.
       </p>
       <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
         <Link
           to="/signup"
           className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
         >
-          <ComputerDesktopIcon className="h-3.5 w-3.5" />
-          Get started
+          Start free
+          <ArrowRightIcon className="h-3.5 w-3.5" />
         </Link>
         <a
           href="mailto:hello@creovine.com"
@@ -2917,9 +3111,9 @@ export function LandingPage() {
   return (
     <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: '#ebebeb' }}>
       <SEO
-        title="Lira · Conversational Intelligence Platform"
-        description="Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings, grounded in your knowledge and responding in real time."
-        keywords="conversational intelligence platform, AI customer support agent, AI support automation, real-time sales coaching AI, AI meeting assistant, voice AI agent, knowledge-grounded AI, conversational AI for SaaS, Lira AI"
+        title="Lira · AI Customer Support for SaaS"
+        description="Lira is the AI customer support engine for SaaS. Proactive outreach, autonomous ticket resolution, lifetime customer memory, flat pricing, and native WhatsApp. Deploy in under 10 minutes."
+        keywords="AI customer support SaaS, AI support automation, proactive customer support, flat pricing support software, WhatsApp customer support, AI support agent, Intercom alternative, Zendesk alternative, Gorgias alternative, Lira AI"
         path="/"
       />
       <MarketingNavbar />
@@ -2928,6 +3122,7 @@ export function LandingPage() {
       <HowLiraThinks />
       <InAction />
       <SupportShowcase />
+      <PricingComparison />
       <Features />
       <IntegrationsGrid />
       <UseCases />
