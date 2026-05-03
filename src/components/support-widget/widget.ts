@@ -137,6 +137,7 @@ class LiraSupportWidget {
   private callTimer: ReturnType<typeof setInterval> | null = null
   private customerTypingTimeout: ReturnType<typeof setTimeout> | null = null
   private unreadCount = 0
+  private forceNewCase = false
 
   // Streaming reply state — set when a reply_start arrives, cleared on reply_end
   private streamingMessageId: string | null = null
@@ -973,9 +974,12 @@ class LiraSupportWidget {
       const dl = document.createElement('dl')
       dl.className = 'lira-card-fields'
       for (const f of card.fields) {
-        const dt = document.createElement('dt'); dt.textContent = f.label
-        const dd = document.createElement('dd'); dd.textContent = f.value
-        dl.appendChild(dt); dl.appendChild(dd)
+        const dt = document.createElement('dt')
+        dt.textContent = f.label
+        const dd = document.createElement('dd')
+        dd.textContent = f.value
+        dl.appendChild(dt)
+        dl.appendChild(dd)
       }
       wrap.appendChild(dl)
     }
@@ -998,9 +1002,14 @@ class LiraSupportWidget {
     const c = msg.confirm!
     const wrap = document.createElement('div')
     wrap.className = 'lira-confirm'
-    const t = document.createElement('div'); t.className = 'lira-confirm-title'; t.textContent = c.title
-    const b = document.createElement('div'); b.className = 'lira-confirm-body'; b.textContent = c.body
-    wrap.appendChild(t); wrap.appendChild(b)
+    const t = document.createElement('div')
+    t.className = 'lira-confirm-title'
+    t.textContent = c.title
+    const b = document.createElement('div')
+    b.className = 'lira-confirm-body'
+    b.textContent = c.body
+    wrap.appendChild(t)
+    wrap.appendChild(b)
     if (c.resolved) {
       const status = document.createElement('div')
       status.className = `lira-confirm-status ${c.resolved}`
@@ -1018,7 +1027,8 @@ class LiraSupportWidget {
     cancel.className = 'lira-card-btn secondary'
     cancel.textContent = 'Cancel'
     cancel.onclick = () => this.respondToConfirm(msg, false)
-    row.appendChild(approve); row.appendChild(cancel)
+    row.appendChild(approve)
+    row.appendChild(cancel)
     wrap.appendChild(row)
     return wrap
   }
@@ -1037,7 +1047,11 @@ class LiraSupportWidget {
   private handleCardButtonClick(action: string): void {
     // Convention: actions starting with `open:` open the URL in a new tab.
     if (action.startsWith('open:')) {
-      try { window.open(action.slice(5), '_blank', 'noopener') } catch { /* blocked */ }
+      try {
+        window.open(action.slice(5), '_blank', 'noopener')
+      } catch {
+        /* blocked */
+      }
       return
     }
     // Otherwise: send the action back as a customer message so the agent can react.
@@ -1055,6 +1069,7 @@ class LiraSupportWidget {
     this.seenMessageIds.clear()
     this.stopPolling()
     clearStoredMessages(this.config.orgId)
+    this.forceNewCase = true
     // Re-open fresh (will reconnect socket and add greeting)
     this.open()
   }
@@ -1082,11 +1097,13 @@ class LiraSupportWidget {
       this.socket = new WidgetSocket(
         this.config,
         this.visitorId,
+        this.forceNewCase,
         (msg) => this.handleIncoming(msg),
         (_status) => {
           // Could show connection status indicator
         }
       )
+      this.forceNewCase = false
       this.socket.connect()
 
       // Add greeting message
@@ -1131,7 +1148,12 @@ class LiraSupportWidget {
       if (this.reNotifyCount < 3) {
         this.reNotifyCount++
         // Send to backend so the assigned agent sees a new message and gets re-alerted
-        this.socket?.send({ type: 'message', body, name: this.config.visitorName, email: this.config.visitorEmail })
+        this.socket?.send({
+          type: 'message',
+          body,
+          name: this.config.visitorName,
+          email: this.config.visitorEmail,
+        })
         this.messages.push({
           id: `renotify_${Date.now()}`,
           role: 'system',
@@ -1382,7 +1404,17 @@ class LiraSupportWidget {
         break
 
       case 'welcome':
-        // Server may send a welcome message
+        // If localStorage had an old conversation but the server did not resume
+        // it, start a visually clean case. The old record remains in the inbox.
+        if (!msg.conv_id && this.convId && this.messages.length > 0) {
+          this.stopPolling()
+          this.convId = null
+          this.messages = []
+          this.seenMessageIds.clear()
+          this.isResolved = false
+          this.isEscalated = false
+          clearStoredMessages(this.config.orgId)
+        }
         if (msg.body && this.messages[0]?.id !== 'greeting') {
           this.messages.unshift({
             id: 'server_welcome',
@@ -1453,7 +1485,11 @@ class LiraSupportWidget {
       case 'navigate': {
         // Open the url in a new tab; do not auto-redirect the host page.
         if (msg.url) {
-          try { window.open(msg.url, msg.target ?? '_blank', 'noopener') } catch { /* popup blocked */ }
+          try {
+            window.open(msg.url, msg.target ?? '_blank', 'noopener')
+          } catch {
+            /* popup blocked */
+          }
         }
         break
       }
@@ -1496,9 +1532,12 @@ class LiraSupportWidget {
         for (const m of data.messages) {
           if (!this.seenMessageIds.has(m.id)) {
             this.seenMessageIds.add(m.id)
+            const role = ['customer', 'lira', 'agent', 'system'].includes(m.role)
+              ? (m.role as ChatMessage['role'])
+              : 'agent'
             this.messages.push({
               id: m.id,
-              role: 'agent',
+              role,
               body: m.body,
               timestamp: m.timestamp,
               sender_name: m.sender_name,
@@ -1508,17 +1547,20 @@ class LiraSupportWidget {
             updated = true
           }
         }
-        this.lastPollTime = latestMessageTimestamp([
-          ...this.messages,
-          ...data.messages.map((m) => ({
-            id: m.id,
-            role: 'agent' as const,
-            body: m.body,
-            timestamp: m.timestamp,
-            sender_name: m.sender_name,
-            sender_avatar: m.sender_avatar,
-          })),
-        ]) ?? new Date().toISOString()
+        this.lastPollTime =
+          latestMessageTimestamp([
+            ...this.messages,
+            ...data.messages.map((m) => ({
+              id: m.id,
+              role: ['customer', 'lira', 'agent', 'system'].includes(m.role)
+                ? (m.role as ChatMessage['role'])
+                : ('agent' as const),
+              body: m.body,
+              timestamp: m.timestamp,
+              sender_name: m.sender_name,
+              sender_avatar: m.sender_avatar,
+            })),
+          ]) ?? new Date().toISOString()
         if (updated) this.render()
       } catch {
         // ignore fetch errors — will retry next interval

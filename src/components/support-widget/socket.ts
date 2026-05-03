@@ -24,15 +24,18 @@ export class WidgetSocket {
   private reconnectTimer: ReturnType<typeof setTimeout> | null = null
   private closed = false
   private visitorId: string
+  private forceNewCase: boolean
 
   constructor(
     config: WidgetConfig,
     visitorId: string,
+    forceNewCase: boolean,
     onMessage: MessageHandler,
     onStatus: StatusHandler
   ) {
     this.config = config
     this.visitorId = visitorId
+    this.forceNewCase = forceNewCase
     this.onMessage = onMessage
     this.onStatus = onStatus
   }
@@ -45,6 +48,10 @@ export class WidgetSocket {
     if (this.config.visitorEmail) params.set('email', this.config.visitorEmail)
     if (this.config.visitorName) params.set('name', this.config.visitorName)
     if (this.config.visitorSig) params.set('sig', this.config.visitorSig)
+    if (this.forceNewCase) {
+      params.set('newCase', '1')
+      this.forceNewCase = false
+    }
 
     const url = `${WS_BASE}/ws/${this.config.orgId}?${params.toString()}`
     this.ws = new WebSocket(url)

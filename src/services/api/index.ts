@@ -1432,6 +1432,61 @@ export async function saveSlackMemberMapping(
   )
 }
 
+// ── Twilio SMS Integration API ───────────────────────────────────────────────
+
+export interface TwilioStatus {
+  connected: boolean
+  from_number?: string
+  connected_at?: string
+}
+
+export async function getTwilioStatus(orgId: string): Promise<TwilioStatus> {
+  return apiFetch<TwilioStatus>(
+    `/lira/v1/integrations/twilio/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function connectTwilio(
+  orgId: string,
+  input: { accountSid: string; authToken: string; fromNumber: string }
+): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/twilio?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(input),
+  })
+}
+
+export async function disconnectTwilio(orgId: string): Promise<void> {
+  await apiFetch<void>(`/lira/v1/integrations/twilio?orgId=${encodeURIComponent(orgId)}`, {
+    method: 'DELETE',
+  })
+}
+
+// ── Web Push API ──────────────────────────────────────────────────────────────
+
+export async function getWebPushVapidKey(orgId: string): Promise<{ publicKey: string }> {
+  return apiFetch<{ publicKey: string }>(
+    `/lira/v1/support/push/vapid?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function getWebPushStatus(
+  orgId: string
+): Promise<{ connected: boolean; subscriptionCount: number }> {
+  return apiFetch<{ connected: boolean; subscriptionCount: number }>(
+    `/lira/v1/support/push/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function getMobilePushStatus(
+  orgId: string
+): Promise<{ connected: boolean; tokenCount: number }> {
+  return apiFetch<{ connected: boolean; tokenCount: number }>(
+    `/lira/v1/support/push/mobile/status?orgId=${encodeURIComponent(orgId)}`
+  )
+}
+
 // ── Microsoft Teams Integration API ───────────────────────────────────────────
 
 export interface TeamsStatus {

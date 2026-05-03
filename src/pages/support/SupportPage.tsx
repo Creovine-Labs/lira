@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import {
   InboxIcon,
@@ -42,8 +42,19 @@ function SupportPage() {
     setSearchParams({ tab: key }, { replace: true })
   }
 
-  // Redirect to activate if support not activated
+  // Track whether a config load has been initiated at least once.
+  // configLoading starts as false (initial store state) before AppShell's effect
+  // has called loadSupportConfig. Without this guard, the redirect fires on the
+  // very first render tick — before the store has even tried to fetch the config.
+  const configLoadStarted = useRef(false)
   useEffect(() => {
+    if (configLoading) configLoadStarted.current = true
+  }, [configLoading])
+
+  // Redirect to activate if support not activated — but only after we know the
+  // config load was actually attempted (avoids false redirect on hard refresh).
+  useEffect(() => {
+    if (!configLoadStarted.current) return
     if (!configLoading && (!config || !config.activated)) {
       navigate('/support/activate', { replace: true })
     }

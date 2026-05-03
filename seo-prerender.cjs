@@ -259,6 +259,14 @@ function generateNimbusHtml(orgId, widgetSecret) {
     .security-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 40px; }
     .sec-item { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; font-size: 0.875rem; }
     .sec-item strong { display: block; margin-bottom: 4px; font-size: 0.9rem; }
+    /* support scenarios */
+    .scenario-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 40px; }
+    .scenario-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; text-align: left; }
+    .scenario-card h3 { margin-bottom: 10px; }
+    .scenario-card p { color: #475569; font-size: 0.875rem; }
+    .scenario-prompt { margin-top: 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; padding: 14px; }
+    .scenario-prompt strong { display: block; color: #64748b; font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 8px; }
+    .scenario-prompt span { color: #0f172a; font-size: 0.9rem; font-weight: 600; }
     /* footer */
     footer { background: #0f172a; color: #94a3b8; padding: 48px 24px; font-size: 0.8rem; text-align: center; }
     footer a { color: #cbd5e1; }
@@ -475,6 +483,27 @@ function generateNimbusHtml(orgId, widgetSecret) {
         <div class="faq-item"><h3>Do you support multi-entity accounting?</h3><p>Yes, on the Business plan. Run up to 10 legal entities under one login, with inter-company invoices, consolidated reporting, and separate tax profiles per entity.</p></div>
         <div class="faq-item"><h3>Is there a mobile app?</h3><p>Yes. iOS and Android apps are free with any plan. Create invoices, approve expenses, upload receipts, and view cash flow from your phone. Offline mode syncs when you're back online.</p></div>
         <div class="faq-item"><h3>How do I contact support?</h3><p>The fastest way is the chat bubble in the bottom-right corner — our AI agent answers instantly 24/7 and escalates to a human when needed. You can also email support@nimbus.finance (Mon–Fri, 9am–6pm GMT, 4-hour response) or book a call at nimbus.finance/book.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Support Scenarios -->
+  <section class="bg-slate" id="support-scenarios">
+    <div class="container">
+      <div class="section-label">Support scenarios</div>
+      <h2 class="text-center mt-3">Need help with billing or a technical issue?</h2>
+      <p class="subtitle text-center mt-4">Use the chat bubble in the bottom-right corner and describe the issue in your own words. These examples are useful for testing Nimbus support handoff and email actions.</p>
+      <div class="scenario-grid">
+        <div class="scenario-card">
+          <h3>Billing issue</h3>
+          <p>If an invoice keeps failing, your account is charged incorrectly, or you need finance to follow up, send the details through chat. Nimbus support will review the account and follow up by email when needed.</p>
+          <div class="scenario-prompt"><strong>Try asking</strong><span>“My invoice keeps failing and I haven't been charged correctly. I need someone from your finance team to investigate and follow up with me by email.”</span></div>
+        </div>
+        <div class="scenario-card">
+          <h3>Technical issue</h3>
+          <p>If receipt upload, bank sync, QuickBooks/Xero sync, or recurring billing stops working, describe what you were trying to do and the error you saw. Nimbus support can troubleshoot from the conversation and escalate when the fix needs an engineer.</p>
+          <div class="scenario-prompt"><strong>Try asking</strong><span>“QuickBooks sync has failed three times today and my invoices are not updating. Can support investigate and follow up?”</span></div>
+        </div>
       </div>
     </div>
   </section>
@@ -974,7 +1003,11 @@ function run() {
     if (route.path === '/demo') {
       const routeDir = path.join(DIST, route.path)
       fs.mkdirSync(routeDir, { recursive: true })
-      fs.writeFileSync(path.join(routeDir, 'index.html'), generateNimbusHtml(demoOrgId, demoWidgetSecret), 'utf-8')
+      fs.writeFileSync(
+        path.join(routeDir, 'index.html'),
+        generateNimbusHtml(demoOrgId, demoWidgetSecret),
+        'utf-8'
+      )
 
       // Sub-pages: each crawled independently by the KB
       const subPages = [

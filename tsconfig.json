@@ -1,7 +1,6 @@
 {
   "files": [],
   "compilerOptions": {
-    "baseUrl": ".",
     "paths": {
       "@/app": ["./src/app/index.ts"],
       "@/app/*": ["./src/app/*"],

@@ -174,7 +174,11 @@ export class WidgetVoiceCall {
         if (this.state !== 'active' || !this.ws || this.ws.readyState !== WebSocket.OPEN) return
         const float32 = e.data as Float32Array
         const pcm16 = downsampleToPcm16(float32, audioCtx.sampleRate, 16000)
-        this.ws.send(pcm16.buffer)
+        const audioFrame = new ArrayBuffer(pcm16.byteLength)
+        new Uint8Array(audioFrame).set(
+          new Uint8Array(pcm16.buffer, pcm16.byteOffset, pcm16.byteLength)
+        )
+        this.ws.send(audioFrame)
       }
 
       this.capture = { stream, audioCtx, source, workletNode, analyser }

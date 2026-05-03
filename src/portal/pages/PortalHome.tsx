@@ -83,6 +83,27 @@ export function PortalHome({ config }: PortalHomeProps) {
             </p>
           </a>
         )}
+
+        {config.voiceEnabled && (
+          <a href={`/${config.orgSlug}/chat`} className="lp-card">
+            <div className="lp-card-icon" style={{ color: accent }}>
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width="28"
+                height="28"
+              >
+                <path d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V5.25a3 3 0 0 1 6 0v7.5a3 3 0 0 1-3 3Z" />
+              </svg>
+            </div>
+            <h3 className="lp-card-title">Voice Call</h3>
+            <p className="lp-card-desc">Talk with our AI assistant over live audio.</p>
+          </a>
+        )}
       </section>
     </div>
   )

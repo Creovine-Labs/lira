@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { MagnifyingGlassIcon, PlusIcon, UserGroupIcon } from '@heroicons/react/24/outline'
+import {
+  MagnifyingGlassIcon,
+  PlusIcon,
+  TrashIcon,
+  UserGroupIcon,
+} from '@heroicons/react/24/outline'
 import { useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
-import { createSupportCustomer, type CustomerTier } from '@/services/api/support-api'
+import {
+  createSupportCustomer,
+  type CustomerProfile,
+  type CustomerTier,
+} from '@/services/api/support-api'
 import { cn } from '@/lib'
 
 function tierBadgeClass(tier: CustomerTier): string {
@@ -31,10 +40,12 @@ function SupportCustomersPage() {
 function SupportCustomersPanel() {
   const navigate = useNavigate()
   const { currentOrgId } = useOrgStore()
-  const { customers, customersLoading, loadCustomers } = useSupportStore()
+  const { customers, customersLoading, loadCustomers, deleteCustomer } = useSupportStore()
   const [search, setSearch] = useState('')
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [customerToDelete, setCustomerToDelete] = useState<CustomerProfile | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -78,6 +89,20 @@ function SupportCustomersPanel() {
       setCreating(false)
     }
   }, [currentOrgId, form, loadCustomers])
+
+  const handleDelete = useCallback(async () => {
+    if (!currentOrgId || !customerToDelete) return
+    setDeleting(true)
+    try {
+      await deleteCustomer(currentOrgId, customerToDelete.customer_id)
+      toast.success('Customer deleted')
+      setCustomerToDelete(null)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete customer')
+    } finally {
+      setDeleting(false)
+    }
+  }, [currentOrgId, customerToDelete, deleteCustomer])
 
   return (
     <>
@@ -178,6 +203,7 @@ function SupportCustomersPanel() {
                 <th className="px-4 py-3">Tier</th>
                 <th className="px-4 py-3 text-right">Conversations</th>
                 <th className="px-4 py-3 text-right">Escalations</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -215,10 +241,54 @@ function SupportCustomersPanel() {
                   <td className="px-4 py-3 text-right font-medium text-gray-700">
                     {c.total_escalations}
                   </td>
+                  <td className="px-4 py-3 text-right">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation()
+                        setCustomerToDelete(c)
+                      }}
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 transition hover:bg-red-50 hover:text-red-600"
+                      title={`Delete ${c.name}`}
+                      aria-label={`Delete ${c.name}`}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {customerToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
+            <h3 className="text-sm font-bold text-gray-900">Delete customer?</h3>
+            <p className="mt-2 text-sm leading-6 text-gray-500">
+              This removes {customerToDelete.name} from the customer list and clears visitor links
+              for this profile. Existing conversations stay in the inbox for record keeping.
+            </p>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCustomerToDelete(null)}
+                disabled={deleting}
+                className="rounded-xl px-4 py-2 text-xs font-semibold text-gray-500 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting}
+                className="rounded-xl bg-red-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {deleting ? 'Deleting…' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </>

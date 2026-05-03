@@ -70,7 +70,7 @@ export interface CustomerProfile {
 
 export type ConversationStatus = 'open' | 'pending' | 'resolved' | 'escalated'
 export type ConversationChannel = 'email' | 'chat' | 'voice' | 'portal'
-export type MessageRole = 'customer' | 'lira' | 'agent'
+export type MessageRole = 'customer' | 'lira' | 'agent' | 'system'
 export type Sentiment = 'positive' | 'neutral' | 'negative' | 'urgent'
 
 export interface ConversationMessage {
@@ -82,6 +82,7 @@ export interface ConversationMessage {
   sender_name?: string
   sender_avatar?: string
   metadata?: {
+    event?: 'conversation_resolved' | 'conversation_reopened'
     email_message_id?: string
     confidence?: number
     grounded_in?: string[]
@@ -147,6 +148,8 @@ export interface SupportTicket {
 export interface SupportStats {
   total_conversations: number
   open_conversations: number
+  resolved_conversations?: number
+  pending_conversations?: number
   resolved_autonomous: number
   resolved_human: number
   escalated: number
@@ -154,6 +157,15 @@ export interface SupportStats {
   avg_csat: number
   conversations_this_month: number
   ai_replies_this_month: number
+  total_messages?: number
+  customer_messages?: number
+  lira_messages?: number
+  agent_messages?: number
+  chat_conversations?: number
+  email_conversations?: number
+  voice_conversations?: number
+  portal_conversations?: number
+  top_intents?: { intent: string; count: number }[]
 }
 
 export interface ActionLog {
@@ -161,7 +173,7 @@ export interface ActionLog {
   org_id: string
   conv_id: string
   action_type: string
-  status: 'pending' | 'approved' | 'executed' | 'failed' | 'rejected'
+  status: 'pending' | 'approved' | 'executing' | 'completed' | 'executed' | 'failed' | 'rejected'
   input: Record<string, unknown>
   output?: Record<string, unknown>
   error?: string
@@ -182,6 +194,15 @@ export interface KBDraft {
   reviewed_by?: string
 }
 
+export type ProactiveChannel =
+  | 'email'
+  | 'widget'
+  | 'web_push'
+  | 'sms'
+  | 'mobile_push'
+  | 'slack'
+  | 'voice'
+
 export interface ProactiveTrigger {
   trigger_id: string
   org_id: string
@@ -189,7 +210,9 @@ export interface ProactiveTrigger {
   event_type: string
   conditions: TriggerCondition[]
   outreach_template: string
-  channel: 'email' | 'voice'
+  /** @deprecated use channels[] */
+  channel?: ProactiveChannel
+  channels?: ProactiveChannel[]
   enabled: boolean
   cooldown_hours: number
   max_per_customer_per_day: number
@@ -208,9 +231,10 @@ export interface OutreachLog {
   org_id: string
   trigger_id: string
   customer_id: string
-  channel: 'email' | 'voice'
-  status: 'sent' | 'delivered' | 'failed'
-  sent_at: string
+  channel: ProactiveChannel
+  status: 'sent' | 'delivered' | 'failed' | 'skipped'
+  sent_at?: string
+  created_at?: string
   customer_name?: string
   trigger_name?: string
 }
@@ -325,6 +349,13 @@ export async function createSupportCustomer(
   return data.customer
 }
 
+export async function deleteSupportCustomer(orgId: string, customerId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/customers/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(customerId)}`,
+    { method: 'DELETE' }
+  )
+}
+
 export async function updateSupportCustomer(
   orgId: string,
   customerId: string,
@@ -405,17 +436,57 @@ export async function escalateConversation(
 // ── Stats API ─────────────────────────────────────────────────────────────────
 
 export async function getSupportStats(orgId: string): Promise<SupportStats> {
-  const data = await supportFetch<{ stats: SupportStats }>(
+  type LegacyStats = Partial<SupportStats> & {
+    avg_first_response_ms?: number
+    csat_average?: number | null
+  }
+  const data = await supportFetch<{ stats?: SupportStats } & Partial<SupportStats>>(
     `/lira/v1/support/analytics/orgs/${encodeURIComponent(orgId)}/stats`
   )
-  return data.stats
+  const stats = (data.stats ?? data) as LegacyStats
+  return {
+    ...stats,
+    total_conversations: stats.total_conversations ?? 0,
+    open_conversations: stats.open_conversations ?? 0,
+    resolved_autonomous: stats.resolved_autonomous ?? 0,
+    resolved_human: stats.resolved_human ?? 0,
+    escalated: stats.escalated ?? 0,
+    avg_response_time_ms: stats.avg_response_time_ms ?? stats.avg_first_response_ms ?? 0,
+    avg_csat: stats.avg_csat ?? stats.csat_average ?? 0,
+    conversations_this_month: stats.conversations_this_month ?? stats.total_conversations ?? 0,
+    ai_replies_this_month: stats.ai_replies_this_month ?? stats.lira_messages ?? 0,
+  }
 }
 
 export async function getWeeklyReport(orgId: string): Promise<WeeklyReport> {
-  const data = await supportFetch<{ report: WeeklyReport }>(
-    `/lira/v1/support/analytics/orgs/${encodeURIComponent(orgId)}/weekly-report`
-  )
-  return data.report
+  type LegacyWeeklyReport = Partial<WeeklyReport> & {
+    resolved_autonomous?: number
+    escalated?: number
+    avg_first_response_ms?: number
+    csat_average?: number | null
+  }
+  const data = await supportFetch<
+    { report?: WeeklyReport } & Partial<WeeklyReport> & {
+        resolved_autonomous?: number
+        escalated?: number
+        avg_first_response_ms?: number
+        csat_average?: number | null
+      }
+  >(`/lira/v1/support/analytics/orgs/${encodeURIComponent(orgId)}/weekly-report`)
+  const report = (data.report ?? data) as LegacyWeeklyReport
+  return {
+    ...report,
+    period_start: report.period_start ?? new Date().toISOString(),
+    period_end: report.period_end ?? new Date().toISOString(),
+    total_conversations: report.total_conversations ?? 0,
+    autonomous_resolutions: report.autonomous_resolutions ?? report.resolved_autonomous ?? 0,
+    escalations: report.escalations ?? report.escalated ?? 0,
+    avg_response_time_ms: report.avg_response_time_ms ?? report.avg_first_response_ms ?? 0,
+    avg_csat: report.avg_csat ?? report.csat_average ?? 0,
+    top_intents: report.top_intents ?? [],
+    kb_drafts_created: report.kb_drafts_created ?? 0,
+    kb_drafts_approved: report.kb_drafts_approved ?? 0,
+  } as WeeklyReport
 }
 
 // ── Actions API (Phase 3) ─────────────────────────────────────────────────────
@@ -480,7 +551,10 @@ export async function listTriggers(orgId: string): Promise<ProactiveTrigger[]> {
 
 export async function createTrigger(
   orgId: string,
-  input: Omit<ProactiveTrigger, 'trigger_id' | 'org_id' | 'created_at' | 'updated_at'>
+  input: Omit<
+    ProactiveTrigger,
+    'trigger_id' | 'org_id' | 'created_at' | 'updated_at' | 'channel'
+  > & { channels: ProactiveChannel[] }
 ): Promise<ProactiveTrigger> {
   const data = await supportFetch<{ trigger: ProactiveTrigger }>(
     `/lira/v1/support/webhooks/orgs/${encodeURIComponent(orgId)}/triggers`,

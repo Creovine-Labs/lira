@@ -145,7 +145,7 @@ function SupportConversationPage() {
     if (conv?.status === 'resolved') return
     const id = setInterval(() => {
       loadConversation(currentOrgId, convId)
-    }, 4000)
+    }, 2000)
     return () => clearInterval(id)
   }, [currentOrgId, convId, conv?.status, loadConversation])
 
@@ -167,11 +167,12 @@ function SupportConversationPage() {
     if (!currentOrgId || !convId) return
     try {
       await resolveConversation(currentOrgId, convId)
+      await loadConversation(currentOrgId, convId)
       toast.success('Conversation resolved')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to resolve')
     }
-  }, [currentOrgId, convId, resolveConversation])
+  }, [currentOrgId, convId, loadConversation, resolveConversation])
 
   const handleEscalate = useCallback(async () => {
     if (!currentOrgId || !convId || !escalateReason.trim()) return
@@ -657,6 +658,27 @@ function TimelineMessage({
   showSeen?: boolean
   seenAt?: string
 }) {
+  if (message.role === 'system') {
+    const isResolved = message.metadata?.event === 'conversation_resolved'
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <div className="h-px flex-1 bg-gray-200" />
+        <div
+          className={cn(
+            'rounded-full border px-3 py-1 text-center text-[11px] font-bold uppercase tracking-wide',
+            isResolved
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+              : 'border-blue-200 bg-blue-50 text-blue-700'
+          )}
+          title={formatLongDateTime(message.timestamp)}
+        >
+          {message.body}
+        </div>
+        <div className="h-px flex-1 bg-gray-200" />
+      </div>
+    )
+  }
+
   const isCustomer = message.role === 'customer'
   const isLira = message.role === 'lira'
   const senderName = isCustomer ? customerName : isLira ? 'Lira' : (message.sender_name ?? 'Agent')
@@ -699,7 +721,15 @@ function TimelineMessage({
         <p className="whitespace-pre-wrap text-sm leading-6 text-gray-700">{message.body}</p>
         {showSeen && seenAt && (
           <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-emerald-500">
-            <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <svg
+              className="h-3 w-3"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
               <polyline points="20 6 9 17 4 12" />
             </svg>
             Seen {timeAgo(seenAt)}

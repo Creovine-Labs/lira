@@ -727,6 +727,16 @@ function AppShell() {
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
 
+  // Guard against the Zustand v5 persist hydration race: localStorage reads are
+  // wrapped in Promise.resolve() internally, so `token` is null on the very first
+  // render tick even when the user IS authenticated. Without this guard, a hard
+  // refresh fires `!token → <Navigate to="/" />` before hydration completes.
+  const [authHydrated, setAuthHydrated] = useState(useAuthStore.persist.hasHydrated())
+  useEffect(() => {
+    if (authHydrated) return
+    return useAuthStore.persist.onFinishHydration(() => setAuthHydrated(true))
+  }, [authHydrated])
+
   // Load orgs on mount
   useEffect(() => {
     if (!token) return
@@ -789,6 +799,20 @@ function AppShell() {
     clearCredentials()
     clear()
     navigate('/', { replace: true })
+  }
+
+  // Waiting for Zustand persist to rehydrate from localStorage (usually < 5ms)
+  if (!authHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="h-8 w-8 animate-spin opacity-60"
+          style={{ animationDuration: '1.2s' }}
+        />
+      </div>
+    )
   }
 
   // Not authenticated — redirect to home/login

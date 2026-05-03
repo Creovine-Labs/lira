@@ -18,7 +18,7 @@ import { MarketingLayout } from '@/components/marketing'
 const STEPS = [
   {
     number: '01',
-    title: 'ArrowUpTrayIcon your knowledge base',
+    title: 'Upload your knowledge base',
     description:
       "Connect your docs, website, product guides, and FAQs. Lira indexes everything and builds a semantic memory of your company's knowledge.",
   },

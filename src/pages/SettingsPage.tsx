@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
   ArrowTopRightOnSquareIcon,
@@ -868,9 +868,9 @@ function SupportSettingsSection() {
     updateConfig,
   ])
 
-  const [activeTab, setActiveTab] = useState<'widget' | 'channels' | 'portal' | 'behavior' | 'escalation'>(
-    'widget'
-  )
+  const [activeTab, setActiveTab] = useState<
+    'widget' | 'channels' | 'portal' | 'behavior' | 'escalation'
+  >('widget')
 
   if (!config) {
     return (
@@ -1034,8 +1034,9 @@ function SupportSettingsSection() {
       {activeTab === 'channels' && (
         <div className="space-y-4">
           {/* Support Portal — configure in Portal tab */}
-          <div
-            className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition"
+          <button
+            type="button"
+            className="w-full rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition text-left"
             onClick={() => setActiveTab('portal')}
           >
             <div className="flex items-center gap-2">
@@ -1043,7 +1044,7 @@ function SupportSettingsSection() {
               <p className="text-sm font-medium text-gray-500">Support Portal</p>
               <span className="text-xs text-gray-400">→ Portal tab</span>
             </div>
-          </div>
+          </button>
 
           {/* Chat */}
           <div className="flex items-start justify-between rounded-lg border px-4 py-3">
@@ -1176,7 +1177,10 @@ function SupportSettingsSection() {
               <div className="space-y-3 border-t border-gray-100 pt-3">
                 {/* Slug */}
                 <div>
-                  <label htmlFor="portal-slug-input" className="block text-xs font-semibold text-gray-500">
+                  <label
+                    htmlFor="portal-slug-input"
+                    className="block text-xs font-semibold text-gray-500"
+                  >
                     Portal URL
                   </label>
                   <div className="mt-1 flex items-center">
@@ -1210,7 +1214,10 @@ function SupportSettingsSection() {
 
                 {/* Custom domain */}
                 <div className="border-t border-gray-100 pt-3">
-                  <label htmlFor="portal-custom-domain" className="block text-xs font-semibold text-gray-500">
+                  <label
+                    htmlFor="portal-custom-domain"
+                    className="block text-xs font-semibold text-gray-500"
+                  >
                     Custom Domain <span className="font-normal text-gray-400">(optional)</span>
                   </label>
                   <input
@@ -1227,7 +1234,8 @@ function SupportSettingsSection() {
                     Add a CNAME from your domain to{' '}
                     <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
                       support.liraintelligence.com
-                    </code>, then enter it above.
+                    </code>
+                    , then enter it above.
                   </p>
                   {config.custom_domain && (
                     <a
@@ -1256,11 +1264,18 @@ function SupportSettingsSection() {
             <>
               <div className="rounded-lg border px-4 py-3 space-y-3">
                 <p className="text-sm font-medium text-foreground">Branding</p>
-                <p className="text-xs text-muted-foreground">Customize the portal to match your brand.</p>
+                <p className="text-xs text-muted-foreground">
+                  Customize the portal to match your brand.
+                </p>
 
                 {/* Portal color */}
                 <div>
-                  <label className="block text-xs font-semibold text-gray-500 mb-2">Brand Color</label>
+                  <label
+                    htmlFor="portal-brand-color-text"
+                    className="block text-xs font-semibold text-gray-500 mb-2"
+                  >
+                    Brand Color
+                  </label>
                   <div className="flex items-center gap-3">
                     <input
                       type="color"
@@ -1269,10 +1284,12 @@ function SupportSettingsSection() {
                       className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
                     />
                     <input
+                      id="portal-brand-color-text"
                       type="text"
                       value={portalColor}
                       onChange={(e) => {
-                        if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) setPortalColor(e.target.value)
+                        if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))
+                          setPortalColor(e.target.value)
                       }}
                       maxLength={7}
                       className="w-28 rounded-xl border border-input bg-background px-3 py-1.5 font-mono text-sm outline-none focus:border-gray-900"
@@ -1280,14 +1297,26 @@ function SupportSettingsSection() {
                     <div className="h-9 flex-1 rounded-lg" style={{ background: portalColor }} />
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    {['#3730a3','#1d4ed8','#0891b2','#059669','#d97706','#dc2626','#7c3aed','#db2777','#1a1a2e'].map((c) => (
+                    {[
+                      '#3730a3',
+                      '#1d4ed8',
+                      '#0891b2',
+                      '#059669',
+                      '#d97706',
+                      '#dc2626',
+                      '#7c3aed',
+                      '#db2777',
+                      '#1a1a2e',
+                    ].map((c) => (
                       <button
                         key={c}
                         type="button"
                         onClick={() => setPortalColor(c)}
                         className={cn(
                           'h-7 w-7 rounded-md border-2 transition',
-                          portalColor === c ? 'border-gray-900 scale-110' : 'border-transparent hover:scale-105'
+                          portalColor === c
+                            ? 'border-gray-900 scale-110'
+                            : 'border-transparent hover:scale-105'
                         )}
                         style={{ background: c }}
                       />
@@ -1300,7 +1329,10 @@ function SupportSettingsSection() {
 
                 {/* Logo */}
                 <div className="border-t border-gray-100 pt-3">
-                  <label htmlFor="portal-logo-url" className="block text-xs font-semibold text-gray-500">
+                  <label
+                    htmlFor="portal-logo-url"
+                    className="block text-xs font-semibold text-gray-500"
+                  >
                     Logo URL <span className="font-normal text-gray-400">(optional)</span>
                   </label>
                   <input
@@ -1317,7 +1349,9 @@ function SupportSettingsSection() {
                         src={portalLogoUrl}
                         alt="Logo preview"
                         className="h-8 max-w-[120px] object-contain rounded"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                        onError={(e) => {
+                          ;(e.target as HTMLImageElement).style.display = 'none'
+                        }}
                       />
                       <span className="text-xs text-muted-foreground">Preview</span>
                     </div>
@@ -1352,14 +1386,46 @@ function SupportSettingsSection() {
                   </p>
                 </div>
                 <div className="space-y-2.5">
-                  {([
-                    { id: 'p-chat', label: 'Live Chat', desc: 'Real-time chat with Lira AI', value: portalChatEnabled, set: setPortalChatEnabled },
-                    { id: 'p-voice', label: 'Voice', desc: 'Talk via voice call', value: portalVoiceEnabled, set: setPortalVoiceEnabled },
-                    { id: 'p-tickets', label: 'Submit a Request', desc: 'Submit a support ticket', value: portalTicketsEnabled, set: setPortalTicketsEnabled },
-                    { id: 'p-track', label: 'Track Tickets', desc: 'View and follow up on past requests', value: portalTrackEnabled, set: setPortalTrackEnabled },
-                  ] as const).map((f) => (
-                    <label key={f.id} className="flex items-start gap-2.5 cursor-pointer">
+                  {(
+                    [
+                      {
+                        id: 'p-chat',
+                        label: 'Live Chat',
+                        desc: 'Real-time chat with Lira AI',
+                        value: portalChatEnabled,
+                        set: setPortalChatEnabled,
+                      },
+                      {
+                        id: 'p-voice',
+                        label: 'Voice',
+                        desc: 'Talk via voice call',
+                        value: portalVoiceEnabled,
+                        set: setPortalVoiceEnabled,
+                      },
+                      {
+                        id: 'p-tickets',
+                        label: 'Submit a Request',
+                        desc: 'Submit a support ticket',
+                        value: portalTicketsEnabled,
+                        set: setPortalTicketsEnabled,
+                      },
+                      {
+                        id: 'p-track',
+                        label: 'Track Tickets',
+                        desc: 'View and follow up on past requests',
+                        value: portalTrackEnabled,
+                        set: setPortalTrackEnabled,
+                      },
+                    ] as const
+                  ).map((f) => (
+                    <label
+                      key={f.id}
+                      htmlFor={f.id}
+                      aria-label={f.label}
+                      className="flex items-start gap-2.5 cursor-pointer"
+                    >
                       <input
+                        id={f.id}
                         type="checkbox"
                         checked={f.value}
                         onChange={(e) => f.set(e.target.checked)}
@@ -1386,17 +1452,23 @@ function SupportSettingsSection() {
                 <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2.5 space-y-0.5">
                   <p className="text-xs font-semibold text-emerald-800">Magic Link — Active</p>
                   <p className="text-xs text-emerald-700">
-                    Customers enter their email and receive a one-time sign-in link. No password required.
+                    Customers enter their email and receive a one-time sign-in link. No password
+                    required.
                   </p>
                 </div>
 
                 <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 space-y-0.5 opacity-60">
                   <div className="flex items-center gap-2">
-                    <p className="text-xs font-semibold text-gray-700">Identity Verification / SSO</p>
-                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">Coming soon</span>
+                    <p className="text-xs font-semibold text-gray-700">
+                      Identity Verification / SSO
+                    </p>
+                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                      Coming soon
+                    </span>
                   </div>
                   <p className="text-xs text-gray-500">
-                    Connect your own auth system. Generate a signed JWT with the customer's email — the portal trusts it automatically.
+                    Connect your own auth system. Generate a signed JWT with the customer's email —
+                    the portal trusts it automatically.
                   </p>
                 </div>
               </div>
@@ -1582,14 +1654,7 @@ const SETTINGS_TABS = [
 ]
 
 function SettingsPage() {
-  const { hash } = useLocation()
-  const navigate = useNavigate()
-
-  const activeTab = (hash.slice(1) as SettingsTab) || 'account'
-
-  function setActiveTab(tab: SettingsTab) {
-    navigate({ hash: tab }, { replace: true })
-  }
+  const [activeTab, setActiveTab] = useState<SettingsTab>('account')
 
   return (
     <div className="flex flex-col h-full">

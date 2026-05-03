@@ -5,6 +5,7 @@ import {
   InboxIcon,
   MagnifyingGlassIcon,
   ChatBubbleLeftEllipsisIcon,
+  BarsArrowDownIcon,
 } from '@heroicons/react/24/outline'
 import { useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
@@ -84,6 +85,7 @@ function SupportInboxPanel() {
   } = useSupportStore()
   const [search, setSearch] = useState('')
   const [showStats, setShowStats] = useState(true)
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'subject'>('newest')
 
   useEffect(() => {
     if (!currentOrgId) return
@@ -94,13 +96,13 @@ function SupportInboxPanel() {
     loadStats(currentOrgId)
   }, [currentOrgId, loadConversations, loadStats])
 
-  // Real-time poll: refresh conversation list + stats every 5s
+  // Real-time poll: refresh conversation list + stats every 2s
   useEffect(() => {
     if (!currentOrgId) return
     const id = setInterval(() => {
-      loadConversations(currentOrgId, statusFilter ?? undefined)
+      loadConversations(currentOrgId, statusFilter ?? undefined, { background: true })
       loadStats(currentOrgId)
-    }, 5000)
+    }, 2000)
     return () => clearInterval(id)
   }, [currentOrgId, statusFilter, loadConversations, loadStats])
 
@@ -123,16 +125,27 @@ function SupportInboxPanel() {
   )
 
   const filtered = useMemo(() => {
-    if (!search.trim()) return conversations
-    const q = search.toLowerCase()
-    return conversations.filter(
-      (c) =>
-        c.subject?.toLowerCase().includes(q) ||
-        c.customer?.name?.toLowerCase().includes(q) ||
-        c.customer?.email?.toLowerCase().includes(q) ||
-        c.intent?.toLowerCase().includes(q)
-    )
-  }, [conversations, search])
+    const source = statusFilter ? conversations : latestConversationPerCustomer(conversations)
+    const searched = search.trim()
+      ? source.filter(
+          (c) =>
+            c.subject?.toLowerCase().includes(search.toLowerCase()) ||
+            c.customer?.name?.toLowerCase().includes(search.toLowerCase()) ||
+            c.customer?.email?.toLowerCase().includes(search.toLowerCase()) ||
+            c.intent?.toLowerCase().includes(search.toLowerCase())
+        )
+      : source
+    // Apply sort
+    return [...searched].sort((a, b) => {
+      if (sortBy === 'oldest')
+        return new Date(a.updated_at).getTime() - new Date(b.updated_at).getTime()
+      if (sortBy === 'subject') return (a.subject ?? '').localeCompare(b.subject ?? '')
+      // newest (default): active first, then by updated_at desc
+      const activeDelta = activeStatusRank(a.status) - activeStatusRank(b.status)
+      if (activeDelta !== 0) return activeDelta
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+    })
+  }, [conversations, search, statusFilter, sortBy])
 
   return (
     <>
@@ -177,15 +190,32 @@ function SupportInboxPanel() {
             </button>
           ))}
         </div>
-        <div className="relative ml-auto">
-          <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search conversations…"
-            className="w-56 rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
-          />
+        <div className="ml-auto flex items-center gap-2">
+          {/* Sort dropdown */}
+          <div className="relative flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm">
+            <BarsArrowDownIcon className="h-3.5 w-3.5 text-gray-400" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'subject')}
+              className="appearance-none bg-transparent text-xs font-medium text-gray-600 focus:outline-none cursor-pointer pr-4"
+            >
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="subject">By subject</option>
+            </select>
+            <ChevronDownIcon className="pointer-events-none absolute right-2 h-3 w-3 text-gray-400" />
+          </div>
+          {/* Search */}
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search conversations…"
+              className="w-56 rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+            />
+          </div>
         </div>
       </div>
 
@@ -215,6 +245,30 @@ function SupportInboxPanel() {
       )}
     </>
   )
+}
+
+function latestConversationPerCustomer(
+  conversations: SupportConversation[]
+): SupportConversation[] {
+  const byCustomer = new Map<string, SupportConversation>()
+  for (const conversation of conversations) {
+    const key = conversation.customer_id || conversation.conv_id
+    const existing = byCustomer.get(key)
+    if (!existing || compareConversationForInbox(conversation, existing) < 0) {
+      byCustomer.set(key, conversation)
+    }
+  }
+  return [...byCustomer.values()].sort(compareConversationForInbox)
+}
+
+function compareConversationForInbox(a: SupportConversation, b: SupportConversation): number {
+  const activeDelta = activeStatusRank(a.status) - activeStatusRank(b.status)
+  if (activeDelta !== 0) return activeDelta
+  return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+}
+
+function activeStatusRank(status: ConversationStatus): number {
+  return status === 'resolved' ? 1 : 0
 }
 
 function ConversationRow({ conv, onClick }: { conv: SupportConversation; onClick: () => void }) {
