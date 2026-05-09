@@ -123,11 +123,92 @@
     font-size: var(--text-base);
     line-height: var(--leading-normal);
     font-weight: var(--font-weight-regular);
+    margin: 0;
+    min-width: 320px;
+    overflow-x: clip;
+  }
+
+  html,
+  #root {
+    width: 100%;
+    min-height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: clip;
   }
 }
 
 @layer components {
   .input-field {
     @apply w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition focus:border-violet-500 focus:ring-2 focus:ring-violet-500/30 placeholder:text-muted-foreground;
+  }
+
+  .legal-page {
+    @apply bg-[#fbfaf6] text-gray-950;
+  }
+
+  .legal-hero {
+    @apply mx-auto max-w-4xl px-6 pb-12 pt-36;
+  }
+
+  .legal-hero h1 {
+    @apply text-4xl font-black tracking-tight text-gray-950 sm:text-6xl;
+  }
+
+  .legal-hero p {
+    @apply mt-5 text-base text-gray-600;
+  }
+
+  .legal-article {
+    @apply mx-auto max-w-4xl px-6 pb-24 text-gray-700;
+  }
+
+  .legal-article h2 {
+    @apply mt-12 border-t border-gray-200 pt-10 text-2xl font-black tracking-tight text-gray-950 first:mt-0 first:border-t-0 first:pt-0;
+  }
+
+  .legal-article h3 {
+    @apply mt-8 text-lg font-bold text-gray-950;
+  }
+
+  .legal-article p {
+    @apply mt-4 text-[15px] leading-8 text-gray-700;
+  }
+
+  .legal-article ul,
+  .legal-article ol {
+    @apply mt-5 space-y-3 pl-5 text-[15px] leading-8 text-gray-700;
+  }
+
+  .legal-article ul {
+    @apply list-disc;
+  }
+
+  .legal-article ol {
+    @apply list-decimal;
+  }
+
+  .legal-article a {
+    @apply font-semibold text-gray-950 underline decoration-gray-300 underline-offset-4 transition hover:decoration-gray-950;
+  }
+
+  .legal-article table {
+    @apply mt-5 w-full border-collapse overflow-hidden rounded-2xl text-left text-sm;
+  }
+
+  .legal-article th {
+    @apply bg-gray-100 px-4 py-3 font-bold text-gray-950;
+  }
+
+  .legal-article td {
+    @apply border-t border-gray-200 bg-white px-4 py-3 text-gray-700;
+  }
+
+  .legal-link-row {
+    @apply mt-12 flex flex-wrap gap-3 border-t border-gray-200 pt-8;
+  }
+
+  .legal-link-row a {
+    @apply rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 no-underline transition hover:border-gray-300 hover:text-gray-950;
   }
 }

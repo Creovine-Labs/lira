@@ -5,7 +5,8 @@ import { Toaster } from 'sonner'
 
 import {
   DashboardPage,
-  LandingPage,
+  LandingPageV3,
+  LandingPageV4,
   HomePage,
   MeetingPage,
   MeetingsPage,
@@ -29,8 +30,15 @@ import {
   DemoSitePage,
   ResourcesPage,
   TutorialsPage,
+  DocsHubPage,
+  DocArticlePage,
   BlogPage,
   BlogPostPage,
+  AboutPage,
+  FeaturesPage,
+  CareersPage,
+  BookDemoPage,
+  ContactPage,
   PrivacyPolicyPage,
   TermsOfServicePage,
   CookiePolicyPage,
@@ -93,7 +101,9 @@ function App() {
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
       <Routes>
         {/* Public routes — no shell */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<LandingPageV4 />} />
+        <Route path="/v3" element={<LandingPageV3 />} />
+        <Route path="/v4" element={<LandingPageV4 />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
         <Route path="/signup" element={<HomePage defaultView="landing" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
@@ -107,9 +117,18 @@ function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />
         <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/docs" element={<DocsHubPage />} />
+        <Route path="/docs/:slug" element={<DocArticlePage />} />
         <Route path="/tutorials" element={<TutorialsPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
+        <Route path="/about-us" element={<AboutPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/feature" element={<FeaturesPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/book-demo" element={<BookDemoPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/cookies" element={<CookiePolicyPage />} />

@@ -5,8 +5,14 @@ User-agent: *
 Allow: /
 Allow: /products/
 Allow: /blog/
+Allow: /docs/
 Allow: /resources/
 Allow: /tutorials/
+Allow: /features
+Allow: /about
+Allow: /about-us
+Allow: /careers
+Allow: /contact
 Allow: /security
 Allow: /privacy
 Allow: /terms

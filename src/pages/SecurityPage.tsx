@@ -74,18 +74,15 @@ export function SecurityPage() {
         keywords="Lira AI security, data protection, encryption, SOC 2, OWASP, OAuth 2.0, secure AI platform, data privacy, enterprise security, meeting data security"
         path="/security"
       />
-      <div className="bg-white">
+      <div className="legal-page">
         {/* Hero */}
-        <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600">Legal</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Security
-          </h1>
-          <p className="mt-4 max-w-2xl text-lg text-gray-500">
+        <section className="legal-hero">
+          <h1>Security</h1>
+          <p className="max-w-2xl">
             Protecting your data is foundational to everything we build. Here's how we keep your
             organization's information safe.
           </p>
-          <p className="mt-2 text-base text-gray-500">Last updated: {LAST_UPDATED}</p>
+          <p>Last updated: {LAST_UPDATED}</p>
         </section>
 
         {/* Security pillars grid */}
@@ -94,9 +91,9 @@ export function SecurityPage() {
             {SECURITY_PILLARS.map(({ icon: Icon, title, description }) => (
               <div
                 key={title}
-                className="rounded-2xl border border-gray-200 bg-gray-50/50 p-6 transition hover:border-indigo-200 hover:bg-indigo-50/30"
+                className="rounded-2xl border border-gray-200 bg-white/78 p-6 transition hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_22px_60px_rgba(2,3,8,0.09)]"
               >
-                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-xl bg-gray-100 text-gray-900">
                   <Icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-base font-semibold text-gray-900">{title}</h3>
@@ -107,7 +104,7 @@ export function SecurityPage() {
         </section>
 
         {/* Detailed sections */}
-        <article className="prose prose-gray prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-indigo-600 hover:prose-a:text-indigo-500 mx-auto max-w-4xl px-6 pb-24">
+        <article className="legal-article">
           <h2>Integration Security</h2>
           <p>
             Lira AI integrates with multiple third-party platforms. Each integration is secured
@@ -269,31 +266,11 @@ export function SecurityPage() {
           </ul>
 
           {/* Related links */}
-          <div className="not-prose mt-12 flex flex-wrap gap-4 border-t border-gray-200 pt-8">
-            <Link
-              to="/privacy"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              to="/terms"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Terms of Service
-            </Link>
-            <Link
-              to="/cookies"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Cookie Policy
-            </Link>
-            <Link
-              to="/acceptable-use"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Acceptable Use Policy
-            </Link>
+          <div className="legal-link-row">
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/cookies">Cookie Policy</Link>
+            <Link to="/acceptable-use">Acceptable Use Policy</Link>
           </div>
         </article>
       </div>

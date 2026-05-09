@@ -1,365 +1,139 @@
-import React from 'react'
-import { useState, useEffect, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import {
-  AcademicCapIcon,
-  ArrowRightIcon,
-  ArrowTrendingUpIcon,
-  Bars3Icon,
-  BookOpenIcon,
-  CheckBadgeIcon,
-  ChevronDownIcon,
-  ComputerDesktopIcon,
-  DocumentTextIcon,
-  HeartIcon,
-  VideoCameraIcon,
-  XMarkIcon,
-} from '@heroicons/react/24/outline'
+import { ArrowUpRight, List, X } from '@phosphor-icons/react'
 import { LiraLogo } from '@/components/LiraLogo'
 
-// ─── Dropdown data ────────────────────────────────────────────────────────────
-
-interface ProductItem {
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-  label: string
-  description: string
-  href: string
-  color: string
+interface MarketingNavbarProps {
+  variant?: 'light' | 'overlay'
 }
 
-const PRODUCTS: ProductItem[] = [
-  {
-    Icon: ArrowTrendingUpIcon,
-    label: 'Sales',
-    description: 'Invisible real-time coaching inside every sales call — close more deals.',
-    href: '/products/sales',
-    color: 'bg-gray-100 text-gray-700',
-  },
-  {
-    Icon: CheckBadgeIcon,
-    label: 'Interviews',
-    description: 'Lira conducts, scores, and reports on every candidate — no HR time needed.',
-    href: '/products/interviews',
-    color: 'bg-gray-100 text-gray-700',
-  },
-  {
-    Icon: VideoCameraIcon,
-    label: 'Meetings',
-    description:
-      'Lira joins your calls, takes notes, surfaces action items, and keeps everyone aligned.',
-    href: '/products/meetings',
-    color: 'bg-gray-100 text-gray-700',
-  },
-  {
-    Icon: HeartIcon,
-    label: 'Customer Support',
-    description: 'Lira handles support calls word-for-word, guided by your knowledge base.',
-    href: '/products/customer-support',
-    color: 'bg-gray-100 text-gray-700',
-  },
+const NAV_LINKS = [
+  { label: 'Home', href: '/' },
+  { label: 'Features', href: '/features' },
+  { label: 'Resources', href: '/resources' },
+  { label: 'Careers', href: '/careers' },
+  { label: 'Blog', href: '/blog' },
 ]
 
-interface ResourceItem {
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-  label: string
-  href: string
+function NavCta({ to, children, subtle = false }: { to: string; children: string; subtle?: boolean }) {
+  const tone = subtle ? 'bg-white/16 text-white ring-1 ring-white/42' : 'bg-[#202527] text-white'
+
+  return (
+    <Link
+      to={to}
+      className="group inline-flex min-h-11 items-center justify-center gap-1 text-xs font-extrabold uppercase tracking-normal text-white transition hover:-translate-y-0.5"
+    >
+      <span
+        className={`inline-flex min-h-11 items-center rounded-full px-4 shadow-[0_14px_30px_rgba(0,0,0,0.16)] transition group-hover:bg-black ${tone}`}
+      >
+        {children}
+      </span>
+      <span
+        className={`grid h-11 w-11 place-items-center rounded-full shadow-[0_14px_30px_rgba(0,0,0,0.16)] transition group-hover:bg-black ${tone}`}
+      >
+        <ArrowUpRight size={16} weight="bold" className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+      </span>
+    </Link>
+  )
 }
 
-const RESOURCES: ResourceItem[] = [
-  {
-    Icon: BookOpenIcon,
-    label: 'How-to Guides',
-    href: 'https://docs.liraintelligence.com/getting-started/navigation',
-  },
-  { Icon: AcademicCapIcon, label: 'Tutorials', href: '/tutorials' },
-  { Icon: DocumentTextIcon, label: 'Documentation', href: 'https://docs.liraintelligence.com' },
-]
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-type DropdownId = 'products' | 'resources' | null
-
-export function MarketingNavbar() {
-  const [openDropdown, setOpenDropdown] = useState<DropdownId>(null)
+export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [mobileExpanded, setMobileExpanded] = useState<'solutions' | 'resources' | null>(null)
   const [scrolled, setScrolled] = useState(false)
-  const navRef = useRef<HTMLDivElement>(null)
+  const isOverlay = variant === 'overlay'
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
     window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!openDropdown) return
-    const handler = (e: MouseEvent) => {
-      if (navRef.current && !navRef.current.contains(e.target as Node)) {
-        setOpenDropdown(null)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [openDropdown])
+  const shellClass = isOverlay && !scrolled
+    ? 'absolute inset-x-0 top-0 z-[777] text-white'
+    : 'fixed inset-x-0 top-0 z-[777] border-b border-gray-200/70 bg-[#fbfaf6]/90 text-gray-900 shadow-sm backdrop-blur-md'
 
-  const toggle = (id: DropdownId) => setOpenDropdown((prev) => (prev === id ? null : id))
-
-  const close = () => setOpenDropdown(null)
+  const linkClass = isOverlay && !scrolled
+    ? 'text-white/88 hover:text-white'
+    : 'text-gray-700 hover:text-gray-950'
 
   return (
-    <header
-      className={`fixed inset-x-0 top-0 z-50 transition-all duration-200 ${
-        scrolled ? 'bg-[#ebebeb]/90 backdrop-blur-md shadow-sm' : 'bg-transparent'
-      }`}
-    >
-      <div ref={navRef}>
-        <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          {/* Logo */}
-          <Link to="/" aria-label="Lira AI home" className="flex items-center gap-2">
-            <LiraLogo size="md" />
-          </Link>
+    <header className={shellClass}>
+      <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <Link to="/" aria-label="Lira home" className="flex items-center gap-2">
+          <LiraLogo size="md" className={isOverlay && !scrolled ? '[&_span]:text-white [&_img]:brightness-0 [&_img]:invert' : ''} />
+        </Link>
 
-          {/* Desktop center nav */}
-          <ul className="hidden md:flex items-center gap-2">
-            {/* Products */}
-            <li className="relative">
-              <button
-                onClick={() => toggle('products')}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-black transition-colors ${
-                  openDropdown === 'products'
-                    ? 'bg-gray-700 text-white'
-                    : 'bg-gray-900 text-white hover:bg-gray-700'
-                }`}
-              >
-                Solutions
-                <ChevronDownIcon
-                  className={`h-3 w-3 transition-transform duration-200 ${openDropdown === 'products' ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {openDropdown === 'products' && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[420px] rounded-2xl bg-white border border-gray-200 shadow-xl p-2 z-50">
-                  {PRODUCTS.map(({ Icon, label, description, href, color }) => (
-                    <Link
-                      key={label}
-                      to={href}
-                      onClick={close}
-                      className="flex items-start gap-3.5 p-3.5 rounded-xl hover:bg-gray-50 group transition-colors"
-                    >
-                      <div
-                        className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${color}`}
-                      >
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-black text-gray-900 leading-snug">{label}</p>
-                        <p className="text-xs text-gray-500 leading-relaxed mt-0.5">
-                          {description}
-                        </p>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </li>
-
-            {/* Resources */}
-            <li className="relative">
-              <button
-                onClick={() => toggle('resources')}
-                className={`inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-black transition-colors ${
-                  openDropdown === 'resources'
-                    ? 'bg-gray-700 text-white'
-                    : 'bg-gray-900 text-white hover:bg-gray-700'
-                }`}
-              >
-                Resources
-                <ChevronDownIcon
-                  className={`h-3 w-3 transition-transform duration-200 ${openDropdown === 'resources' ? 'rotate-180' : ''}`}
-                />
-              </button>
-
-              {openDropdown === 'resources' && (
-                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-3 w-[240px] rounded-2xl bg-white border border-gray-200 shadow-xl p-2 z-50">
-                  {RESOURCES.map(({ Icon, label, href }) => {
-                    const isExternal = href.startsWith('http')
-                    const cls =
-                      'flex items-center gap-3 px-3.5 py-2.5 rounded-xl hover:bg-gray-50 transition-colors'
-                    return isExternal ? (
-                      <a
-                        key={label}
-                        href={href}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={close}
-                        className={cls}
-                      >
-                        <Icon className="h-4 w-4 text-gray-700 shrink-0" />
-                        <span className="text-sm font-black text-gray-900">{label}</span>
-                      </a>
-                    ) : (
-                      <Link key={label} to={href} onClick={close} className={cls}>
-                        <Icon className="h-4 w-4 text-gray-700 shrink-0" />
-                        <span className="text-sm font-black text-gray-900">{label}</span>
-                      </Link>
-                    )
-                  })}
-                </div>
-              )}
-            </li>
-
-            {/* Blog */}
-            <li>
-              <Link
-                to="/blog"
-                className="inline-flex items-center rounded-full bg-gray-900 px-4 py-1.5 text-sm font-black text-white hover:bg-gray-700 transition-colors"
-              >
-                Blog
+        <ul className="hidden items-center gap-8 md:flex">
+          {NAV_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link to={link.href} className={`text-sm font-semibold transition ${linkClass}`}>
+                {link.label}
               </Link>
             </li>
+          ))}
+        </ul>
 
-            {/* Pricing */}
-            <li>
+        <div className="hidden items-center gap-3 md:flex">
+          <NavCta to="/signup">Create account</NavCta>
+          {isOverlay && !scrolled ? (
+            <NavCta to="/book-demo" subtle>Book a demo</NavCta>
+          ) : (
+            <Link
+              to="/book-demo"
+              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-gray-900 ring-1 ring-gray-200 transition hover:bg-gray-50"
+            >
+              Book a demo
+              <ArrowUpRight size={14} weight="bold" />
+            </Link>
+          )}
+        </div>
+
+        <button
+          type="button"
+          className={`inline-flex h-10 w-10 items-center justify-center rounded-full md:hidden ${
+            isOverlay && !scrolled ? 'bg-white/14 text-white' : 'bg-gray-900 text-white'
+          }`}
+          aria-label="Toggle navigation"
+          aria-expanded={mobileOpen}
+          onClick={() => setMobileOpen((value) => !value)}
+        >
+          {mobileOpen ? <X size={20} weight="bold" /> : <List size={20} weight="bold" />}
+        </button>
+      </nav>
+
+      {mobileOpen && (
+        <div className="mx-4 mb-4 rounded-2xl border border-gray-200 bg-[#fbfaf6] p-4 shadow-xl md:hidden">
+          <div className="grid gap-1">
+            {NAV_LINKS.map((link) => (
               <Link
-                to="/pricing"
-                className="inline-flex items-center rounded-full bg-gray-900 px-4 py-1.5 text-sm font-black text-white hover:bg-gray-700 transition-colors"
+                key={link.href}
+                to={link.href}
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                onClick={() => setMobileOpen(false)}
               >
-                Pricing
+                {link.label}
               </Link>
-            </li>
-          </ul>
-
-          {/* Desktop right CTAs */}
-          <div className="hidden md:flex items-center gap-3">
+            ))}
+          </div>
+          <div className="mt-4 grid gap-2 border-t border-gray-200 pt-4">
             <Link
               to="/signup"
-              className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-700"
-            >
-              <ComputerDesktopIcon className="h-3.5 w-3.5" />
-              Get started
-            </Link>
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
-            >
-              Login
-              <ArrowRightIcon className="h-3.5 w-3.5" />
-            </Link>
-          </div>
-
-          {/* Mobile toggle */}
-          <button
-            className="md:hidden p-2 rounded-lg hover:bg-gray-200/60"
-            onClick={() => setMobileOpen((v) => !v)}
-            aria-label="Toggle navigation"
-          >
-            {mobileOpen ? <XMarkIcon className="h-5 w-5" /> : <Bars3Icon className="h-5 w-5" />}
-          </button>
-        </nav>
-
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <div className="md:hidden bg-[#ebebeb] border-t border-gray-200 px-6 py-4 space-y-1">
-            {/* Solutions accordion */}
-            <button
-              onClick={() => setMobileExpanded((v) => (v === 'solutions' ? null : 'solutions'))}
-              className="flex w-full items-center justify-between py-2.5 text-sm font-black text-gray-900"
-            >
-              Solutions
-              <ChevronDownIcon
-                className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                  mobileExpanded === 'solutions' ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            {mobileExpanded === 'solutions' && (
-              <div className="pl-3 pb-1 space-y-0.5">
-                {PRODUCTS.map(({ Icon, label, href }) => (
-                  <Link
-                    key={label}
-                    to={href}
-                    className="flex items-center gap-2.5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-gray-100 last:border-0"
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    <Icon className="h-4 w-4 shrink-0 text-gray-400" />
-                    {label}
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {/* Resources accordion */}
-            <button
-              onClick={() => setMobileExpanded((v) => (v === 'resources' ? null : 'resources'))}
-              className="flex w-full items-center justify-between py-2.5 text-sm font-black text-gray-900 border-t border-gray-100"
-            >
-              Resources
-              <ChevronDownIcon
-                className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                  mobileExpanded === 'resources' ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            {mobileExpanded === 'resources' && (
-              <div className="pl-3 pb-1 space-y-0.5">
-                {RESOURCES.map(({ Icon, label, href }) => {
-                  const isExternal = href.startsWith('http')
-                  const cls =
-                    'flex items-center gap-2.5 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border-b border-gray-100 last:border-0'
-                  return isExternal ? (
-                    <a
-                      key={label}
-                      href={href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={cls}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 text-gray-400" />
-                      {label}
-                    </a>
-                  ) : (
-                    <Link
-                      key={label}
-                      to={href}
-                      className={cls}
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <Icon className="h-4 w-4 shrink-0 text-gray-400" />
-                      {label}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-
-            <Link
-              to="/blog"
-              className="block border-t border-gray-100 py-2.5 text-sm font-black text-gray-900 hover:text-gray-700"
+              className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold text-white"
               onClick={() => setMobileOpen(false)}
             >
-              Blog
+              Create account
             </Link>
-            <div className="flex flex-col gap-2 pt-4">
-              <Link
-                to="/signup"
-                className="inline-flex justify-center items-center gap-2 rounded-full bg-gray-900 px-4 py-2.5 text-sm font-medium text-white"
-              >
-                <ComputerDesktopIcon className="h-3.5 w-3.5" />
-                Get started
-              </Link>
-              <Link
-                to="/login"
-                className="inline-flex justify-center items-center gap-1 text-sm font-medium text-gray-700 py-2"
-              >
-                Login <ArrowRightIcon className="h-3.5 w-3.5" />
-              </Link>
-            </div>
+            <Link
+              to="/book-demo"
+              className="inline-flex justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-gray-200"
+              onClick={() => setMobileOpen(false)}
+            >
+              Book a demo
+            </Link>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </header>
   )
 }
