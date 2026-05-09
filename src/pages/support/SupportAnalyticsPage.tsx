@@ -92,6 +92,12 @@ function SupportAnalyticsPanel() {
                   accent="indigo"
                 />
                 <MetricCard
+                  icon={ClockIcon}
+                  label="Open"
+                  value={stats.open_conversations}
+                  accent="amber"
+                />
+                <MetricCard
                   icon={ExclamationTriangleIcon}
                   label="Escalated"
                   value={stats.escalated}
@@ -133,8 +139,70 @@ function SupportAnalyticsPanel() {
                     total={stats.total_conversations}
                     color="bg-amber-500"
                   />
+                  <BarRow
+                    label="Pending"
+                    count={stats.pending_conversations ?? 0}
+                    total={stats.total_conversations}
+                    color="bg-indigo-500"
+                  />
                 </div>
               </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
+                  <h3 className="mb-4 text-sm font-bold text-gray-900">Conversation Channels</h3>
+                  <div className="space-y-3">
+                    <BarRow
+                      label="Chat widget"
+                      count={stats.chat_conversations ?? 0}
+                      total={stats.total_conversations}
+                      color="bg-blue-500"
+                    />
+                    <BarRow
+                      label="Email"
+                      count={stats.email_conversations ?? 0}
+                      total={stats.total_conversations}
+                      color="bg-emerald-500"
+                    />
+                    <BarRow
+                      label="Voice"
+                      count={stats.voice_conversations ?? 0}
+                      total={stats.total_conversations}
+                      color="bg-purple-500"
+                    />
+                    <BarRow
+                      label="Portal"
+                      count={stats.portal_conversations ?? 0}
+                      total={stats.total_conversations}
+                      color="bg-gray-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
+                  <h3 className="mb-4 text-sm font-bold text-gray-900">Message Volume</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <MiniStat label="Total" value={stats.total_messages ?? 0} />
+                    <MiniStat label="Customer" value={stats.customer_messages ?? 0} />
+                    <MiniStat label="Lira" value={stats.lira_messages ?? 0} />
+                    <MiniStat label="Team" value={stats.agent_messages ?? 0} />
+                  </div>
+                </div>
+              </div>
+
+              {(stats.top_intents?.length ?? 0) > 0 && (
+                <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
+                  <h3 className="mb-3 text-sm font-bold text-gray-900">Top Customer Intents</h3>
+                  <div className="space-y-2">
+                    {stats.top_intents?.slice(0, 8).map((item) => (
+                      <div key={item.intent} className="flex items-center justify-between text-sm">
+                        <span className="text-gray-600">{item.intent}</span>
+                        <span className="font-medium text-gray-800">{item.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Response time */}
               <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">

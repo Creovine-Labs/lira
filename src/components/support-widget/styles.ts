@@ -73,10 +73,26 @@ export function getWidgetStyles(primaryColor: string): string {
       pointer-events: none;
       animation: lira-badge-pop 0.3s ease-out;
     }
+    .lira-unread-badge::before {
+      content: '';
+      position: absolute;
+      top: -4px;
+      left: -4px;
+      right: -4px;
+      bottom: -4px;
+      border-radius: 50%;
+      background: #ef4444;
+      opacity: 0;
+      animation: lira-badge-ping 2s ease-out 0.4s infinite;
+    }
     @keyframes lira-badge-pop {
       0% { transform: scale(0); }
       70% { transform: scale(1.2); }
       100% { transform: scale(1); }
+    }
+    @keyframes lira-badge-ping {
+      0% { transform: scale(1); opacity: 0.65; }
+      100% { transform: scale(2.6); opacity: 0; }
     }
 
     /* ── Chat window ─────────────────────────────────────────── */

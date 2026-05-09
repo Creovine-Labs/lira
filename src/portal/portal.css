@@ -762,3 +762,56 @@ a {
 body.lp-embed .lp-footer {
   display: none;
 }
+
+/* ── Unread / new-reply indicators ─────────────────────────────────────────── */
+
+.lp-ticket-row--unread .lp-ticket-subject {
+  font-weight: 700;
+}
+
+.lp-unread-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  flex-shrink: 0;
+  position: relative;
+}
+.lp-unread-dot::before {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  background: #ef4444;
+  opacity: 0;
+  animation: lp-dot-ping 2s ease-out infinite;
+}
+@keyframes lp-dot-ping {
+  0%   { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.8); opacity: 0; }
+}
+
+.lp-unread-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #ef4444;
+  letter-spacing: 0.02em;
+}
+
+.lp-new-reply-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #b91c1c;
+}
+.lp-new-reply-banner svg {
+  flex-shrink: 0;
+}

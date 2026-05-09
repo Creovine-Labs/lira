@@ -103,21 +103,31 @@ export function MyTickets({ config, session, onSession }: MyTicketsProps) {
 
       {!loading && tickets.length > 0 && (
         <div className="lp-ticket-list">
-          {tickets.map((t) => (
-            <a
-              key={t.conv_id}
-              href={`/${config.orgSlug}/tickets/${t.conv_id}`}
-              className="lp-ticket-row"
-            >
-              <div className="lp-ticket-left">
-                <span className="lp-ticket-subject">{t.subject || 'No subject'}</span>
-                <span className="lp-ticket-meta">
-                  {timeAgo(t.updated_at)} · {t.channel}
-                </span>
-              </div>
-              <div className="lp-ticket-right">{statusBadge(t.status, accent)}</div>
-            </a>
-          ))}
+          {tickets.map((t) => {
+            const lastMsg = t.messages[t.messages.length - 1]
+            const hasNewReply =
+              lastMsg && (lastMsg.role === 'agent' || lastMsg.role === 'lira') &&
+              t.status !== 'resolved'
+            return (
+              <a
+                key={t.conv_id}
+                href={`/${config.orgSlug}/tickets/${t.conv_id}`}
+                className={`lp-ticket-row${hasNewReply ? ' lp-ticket-row--unread' : ''}`}
+              >
+                <div className="lp-ticket-left">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                    {hasNewReply && <span className="lp-unread-dot" />}
+                    <span className="lp-ticket-subject">{t.subject || 'No subject'}</span>
+                  </div>
+                  <span className="lp-ticket-meta">
+                    {timeAgo(t.updated_at)} · {t.channel}
+                    {hasNewReply && <span className="lp-unread-label" style={{ marginLeft: '8px' }}>New reply</span>}
+                  </span>
+                </div>
+                <div className="lp-ticket-right">{statusBadge(t.status, accent)}</div>
+              </a>
+            )
+          })}
         </div>
       )}
     </div>

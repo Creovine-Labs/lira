@@ -24,6 +24,9 @@ function statusBadge(status: string) {
       return 'bg-amber-100 text-amber-700'
     case 'approved':
       return 'bg-blue-100 text-blue-700'
+    case 'executing':
+      return 'bg-indigo-100 text-indigo-700'
+    case 'completed':
     case 'executed':
       return 'bg-green-100 text-green-700'
     case 'failed':
@@ -32,6 +35,21 @@ function statusBadge(status: string) {
       return 'bg-gray-100 text-gray-600'
     default:
       return 'bg-gray-100 text-gray-600'
+  }
+}
+
+function actionTypeLabel(type: string): string {
+  switch (type) {
+    case 'email_followup':
+      return 'Follow-up email to customer'
+    case 'escalation_email':
+      return 'Escalation alert sent to team'
+    case 'crm_lookup':
+      return 'CRM lookup'
+    case 'crm_update':
+      return 'CRM update'
+    default:
+      return type.replace(/_/g, ' ')
   }
 }
 
@@ -52,7 +70,8 @@ function SupportActionsPanel() {
 
   useEffect(() => {
     if (!currentOrgId) return
-    const status = activeTab === 'pending' ? 'pending' : undefined
+    // pending tab: only pending; history tab: completed + failed + rejected
+    const status = activeTab === 'pending' ? 'pending' : 'history'
     loadActions(currentOrgId, status)
   }, [currentOrgId, activeTab, loadActions])
 
@@ -109,6 +128,12 @@ function SupportActionsPanel() {
       </div>
 
       {/* Content */}
+      <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+        <strong>Approval Queue</strong> — when Lira drafts a follow-up email to a customer, it waits
+        here for you to review and approve before anything is sent. <strong>History</strong> shows
+        every notification email already delivered to your team (escalation alerts).
+      </div>
+
       {actionsLoading ? (
         <div className="flex items-center justify-center py-20">
           <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
@@ -134,7 +159,7 @@ function SupportActionsPanel() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-sm font-semibold text-gray-900">
-                      {action.action_type.replace(/_/g, ' ')}
+                      {actionTypeLabel(action.action_type)}
                     </p>
                     <span
                       className={cn(

@@ -637,7 +637,7 @@ function SupportActivatePage() {
     // The user navigates to inbox manually from there.
     if (activated) return
     if (config?.activated && config.onboarding_completed) {
-      navigate('/support/inbox', { replace: true })
+      navigate('/support?tab=inbox', { replace: true })
     }
   }, [config, navigate, activated])
 
@@ -1001,7 +1001,7 @@ function SupportActivatePage() {
           <div className="flex justify-center pt-2">
             <button
               type="button"
-              onClick={() => navigate('/support/inbox', { replace: true })}
+              onClick={() => navigate('/support?tab=inbox', { replace: true })}
               className="inline-flex items-center gap-2 rounded-xl bg-[#3730a3] px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#312e81]"
             >
               Go to Inbox
@@ -1201,13 +1201,20 @@ function SupportActivatePage() {
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-gray-500">Embed snippet</p>
                       <p className="text-xs text-gray-400">
-                        Paste this before <code className="font-mono text-gray-500">&lt;/body&gt;</code> on every page where you want the widget.
+                        Paste this before{' '}
+                        <code className="font-mono text-gray-500">&lt;/body&gt;</code> on every page
+                        where you want the widget.
                       </p>
                       <div className="relative">
-                        <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">{embedCode}</pre>
+                        <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                          {embedCode}
+                        </pre>
                         <button
                           type="button"
-                          onClick={() => { navigator.clipboard.writeText(embedCode); toast.success('Copied!') }}
+                          onClick={() => {
+                            navigator.clipboard.writeText(embedCode)
+                            toast.success('Copied!')
+                          }}
                           className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
                         >
                           <ClipboardDocumentIcon className="h-3.5 w-3.5" />
@@ -1215,7 +1222,13 @@ function SupportActivatePage() {
                         </button>
                       </div>
                       <p className="text-[11px] text-gray-400">
-                        To let Lira greet customers by name, generate an <strong className="font-medium text-gray-500">HMAC signature</strong> server-side and pass <code className="font-mono">data-email</code>, <code className="font-mono">data-name</code>, and <code className="font-mono">data-sig</code>. After activation, grab your <strong className="font-medium text-gray-500">widget secret</strong> from <strong className="font-medium text-gray-500">Support → Settings</strong>.
+                        To let Lira greet customers by name, generate an{' '}
+                        <strong className="font-medium text-gray-500">HMAC signature</strong>{' '}
+                        server-side and pass <code className="font-mono">data-email</code>,{' '}
+                        <code className="font-mono">data-name</code>, and{' '}
+                        <code className="font-mono">data-sig</code>. After activation, grab your{' '}
+                        <strong className="font-medium text-gray-500">widget secret</strong> from{' '}
+                        <strong className="font-medium text-gray-500">Support → Settings</strong>.
                       </p>
                     </div>
                   </div>
@@ -1266,9 +1279,7 @@ function SupportActivatePage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() =>
-                              setPortalCustomDomain((v) => v || ' ')
-                            }
+                            onClick={() => setPortalCustomDomain((v) => v || ' ')}
                             className={`flex items-center gap-1 rounded-md px-3 py-1 transition-colors ${
                               portalCustomDomain
                                 ? 'bg-white text-gray-800 shadow-sm'
@@ -1291,9 +1302,7 @@ function SupportActivatePage() {
                             type="text"
                             value={portalSlug}
                             onChange={(e) =>
-                              setPortalSlug(
-                                e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''),
-                              )
+                              setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
                             }
                             placeholder={portalSlugFinal}
                             className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
@@ -1307,9 +1316,7 @@ function SupportActivatePage() {
                             type="text"
                             value={portalCustomDomain.trim()}
                             onChange={(e) =>
-                              setPortalCustomDomain(
-                                e.target.value.toLowerCase().replace(/\s/g, ''),
-                              )
+                              setPortalCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
                             }
                             placeholder="support.yourcompany.com"
                             className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
@@ -1323,8 +1330,8 @@ function SupportActivatePage() {
                             <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
                               support.liraintelligence.com
                             </code>
-                            , then enter your domain above. Your default URL still works — this
-                            adds an alias.
+                            , then enter your domain above. Your default URL still works — this adds
+                            an alias.
                           </p>
                         </div>
                       )}
@@ -1470,17 +1477,24 @@ function SupportActivatePage() {
               <div>
                 <p className="text-sm font-semibold text-gray-700 mb-2">Support agent tools</p>
                 <p className="text-xs text-gray-500 mb-2">
-                  Connect external services so Lira can take actions on behalf of customers — e.g. look up account data, create tickets, or send notifications.
+                  Connect external services so Lira can take actions on behalf of customers — e.g.
+                  look up account data, create tickets, or send notifications.
                 </p>
                 <a
                   href="/org/integrations"
                   className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-800">Third-party integrations</span>
-                    <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">optional</span>
+                    <span className="text-sm font-medium text-gray-800">
+                      Third-party integrations
+                    </span>
+                    <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                      optional
+                    </span>
                   </div>
-                  <span className="text-xs font-medium text-[#3730a3]">Configure in Integrations →</span>
+                  <span className="text-xs font-medium text-[#3730a3]">
+                    Configure in Integrations →
+                  </span>
                 </a>
               </div>
             </div>
@@ -1639,9 +1653,7 @@ function SupportActivatePage() {
                       {portalEnabled && (
                         <li>
                           Support portal:{' '}
-                          {portalCustomDomain.trim()
-                            ? portalCustomDomain.trim()
-                            : portalUrl}
+                          {portalCustomDomain.trim() ? portalCustomDomain.trim() : portalUrl}
                         </li>
                       )}
                       <li>Knowledge base: Connected</li>

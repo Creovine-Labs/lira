@@ -30,6 +30,7 @@ import {
   listSupportCustomers,
   getSupportCustomer,
   updateSupportCustomer,
+  deleteSupportCustomer,
   getSupportStats as getSupportStatsApi,
   getWeeklyReport as getWeeklyReportApi,
   listActions as listActionsApi,
@@ -55,7 +56,11 @@ interface SupportSlice {
   conversationsLoading: boolean
   statusFilter: ConversationStatus | null
   selectedConversation: SupportConversation | null
-  loadConversations: (orgId: string, status?: ConversationStatus) => Promise<void>
+  loadConversations: (
+    orgId: string,
+    status?: ConversationStatus,
+    options?: { background?: boolean }
+  ) => Promise<void>
   loadConversation: (orgId: string, convId: string) => Promise<void>
   sendReply: (orgId: string, convId: string, body: string) => Promise<void>
   resolveConversation: (orgId: string, convId: string) => Promise<void>
@@ -85,6 +90,7 @@ interface SupportSlice {
     customerId: string,
     updates: Partial<CustomerProfile>
   ) => Promise<void>
+  deleteCustomer: (orgId: string, customerId: string) => Promise<void>
 
   // Stats
   stats: SupportStats | null
@@ -174,8 +180,8 @@ export const useSupportStore = create<SupportSlice>()((set) => ({
   },
 
   // ── Conversations ─────────────────────────────────────────────────────────
-  loadConversations: async (orgId, status) => {
-    set({ conversationsLoading: true })
+  loadConversations: async (orgId, status, options) => {
+    if (!options?.background) set({ conversationsLoading: true })
     try {
       const conversations = await listConversationsApi(orgId, status)
       // Sort newest first by updated_at (DynamoDB SK is UUID-based, not time-ordered)
@@ -184,9 +190,9 @@ export const useSupportStore = create<SupportSlice>()((set) => ({
       )
       set({ conversations })
     } catch {
-      set({ conversations: [] })
+      if (!options?.background) set({ conversations: [] })
     } finally {
-      set({ conversationsLoading: false })
+      if (!options?.background) set({ conversationsLoading: false })
     }
   },
 
@@ -326,6 +332,16 @@ export const useSupportStore = create<SupportSlice>()((set) => ({
   updateCustomer: async (orgId, customerId, updates) => {
     const customer = await updateSupportCustomer(orgId, customerId, updates)
     set({ selectedCustomer: customer })
+  },
+
+  deleteCustomer: async (orgId, customerId) => {
+    await deleteSupportCustomer(orgId, customerId)
+    set((s) => ({
+      customers: s.customers.filter((c) => c.customer_id !== customerId),
+      selectedCustomer: s.selectedCustomer?.customer_id === customerId ? null : s.selectedCustomer,
+      customerConversations:
+        s.selectedCustomer?.customer_id === customerId ? [] : s.customerConversations,
+    }))
   },
 
   // ── Stats ─────────────────────────────────────────────────────────────────

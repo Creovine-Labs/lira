@@ -40,6 +40,9 @@ import {
   listSlackMembers,
   listSlackMemberMappings,
   saveSlackMemberMapping,
+  getTwilioStatus,
+  connectTwilio,
+  disconnectTwilio,
   // TEAMS_DISABLED (routes off, card hidden): kept for easy re-enable
   getTeamsAuthUrl,
   getTeamsStatus,
@@ -107,6 +110,7 @@ import type {
   SlackChannel,
   SlackMember,
   SlackMemberMapping,
+  TwilioStatus,
   // TEAMS_DISABLED (routes off, card hidden): kept for easy re-enable
   TeamsStatus,
   TeamsTeam,
@@ -5178,6 +5182,158 @@ function SalesforceCard({ orgId }: { orgId: string }) {
     </div>
   )
 }
+
+function TwilioCard({ orgId }: { orgId: string }) {
+  const [status, setStatus] = useState<TwilioStatus | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [open, setOpen] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState({ accountSid: '', authToken: '', fromNumber: '' })
+
+  const loadStatus = useCallback(async () => {
+    setLoading(true)
+    try {
+      setStatus(await getTwilioStatus(orgId))
+    } catch {
+      setStatus({ connected: false })
+    } finally {
+      setLoading(false)
+    }
+  }, [orgId])
+
+  useEffect(() => {
+    loadStatus()
+  }, [loadStatus])
+
+  const handleSave = async () => {
+    if (!form.accountSid.trim() || !form.authToken.trim() || !form.fromNumber.trim()) {
+      toast.error('Add your Twilio Account SID, Auth Token, and sender number')
+      return
+    }
+    setSaving(true)
+    try {
+      await connectTwilio(orgId, {
+        accountSid: form.accountSid.trim(),
+        authToken: form.authToken.trim(),
+        fromNumber: form.fromNumber.trim(),
+      })
+      toast.success('Twilio connected', {
+        description: 'SMS can now be used for proactive outreach.',
+      })
+      setForm({ accountSid: '', authToken: '', fromNumber: '' })
+      setOpen(false)
+      loadStatus()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to connect Twilio')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleDisconnect = async () => {
+    setSaving(true)
+    try {
+      await disconnectTwilio(orgId)
+      toast.success('Twilio disconnected')
+      loadStatus()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to disconnect Twilio')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+            <LinkIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-sm font-bold text-gray-900">Twilio SMS</h3>
+              {status?.connected && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase text-emerald-600">
+                  <CheckCircleIcon className="h-3 w-3" /> Connected
+                </span>
+              )}
+            </div>
+            <p className="mt-1 max-w-xl text-xs leading-5 text-gray-400">
+              Connect Twilio so Proactive rules can send SMS outreach to customers with phone
+              numbers on file.
+            </p>
+            {status?.connected && status.from_number && (
+              <p className="mt-1 text-xs font-medium text-gray-500">
+                Sender number: {status.from_number}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex shrink-0 items-center gap-2">
+          {status?.connected && (
+            <button
+              onClick={handleDisconnect}
+              disabled={saving}
+              className="rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 disabled:opacity-50"
+            >
+              Disconnect
+            </button>
+          )}
+          <button
+            onClick={() => setOpen((v) => !v)}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50"
+          >
+            {status?.connected ? 'Update' : 'Connect'}
+            <ChevronDownIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="mt-4 rounded-xl border border-gray-100 bg-gray-50 p-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <input
+              value={form.accountSid}
+              onChange={(e) => setForm((f) => ({ ...f, accountSid: e.target.value }))}
+              placeholder="Account SID"
+              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+            />
+            <input
+              type="password"
+              value={form.authToken}
+              onChange={(e) => setForm((f) => ({ ...f, authToken: e.target.value }))}
+              placeholder="Auth Token"
+              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+            />
+            <input
+              value={form.fromNumber}
+              onChange={(e) => setForm((f) => ({ ...f, fromNumber: e.target.value }))}
+              placeholder="Sender number, e.g. +15551234567"
+              className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+            />
+          </div>
+          <div className="mt-3 flex justify-end gap-2">
+            <button
+              onClick={() => setOpen(false)}
+              className="inline-flex items-center gap-1 rounded-xl px-3 py-2 text-xs font-semibold text-gray-500 hover:bg-white"
+            >
+              <XMarkIcon className="h-3.5 w-3.5" /> Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Save Twilio'}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 export default function IntegrationsPage() {
   const orgId = useOrgStore((s) => s.currentOrgId)
   useConnectionCallback()
@@ -5227,6 +5383,7 @@ export default function IntegrationsPage() {
           </h2>
           <div className="space-y-3">
             <SlackCard orgId={orgId} />
+            <TwilioCard orgId={orgId} />
             {/* TEAMS_DISABLED: <TeamsCard orgId={orgId} /> */}
           </div>
         </section>
