@@ -2,6 +2,13 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Variants } from 'framer-motion'
+import {
+  MailCheck,
+  MessageSquareText,
+  PlugZap,
+  ShieldCheck as LucideShieldCheck,
+  Workflow,
+} from 'lucide-react'
 import { SEO } from '@/components/SEO'
 import { MarketingFooter, MarketingNavbar } from '@/components/marketing'
 import {
@@ -10,8 +17,6 @@ import {
   Bank,
   Brain,
   CaretDown,
-  ChatText,
-  EnvelopeSimpleOpen,
   FlowArrow,
   GlobeHemisphereWest,
   Headset,
@@ -19,7 +24,6 @@ import {
   Microphone,
   Package,
   RocketLaunch,
-  ShieldCheck,
   Sparkle,
   Storefront,
 } from '@phosphor-icons/react'
@@ -234,13 +238,11 @@ function Visual({ type }: { type: string }) {
         whileInView="show"
         viewport={viewport}
       >
-        {[GlobeHemisphereWest, ChatText, FlowArrow, EnvelopeSimpleOpen, ShieldCheck].map(
-          (Icon, index) => (
-            <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
-              <Icon size={24} weight="fill" />
-            </span>
-          )
-        )}
+        {[PlugZap, MessageSquareText, Workflow, MailCheck, LucideShieldCheck].map((Icon, index) => (
+          <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
+            <Icon size={24} />
+          </span>
+        ))}
       </motion.div>
     )
   }
