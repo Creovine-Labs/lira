@@ -101,7 +101,9 @@ export function TutorialsPage() {
           <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-gray-100">
             <PlayCircle className="h-7 w-7 text-gray-400" weight="duotone" />
           </div>
-          <h2 className="mb-3 text-2xl font-black tracking-tight text-gray-950">More videos soon</h2>
+          <h2 className="mb-3 text-2xl font-black tracking-tight text-gray-950">
+            More videos soon
+          </h2>
           <p className="text-sm leading-relaxed text-gray-600">
             The written guides are live now, and the video library can keep expanding from the same
             real product workflows.

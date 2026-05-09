@@ -52,10 +52,26 @@ const features = [
 ]
 
 const setupSteps = [
-  ['01', 'Activate support', 'Choose chat, portal, email, voice, and escalation preferences from the Lira dashboard.'],
-  ['02', 'Paste the snippet', 'Add the widget script before the closing body tag on the pages where customers need support.'],
-  ['03', 'Connect systems', 'Add CRM, Slack, Linear, GitHub, or Teams integrations so Lira can route and act with context.'],
-  ['04', 'Go live', 'Test the customer entry point, confirm the greeting, and let Lira start handling support conversations.'],
+  [
+    '01',
+    'Activate support',
+    'Choose chat, portal, email, voice, and escalation preferences from the Lira dashboard.',
+  ],
+  [
+    '02',
+    'Paste the snippet',
+    'Add the widget script before the closing body tag on the pages where customers need support.',
+  ],
+  [
+    '03',
+    'Connect systems',
+    'Add CRM, Slack, Linear, GitHub, or Teams integrations so Lira can route and act with context.',
+  ],
+  [
+    '04',
+    'Go live',
+    'Test the customer entry point, confirm the greeting, and let Lira start handling support conversations.',
+  ],
 ]
 
 const outcomeProof = [
@@ -80,13 +96,49 @@ function SetupCodeCard() {
   return (
     <div className="bx-post-card">
       <div className="bx-post-surface" style={{ padding: 12 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '12px 14px', borderRadius: '12px 12px 6px 6px', background: 'rgba(2,3,8,0.06)' }}>
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(2,3,8,0.28)' }} />
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(2,3,8,0.28)' }} />
-          <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(2,3,8,0.28)' }} />
-          <strong style={{ marginLeft: 'auto', color: 'rgba(2,3,8,0.58)', fontFamily: 'var(--font-sans)', fontSize: 12 }}>install</strong>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            padding: '12px 14px',
+            borderRadius: '12px 12px 6px 6px',
+            background: 'rgba(2,3,8,0.06)',
+          }}
+        >
+          <span
+            style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(2,3,8,0.28)' }}
+          />
+          <span
+            style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(2,3,8,0.28)' }}
+          />
+          <span
+            style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(2,3,8,0.28)' }}
+          />
+          <strong
+            style={{
+              marginLeft: 'auto',
+              color: 'rgba(2,3,8,0.58)',
+              fontFamily: 'var(--font-sans)',
+              fontSize: 12,
+            }}
+          >
+            install
+          </strong>
         </div>
-        <pre style={{ margin: 0, padding: 22, borderRadius: '6px 6px 16px 16px', background: '#202527', color: '#d9f99d', fontFamily: 'var(--font-mono)', fontSize: 12, lineHeight: 1.75, whiteSpace: 'pre-wrap' }}>{`<script
+        <pre
+          style={{
+            margin: 0,
+            padding: 22,
+            borderRadius: '6px 6px 16px 16px',
+            background: '#202527',
+            color: '#d9f99d',
+            fontFamily: 'var(--font-mono)',
+            fontSize: 12,
+            lineHeight: 1.75,
+            whiteSpace: 'pre-wrap',
+          }}
+        >{`<script
   src="https://widget.liraintelligence.com/v1/widget.js"
   data-org-id="YOUR_ORG_ID"
   data-color="#202527"
@@ -110,7 +162,9 @@ export function FeaturesPage() {
         <div className="bx-hero-bg" aria-hidden="true" />
         <div className="bx-container bx-hero-inner" style={{ gridTemplateColumns: '1fr' }}>
           <div>
-            <h1 className="bx-title">Everything modern teams need to support customers with context.</h1>
+            <h1 className="bx-title">
+              Everything modern teams need to support customers with context.
+            </h1>
             <p className="bx-subtitle">
               Lira brings chat, voice, email, customer memory, knowledge, integrations, and smart
               handoff into one AI support layer your team can launch quickly.
@@ -134,7 +188,10 @@ export function FeaturesPage() {
               {features.map(({ icon: Icon, title, copy }) => (
                 <article className="bx-post-card" key={title}>
                   <div className="bx-post-surface">
-                    <span className="bx-button-icon" style={{ width: 48, height: 48, marginBottom: 28 }}>
+                    <span
+                      className="bx-button-icon"
+                      style={{ width: 48, height: 48, marginBottom: 28 }}
+                    >
                       <Icon size={20} weight="duotone" />
                     </span>
                     <h3 className="bx-post-title">{title}</h3>
@@ -148,7 +205,9 @@ export function FeaturesPage() {
           <section className="bx-split" style={{ marginTop: 96 }}>
             <article className="bx-post-card">
               <div className="bx-post-surface">
-                <h2 className="bx-section-title">Go from signup to live support without a backend project.</h2>
+                <h2 className="bx-section-title">
+                  Go from signup to live support without a backend project.
+                </h2>
                 <p className="bx-section-copy">
                   The core website install is a CDN-hosted JavaScript snippet. For logged-in users,
                   teams can optionally pass signed identity attributes so Lira can greet customers
@@ -159,10 +218,24 @@ export function FeaturesPage() {
             <div style={{ display: 'grid', gap: 12 }}>
               {setupSteps.map(([number, title, copy]) => (
                 <article className="bx-post-card" key={title}>
-                  <div className="bx-post-surface" style={{ display: 'grid', gridTemplateColumns: '70px 1fr', gap: 18, alignItems: 'start' }}>
-                    <strong style={{ fontFamily: 'var(--font-sans)', fontSize: 28, letterSpacing: 0 }}>{number}</strong>
+                  <div
+                    className="bx-post-surface"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '70px 1fr',
+                      gap: 18,
+                      alignItems: 'start',
+                    }}
+                  >
+                    <strong
+                      style={{ fontFamily: 'var(--font-sans)', fontSize: 28, letterSpacing: 0 }}
+                    >
+                      {number}
+                    </strong>
                     <div>
-                      <h3 className="bx-post-title" style={{ fontSize: 20 }}>{title}</h3>
+                      <h3 className="bx-post-title" style={{ fontSize: 20 }}>
+                        {title}
+                      </h3>
                       <p className="bx-post-excerpt">{copy}</p>
                     </div>
                   </div>
@@ -175,7 +248,10 @@ export function FeaturesPage() {
             <SetupCodeCard />
             <article className="bx-post-card">
               <div className="bx-post-surface">
-                <span className="bx-button-icon" style={{ width: 56, height: 56, marginBottom: 28 }}>
+                <span
+                  className="bx-button-icon"
+                  style={{ width: 56, height: 56, marginBottom: 28 }}
+                >
                   <IdentificationCard size={22} weight="duotone" />
                 </span>
                 <h2 className="bx-section-title">Optional identity, richer support.</h2>
@@ -198,7 +274,10 @@ export function FeaturesPage() {
               {outcomeProof.map(({ icon: Icon, title, copy }) => (
                 <article className="bx-post-card" key={title}>
                   <div className="bx-post-surface">
-                    <span className="bx-button-icon" style={{ width: 48, height: 48, marginBottom: 28 }}>
+                    <span
+                      className="bx-button-icon"
+                      style={{ width: 48, height: 48, marginBottom: 28 }}
+                    >
                       <Icon size={20} weight="duotone" />
                     </span>
                     <h3 className="bx-post-title">{title}</h3>

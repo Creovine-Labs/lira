@@ -57,9 +57,13 @@ export function BlogPage() {
                 <h2 className="bx-post-title" style={{ fontSize: 'clamp(30px, 4vw, 46px)' }}>
                   {featured.title}
                 </h2>
-                <p className="bx-post-excerpt" style={{ maxWidth: 620 }}>{featured.excerpt}</p>
+                <p className="bx-post-excerpt" style={{ maxWidth: 620 }}>
+                  {featured.excerpt}
+                </p>
                 <div className="bx-author">
-                  <span className="bx-avatar"><img src={featured.author.image} alt={featured.author.name} /></span>
+                  <span className="bx-avatar">
+                    <img src={featured.author.image} alt={featured.author.name} />
+                  </span>
                   <div>
                     <strong>{featured.author.name}</strong>
                     <span>{featured.author.role}</span>
@@ -85,7 +89,9 @@ export function BlogPage() {
                     <h3 className="bx-post-title">{post.title}</h3>
                     <p className="bx-post-excerpt">{post.excerpt}</p>
                     <div className="bx-author">
-                      <span className="bx-avatar"><img src={post.author.image} alt={post.author.name} /></span>
+                      <span className="bx-avatar">
+                        <img src={post.author.image} alt={post.author.name} />
+                      </span>
                       <div>
                         <strong>{post.author.name}</strong>
                         <span>{post.date}</span>

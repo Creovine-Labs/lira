@@ -73,7 +73,9 @@ export function BlogPostPage() {
             <h2 className="bx-article-title">{post.title}</h2>
             <p className="bx-article-excerpt">{post.excerpt}</p>
             <div className="bx-author">
-              <span className="bx-avatar"><img src={post.author.image} alt={post.author.name} /></span>
+              <span className="bx-avatar">
+                <img src={post.author.image} alt={post.author.name} />
+              </span>
               <div>
                 <strong>{post.author.name}</strong>
                 <span>{post.author.role}</span>
@@ -91,11 +93,16 @@ export function BlogPostPage() {
             {prev ? (
               <Link to={`/blog/${prev.slug}`} className="bx-post-card">
                 <div className="bx-post-surface">
-                  <p className="bx-post-nav-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <p
+                    className="bx-post-nav-label"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
                     <ArrowLeft size={13} />
                     Previous
                   </p>
-                  <h3 className="bx-post-title" style={{ fontSize: 18 }}>{prev.title}</h3>
+                  <h3 className="bx-post-title" style={{ fontSize: 18 }}>
+                    {prev.title}
+                  </h3>
                 </div>
               </Link>
             ) : (
@@ -105,7 +112,15 @@ export function BlogPostPage() {
             {next ? (
               <Link to={`/blog/${next.slug}`} className="bx-post-card">
                 <div className="bx-post-surface">
-                  <p className="bx-post-nav-label" style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+                  <p
+                    className="bx-post-nav-label"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
                     Next
                     <ArrowUpRight size={13} />
                   </p>

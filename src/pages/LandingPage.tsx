@@ -114,15 +114,21 @@ function Nav() {
       <nav aria-label="Primary navigation">
         <a href="#services" className="lira-nav-pill">
           Services
-          <span className="pill-arrow"><ArrowUpRight size={12} /></span>
+          <span className="pill-arrow">
+            <ArrowUpRight size={12} />
+          </span>
         </a>
         <a href="#results" className="lira-nav-pill">
           Results
-          <span className="pill-arrow"><ArrowUpRight size={12} /></span>
+          <span className="pill-arrow">
+            <ArrowUpRight size={12} />
+          </span>
         </a>
         <a href="#proof" className="lira-nav-pill">
           Proof
-          <span className="pill-arrow"><ArrowUpRight size={12} /></span>
+          <span className="pill-arrow">
+            <ArrowUpRight size={12} />
+          </span>
         </a>
       </nav>
       <Link to="/signup" className="lira-nav-cta">
@@ -141,8 +147,8 @@ interface DemoMessage {
   text: string
   image?: string
   voiceNote?: boolean
-  delay: number        // ms from scenario start before this message appears
-  typeSpeed?: number   // ms per character for typing simulation
+  delay: number // ms from scenario start before this message appears
+  typeSpeed?: number // ms per character for typing simulation
 }
 
 type ScenarioId = 'support' | 'proactive' | 'screenshot'
@@ -160,12 +166,36 @@ const SCENARIOS: Scenario[] = [
     label: 'Live Support',
     icon: <MessageSquareText size={13} />,
     messages: [
-      { id: 1, role: 'user',  text: 'Hey, I upgraded my plan yesterday but I still can\'t access the analytics dashboard.',  delay: 600,  typeSpeed: 38 },
-      { id: 2, role: 'lira',  text: 'Hey Marcus, I can see your plan was upgraded at 3:14 PM yesterday — looks like the feature flag didn\'t propagate to your workspace. Give me two seconds.', delay: 3200, typeSpeed: 14 },
+      {
+        id: 1,
+        role: 'user',
+        text: "Hey, I upgraded my plan yesterday but I still can't access the analytics dashboard.",
+        delay: 600,
+        typeSpeed: 38,
+      },
+      {
+        id: 2,
+        role: 'lira',
+        text: "Hey Marcus, I can see your plan was upgraded at 3:14 PM yesterday — looks like the feature flag didn't propagate to your workspace. Give me two seconds.",
+        delay: 3200,
+        typeSpeed: 14,
+      },
       { id: 3, role: 'system', text: 'Lira is resolving access issue…', delay: 6800, typeSpeed: 0 },
-      { id: 4, role: 'lira',  text: 'Done. Your analytics dashboard is unlocked. I also noticed your billing email was different from your login — I\'ve aligned them so renewal notices reach you properly.', delay: 8200, typeSpeed: 14 },
-      { id: 5, role: 'user',  text: 'That was fast. Thanks!', delay: 12000, typeSpeed: 48 },
-      { id: 6, role: 'lira',  text: 'Anytime. You\'ll also see the new cohort retention view under Analytics > Retention. It\'s been really useful for teams your size.', delay: 14200, typeSpeed: 14 },
+      {
+        id: 4,
+        role: 'lira',
+        text: "Done. Your analytics dashboard is unlocked. I also noticed your billing email was different from your login — I've aligned them so renewal notices reach you properly.",
+        delay: 8200,
+        typeSpeed: 14,
+      },
+      { id: 5, role: 'user', text: 'That was fast. Thanks!', delay: 12000, typeSpeed: 48 },
+      {
+        id: 6,
+        role: 'lira',
+        text: "Anytime. You'll also see the new cohort retention view under Analytics > Retention. It's been really useful for teams your size.",
+        delay: 14200,
+        typeSpeed: 14,
+      },
     ],
   },
   {
@@ -173,12 +203,42 @@ const SCENARIOS: Scenario[] = [
     label: 'Proactive Reach',
     icon: <Sparkles size={13} />,
     messages: [
-      { id: 1, role: 'proactive', text: 'Hi Priya, I noticed you haven\'t logged in for 8 days and your trial ends in 3. I wanted to check in — is there something that felt confusing or blocked your setup?', delay: 400, typeSpeed: 14 },
-      { id: 2, role: 'user',  text: 'Oh wow — yeah actually the Slack integration kept failing and I just gave up.', delay: 4200, typeSpeed: 38 },
-      { id: 3, role: 'lira',  text: 'That\'s on us — there was a webhook auth bug affecting new workspaces last week. It\'s fixed now. Want me to walk you through connecting it? Takes about 90 seconds.', delay: 7000, typeSpeed: 14 },
-      { id: 4, role: 'user',  text: 'Yes please', delay: 10800, typeSpeed: 55 },
-      { id: 5, role: 'lira',  text: 'Perfect. I\'ve also extended your trial by 7 days so you have a clean window to test properly. Here\'s your personalised setup link:', delay: 12400, typeSpeed: 14 },
-      { id: 6, role: 'system', text: 'Trial extended · Slack integration pre-configured', delay: 15200, typeSpeed: 0 },
+      {
+        id: 1,
+        role: 'proactive',
+        text: "Hi Priya, I noticed you haven't logged in for 8 days and your trial ends in 3. I wanted to check in — is there something that felt confusing or blocked your setup?",
+        delay: 400,
+        typeSpeed: 14,
+      },
+      {
+        id: 2,
+        role: 'user',
+        text: 'Oh wow — yeah actually the Slack integration kept failing and I just gave up.',
+        delay: 4200,
+        typeSpeed: 38,
+      },
+      {
+        id: 3,
+        role: 'lira',
+        text: "That's on us — there was a webhook auth bug affecting new workspaces last week. It's fixed now. Want me to walk you through connecting it? Takes about 90 seconds.",
+        delay: 7000,
+        typeSpeed: 14,
+      },
+      { id: 4, role: 'user', text: 'Yes please', delay: 10800, typeSpeed: 55 },
+      {
+        id: 5,
+        role: 'lira',
+        text: "Perfect. I've also extended your trial by 7 days so you have a clean window to test properly. Here's your personalised setup link:",
+        delay: 12400,
+        typeSpeed: 14,
+      },
+      {
+        id: 6,
+        role: 'system',
+        text: 'Trial extended · Slack integration pre-configured',
+        delay: 15200,
+        typeSpeed: 0,
+      },
     ],
   },
   {
@@ -186,13 +246,50 @@ const SCENARIOS: Scenario[] = [
     label: 'Screenshot Scan',
     icon: <ImageIcon size={13} />,
     messages: [
-      { id: 1, role: 'user',  text: 'I keep getting this error when trying to export. I have no idea what it means.', delay: 600, typeSpeed: 40 },
-      { id: 2, role: 'user',  text: '[screenshot attached]', image: '/landing/screenshot-error-mock.png', delay: 2400, typeSpeed: 0 },
-      { id: 3, role: 'lira',  text: 'I can see the error — it\'s a CORS policy block triggered when exporting to a custom domain. Your export origin isn\'t whitelisted yet.', delay: 5000, typeSpeed: 14 },
-      { id: 4, role: 'lira',  text: 'Fix: go to Settings > Integrations > Export Origins and add your domain. I\'ve highlighted exactly where in the screenshot below.', delay: 8200, typeSpeed: 14 },
+      {
+        id: 1,
+        role: 'user',
+        text: 'I keep getting this error when trying to export. I have no idea what it means.',
+        delay: 600,
+        typeSpeed: 40,
+      },
+      {
+        id: 2,
+        role: 'user',
+        text: '[screenshot attached]',
+        image: '/landing/screenshot-error-mock.png',
+        delay: 2400,
+        typeSpeed: 0,
+      },
+      {
+        id: 3,
+        role: 'lira',
+        text: "I can see the error — it's a CORS policy block triggered when exporting to a custom domain. Your export origin isn't whitelisted yet.",
+        delay: 5000,
+        typeSpeed: 14,
+      },
+      {
+        id: 4,
+        role: 'lira',
+        text: "Fix: go to Settings > Integrations > Export Origins and add your domain. I've highlighted exactly where in the screenshot below.",
+        delay: 8200,
+        typeSpeed: 14,
+      },
       { id: 5, role: 'system', text: 'Lira annotated your screenshot', delay: 10400, typeSpeed: 0 },
-      { id: 6, role: 'user',  text: 'Fixed it! You literally circled the exact field I needed to change.', delay: 14000, typeSpeed: 40 },
-      { id: 7, role: 'lira',  text: 'Glad that worked. I\'ve logged this so your team won\'t hit it again — I\'ll flag it in your next onboarding flow automatically.', delay: 16200, typeSpeed: 14 },
+      {
+        id: 6,
+        role: 'user',
+        text: 'Fixed it! You literally circled the exact field I needed to change.',
+        delay: 14000,
+        typeSpeed: 40,
+      },
+      {
+        id: 7,
+        role: 'lira',
+        text: "Glad that worked. I've logged this so your team won't hit it again — I'll flag it in your next onboarding flow automatically.",
+        delay: 16200,
+        typeSpeed: 14,
+      },
     ],
   },
 ]
@@ -201,7 +298,9 @@ const SCENARIOS: Scenario[] = [
 function TypingDots({ color = 'lira' }: { color?: 'lira' | 'user' }) {
   return (
     <span className={`typing-dots typing-dots--${color}`} aria-label="typing">
-      <span /><span /><span />
+      <span />
+      <span />
+      <span />
     </span>
   )
 }
@@ -210,7 +309,7 @@ function TypingDots({ color = 'lira' }: { color?: 'lira' | 'user' }) {
 function VoiceOverlay({ onClose }: { onClose: () => void }) {
   const [wave, setWave] = useState(0)
   useEffect(() => {
-    const id = setInterval(() => setWave(w => (w + 1) % 100), 80)
+    const id = setInterval(() => setWave((w) => (w + 1) % 100), 80)
     return () => clearInterval(id)
   }, [])
   const bars = Array.from({ length: 24 }, (_, i) => {
@@ -262,75 +361,78 @@ function HeroChatDemo() {
     timersRef.current = []
   }, [])
 
-  const runScenario = useCallback((id: ScenarioId) => {
-    clearTimers()
-    setVisibleMessages([])
-    setTypingRole(null)
-    setInputText('')
-    setIsTypingInput(false)
+  const runScenario = useCallback(
+    (id: ScenarioId) => {
+      clearTimers()
+      setVisibleMessages([])
+      setTypingRole(null)
+      setInputText('')
+      setIsTypingInput(false)
 
-    const scenario = SCENARIOS.find(s => s.id === id)!
-    const msgs = scenario.messages
+      const scenario = SCENARIOS.find((s) => s.id === id)!
+      const msgs = scenario.messages
 
-    msgs.forEach((msg, idx) => {
-      if (msg.role === 'system') {
-        const t = setTimeout(() => {
+      msgs.forEach((msg, idx) => {
+        if (msg.role === 'system') {
+          const t = setTimeout(() => {
+            setTypingRole(null)
+            setIsTypingInput(false)
+            setInputText('')
+            setVisibleMessages((prev) => [...prev, msg])
+          }, msg.delay)
+          timersRef.current.push(t)
+          return
+        }
+
+        // Show typing indicator before message appears
+        const typingDelay = Math.max(0, msg.delay - 900)
+        const t1 = setTimeout(() => {
+          if (msg.role === 'user') {
+            // Simulate user typing in input box
+            setIsTypingInput(true)
+            const chars = msg.text
+            let ci = 0
+            const typeChar = () => {
+              ci++
+              setInputText(chars.slice(0, ci))
+              if (ci < chars.length) {
+                const t = setTimeout(typeChar, msg.typeSpeed ?? 40)
+                timersRef.current.push(t)
+              }
+            }
+            typeChar()
+          } else {
+            setTypingRole(msg.role)
+          }
+        }, typingDelay)
+        timersRef.current.push(t1)
+
+        const t2 = setTimeout(() => {
           setTypingRole(null)
           setIsTypingInput(false)
           setInputText('')
-          setVisibleMessages(prev => [...prev, msg])
-        }, msg.delay)
-        timersRef.current.push(t)
-        return
-      }
-
-      // Show typing indicator before message appears
-      const typingDelay = Math.max(0, msg.delay - 900)
-      const t1 = setTimeout(() => {
-        if (msg.role === 'user') {
-          // Simulate user typing in input box
-          setIsTypingInput(true)
-          const chars = msg.text
-          let ci = 0
-          const typeChar = () => {
-            ci++
-            setInputText(chars.slice(0, ci))
-            if (ci < chars.length) {
-              const t = setTimeout(typeChar, msg.typeSpeed ?? 40)
-              timersRef.current.push(t)
-            }
+          setVisibleMessages((prev) => [...prev, msg])
+          // If next message exists and it's from same role, keep typing indicator briefly
+          const next = msgs[idx + 1]
+          if (next && next.role === msg.role && next.role !== 'user') {
+            setTypingRole(msg.role)
           }
-          typeChar()
-        } else {
-          setTypingRole(msg.role)
-        }
-      }, typingDelay)
-      timersRef.current.push(t1)
+        }, msg.delay)
+        timersRef.current.push(t2)
+      })
 
-      const t2 = setTimeout(() => {
-        setTypingRole(null)
-        setIsTypingInput(false)
-        setInputText('')
-        setVisibleMessages(prev => [...prev, msg])
-        // If next message exists and it's from same role, keep typing indicator briefly
-        const next = msgs[idx + 1]
-        if (next && next.role === msg.role && next.role !== 'user') {
-          setTypingRole(msg.role)
-        }
-      }, msg.delay)
-      timersRef.current.push(t2)
-    })
-
-    return () => clearTimers()
-  }, [clearTimers])
+      return () => clearTimers()
+    },
+    [clearTimers]
+  )
 
   const autoAdvanceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     runScenario(activeScenario)
 
-    const scenario = SCENARIOS.find(s => s.id === activeScenario)!
-    const lastDelay = Math.max(...scenario.messages.map(m => m.delay))
+    const scenario = SCENARIOS.find((s) => s.id === activeScenario)!
+    const lastDelay = Math.max(...scenario.messages.map((m) => m.delay))
     const ids: ScenarioId[] = ['support', 'proactive', 'screenshot']
     const nextIdx = (ids.indexOf(activeScenario) + 1) % ids.length
 
@@ -352,7 +454,7 @@ function HeroChatDemo() {
     }
   }, [visibleMessages, typingRole, isTypingInput])
 
-  const scenario = SCENARIOS.find(s => s.id === activeScenario)!
+  const scenario = SCENARIOS.find((s) => s.id === activeScenario)!
 
   return (
     <div className="hero-visual" aria-label="Lira live support demo">
@@ -360,10 +462,12 @@ function HeroChatDemo() {
         {/* Window chrome */}
         <div className="demo-chrome">
           <div className="demo-chrome-dots">
-            <span /><span /><span />
+            <span />
+            <span />
+            <span />
           </div>
           <div className="demo-scenario-tabs" role="tablist">
-            {SCENARIOS.map(s => (
+            {SCENARIOS.map((s) => (
               <button
                 key={s.id}
                 role="tab"
@@ -393,7 +497,7 @@ function HeroChatDemo() {
           <div className="demo-header-actions">
             <button
               className={`demo-action-btn ${micOn ? 'demo-action-btn--active' : ''}`}
-              onClick={() => setMicOn(v => !v)}
+              onClick={() => setMicOn((v) => !v)}
               aria-label="Toggle microphone"
               title="Voice mode"
             >
@@ -413,7 +517,7 @@ function HeroChatDemo() {
         {/* Messages area */}
         <div className="demo-messages" ref={scrollRef} data-lenis-prevent>
           <AnimatePresence initial={false}>
-            {visibleMessages.map(msg => (
+            {visibleMessages.map((msg) => (
               <motion.div
                 key={msg.id}
                 className={`demo-msg demo-msg--${msg.role}`}
@@ -440,7 +544,8 @@ function HeroChatDemo() {
                                 CORS policy blocked request
                               </span>
                               <span className="demo-screenshot-detail">
-                                Access to fetch at 'api.acme.io' from origin 'export.acme.io' blocked.
+                                Access to fetch at 'api.acme.io' from origin 'export.acme.io'
+                                blocked.
                               </span>
                             </div>
                           </div>
@@ -495,7 +600,8 @@ function HeroChatDemo() {
           <div className="demo-input-field" aria-live="polite">
             {isTypingInput ? (
               <span className="demo-input-text">
-                {inputText}<span className="demo-cursor" />
+                {inputText}
+                <span className="demo-cursor" />
               </span>
             ) : (
               <span className="demo-input-placeholder">Message Lira…</span>
@@ -2136,9 +2242,9 @@ export function LandingPage() {
                 Stop answering tickets. Start <span className="italic">preventing</span> them.
               </motion.h1>
               <motion.p className="hero-copy" variants={revealUp}>
-                Every support tool you use waits for a complaint. Lira monitors your product's
-                event stream, reaches out before problems escalate, and takes real action across
-                your CRM, helpdesk, and Slack — without a human in the loop.
+                Every support tool you use waits for a complaint. Lira monitors your product's event
+                stream, reaches out before problems escalate, and takes real action across your CRM,
+                helpdesk, and Slack — without a human in the loop.
               </motion.p>
               <motion.div className="hero-actions" variants={revealUp}>
                 <Link to="/signup" className="primary-cta">
@@ -2197,8 +2303,8 @@ export function LandingPage() {
           </motion.h2>
           <motion.p className="motion-layer" variants={revealUp}>
             Intercom, Zendesk, Freshdesk — they all do the same thing: sit idle until a customer
-            says something broke. Lira connects to your product's event stream and acts before
-            the frustration becomes a ticket — or a churn.
+            says something broke. Lira connects to your product's event stream and acts before the
+            frustration becomes a ticket — or a churn.
           </motion.p>
         </motion.section>
 

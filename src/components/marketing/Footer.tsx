@@ -33,7 +33,11 @@ const FOOTER_GROUPS = [
 
 const SOCIALS = [
   { label: 'Instagram', href: 'https://www.instagram.com/liraintelligence', icon: InstagramLogo },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/lira-intelligence', icon: LinkedinLogo },
+  {
+    label: 'LinkedIn',
+    href: 'https://www.linkedin.com/company/lira-intelligence',
+    icon: LinkedinLogo,
+  },
   { label: 'X', href: 'https://x.com/liraintelligence', icon: XLogo },
 ]
 

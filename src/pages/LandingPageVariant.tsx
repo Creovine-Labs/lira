@@ -581,12 +581,7 @@ export function LandingPageVariant() {
 
       <section className="v2-hero">
         <HeroImage />
-        <motion.div
-          className="v2-hero-inner"
-          variants={stagger}
-          initial="hidden"
-          animate="show"
-        >
+        <motion.div className="v2-hero-inner" variants={stagger} initial="hidden" animate="show">
           <motion.span className="v2-kicker" variants={reveal}>
             <Circle size={9} fill="currentColor" />
             Visual concept 02
@@ -610,8 +605,8 @@ export function LandingPageVariant() {
           </motion.h1>
           <motion.div className="v2-hero-bottom" variants={stagger}>
             <motion.p className="v2-copy" variants={reveal}>
-              Lira handles customer issues before they become the day. Autonomous support,
-              proactive recovery, and customer memory for SaaS teams that need calm at scale.
+              Lira handles customer issues before they become the day. Autonomous support, proactive
+              recovery, and customer memory for SaaS teams that need calm at scale.
             </motion.p>
             <motion.div className="v2-actions" variants={reveal}>
               <Link to="/signup" className="v2-button">
@@ -649,9 +644,7 @@ export function LandingPageVariant() {
             The emotional promise
           </motion.span>
           <div>
-            <motion.h2 variants={reveal}>
-              Not another dashboard. A quieter company.
-            </motion.h2>
+            <motion.h2 variants={reveal}>Not another dashboard. A quieter company.</motion.h2>
             <motion.p variants={reveal}>
               The best support software is felt before it is seen: fewer anxious pings, fewer
               repeated explanations, fewer customers waiting for someone to notice.
@@ -696,9 +689,7 @@ export function LandingPageVariant() {
           viewport={{ once: true, amount: 0.24 }}
         >
           <div className="v2-outcomes-head">
-            <motion.h2 variants={reveal}>
-              Support becomes invisible infrastructure.
-            </motion.h2>
+            <motion.h2 variants={reveal}>Support becomes invisible infrastructure.</motion.h2>
             <motion.p variants={reveal}>
               Lira sits across chat, email, WhatsApp, CRM, and helpdesk tools, taking the next best
               action before churn risk becomes a meeting.
@@ -733,10 +724,22 @@ export function LandingPageVariant() {
           <motion.h2 variants={reveal}>A calm surface. A serious operator below it.</motion.h2>
           <motion.div className="v2-system-grid" variants={stagger}>
             {[
-              ['Proactive signals', 'Failed payments, usage drops, onboarding gaps, and renewal risk trigger support before customers complain.'],
-              ['Autonomous action chains', 'Lira can answer, route, refund, update CRM fields, create tasks, and summarize decisions with auditability.'],
-              ['Lifetime memory', 'Every customer keeps context across channels so they never need to explain the same issue twice.'],
-              ['Human handoff', 'When judgment is needed, Lira delivers the history, likely cause, and recommended next move.'],
+              [
+                'Proactive signals',
+                'Failed payments, usage drops, onboarding gaps, and renewal risk trigger support before customers complain.',
+              ],
+              [
+                'Autonomous action chains',
+                'Lira can answer, route, refund, update CRM fields, create tasks, and summarize decisions with auditability.',
+              ],
+              [
+                'Lifetime memory',
+                'Every customer keeps context across channels so they never need to explain the same issue twice.',
+              ],
+              [
+                'Human handoff',
+                'When judgment is needed, Lira delivers the history, likely cause, and recommended next move.',
+              ],
             ].map(([title, text]) => (
               <motion.article className="v2-system-card" variants={reveal} key={title}>
                 <h3>{title}</h3>

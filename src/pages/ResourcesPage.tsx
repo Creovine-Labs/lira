@@ -100,8 +100,8 @@ export function ResourcesPage() {
                 Customer support resources for launching Lira
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-600">
-                Guides, tutorials, documentation, and API references focused on the customer
-                support workflows available in Lira today.
+                Guides, tutorials, documentation, and API references focused on the customer support
+                workflows available in Lira today.
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 {QUICK_LINKS.map((link) => (

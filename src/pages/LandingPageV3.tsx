@@ -45,7 +45,8 @@ const featureCards = [
   },
   {
     title: 'AI-Powered Conversations',
-    description: 'Create records, assign tasks & queue emails with a simple prompt in seconds flat.',
+    description:
+      'Create records, assign tasks & queue emails with a simple prompt in seconds flat.',
     visual: 'chat',
   },
   {
@@ -162,7 +163,15 @@ const blogPosts = [
   'The Rise of Intelligent Automation in Customer Service',
 ]
 
-function ButtonLink({ to, children, variant = 'primary' }: { to: string; children: string; variant?: 'primary' | 'secondary' }) {
+function ButtonLink({
+  to,
+  children,
+  variant = 'primary',
+}: {
+  to: string
+  children: string
+  variant?: 'primary' | 'secondary'
+}) {
   return (
     <Link to={to} className={`hx-button hx-button--${variant}`}>
       <span>{children}</span>
@@ -199,7 +208,9 @@ function HeroGraphic() {
         <div className="hx-orbit hx-orbit-one" />
         <div className="hx-orbit hx-orbit-two" />
         <div className="hx-orbit hx-orbit-three" />
-        <div className="hx-core"><Sparkles size={18} /></div>
+        <div className="hx-core">
+          <Sparkles size={18} />
+        </div>
         <div className="hx-chat-preview hx-chat-left">
           <span>Ticket detected</span>
           <strong>Billing access issue</strong>
@@ -219,7 +230,9 @@ function Visual({ type }: { type: string }) {
     return (
       <div className="hx-feature-visual hx-visual-integrations">
         {[PlugZap, MessageSquareText, Workflow, MailCheck, ShieldCheck].map((Icon, index) => (
-          <span key={index} className={`hx-hex hx-hex-${index + 1}`}><Icon size={24} /></span>
+          <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
+            <Icon size={24} />
+          </span>
         ))}
       </div>
     )
@@ -239,7 +252,10 @@ function Visual({ type }: { type: string }) {
     return (
       <div className="hx-feature-visual hx-visual-global">
         <Globe2 size={96} />
-        <span>EN</span><span>FR</span><span>JP</span><span>ES</span>
+        <span>EN</span>
+        <span>FR</span>
+        <span>JP</span>
+        <span>ES</span>
       </div>
     )
   }
@@ -247,7 +263,13 @@ function Visual({ type }: { type: string }) {
   return (
     <div className="hx-feature-visual hx-visual-voice">
       <Mic size={54} />
-      <div className="hx-wave"><i /><i /><i /><i /><i /></div>
+      <div className="hx-wave">
+        <i />
+        <i />
+        <i />
+        <i />
+        <i />
+      </div>
     </div>
   )
 }
@@ -256,7 +278,12 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="hx-faq-item">
-      <button className="hx-faq-head" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+      <button
+        className="hx-faq-head"
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
         <span>{q}</span>
         <ChevronDown className={open ? 'is-open' : ''} size={18} />
       </button>
@@ -554,12 +581,19 @@ export function LandingPageV3() {
       <section className="hx-hero">
         <div className="hx-hero-bg" aria-hidden="true" />
         <div className="hx-container">
-          <motion.div className="hx-hero-overview" variants={stagger} initial="hidden" animate="show">
+          <motion.div
+            className="hx-hero-overview"
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+          >
             <motion.h1 className="hx-title" variants={fadeUp}>
-              <span className="hx-gradient-text">AI customer support</span> that does the work, not just organizes tickets.
+              <span className="hx-gradient-text">AI customer support</span> that does the work, not
+              just organizes tickets.
             </motion.h1>
             <motion.p variants={fadeUp}>
-              Let Lira handle repetitive customer questions across chat, email, portal, and voice - while your team steps in only when human help is needed.
+              Let Lira handle repetitive customer questions across chat, email, portal, and voice -
+              while your team steps in only when human help is needed.
             </motion.p>
             <motion.div className="hx-hero-button" variants={fadeUp}>
               <ButtonLink to="/signup">Book a Demo</ButtonLink>
@@ -572,7 +606,11 @@ export function LandingPageV3() {
             <div className="hx-brand-track">
               {[...brandRows, ...brandRows].map((row, rowIndex) => (
                 <div className="hx-brand-row" key={rowIndex}>
-                  {row.map((brand) => <span className="hx-brand-logo" key={`${rowIndex}-${brand}`}>{brand}</span>)}
+                  {row.map((brand) => (
+                    <span className="hx-brand-logo" key={`${rowIndex}-${brand}`}>
+                      {brand}
+                    </span>
+                  ))}
                 </div>
               ))}
             </div>
@@ -582,7 +620,13 @@ export function LandingPageV3() {
 
       <section id="features" className="hx-section">
         <div className="hx-container">
-          <motion.div className="hx-section-details" variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+          <motion.div
+            className="hx-section-details"
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={viewport}
+          >
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Everything You Need to</span>
               <br />
@@ -597,7 +641,14 @@ export function LandingPageV3() {
             {[0, 2].map((start) => (
               <div className="hx-feature-grid" key={start}>
                 {featureCards.slice(start, start + 2).map((feature) => (
-                  <motion.article className="hx-feature-card" key={feature.title} variants={fadeUp} initial="hidden" whileInView="show" viewport={viewport}>
+                  <motion.article
+                    className="hx-feature-card"
+                    key={feature.title}
+                    variants={fadeUp}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={viewport}
+                  >
                     <Visual type={feature.visual} />
                     <div className="hx-feature-body">
                       <h3>{feature.title}</h3>
@@ -614,20 +665,30 @@ export function LandingPageV3() {
       <section className="hx-section">
         <div className="hx-container">
           <div className="hx-service-grid">
-            <motion.div className="hx-section-details" style={{ textAlign: 'left', margin: 0, alignItems: 'flex-start' }} variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+            <motion.div
+              className="hx-section-details"
+              style={{ textAlign: 'left', margin: 0, alignItems: 'flex-start' }}
+              variants={stagger}
+              initial="hidden"
+              whileInView="show"
+              viewport={viewport}
+            >
               <motion.h2 className="hx-section-title" variants={fadeUp}>
                 <span className="hx-gradient-text">Built for Every</span>
                 <br />
                 Type of Business
               </motion.h2>
               <motion.p className="hx-section-para" style={{ marginLeft: 0 }} variants={fadeUp}>
-                From startups to enterprises, our AI chatbot scales with your business and fits your support motion.
+                From startups to enterprises, our AI chatbot scales with your business and fits your
+                support motion.
               </motion.p>
             </motion.div>
             <div className="hx-service-list">
               {services.map((service) => (
                 <article className="hx-service-item" key={service.title}>
-                  <div className="hx-service-icon"><service.icon size={30} /></div>
+                  <div className="hx-service-icon">
+                    <service.icon size={30} />
+                  </div>
                   <div className="hx-service-vr" />
                   <div>
                     <h3>{service.title}</h3>
@@ -643,18 +704,32 @@ export function LandingPageV3() {
       <section className="hx-testimonial">
         <div className="hx-container">
           <div className="hx-section-details" style={{ maxWidth: 474 }}>
-            <h2 className="hx-section-title"><span className="hx-gradient-text">What our customers</span><br />love about Lira</h2>
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">What our customers</span>
+              <br />
+              love about Lira
+            </h2>
           </div>
           <div className="hx-testimonial-card">
-            <div className="hx-stars">{Array.from({ length: 5 }).map((_, index) => <Sparkles key={index} size={20} fill="currentColor" />)}</div>
+            <div className="hx-stars">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Sparkles key={index} size={20} fill="currentColor" />
+              ))}
+            </div>
             <blockquote>
-              Implementing Lira completely transformed our support operations. We reduced first response time by over 70% within the first month.
+              Implementing Lira completely transformed our support operations. We reduced first
+              response time by over 70% within the first month.
             </blockquote>
             <div className="hx-author">
               <strong>Michael Thompson</strong>
               <span>VP of Customer Experience</span>
             </div>
-            <div className="hx-avatar-row"><span className="hx-avatar">MT</span><span className="hx-avatar">PK</span><span className="hx-avatar">CR</span><span className="hx-avatar">AW</span></div>
+            <div className="hx-avatar-row">
+              <span className="hx-avatar">MT</span>
+              <span className="hx-avatar">PK</span>
+              <span className="hx-avatar">CR</span>
+              <span className="hx-avatar">AW</span>
+            </div>
           </div>
         </div>
       </section>
@@ -662,19 +737,35 @@ export function LandingPageV3() {
       <section id="pricing" className="hx-section hx-section-pad-bottom">
         <div className="hx-container hx-pricing-content">
           <div className="hx-section-details">
-            <h2 className="hx-section-title"><span className="hx-gradient-text">Select a plan that suits</span><br />your business.</h2>
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">Select a plan that suits</span>
+              <br />
+              your business.
+            </h2>
           </div>
           <div className="hx-plan-grid">
             {plans.map((plan) => (
-              <article className={`hx-plan${plan.featured ? ' hx-plan-featured' : ''}`} key={plan.name}>
+              <article
+                className={`hx-plan${plan.featured ? ' hx-plan-featured' : ''}`}
+                key={plan.name}
+              >
                 <div className="hx-plan-head">
                   <h3>{plan.name}</h3>
                   <p>{plan.subtitle}</p>
-                  <div className="hx-price"><strong>{plan.price}</strong>{plan.label && <span>{plan.label}</span>}</div>
-                  <div className="hx-plan-button"><ButtonLink to="/signup" variant={plan.featured ? 'primary' : 'secondary'}>{plan.button}</ButtonLink></div>
+                  <div className="hx-price">
+                    <strong>{plan.price}</strong>
+                    {plan.label && <span>{plan.label}</span>}
+                  </div>
+                  <div className="hx-plan-button">
+                    <ButtonLink to="/signup" variant={plan.featured ? 'primary' : 'secondary'}>
+                      {plan.button}
+                    </ButtonLink>
+                  </div>
                 </div>
                 <ul className="hx-plan-list">
-                  {plan.features.map((feature) => <li key={feature}>{feature}</li>)}
+                  {plan.features.map((feature) => (
+                    <li key={feature}>{feature}</li>
+                  ))}
                 </ul>
               </article>
             ))}
@@ -685,11 +776,19 @@ export function LandingPageV3() {
       <section className="hx-faq-section">
         <div className="hx-container hx-faq-grid">
           <div className="hx-faq-left">
-            <h2 className="hx-section-title"><span className="hx-gradient-text">Frequently asked</span><br />questions</h2>
-            <ButtonLink to="/signup" variant="secondary">Contact us</ButtonLink>
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">Frequently asked</span>
+              <br />
+              questions
+            </h2>
+            <ButtonLink to="/signup" variant="secondary">
+              Contact us
+            </ButtonLink>
           </div>
           <div className="hx-faq-list">
-            {faqs.map((faq) => <FAQItem key={faq.q} q={faq.q} a={faq.a} />)}
+            {faqs.map((faq) => (
+              <FAQItem key={faq.q} q={faq.q} a={faq.a} />
+            ))}
           </div>
         </div>
       </section>
@@ -697,13 +796,21 @@ export function LandingPageV3() {
       <section id="blog" className="hx-section">
         <div className="hx-container hx-blog-grid">
           <div className="hx-blog-left">
-            <h2 className="hx-section-title"><span className="hx-gradient-text">Our Insights</span><br />on Technology</h2>
-            <ButtonLink to="/blog" variant="secondary">Browse all blogs</ButtonLink>
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">Our Insights</span>
+              <br />
+              on Technology
+            </h2>
+            <ButtonLink to="/blog" variant="secondary">
+              Browse all blogs
+            </ButtonLink>
           </div>
           <div className="hx-blog-list">
             {blogPosts.map((title, index) => (
               <Link to="/blog" className="hx-blog-card" key={title}>
-                <div className="hx-blog-thumb"><ArrowRight size={30} /></div>
+                <div className="hx-blog-thumb">
+                  <ArrowRight size={30} />
+                </div>
                 <div className="hx-blog-body">
                   <span className="hx-blog-date">March {9 + index}, 2026</span>
                   <h3>{title}</h3>
@@ -716,7 +823,9 @@ export function LandingPageV3() {
 
       <section className="hx-cta">
         <div className="hx-container">
-          <div className="hx-cta-icon"><Sparkles size={48} /></div>
+          <div className="hx-cta-icon">
+            <Sparkles size={48} />
+          </div>
           <h2 className="hx-section-title">Let's talk</h2>
           <p>Your always-on AI support assistant - ready to help customers anytime, anywhere.</p>
           <ButtonLink to="/signup">Book a Demo</ButtonLink>
@@ -727,17 +836,29 @@ export function LandingPageV3() {
         <div className="hx-container">
           <div className="hx-footer-top">
             <div className="hx-footer-left">
-              <Link to="/" className="hx-logo"><span className="hx-logo-mark">L</span><span>Lira</span></Link>
-              <p>Your always-on AI support assistant - ready to help your customers anytime, anywhere. Simple. Smart. Reliable.</p>
+              <Link to="/" className="hx-logo">
+                <span className="hx-logo-mark">L</span>
+                <span>Lira</span>
+              </Link>
+              <p>
+                Your always-on AI support assistant - ready to help your customers anytime,
+                anywhere. Simple. Smart. Reliable.
+              </p>
             </div>
             <div className="hx-footer-menu-inner">
               <div className="hx-footer-menu">
                 <h4>Company</h4>
-                <Link to="/">Home</Link><Link to="/products/customer-support">Feature</Link><Link to="/pricing">Pricing</Link><Link to="/blog">Blog</Link>
+                <Link to="/">Home</Link>
+                <Link to="/products/customer-support">Feature</Link>
+                <Link to="/pricing">Pricing</Link>
+                <Link to="/blog">Blog</Link>
               </div>
               <div className="hx-footer-menu">
                 <h4>Support</h4>
-                <Link to="/resources">Resources</Link><Link to="/security">Security</Link><Link to="/privacy">Privacy</Link><Link to="/terms">Terms</Link>
+                <Link to="/resources">Resources</Link>
+                <Link to="/security">Security</Link>
+                <Link to="/privacy">Privacy</Link>
+                <Link to="/terms">Terms</Link>
               </div>
             </div>
           </div>

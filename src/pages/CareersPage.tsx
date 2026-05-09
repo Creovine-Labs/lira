@@ -21,9 +21,18 @@ const culture = [
 ]
 
 const roles = [
-  ['Product Engineer', 'Frontend, integrations, support workflows, and customer-facing product quality.'],
-  ['AI Support Systems Engineer', 'Evaluation, retrieval, workflow orchestration, and safe agent behavior.'],
-  ['Customer Experience Lead', 'Help early teams launch Lira, shape onboarding, and turn support feedback into product insight.'],
+  [
+    'Product Engineer',
+    'Frontend, integrations, support workflows, and customer-facing product quality.',
+  ],
+  [
+    'AI Support Systems Engineer',
+    'Evaluation, retrieval, workflow orchestration, and safe agent behavior.',
+  ],
+  [
+    'Customer Experience Lead',
+    'Help early teams launch Lira, shape onboarding, and turn support feedback into product insight.',
+  ],
 ]
 
 export function CareersPage() {
@@ -39,10 +48,12 @@ export function CareersPage() {
         <div className="bx-hero-bg" aria-hidden="true" />
         <div className="bx-container bx-hero-inner" style={{ gridTemplateColumns: '1fr' }}>
           <div>
-            <h1 className="bx-title">Build the support layer modern teams wish they already had.</h1>
+            <h1 className="bx-title">
+              Build the support layer modern teams wish they already had.
+            </h1>
             <p className="bx-subtitle">
-              We are designing Lira for teams that want customer support to remember context,
-              take action, and protect trust. If that kind of product pulls at you, we should talk.
+              We are designing Lira for teams that want customer support to remember context, take
+              action, and protect trust. If that kind of product pulls at you, we should talk.
             </p>
             <div style={{ marginTop: 30 }}>
               <BlogButton to="/contact">Contact us</BlogButton>
@@ -63,7 +74,10 @@ export function CareersPage() {
               {culture.map(({ icon: Icon, title, copy }) => (
                 <article className="bx-post-card" key={title}>
                   <div className="bx-post-surface">
-                    <span className="bx-button-icon" style={{ width: 48, height: 48, marginBottom: 28 }}>
+                    <span
+                      className="bx-button-icon"
+                      style={{ width: 48, height: 48, marginBottom: 28 }}
+                    >
                       <Icon size={20} />
                     </span>
                     <h3 className="bx-post-title">{title}</h3>
@@ -83,12 +97,22 @@ export function CareersPage() {
             <div style={{ display: 'grid', gap: 12, marginTop: 18 }}>
               {roles.map(([title, copy]) => (
                 <article className="bx-post-card" key={title}>
-                  <div className="bx-post-surface" style={{ display: 'grid', gridTemplateColumns: '52px 1fr', gap: 18, alignItems: 'start' }}>
+                  <div
+                    className="bx-post-surface"
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '52px 1fr',
+                      gap: 18,
+                      alignItems: 'start',
+                    }}
+                  >
                     <span className="bx-button-icon" style={{ width: 52, height: 52 }}>
                       <Briefcase size={20} weight="duotone" />
                     </span>
                     <div>
-                      <h3 className="bx-post-title" style={{ fontSize: 22 }}>{title}</h3>
+                      <h3 className="bx-post-title" style={{ fontSize: 22 }}>
+                        {title}
+                      </h3>
                       <p className="bx-post-excerpt">{copy}</p>
                     </div>
                   </div>

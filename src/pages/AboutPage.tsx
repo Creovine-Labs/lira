@@ -39,7 +39,9 @@ export function AboutPage() {
         <div className="bx-hero-bg" aria-hidden="true" />
         <div className="bx-container bx-hero-inner" style={{ gridTemplateColumns: '1fr' }}>
           <div>
-            <h1 className="bx-title">We are building support that customers do not have to repeat.</h1>
+            <h1 className="bx-title">
+              We are building support that customers do not have to repeat.
+            </h1>
             <p className="bx-subtitle">
               Lira exists for teams who believe support is not just a queue. It is the place where
               customers ask for help, reveal friction, build trust, and decide whether to stay.
@@ -64,9 +66,12 @@ export function AboutPage() {
             </article>
             <article className="bx-post-card">
               <div className="bx-post-surface">
-                <p className="bx-post-excerpt" style={{ fontSize: 18, lineHeight: 1.8, marginTop: 0 }}>
-                  Most support software was built around tickets. Lira is built around customers.
-                  It brings your knowledge base, conversations, channels, and connected systems into
+                <p
+                  className="bx-post-excerpt"
+                  style={{ fontSize: 18, lineHeight: 1.8, marginTop: 0 }}
+                >
+                  Most support software was built around tickets. Lira is built around customers. It
+                  brings your knowledge base, conversations, channels, and connected systems into
                   one AI support layer so teams can respond faster without losing the human story.
                 </p>
                 <p className="bx-post-excerpt" style={{ fontSize: 18, lineHeight: 1.8 }}>
@@ -87,7 +92,10 @@ export function AboutPage() {
               {principles.map(({ icon: Icon, title, copy }) => (
                 <article className="bx-post-card" key={title}>
                   <div className="bx-post-surface">
-                    <span className="bx-button-icon" style={{ width: 48, height: 48, marginBottom: 28 }}>
+                    <span
+                      className="bx-button-icon"
+                      style={{ width: 48, height: 48, marginBottom: 28 }}
+                    >
                       <Icon size={20} />
                     </span>
                     <h3 className="bx-post-title">{title}</h3>
@@ -101,7 +109,9 @@ export function AboutPage() {
           <section className="bx-split" style={{ marginTop: 90 }}>
             <article className="bx-post-card">
               <div className="bx-post-surface">
-                <h2 className="bx-section-title">Support, onboarding, and customer success are converging.</h2>
+                <h2 className="bx-section-title">
+                  Support, onboarding, and customer success are converging.
+                </h2>
                 <p className="bx-section-copy">
                   Customers expect one continuous experience across your website, product, inbox,
                   and voice channels. Lira gives teams one relationship layer for those moments.
@@ -111,8 +121,21 @@ export function AboutPage() {
             <article className="bx-post-card">
               <div className="bx-post-surface" style={{ display: 'grid', gap: 14 }}>
                 {stats.map(([value, label]) => (
-                  <div key={label} style={{ padding: 18, borderRadius: 14, background: 'rgba(2,3,8,0.05)' }}>
-                    <strong style={{ display: 'block', fontFamily: 'var(--font-sans)', fontSize: 24, letterSpacing: 0, color: '#020308' }}>{value}</strong>
+                  <div
+                    key={label}
+                    style={{ padding: 18, borderRadius: 14, background: 'rgba(2,3,8,0.05)' }}
+                  >
+                    <strong
+                      style={{
+                        display: 'block',
+                        fontFamily: 'var(--font-sans)',
+                        fontSize: 24,
+                        letterSpacing: 0,
+                        color: '#020308',
+                      }}
+                    >
+                      {value}
+                    </strong>
                     <span style={{ color: 'rgba(2,3,8,0.56)' }}>{label}</span>
                   </div>
                 ))}
@@ -121,8 +144,16 @@ export function AboutPage() {
           </section>
 
           <section style={{ marginTop: 90, textAlign: 'center' }}>
-            <span className="bx-button-icon" style={{ width: 56, height: 56, margin: '0 auto 18px' }}>
-              <img src="/lira_mark_white.png" alt="" aria-hidden="true" style={{ width: 34, height: 26, objectFit: 'contain' }} />
+            <span
+              className="bx-button-icon"
+              style={{ width: 56, height: 56, margin: '0 auto 18px' }}
+            >
+              <img
+                src="/lira_mark_white.png"
+                alt=""
+                aria-hidden="true"
+                style={{ width: 34, height: 26, objectFit: 'contain' }}
+              />
             </span>
             <h2 className="bx-section-title">Support customers remember.</h2>
             <p className="bx-section-copy" style={{ marginLeft: 'auto', marginRight: 'auto' }}>

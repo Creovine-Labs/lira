@@ -33,7 +33,10 @@ export function ContactPage() {
           ].map(([Icon, title, copy]) => (
             <article className="bx-post-card" key={String(title)}>
               <div className="bx-post-surface">
-                <span className="bx-button-icon" style={{ width: 48, height: 48, marginBottom: 24 }}>
+                <span
+                  className="bx-button-icon"
+                  style={{ width: 48, height: 48, marginBottom: 24 }}
+                >
                   <Icon size={20} />
                 </span>
                 <h2 className="bx-post-title">{String(title)}</h2>

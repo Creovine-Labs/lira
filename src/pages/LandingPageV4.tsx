@@ -55,22 +55,26 @@ const brandRows = [
 const featureCards = [
   {
     title: 'Connected Customer Context',
-    description: 'Bring your helpdesk, CRM, Slack, email, and knowledge base together so every reply starts with the full relationship history.',
+    description:
+      'Bring your helpdesk, CRM, Slack, email, and knowledge base together so every reply starts with the full relationship history.',
     visual: 'integrations',
   },
   {
     title: 'Relationship-Led Conversations',
-    description: 'Lira answers questions, remembers context, creates follow-up tasks, and keeps the tone personal across every support moment.',
+    description:
+      'Lira answers questions, remembers context, creates follow-up tasks, and keeps the tone personal across every support moment.',
     visual: 'chat',
   },
   {
     title: 'Multilingual Relationship Care',
-    description: 'Detect language automatically, localize replies, and help customers feel understood wherever they are.',
+    description:
+      'Detect language automatically, localize replies, and help customers feel understood wherever they are.',
     visual: 'global',
   },
   {
     title: 'Voice Mode for Support',
-    description: 'Let customers speak naturally, capture voice notes, and let Lira respond with the same context your team would use.',
+    description:
+      'Let customers speak naturally, capture voice notes, and let Lira respond with the same context your team would use.',
     visual: 'voice',
   },
 ]
@@ -79,22 +83,26 @@ const services = [
   {
     icon: Bank,
     title: 'Financial Products & Fintech',
-    description: 'Resolve account, payment, KYC, transfer, and policy questions with the care and context high-trust products require.',
+    description:
+      'Resolve account, payment, KYC, transfer, and policy questions with the care and context high-trust products require.',
   },
   {
     icon: Storefront,
     title: 'E-commerce & Retail',
-    description: 'Answer order, return, delivery, product, and loyalty questions while keeping every customer interaction connected.',
+    description:
+      'Answer order, return, delivery, product, and loyalty questions while keeping every customer interaction connected.',
   },
   {
     icon: Heartbeat,
     title: 'Health & Wellness Platforms',
-    description: 'Guide customers through appointments, plans, policies, and sensitive questions with careful routing and context.',
+    description:
+      'Guide customers through appointments, plans, policies, and sensitive questions with careful routing and context.',
   },
   {
     icon: Package,
     title: 'Logistics & Service Operations',
-    description: 'Handle delivery updates, service requests, escalations, and follow-ups across teams that need fast coordination.',
+    description:
+      'Handle delivery updates, service requests, escalations, and follow-ups across teams that need fast coordination.',
   },
 ]
 
@@ -149,16 +157,38 @@ const whyChooseLira = [
 ]
 
 const setupSteps = [
-  ['01', 'Choose your channels', 'Turn on website chat, portal, email, or voice from the Lira workspace.'],
-  ['02', 'Install the snippet', 'Paste the script tag into your product or website and add your organization ID.'],
-  ['03', 'Connect context', 'Link your helpdesk, CRM, Slack, Linear, GitHub, or Teams so Lira can route work with the full story.'],
+  [
+    '01',
+    'Choose your channels',
+    'Turn on website chat, portal, email, or voice from the Lira workspace.',
+  ],
+  [
+    '02',
+    'Install the snippet',
+    'Paste the script tag into your product or website and add your organization ID.',
+  ],
+  [
+    '03',
+    'Connect context',
+    'Link your helpdesk, CRM, Slack, Linear, GitHub, or Teams so Lira can route work with the full story.',
+  ],
 ]
 
-function ButtonLink({ to, children, variant = 'primary' }: { to: string; children: string; variant?: 'primary' | 'secondary' }) {
+function ButtonLink({
+  to,
+  children,
+  variant = 'primary',
+}: {
+  to: string
+  children: string
+  variant?: 'primary' | 'secondary'
+}) {
   return (
     <Link to={to} className={`hx-button hx-button--${variant}`}>
       <span className="hx-button-label">{children}</span>
-      <span className="hx-button-icon"><ArrowUpRight size={22} /></span>
+      <span className="hx-button-icon">
+        <ArrowUpRight size={22} />
+      </span>
     </Link>
   )
 }
@@ -170,7 +200,9 @@ function HeroGraphic() {
         <div className="hx-orbit hx-orbit-one" />
         <div className="hx-orbit hx-orbit-two" />
         <div className="hx-orbit hx-orbit-three" />
-        <div className="hx-core"><img src="/lira_mark_white.png" alt="" aria-hidden="true" /></div>
+        <div className="hx-core">
+          <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
+        </div>
         <div className="hx-demo-flow" aria-hidden="true">
           <span>Detect</span>
           <i />
@@ -194,36 +226,78 @@ function HeroGraphic() {
 function Visual({ type }: { type: string }) {
   if (type === 'integrations') {
     return (
-      <motion.div className="hx-feature-visual hx-visual-integrations" variants={imageReveal} initial="hidden" whileInView="show" viewport={viewport}>
-        {[GlobeHemisphereWest, ChatText, FlowArrow, EnvelopeSimpleOpen, ShieldCheck].map((Icon, index) => (
-          <span key={index} className={`hx-hex hx-hex-${index + 1}`}><Icon size={24} weight="fill" /></span>
-        ))}
+      <motion.div
+        className="hx-feature-visual hx-visual-integrations"
+        variants={imageReveal}
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+      >
+        {[GlobeHemisphereWest, ChatText, FlowArrow, EnvelopeSimpleOpen, ShieldCheck].map(
+          (Icon, index) => (
+            <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
+              <Icon size={24} weight="fill" />
+            </span>
+          )
+        )}
       </motion.div>
     )
   }
 
   if (type === 'chat') {
     return (
-      <motion.div className="hx-feature-visual hx-visual-chat" variants={imageReveal} initial="hidden" whileInView="show" viewport={viewport}>
-        <div className="hx-mini-message hx-mini-one" aria-label="Can you help me upgrade my plan?"><span className="hx-type-line hx-type-user">Can you help me upgrade my plan?</span></div>
-        <div className="hx-mini-message hx-mini-two" aria-label="Yes. I found your account and looped in success."><span className="hx-type-line hx-type-lira">Yes. I found your account and looped in success.</span></div>
-        <div className="hx-mini-action"><span>Success task created</span></div>
+      <motion.div
+        className="hx-feature-visual hx-visual-chat"
+        variants={imageReveal}
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+      >
+        <div className="hx-mini-message hx-mini-one" aria-label="Can you help me upgrade my plan?">
+          <span className="hx-type-line hx-type-user">Can you help me upgrade my plan?</span>
+        </div>
+        <div
+          className="hx-mini-message hx-mini-two"
+          aria-label="Yes. I found your account and looped in success."
+        >
+          <span className="hx-type-line hx-type-lira">
+            Yes. I found your account and looped in success.
+          </span>
+        </div>
+        <div className="hx-mini-action">
+          <span>Success task created</span>
+        </div>
       </motion.div>
     )
   }
 
   if (type === 'global') {
     return (
-      <motion.div className="hx-feature-visual hx-visual-global" variants={imageReveal} initial="hidden" whileInView="show" viewport={viewport}>
+      <motion.div
+        className="hx-feature-visual hx-visual-global"
+        variants={imageReveal}
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+      >
         <GlobeHemisphereWest size={96} weight="duotone" />
-        <span>EN</span><span>FR</span><span>JP</span><span>ES</span>
+        <span>EN</span>
+        <span>FR</span>
+        <span>JP</span>
+        <span>ES</span>
       </motion.div>
     )
   }
 
   if (type === 'setup') {
     return (
-      <motion.div className="hx-feature-visual hx-visual-setup" variants={imageReveal} initial="hidden" whileInView="show" viewport={viewport}>
+      <motion.div
+        className="hx-feature-visual hx-visual-setup"
+        variants={imageReveal}
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+      >
         <div className="hx-setup-toolbar">
           <span />
           <span />
@@ -240,14 +314,56 @@ function Visual({ type }: { type: string }) {
   }
 
   return (
-    <motion.div className="hx-feature-visual hx-visual-voice" variants={imageReveal} initial="hidden" whileInView="show" viewport={viewport}>
+    <motion.div
+      className="hx-feature-visual hx-visual-voice"
+      variants={imageReveal}
+      initial="hidden"
+      whileInView="show"
+      viewport={viewport}
+    >
       <div className="hx-voice-note hx-voice-user" aria-label="Customer voice note">
         <span>Customer voice note</span>
-        <div className="hx-voice-row"><Microphone size={16} weight="fill" /><button type="button" aria-label="Play customer voice note" className="hx-voice-play" /><div className="hx-voice-wave"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><strong>0:12</strong></div>
+        <div className="hx-voice-row">
+          <Microphone size={16} weight="fill" />
+          <button type="button" aria-label="Play customer voice note" className="hx-voice-play" />
+          <div className="hx-voice-wave">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
+          <strong>0:12</strong>
+        </div>
       </div>
       <div className="hx-voice-note hx-voice-lira" aria-label="Lira voice reply">
         <span>Lira voice reply</span>
-        <div className="hx-voice-row"><img src="/lira_mark_white.png" alt="" aria-hidden="true" className="hx-voice-logo" /><button type="button" aria-label="Play Lira voice reply" className="hx-voice-play" /><div className="hx-voice-wave"><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /><i /></div><strong>0:08</strong></div>
+        <div className="hx-voice-row">
+          <img src="/lira_mark_white.png" alt="" aria-hidden="true" className="hx-voice-logo" />
+          <button type="button" aria-label="Play Lira voice reply" className="hx-voice-play" />
+          <div className="hx-voice-wave">
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
+          <strong>0:08</strong>
+        </div>
       </div>
       <div className="hx-voice-status">Voice support active</div>
     </motion.div>
@@ -262,11 +378,16 @@ function SetupJourney() {
     <section className="hx-setup-section">
       <div className="hx-container">
         <div className="hx-setup-card">
-          <motion.div className="hx-section-details hx-setup-copy" variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+          <motion.div
+            className="hx-section-details hx-setup-copy"
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={viewport}
+          >
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Go from sign up</span>
-              <br />
-              {' '}to live support in 3 steps
+              <br /> to live support in 3 steps
             </motion.h2>
           </motion.div>
 
@@ -316,7 +437,13 @@ function WhyChooseSection() {
   return (
     <section className="hx-section hx-why-section">
       <div className="hx-container">
-        <motion.div className="hx-section-details" variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+        <motion.div
+          className="hx-section-details"
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={viewport}
+        >
           <motion.h2 className="hx-section-title" variants={fadeUp}>
             <span className="hx-gradient-text">Why choose Lira</span>
           </motion.h2>
@@ -326,11 +453,19 @@ function WhyChooseSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div className="hx-why-grid" variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+        <motion.div
+          className="hx-why-grid"
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={viewport}
+        >
           {whyChooseLira.map(({ icon: Icon, title, description }) => (
             <motion.article className="hx-why-card" key={title} variants={cardReveal}>
               <div className="hx-why-top">
-                <span className="hx-why-icon"><Icon size={22} weight="fill" /></span>
+                <span className="hx-why-icon">
+                  <Icon size={22} weight="fill" />
+                </span>
               </div>
               <h3>{title}</h3>
               <p>{description}</p>
@@ -346,7 +481,12 @@ function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
     <div className="hx-faq-item">
-      <button className="hx-faq-head" type="button" onClick={() => setOpen((value) => !value)} aria-expanded={open}>
+      <button
+        className="hx-faq-head"
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-expanded={open}
+      >
         <span>{q}</span>
         <CaretDown className={open ? 'is-open' : ''} size={18} weight="bold" />
       </button>
@@ -845,9 +985,15 @@ export function LandingPageV4() {
       <motion.section className="hx-hero">
         <motion.div className="hx-hero-bg" aria-hidden="true" />
         <div className="hx-container">
-          <motion.div className="hx-hero-overview" variants={stagger} initial="hidden" animate="show">
+          <motion.div
+            className="hx-hero-overview"
+            variants={stagger}
+            initial="hidden"
+            animate="show"
+          >
             <h1 className="hx-title">
-              <span className="hx-gradient-text">Next-gen AI customer support</span> for modern teams
+              <span className="hx-gradient-text">Next-gen AI customer support</span> for modern
+              teams
             </h1>
             <p>
               Lira helps growing teams answer customers faster across chat, email, voice, and
@@ -855,7 +1001,9 @@ export function LandingPageV4() {
               touch is needed.
             </p>
             <div className="hx-hero-button">
-              <ButtonLink to="/signup" variant="secondary">Create Account</ButtonLink>
+              <ButtonLink to="/signup" variant="secondary">
+                Create Account
+              </ButtonLink>
               <ButtonLink to="/book-demo">Book a Demo</ButtonLink>
             </div>
             <p className="hx-free-note">Start free. No credit card required.</p>
@@ -869,7 +1017,11 @@ export function LandingPageV4() {
             <div className="hx-brand-track">
               {[...brandRows, ...brandRows].map((row, rowIndex) => (
                 <div className="hx-brand-row" key={rowIndex}>
-                  {row.map((brand) => <span className="hx-brand-logo" key={`${rowIndex}-${brand}`}>{brand}</span>)}
+                  {row.map((brand) => (
+                    <span className="hx-brand-logo" key={`${rowIndex}-${brand}`}>
+                      {brand}
+                    </span>
+                  ))}
                 </div>
               ))}
             </div>
@@ -879,22 +1031,40 @@ export function LandingPageV4() {
 
       <section id="features" className="hx-section">
         <div className="hx-container">
-          <motion.div className="hx-section-details" variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+          <motion.div
+            className="hx-section-details"
+            variants={stagger}
+            initial="hidden"
+            whileInView="show"
+            viewport={viewport}
+          >
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Everything You Need to</span>
               <br />
               Support Customers Well
             </motion.h2>
             <motion.p className="hx-section-para" variants={fadeUp}>
-              Lira combines knowledge, voice, language, workflow actions, and customer memory so support feels personal at scale.
+              Lira combines knowledge, voice, language, workflow actions, and customer memory so
+              support feels personal at scale.
             </motion.p>
           </motion.div>
 
           <div className="hx-feature-wrap">
-            {Array.from({ length: Math.ceil(featureCards.length / 2) }, (_, index) => index * 2).map((start) => (
+            {Array.from(
+              { length: Math.ceil(featureCards.length / 2) },
+              (_, index) => index * 2
+            ).map((start) => (
               <div className="hx-feature-grid" key={start}>
                 {featureCards.slice(start, start + 2).map((feature) => (
-                  <motion.article className="hx-feature-card" key={feature.title} variants={fadeUp} initial="hidden" whileInView="show" viewport={viewport} tabIndex={0}>
+                  <motion.article
+                    className="hx-feature-card"
+                    key={feature.title}
+                    variants={fadeUp}
+                    initial="hidden"
+                    whileInView="show"
+                    viewport={viewport}
+                    tabIndex={0}
+                  >
                     <Visual type={feature.visual} />
                     <div className="hx-feature-body">
                       <h3>{feature.title}</h3>
@@ -915,20 +1085,40 @@ export function LandingPageV4() {
       <section className="hx-section">
         <div className="hx-container">
           <div className="hx-service-grid">
-            <motion.div className="hx-section-details" style={{ textAlign: 'left', margin: 0, alignItems: 'flex-start' }} variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+            <motion.div
+              className="hx-section-details"
+              style={{ textAlign: 'left', margin: 0, alignItems: 'flex-start' }}
+              variants={stagger}
+              initial="hidden"
+              whileInView="show"
+              viewport={viewport}
+            >
               <motion.h2 className="hx-section-title" variants={fadeUp}>
                 <span className="hx-gradient-text">Built for Teams That</span>
                 <br />
                 Care About Retention
               </motion.h2>
               <motion.p className="hx-section-para" style={{ marginLeft: 0 }} variants={fadeUp}>
-                Whether you support SaaS users, financial customers, clients, or high-volume customer experience teams, Lira keeps the relationship context intact.
+                Whether you support SaaS users, financial customers, clients, or high-volume
+                customer experience teams, Lira keeps the relationship context intact.
               </motion.p>
             </motion.div>
-            <motion.div className="hx-service-list" variants={stagger} initial="hidden" whileInView="show" viewport={viewport}>
+            <motion.div
+              className="hx-service-list"
+              variants={stagger}
+              initial="hidden"
+              whileInView="show"
+              viewport={viewport}
+            >
               {services.map((service) => (
-                <motion.article className="hx-service-item" key={service.title} variants={cardReveal}>
-                  <div className="hx-service-icon"><service.icon size={30} /></div>
+                <motion.article
+                  className="hx-service-item"
+                  key={service.title}
+                  variants={cardReveal}
+                >
+                  <div className="hx-service-icon">
+                    <service.icon size={30} />
+                  </div>
                   <div className="hx-service-vr" />
                   <div>
                     <h3>{service.title}</h3>
@@ -941,68 +1131,137 @@ export function LandingPageV4() {
         </div>
       </section>
 
-      <motion.section className="hx-testimonial" initial="hidden" whileInView="show" viewport={viewport} variants={stagger}>
+      <motion.section
+        className="hx-testimonial"
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+        variants={stagger}
+      >
         <div className="hx-container">
           <motion.div className="hx-section-details" style={{ maxWidth: 474 }} variants={fadeUp}>
-            <h2 className="hx-section-title"><span className="hx-gradient-text">What better support</span><br />feels like with Lira</h2>
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">What better support</span>
+              <br />
+              feels like with Lira
+            </h2>
           </motion.div>
           <motion.div className="hx-testimonial-card" variants={cardReveal}>
-            <div className="hx-stars">{Array.from({ length: 5 }).map((_, index) => <Sparkle key={index} size={20} weight="fill" />)}</div>
+            <div className="hx-stars">
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Sparkle key={index} size={20} weight="fill" />
+              ))}
+            </div>
             <blockquote>
-              Lira helps us respond with context instead of scripts. Customers get answers faster, and our team finally has the history needed to build trust after the first reply.
+              Lira helps us respond with context instead of scripts. Customers get answers faster,
+              and our team finally has the history needed to build trust after the first reply.
             </blockquote>
             <div className="hx-author">
               <strong>Maya Thompson</strong>
               <span>Head of Customer Experience</span>
             </div>
-            <div className="hx-avatar-row"><span className="hx-avatar">MT</span><span className="hx-avatar">PK</span><span className="hx-avatar">CR</span><span className="hx-avatar">AW</span></div>
+            <div className="hx-avatar-row">
+              <span className="hx-avatar">MT</span>
+              <span className="hx-avatar">PK</span>
+              <span className="hx-avatar">CR</span>
+              <span className="hx-avatar">AW</span>
+            </div>
           </motion.div>
         </div>
       </motion.section>
 
-      <motion.section className="hx-faq-section" initial="hidden" whileInView="show" viewport={viewport} variants={stagger}>
+      <motion.section
+        className="hx-faq-section"
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+        variants={stagger}
+      >
         <div className="hx-container hx-faq-grid">
           <motion.div className="hx-faq-left" variants={fadeUp}>
-            <h2 className="hx-section-title"><span className="hx-gradient-text">Frequently asked</span><br />questions</h2>
-            <ButtonLink to="/contact" variant="secondary">Contact us</ButtonLink>
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">Frequently asked</span>
+              <br />
+              questions
+            </h2>
+            <ButtonLink to="/contact" variant="secondary">
+              Contact us
+            </ButtonLink>
           </motion.div>
           <motion.div className="hx-faq-list" variants={stagger}>
-            {faqs.map((faq) => <motion.div key={faq.q} variants={cardReveal}><FAQItem q={faq.q} a={faq.a} /></motion.div>)}
+            {faqs.map((faq) => (
+              <motion.div key={faq.q} variants={cardReveal}>
+                <FAQItem q={faq.q} a={faq.a} />
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </motion.section>
 
       <section id="blog" className="hx-section">
         <div className="hx-container hx-blog-grid">
-          <motion.div className="hx-blog-left" initial="hidden" whileInView="show" viewport={viewport} variants={stagger}>
-            <h2 className="hx-section-title"><span className="hx-gradient-text">Ideas for better</span><br />customer relationships</h2>
-            <ButtonLink to="/blog" variant="secondary">Browse all blogs</ButtonLink>
+          <motion.div
+            className="hx-blog-left"
+            initial="hidden"
+            whileInView="show"
+            viewport={viewport}
+            variants={stagger}
+          >
+            <h2 className="hx-section-title">
+              <span className="hx-gradient-text">Ideas for better</span>
+              <br />
+              customer relationships
+            </h2>
+            <ButtonLink to="/blog" variant="secondary">
+              Browse all blogs
+            </ButtonLink>
           </motion.div>
-          <motion.div className="hx-blog-list" initial="hidden" whileInView="show" viewport={viewport} variants={stagger}>
+          <motion.div
+            className="hx-blog-list"
+            initial="hidden"
+            whileInView="show"
+            viewport={viewport}
+            variants={stagger}
+          >
             {BLOG_POSTS.map((post) => (
               <motion.div key={post.slug} variants={cardReveal}>
-              <Link to={`/blog/${post.slug}`} className="hx-blog-card">
-                <div className="hx-blog-thumb"><ArrowRight size={30} /></div>
-                <div className="hx-blog-body">
-                  <span className="hx-blog-date">{post.date}</span>
-                  <h3>{post.title}</h3>
-                </div>
-              </Link>
+                <Link to={`/blog/${post.slug}`} className="hx-blog-card">
+                  <div className="hx-blog-thumb">
+                    <ArrowRight size={30} />
+                  </div>
+                  <div className="hx-blog-body">
+                    <span className="hx-blog-date">{post.date}</span>
+                    <h3>{post.title}</h3>
+                  </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
 
-      <motion.section className="hx-cta" initial="hidden" whileInView="show" viewport={viewport} variants={stagger}>
+      <motion.section
+        className="hx-cta"
+        initial="hidden"
+        whileInView="show"
+        viewport={viewport}
+        variants={stagger}
+      >
         <div className="hx-container">
           <motion.div className="hx-cta-icon" variants={fadeUp}>
             <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
           </motion.div>
-          <motion.h2 className="hx-section-title" variants={fadeUp}>Build support customers remember</motion.h2>
-          <motion.p variants={fadeUp}>Give your team an AI relationship layer that answers, remembers, routes, and follows through.</motion.p>
+          <motion.h2 className="hx-section-title" variants={fadeUp}>
+            Build support customers remember
+          </motion.h2>
+          <motion.p variants={fadeUp}>
+            Give your team an AI relationship layer that answers, remembers, routes, and follows
+            through.
+          </motion.p>
           <motion.div className="hx-hero-button" variants={fadeUp}>
-            <ButtonLink to="/signup" variant="secondary">Create Account</ButtonLink>
+            <ButtonLink to="/signup" variant="secondary">
+              Create Account
+            </ButtonLink>
             <ButtonLink to="/book-demo">Book a Demo</ButtonLink>
           </motion.div>
         </div>

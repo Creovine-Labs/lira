@@ -130,15 +130,25 @@ export function BlogButton({ to, children }: { to: string; children: ReactNode }
   return (
     <Link to={to} className="bx-button">
       <span className="bx-button-label">{children}</span>
-      <span className="bx-button-icon"><ArrowUpRight size={22} /></span>
+      <span className="bx-button-icon">
+        <ArrowUpRight size={22} />
+      </span>
     </Link>
   )
 }
 
 function BlogLogo({ dark = false }: { dark?: boolean }) {
   return (
-    <Link to="/" className="bx-logo" style={dark ? { color: '#020308', textShadow: 'none' } : undefined} aria-label="Lira home">
-      <span className="bx-logo-mark" style={dark ? { background: '#202527', borderColor: 'rgba(2,3,8,0.18)' } : undefined}>
+    <Link
+      to="/"
+      className="bx-logo"
+      style={dark ? { color: '#020308', textShadow: 'none' } : undefined}
+      aria-label="Lira home"
+    >
+      <span
+        className="bx-logo-mark"
+        style={dark ? { background: '#202527', borderColor: 'rgba(2,3,8,0.18)' } : undefined}
+      >
         <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
       </span>
       <span>Lira</span>
@@ -148,7 +158,11 @@ function BlogLogo({ dark = false }: { dark?: boolean }) {
 
 const blogSocialLinks = [
   { label: 'Instagram', href: 'https://www.instagram.com/liraintelligence', icon: InstagramLogo },
-  { label: 'LinkedIn', href: 'https://www.linkedin.com/company/lira-intelligence', icon: LinkedinLogo },
+  {
+    label: 'LinkedIn',
+    href: 'https://www.linkedin.com/company/lira-intelligence',
+    icon: LinkedinLogo,
+  },
   { label: 'X', href: 'https://x.com/liraintelligence', icon: XLogo },
 ]
 
@@ -160,10 +174,22 @@ export function BlogNav() {
       <div className="bx-container bx-nav-shell">
         <BlogLogo />
         <nav className="bx-nav-links" aria-label="Primary navigation">
-          <Link to="/" className="bx-menu-link"><span>Home</span><House size={15} weight="fill" /></Link>
-          <Link to="/features" className="bx-menu-link"><span>Features</span><ArrowUpRight size={15} /></Link>
-          <Link to="/about-us" className="bx-menu-link"><span>About</span><ArrowUpRight size={15} /></Link>
-          <Link to="/blog" className="bx-menu-link"><span>Blog</span><ArrowUpRight size={15} /></Link>
+          <Link to="/" className="bx-menu-link">
+            <span>Home</span>
+            <House size={15} weight="fill" />
+          </Link>
+          <Link to="/features" className="bx-menu-link">
+            <span>Features</span>
+            <ArrowUpRight size={15} />
+          </Link>
+          <Link to="/about-us" className="bx-menu-link">
+            <span>About</span>
+            <ArrowUpRight size={15} />
+          </Link>
+          <Link to="/blog" className="bx-menu-link">
+            <span>Blog</span>
+            <ArrowUpRight size={15} />
+          </Link>
         </nav>
         <div className="bx-nav-actions">
           <BlogButton to="/signup">Create Account</BlogButton>
@@ -188,12 +214,24 @@ export function BlogNav() {
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.18 }}
             >
-              <Link to="/" onClick={() => setMobileOpen(false)}>Home</Link>
-              <Link to="/features" onClick={() => setMobileOpen(false)}>Features</Link>
-              <Link to="/about-us" onClick={() => setMobileOpen(false)}>About</Link>
-              <Link to="/blog" onClick={() => setMobileOpen(false)}>Blog</Link>
-              <Link to="/signup" onClick={() => setMobileOpen(false)}>Create Account</Link>
-              <Link to="/book-demo" onClick={() => setMobileOpen(false)}>Book a Demo</Link>
+              <Link to="/" onClick={() => setMobileOpen(false)}>
+                Home
+              </Link>
+              <Link to="/features" onClick={() => setMobileOpen(false)}>
+                Features
+              </Link>
+              <Link to="/about-us" onClick={() => setMobileOpen(false)}>
+                About
+              </Link>
+              <Link to="/blog" onClick={() => setMobileOpen(false)}>
+                Blog
+              </Link>
+              <Link to="/signup" onClick={() => setMobileOpen(false)}>
+                Create Account
+              </Link>
+              <Link to="/book-demo" onClick={() => setMobileOpen(false)}>
+                Book a Demo
+              </Link>
             </motion.nav>
           )}
         </AnimatePresence>
@@ -234,7 +272,13 @@ export function BlogFooter() {
   )
 }
 
-export function BlogShell({ children, article = false }: { children: ReactNode; article?: boolean }) {
+export function BlogShell({
+  children,
+  article = false,
+}: {
+  children: ReactNode
+  article?: boolean
+}) {
   return (
     <div className={`bx-page${article ? ' bx-page--article' : ''}`}>
       <BlogStyles />

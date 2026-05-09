@@ -37,13 +37,11 @@ export const DOCS: DocEntry[] = [
     sections: [
       {
         title: 'What this does',
-        body:
-          'Lira ships with an embeddable support widget that loads from the public widget bundle and opens a full customer support chat on your site.',
+        body: 'Lira ships with an embeddable support widget that loads from the public widget bundle and opens a full customer support chat on your site.',
       },
       {
         title: 'Use the widget snippet',
-        body:
-          'The widget reads its setup from data attributes on the script tag. The codebase expects your organization ID and supports color, greeting, and launcher position.',
+        body: 'The widget reads its setup from data attributes on the script tag. The codebase expects your organization ID and supports color, greeting, and launcher position.',
         code:
           `<script src="https://widget.liraintelligence.com/v1/widget.js"\n` +
           `  data-org-id="org_abc123"\n` +
@@ -74,20 +72,19 @@ export const DOCS: DocEntry[] = [
   {
     slug: 'verified-customers',
     title: 'Verify logged-in customers',
-    summary: 'Pass signed identity so Lira can recognize the visitor and personalize support safely.',
+    summary:
+      'Pass signed identity so Lira can recognize the visitor and personalize support safely.',
     category: 'Guide',
     Icon: ShieldCheck,
     related: ['chat-widget', 'human-handoff', 'tool-packs'],
     sections: [
       {
         title: 'Why this matters',
-        body:
-          'When a customer is already signed in, Lira can use their identity to personalize replies, connect the conversation to the right person, and support account-level actions with more confidence.',
+        body: 'When a customer is already signed in, Lira can use their identity to personalize replies, connect the conversation to the right person, and support account-level actions with more confidence.',
       },
       {
         title: 'Supported identity fields',
-        body:
-          'The widget code supports three optional attributes for authenticated visitors: email, name, and a server-generated HMAC signature.',
+        body: 'The widget code supports three optional attributes for authenticated visitors: email, name, and a server-generated HMAC signature.',
         code:
           `<script src="https://widget.liraintelligence.com/v1/widget.js"\n` +
           `  data-org-id="org_abc123"\n` +
@@ -125,8 +122,7 @@ export const DOCS: DocEntry[] = [
     sections: [
       {
         title: 'How Lira handles support email',
-        body:
-          'During support activation, Lira generates a dedicated support address for your organization. You can either use that address directly or forward your existing support inbox into it.',
+        body: 'During support activation, Lira generates a dedicated support address for your organization. You can either use that address directly or forward your existing support inbox into it.',
       },
       {
         title: 'Forwarding setup',
@@ -147,8 +143,7 @@ export const DOCS: DocEntry[] = [
       },
       {
         title: 'Best practice',
-        body:
-          'Use one primary support email path so your team, Lira, and the customer are all looking at the same thread history instead of split inboxes.',
+        body: 'Use one primary support email path so your team, Lira, and the customer are all looking at the same thread history instead of split inboxes.',
       },
     ],
   },
@@ -162,8 +157,7 @@ export const DOCS: DocEntry[] = [
     sections: [
       {
         title: 'What the portal includes',
-        body:
-          'The support portal in the codebase can expose live chat, submit-a-request, and ticket tracking flows. Each capability is individually configurable.',
+        body: 'The support portal in the codebase can expose live chat, submit-a-request, and ticket tracking flows. Each capability is individually configurable.',
       },
       {
         title: 'Portal controls available today',
@@ -201,8 +195,7 @@ export const DOCS: DocEntry[] = [
     sections: [
       {
         title: 'Where knowledge lives in Lira',
-        body:
-          'Support uses the same organization knowledge system as the rest of Lira. The knowledge area already supports documents, connected sources, web sources, and direct querying.',
+        body: 'Support uses the same organization knowledge system as the rest of Lira. The knowledge area already supports documents, connected sources, web sources, and direct querying.',
       },
       {
         title: 'Content sources supported in the app',
@@ -224,23 +217,22 @@ export const DOCS: DocEntry[] = [
       },
       {
         title: 'What good support knowledge looks like',
-        body:
-          'The best support setups give Lira clear, current, product-specific answers. Keep it factual, update it when the product changes, and include the policies your team would actually want followed during a real customer conversation.',
+        body: 'The best support setups give Lira clear, current, product-specific answers. Keep it factual, update it when the product changes, and include the policies your team would actually want followed during a real customer conversation.',
       },
     ],
   },
   {
     slug: 'human-handoff',
     title: 'Handle human handoff',
-    summary: 'Escalate the right conversations, let a teammate reply, then hand the thread back to Lira.',
+    summary:
+      'Escalate the right conversations, let a teammate reply, then hand the thread back to Lira.',
     category: 'Tutorial',
     Icon: Handshake,
     related: ['verified-customers', 'proactive-outreach', 'tool-packs'],
     sections: [
       {
         title: 'How handoff works in Lira',
-        body:
-          'Lira can escalate when confidence is low or when a conversation hits rules you define. Human teammates reply from the support inbox, and the thread can later be handed back to Lira.',
+        body: 'Lira can escalate when confidence is low or when a conversation hits rules you define. Human teammates reply from the support inbox, and the thread can later be handed back to Lira.',
       },
       {
         title: 'Available escalation controls',
@@ -272,15 +264,15 @@ export const DOCS: DocEntry[] = [
   {
     slug: 'proactive-outreach',
     title: 'Create proactive outreach',
-    summary: 'Use Lira to start support conversations instead of waiting for customers to ask first.',
+    summary:
+      'Use Lira to start support conversations instead of waiting for customers to ask first.',
     category: 'Tutorial',
     Icon: BellRinging,
     related: ['human-handoff', 'tool-packs', 'knowledge-base'],
     sections: [
       {
         title: 'What proactive support means in Lira',
-        body:
-          'Lira includes proactive support surfaces so your team can reach out before a customer opens a ticket. The codebase already includes proactive panels and customer-level proactive messaging flows.',
+        body: 'Lira includes proactive support surfaces so your team can reach out before a customer opens a ticket. The codebase already includes proactive panels and customer-level proactive messaging flows.',
       },
       {
         title: 'Strong use cases',
@@ -302,23 +294,22 @@ export const DOCS: DocEntry[] = [
       },
       {
         title: 'What to avoid',
-        body:
-          'Do not use proactive support like a marketing blast. In Lira it works best when it is timely, operational, and directly helpful to the customer.',
+        body: 'Do not use proactive support like a marketing blast. In Lira it works best when it is timely, operational, and directly helpful to the customer.',
       },
     ],
   },
   {
     slug: 'tool-packs',
     title: 'Connect support integrations and tool packs',
-    summary: 'Give Lira the approved systems it needs to look up context and take the right actions.',
+    summary:
+      'Give Lira the approved systems it needs to look up context and take the right actions.',
     category: 'Tutorial',
     Icon: Plug,
     related: ['verified-customers', 'human-handoff', 'knowledge-base'],
     sections: [
       {
         title: 'What integrations do for support',
-        body:
-          'Lira can connect to external systems so support is not limited to conversation alone. In the current app, the support setup already surfaces Slack, Linear, HubSpot, and Salesforce connection status, and the wider product includes an integrations area for third-party tools.',
+        body: 'Lira can connect to external systems so support is not limited to conversation alone. In the current app, the support setup already surfaces Slack, Linear, HubSpot, and Salesforce connection status, and the wider product includes an integrations area for third-party tools.',
       },
       {
         title: 'Useful connection patterns',
@@ -339,8 +330,7 @@ export const DOCS: DocEntry[] = [
       },
       {
         title: 'How to keep it trustworthy',
-        body:
-          'Only connect tools that improve response quality or reduce manual work. A smaller set of well-understood integrations is usually better than a wide surface area that nobody actively manages.',
+        body: 'Only connect tools that improve response quality or reduce manual work. A smaller set of well-understood integrations is usually better than a wide surface area that nobody actively manages.',
       },
     ],
   },

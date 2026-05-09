@@ -17,8 +17,8 @@ export function BookDemoPage() {
           <div>
             <h1 className="bx-title">Book a Lira demo.</h1>
             <p className="bx-subtitle">
-              Tell us how your team supports customers today. We will show you how Lira can fit
-              into your website, portal, email, voice, and internal workflows.
+              Tell us how your team supports customers today. We will show you how Lira can fit into
+              your website, portal, email, voice, and internal workflows.
             </p>
           </div>
         </div>
@@ -42,7 +42,18 @@ export function BookDemoPage() {
                   ['02', 'Choose a demo time'],
                   ['03', 'See Lira with a realistic support flow'],
                 ].map(([number, text]) => (
-                  <div key={number} style={{ display: 'grid', gridTemplateColumns: '44px 1fr', gap: 12, alignItems: 'center', padding: 14, borderRadius: 14, background: 'rgba(2,3,8,0.05)' }}>
+                  <div
+                    key={number}
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: '44px 1fr',
+                      gap: 12,
+                      alignItems: 'center',
+                      padding: 14,
+                      borderRadius: 14,
+                      background: 'rgba(2,3,8,0.05)',
+                    }}
+                  >
                     <strong>{number}</strong>
                     <span>{text}</span>
                   </div>
@@ -56,14 +67,50 @@ export function BookDemoPage() {
               <h2 className="bx-section-title">Demo request</h2>
               <form style={{ display: 'grid', gap: 14, marginTop: 24 }}>
                 {['Work email', 'Name', 'Company', 'Team size'].map((label) => (
-                  <label key={label} style={{ display: 'grid', gap: 8, color: 'rgba(2,3,8,0.62)', fontSize: 13, fontWeight: 700 }}>
+                  <label
+                    key={label}
+                    style={{
+                      display: 'grid',
+                      gap: 8,
+                      color: 'rgba(2,3,8,0.62)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                    }}
+                  >
                     {label}
-                    <input style={{ minHeight: 48, border: '1px solid rgba(2,3,8,0.16)', borderRadius: 12, padding: '0 14px', background: '#fff', color: '#020308' }} />
+                    <input
+                      style={{
+                        minHeight: 48,
+                        border: '1px solid rgba(2,3,8,0.16)',
+                        borderRadius: 12,
+                        padding: '0 14px',
+                        background: '#fff',
+                        color: '#020308',
+                      }}
+                    />
                   </label>
                 ))}
-                <label style={{ display: 'grid', gap: 8, color: 'rgba(2,3,8,0.62)', fontSize: 13, fontWeight: 700 }}>
+                <label
+                  style={{
+                    display: 'grid',
+                    gap: 8,
+                    color: 'rgba(2,3,8,0.62)',
+                    fontSize: 13,
+                    fontWeight: 700,
+                  }}
+                >
                   What should we focus on?
-                  <textarea rows={5} style={{ border: '1px solid rgba(2,3,8,0.16)', borderRadius: 12, padding: 14, background: '#fff', color: '#020308', resize: 'vertical' }} />
+                  <textarea
+                    rows={5}
+                    style={{
+                      border: '1px solid rgba(2,3,8,0.16)',
+                      borderRadius: 12,
+                      padding: 14,
+                      background: '#fff',
+                      color: '#020308',
+                      resize: 'vertical',
+                    }}
+                  />
                 </label>
                 <BlogButton to="/contact">Submit request</BlogButton>
               </form>
@@ -79,10 +126,15 @@ export function BookDemoPage() {
           ].map(([Icon, title]) => (
             <article className="bx-post-card" key={String(title)}>
               <div className="bx-post-surface">
-                <span className="bx-button-icon" style={{ width: 44, height: 44, marginBottom: 18 }}>
+                <span
+                  className="bx-button-icon"
+                  style={{ width: 44, height: 44, marginBottom: 18 }}
+                >
                   <Icon size={18} />
                 </span>
-                <h3 className="bx-post-title" style={{ fontSize: 18 }}>{String(title)}</h3>
+                <h3 className="bx-post-title" style={{ fontSize: 18 }}>
+                  {String(title)}
+                </h3>
               </div>
             </article>
           ))}

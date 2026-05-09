@@ -128,9 +128,7 @@ export function PrivacyPolicyPage() {
             <li>
               <strong>Cookies & Similar Technologies:</strong> We use essential cookies for
               authentication and session management, and optional analytics cookies to understand
-              how the Service is used. See our{' '}
-              <Link to="/cookies">Cookie Policy</Link>{' '}
-              for details.
+              how the Service is used. See our <Link to="/cookies">Cookie Policy</Link> for details.
             </li>
           </ul>
 
