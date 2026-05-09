@@ -3,10 +3,26 @@
   "outputDirectory": "dist",
   "redirects": [
     { "source": "/products/interviews", "destination": "/", "permanent": true },
-    { "source": "/blog/ai-interview-process", "destination": "/blog/ai-customer-support-context", "permanent": true },
-    { "source": "/blog/ai-sales-coaching", "destination": "/blog/ai-support-automation-workflows", "permanent": true },
-    { "source": "/blog/knowledge-base-best-practices", "destination": "/blog/knowledge-base-for-ai-support", "permanent": true },
-    { "source": "/blog/meeting-intelligence-future", "destination": "/blog/human-handoff-in-ai-support", "permanent": true },
+    {
+      "source": "/blog/ai-interview-process",
+      "destination": "/blog/ai-customer-support-context",
+      "permanent": true
+    },
+    {
+      "source": "/blog/ai-sales-coaching",
+      "destination": "/blog/ai-support-automation-workflows",
+      "permanent": true
+    },
+    {
+      "source": "/blog/knowledge-base-best-practices",
+      "destination": "/blog/knowledge-base-for-ai-support",
+      "permanent": true
+    },
+    {
+      "source": "/blog/meeting-intelligence-future",
+      "destination": "/blog/human-handoff-in-ai-support",
+      "permanent": true
+    },
     { "source": "/org/roles", "destination": "/dashboard", "permanent": true },
     { "source": "/org/roles/:path*", "destination": "/dashboard", "permanent": true },
     { "source": "/org/interviews/:path*", "destination": "/dashboard", "permanent": true }

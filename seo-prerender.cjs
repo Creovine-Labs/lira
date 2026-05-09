@@ -65,7 +65,8 @@ const ROUTES = [
     title: 'Tutorials - Learn Lira Customer Support in Minutes',
     description:
       'Tutorials and walkthroughs for the Lira support workflows teams use first, including knowledge setup, escalation, proactive support, and integrations.',
-    keywords: 'Lira tutorials, AI customer support tutorial, support workflow tutorial, knowledge base tutorial',
+    keywords:
+      'Lira tutorials, AI customer support tutorial, support workflow tutorial, knowledge base tutorial',
   },
   {
     path: '/features',
@@ -198,7 +199,8 @@ const ROUTES = [
     title: 'Connect Lira Support Integrations and Tool Packs',
     description:
       'Connect Slack, Linear, HubSpot, Salesforce, and other support systems so Lira can act with context.',
-    keywords: 'support integrations, tool packs, Slack support integration, Linear support integration',
+    keywords:
+      'support integrations, tool packs, Slack support integration, Linear support integration',
     type: 'article',
   },
   {
@@ -1078,7 +1080,11 @@ function run() {
     if (route.path === '/demo') {
       const routeDir = path.join(DIST, route.path)
       fs.mkdirSync(routeDir, { recursive: true })
-      fs.writeFileSync(path.join(routeDir, 'index.html'), generateNimbusHtml(demoOrgId, demoWidgetSecret), 'utf-8')
+      fs.writeFileSync(
+        path.join(routeDir, 'index.html'),
+        generateNimbusHtml(demoOrgId, demoWidgetSecret),
+        'utf-8'
+      )
 
       // Sub-pages: each crawled independently by the KB
       const subPages = [
