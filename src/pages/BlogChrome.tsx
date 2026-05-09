@@ -12,6 +12,7 @@ import {
 } from '@phosphor-icons/react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MarketingFooter, MarketingNavbar } from '@/components/marketing'
+import { DOCS_BASE_URL } from '@/lib/docs'
 
 export function BlogStyles() {
   return (
@@ -192,7 +193,7 @@ export function BlogNav() {
           </Link>
         </nav>
         <div className="bx-nav-actions">
-          <BlogButton to="/signup">Create Account</BlogButton>
+          <BlogButton to="/signup">Signup for free</BlogButton>
           <BlogButton to="/book-demo">Book a Demo</BlogButton>
         </div>
         <button
@@ -227,7 +228,7 @@ export function BlogNav() {
                 Blog
               </Link>
               <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                Create Account
+                Signup for free
               </Link>
               <Link to="/book-demo" onClick={() => setMobileOpen(false)}>
                 Book a Demo
@@ -261,7 +262,12 @@ export function BlogFooter() {
           <Link to="/about-us">About</Link>
           <Link to="/blog">Blog</Link>
           <Link to="/resources">Resources</Link>
-          <Link to="/tutorials">Tutorials</Link>
+          <a href={DOCS_BASE_URL} target="_blank" rel="noreferrer">
+            Tutorials
+          </a>
+          <a href={DOCS_BASE_URL} target="_blank" rel="noreferrer">
+            Documentation
+          </a>
           <Link to="/security">Security</Link>
           <Link to="/privacy">Privacy</Link>
           <Link to="/terms">Terms</Link>

@@ -23,6 +23,7 @@ import {
   Sparkle,
   Storefront,
 } from '@phosphor-icons/react'
+
 import { BLOG_POSTS } from './blogData'
 
 const fadeUp: Variants = {
@@ -195,7 +196,7 @@ function ButtonLink({
 
 function HeroGraphic() {
   return (
-    <div className="hx-hero-card" tabIndex={0} aria-label="Interactive Lira product demo preview">
+    <div className="hx-hero-card" aria-label="Interactive Lira product demo preview">
       <div className="hx-hero-card-image">
         <div className="hx-orbit hx-orbit-one" />
         <div className="hx-orbit hx-orbit-two" />
@@ -1002,7 +1003,7 @@ export function LandingPageV4() {
             </p>
             <div className="hx-hero-button">
               <ButtonLink to="/signup" variant="secondary">
-                Create Account
+                Signup for free
               </ButtonLink>
               <ButtonLink to="/book-demo">Book a Demo</ButtonLink>
             </div>
@@ -1260,7 +1261,7 @@ export function LandingPageV4() {
           </motion.p>
           <motion.div className="hx-hero-button" variants={fadeUp}>
             <ButtonLink to="/signup" variant="secondary">
-              Create Account
+              Signup for free
             </ButtonLink>
             <ButtonLink to="/book-demo">Book a Demo</ButtonLink>
           </motion.div>

@@ -1,6 +1,8 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
+import { DOCS_BASE_URL, getDocsUrl } from '@/lib/docs'
 import {
   ArrowRight,
   BookOpenText,
@@ -21,25 +23,25 @@ const RESOURCE_GROUPS = [
       {
         title: 'Install the Lira chat widget',
         summary: 'Add the script tag, choose placement, and launch website chat.',
-        href: '/docs/chat-widget',
+        href: getDocsUrl('chat-widget'),
         Icon: ChatsCircle,
       },
       {
         title: 'Verify logged-in customers',
         summary: 'Use signed identity so Lira can personalize replies and take account actions.',
-        href: '/docs/verified-customers',
+        href: getDocsUrl('verified-customers'),
         Icon: ShieldCheck,
       },
       {
         title: 'Forward your support email',
         summary: 'Route Gmail, Outlook, or your help address into the Lira support inbox.',
-        href: '/docs/email-forwarding',
+        href: getDocsUrl('email-forwarding'),
         Icon: EnvelopeSimple,
       },
       {
         title: 'Publish a support portal',
         summary: 'Create a customer-facing portal for chat, knowledge, and follow-up.',
-        href: '/docs/support-portal',
+        href: getDocsUrl('support-portal'),
         Icon: Browser,
       },
     ],
@@ -51,25 +53,25 @@ const RESOURCE_GROUPS = [
       {
         title: 'Build your support knowledge base',
         summary: 'Connect docs and website content so answers are grounded in your product.',
-        href: '/docs/knowledge-base',
+        href: getDocsUrl('knowledge-base'),
         Icon: BookOpenText,
       },
       {
         title: 'Handle human handoff',
         summary: 'Escalate conversations, reply as a teammate, then hand the thread back to Lira.',
-        href: '/docs/human-handoff',
+        href: getDocsUrl('human-handoff'),
         Icon: Handshake,
       },
       {
         title: 'Create proactive outreach',
         summary: 'Trigger email or voice follow-ups for failed payments, risk, renewals, and more.',
-        href: '/docs/proactive-outreach',
+        href: getDocsUrl('proactive-outreach'),
         Icon: Megaphone,
       },
       {
         title: 'Connect support tool packs',
         summary: 'Let Lira look up subscriptions, create tickets, and call approved actions.',
-        href: '/docs/tool-packs',
+        href: getDocsUrl('tool-packs'),
         Icon: Plug,
       },
     ],
@@ -77,10 +79,36 @@ const RESOURCE_GROUPS = [
 ]
 
 const QUICK_LINKS = [
-  { label: 'View docs', href: '/docs' },
-  { label: 'Watch tutorials', href: '/tutorials' },
+  { label: 'View docs', href: DOCS_BASE_URL },
+  { label: 'Watch tutorials', href: DOCS_BASE_URL },
   { label: 'Customer support features', href: '/features' },
 ]
+
+function ResourceLink({
+  href,
+  children,
+  className,
+}: {
+  href: string
+  children: ReactNode
+  className: string
+}) {
+  const isExternal = href.startsWith('http')
+
+  if (isExternal) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+      </a>
+    )
+  }
+
+  return (
+    <Link to={href} className={className}>
+      {children}
+    </Link>
+  )
+}
 
 export function ResourcesPage() {
   return (
@@ -105,14 +133,14 @@ export function ResourcesPage() {
               </p>
               <div className="mt-8 flex flex-wrap gap-3">
                 {QUICK_LINKS.map((link) => (
-                  <Link
+                  <ResourceLink
                     key={link.label}
-                    to={link.href}
+                    href={link.href}
                     className="inline-flex items-center gap-2 rounded-full bg-[#202527] px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
                   >
                     {link.label}
                     <ArrowRight className="h-3.5 w-3.5" />
-                  </Link>
+                  </ResourceLink>
                 ))}
               </div>
             </div>
@@ -125,17 +153,19 @@ export function ResourcesPage() {
                 Need the docs directly?
               </h2>
               <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-600">
-                We added an internal docs hub so visitors can jump straight into setup guides and
-                product walkthroughs without hitting dead pages.
+                Open the official Lira docs for setup guides, platform walkthroughs, and product
+                references that match the live platform.
               </p>
               <div className="mt-5">
-                <Link
-                  to="/docs"
+                <a
+                  href={DOCS_BASE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-full bg-[#202527] px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
                 >
                   View docs
                   <ArrowRight className="h-3.5 w-3.5" />
-                </Link>
+                </a>
               </div>
             </div>
           </div>
@@ -151,9 +181,11 @@ export function ResourcesPage() {
 
               <div className="grid gap-4 sm:grid-cols-2">
                 {group.items.map(({ title, summary, href, Icon }) => (
-                  <Link
+                  <a
                     key={title}
-                    to={href}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="group rounded-2xl border border-gray-200 bg-white/78 p-5 transition hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_22px_60px_rgba(2,3,8,0.09)]"
                   >
                     <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#202527] text-white">
@@ -165,7 +197,7 @@ export function ResourcesPage() {
                       Open guide
                       <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
                     </span>
-                  </Link>
+                  </a>
                 ))}
               </div>
             </div>
@@ -186,7 +218,7 @@ export function ResourcesPage() {
                 to="/signup"
                 className="inline-flex rounded-full bg-[#202527] px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
               >
-                Create account for free
+                Signup for free
               </Link>
             </div>
           </div>

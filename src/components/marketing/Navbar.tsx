@@ -94,7 +94,7 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
         </ul>
 
         <div className="hidden items-center gap-3 md:flex">
-          <NavCta to="/signup">Create account</NavCta>
+          <NavCta to="/signup">Signup for free</NavCta>
           {isOverlay && !scrolled ? (
             <NavCta to="/book-demo" subtle>
               Book a demo
@@ -143,7 +143,7 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
               className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold text-white"
               onClick={() => setMobileOpen(false)}
             >
-              Create account
+              Signup for free
             </Link>
             <Link
               to="/book-demo"

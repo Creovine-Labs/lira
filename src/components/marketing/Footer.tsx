@@ -9,6 +9,7 @@ const FOOTER_GROUPS = [
       { label: 'Features', href: '/features' },
       { label: 'Careers', href: '/careers' },
       { label: 'Book a Demo', href: '/book-demo' },
+      { label: 'Contact', href: '/contact' },
     ],
   },
   {
