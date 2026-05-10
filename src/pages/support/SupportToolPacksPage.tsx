@@ -76,13 +76,13 @@ function SupportToolPacksPanel() {
     <div className="space-y-3">
       <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
         <div className="flex items-start gap-3">
-          <PuzzlePieceIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#3730a3]" />
+          <PuzzlePieceIcon className="mt-0.5 h-5 w-5 shrink-0 text-[#020308]" />
           <div className="text-sm text-gray-600">
             <p className="font-semibold text-gray-900">Agent tool packs</p>
             <p className="mt-1 leading-relaxed">
               Each enabled pack exposes tools the Lira agent can call during a chat. Tools that
-              modify a customer's account (e.g. cancellations) automatically prompt the customer
-              for confirmation before running.
+              modify a customer's account (e.g. cancellations) automatically prompt the customer for
+              confirmation before running.
             </p>
           </div>
         </div>
@@ -90,7 +90,7 @@ function SupportToolPacksPanel() {
 
       {loading ? (
         <div className="flex justify-center py-10">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
         </div>
       ) : (
         CATALOG.map((entry) => {
@@ -304,7 +304,7 @@ function PackEditForm(props: {
             href={entry.helpUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-semibold text-[#3730a3] hover:underline"
+            className="font-semibold text-[#020308] hover:underline"
           >
             {entry.vendor} dashboard
           </a>
@@ -323,7 +323,7 @@ function PackEditForm(props: {
               value={values[f.key]}
               onChange={(e) => setValues({ ...values, [f.key]: e.target.value })}
               placeholder={f.placeholder}
-              className="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm text-gray-900 placeholder-gray-400 focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+              className="block w-full rounded-lg border border-gray-200 bg-white px-3 py-2 font-mono text-sm text-gray-900 placeholder-gray-400 focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
             />
           </label>
         ))}
@@ -331,9 +331,7 @@ function PackEditForm(props: {
 
       <div className="mt-4 flex flex-wrap items-center gap-2 text-xs text-amber-700">
         <ExclamationTriangleIcon className="h-3.5 w-3.5" />
-        <span>
-          Stored encrypted at rest. Use a restricted-permission key when possible.
-        </span>
+        <span>Stored encrypted at rest. Use a restricted-permission key when possible.</span>
       </div>
 
       <div className="mt-4 flex gap-2">
@@ -341,7 +339,7 @@ function PackEditForm(props: {
           type="button"
           onClick={() => handleSave(true)}
           disabled={saving}
-          className="rounded-lg bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#2c2682] disabled:cursor-not-allowed disabled:opacity-50"
+          className="rounded-lg bg-[#020308] px-4 py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? 'Saving…' : existing?.enabled ? 'Update & keep enabled' : 'Save & enable'}
         </button>

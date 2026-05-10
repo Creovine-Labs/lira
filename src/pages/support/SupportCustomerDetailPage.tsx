@@ -123,7 +123,7 @@ function SupportCustomerDetailPage() {
   if (customerLoading) {
     return (
       <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
       </div>
     )
   }
@@ -135,7 +135,7 @@ function SupportCustomerDetailPage() {
           <p className="text-sm text-gray-500">Customer not found.</p>
           <button
             onClick={() => navigate('/support/customers')}
-            className="mt-3 text-xs text-[#3730a3] underline"
+            className="mt-3 text-xs text-[#020308] underline"
           >
             Back to customers
           </button>
@@ -175,7 +175,7 @@ function SupportCustomerDetailPage() {
               className={cn(
                 'flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
                 activeTab === tab.key
-                  ? 'bg-[#3730a3] text-white shadow-sm'
+                  ? 'bg-[#020308] text-white shadow-sm'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
               )}
             >
@@ -217,7 +217,7 @@ function SupportCustomerDetailPage() {
                   <button
                     onClick={handleSaveEdit}
                     disabled={saving}
-                    className="inline-flex items-center gap-1 rounded-lg bg-[#3730a3] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+                    className="inline-flex items-center gap-1 rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
                   >
                     <CheckIcon className="h-3 w-3" />
                     {saving ? 'Saving…' : 'Save'}
@@ -284,7 +284,7 @@ function SupportCustomerDetailPage() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowSendMsg(true)}
-                className="inline-flex items-center gap-2 rounded-xl bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#312e81] transition"
+                className="inline-flex items-center gap-2 rounded-xl bg-[#020308] px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#020308] transition"
               >
                 <PaperAirplaneIcon className="h-4 w-4" />
                 Start Conversation
@@ -293,7 +293,7 @@ function SupportCustomerDetailPage() {
 
             {customerConversationsLoading ? (
               <div className="flex items-center justify-center rounded-2xl border border-white/60 bg-white py-16 shadow-sm">
-                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
               </div>
             ) : customerConversations.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-16 shadow-sm">
@@ -379,7 +379,7 @@ function SupportCustomerDetailPage() {
                     value={proactiveSubject}
                     onChange={(e) => setProactiveSubject(e.target.value)}
                     placeholder="e.g. Update on your request"
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
                   />
                 </div>
                 <div>
@@ -395,7 +395,7 @@ function SupportCustomerDetailPage() {
                     onChange={(e) => setProactiveMsg(e.target.value)}
                     rows={5}
                     placeholder="Write your message here…"
-                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3] resize-none"
+                    className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308] resize-none"
                   />
                 </div>
               </div>
@@ -413,7 +413,7 @@ function SupportCustomerDetailPage() {
                 <button
                   onClick={handleSendProactive}
                   disabled={sendingMsg || !proactiveMsg.trim()}
-                  className="inline-flex items-center gap-2 rounded-lg bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#020308] px-4 py-2 text-sm font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
                 >
                   <PaperAirplaneIcon className="h-4 w-4" />
                   {sendingMsg ? 'Sending…' : 'Send'}
@@ -456,7 +456,7 @@ function EditField({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+        className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-800 focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
         placeholder={label}
       />
     </div>

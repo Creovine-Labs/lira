@@ -63,7 +63,12 @@ import {
   SupportConversationPage,
   SupportNotificationsPage,
   SupportCustomerDetailPage,
-  SupportPage,
+  SupportInboxPage,
+  SupportCustomersPage,
+  SupportActionsPage,
+  SupportProactivePage,
+  SupportAnalyticsPage,
+  SupportSettingsPage,
 } from '@/pages/support'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -160,7 +165,13 @@ function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
           </Route>
-          <Route path="/support" element={<SupportPage />} />
+          <Route path="/support" element={<Navigate to="/support/inbox" replace />} />
+          <Route path="/support/inbox" element={<SupportInboxPage />} />
+          <Route path="/support/customers" element={<SupportCustomersPage />} />
+          <Route path="/support/actions" element={<SupportActionsPage />} />
+          <Route path="/support/proactive" element={<SupportProactivePage />} />
+          <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
+          <Route path="/support/configuration" element={<SupportSettingsPage />} />
           <Route path="/support/activate" element={<SupportActivatePage />} />
           <Route path="/support/inbox/:id" element={<SupportConversationPage />} />
           <Route path="/support/notifications" element={<SupportNotificationsPage />} />

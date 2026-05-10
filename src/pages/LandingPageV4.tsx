@@ -15,16 +15,18 @@ import {
   ArrowRight,
   ArrowUpRight,
   Bank,
+  BellRinging,
   Brain,
   CaretDown,
+  DeviceMobile,
   FlowArrow,
   GlobeHemisphereWest,
   Headset,
   Heartbeat,
   Microphone,
+  Notification,
   Package,
   RocketLaunch,
-  Sparkle,
   Storefront,
 } from '@phosphor-icons/react'
 
@@ -158,6 +160,30 @@ const whyChooseLira = [
     title: 'Fast to launch and built to grow with you',
     description:
       'You can get started quickly with the widget, then keep expanding with integrations, multilingual support, voice, and smarter routing as your support operation matures.',
+  },
+]
+
+const mobileSteps = [
+  {
+    step: '01',
+    title: 'Embed the portal',
+    description:
+      'Open a WebView pointing to your Lira support portal URL. Customers get the full chat, ticket, and knowledge-base experience inside your iOS or Android app.',
+    icon: DeviceMobile,
+  },
+  {
+    step: '02',
+    title: 'Register push token',
+    description:
+      'On app start, get the FCM device token and POST it to the Lira API. Lira stores it and can send push notifications through proactive triggers.',
+    icon: Notification,
+  },
+  {
+    step: '03',
+    title: 'Receive notifications',
+    description:
+      "When Lira's proactive engine fires a mobile_push trigger, it sends a push notification directly to the customer's device.",
+    icon: BellRinging,
   },
 ]
 
@@ -480,6 +506,51 @@ function WhyChooseSection() {
   )
 }
 
+function MobileAppSection() {
+  return (
+    <section className="hx-section">
+      <div className="hx-container">
+        <motion.div
+          style={{ textAlign: 'left', margin: '0 0 52px', alignItems: 'flex-start' }}
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={viewport}
+        >
+          <motion.h2 className="hx-section-title" variants={fadeUp}>
+            <span className="hx-gradient-text">Mobile App Integration</span>
+          </motion.h2>
+          <motion.p className="hx-section-para" style={{ marginLeft: 0 }} variants={fadeUp}>
+            Embed the Lira support portal in your iOS or Android app using a WebView, and register
+            for push notifications.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          className="hx-why-grid"
+          variants={stagger}
+          initial="hidden"
+          whileInView="show"
+          viewport={viewport}
+        >
+          {mobileSteps.map(({ step, title, description, icon: Icon }) => (
+            <motion.article className="hx-why-card" key={step} variants={cardReveal}>
+              <div className="hx-why-top">
+                <span className="hx-why-icon">
+                  <Icon size={22} weight="fill" />
+                </span>
+                <strong className="hx-why-step">{step}</strong>
+              </div>
+              <h3>{title}</h3>
+              <p>{description}</p>
+            </motion.article>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  )
+}
+
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
@@ -750,6 +821,7 @@ function Styles() {
       .hx-why-icon svg { color: #ffffff; }
       .hx-why-card h3 { margin: 0; color: var(--text); font-size: 16px; line-height: 150%; font-weight: 700; }
       .hx-why-card p { margin: 0; color: rgba(2,3,8,0.68); font-size: 13px; line-height: 160%; }
+      .hx-why-step { flex: 1; text-align: right; font-family: var(--font-mono, monospace); font-size: 13px; font-weight: 600; color: rgba(2,3,8,0.48); letter-spacing: -0.02em; }
       @keyframes hx-feature-sweep { to { transform: translateX(120%); } }
       @keyframes hx-feature-pulse { 0%, 100% { opacity: 0.72; } 50% { opacity: 1; } }
       @keyframes hx-feature-center-pulse { 0%, 100% { opacity: 0.72; transform: rotate(0deg) translateX(0); } 50% { opacity: 1; transform: rotate(0deg) translateX(0) scale(1.06); } }
@@ -1085,6 +1157,8 @@ export function LandingPageV4() {
 
       <WhyChooseSection />
 
+      <MobileAppSection />
+
       <section className="hx-section">
         <div className="hx-container">
           <div className="hx-service-grid">
@@ -1134,6 +1208,7 @@ export function LandingPageV4() {
         </div>
       </section>
 
+      {/* TODO: Restore when we have real customer testimonials
       <motion.section
         className="hx-testimonial"
         initial="hidden"
@@ -1172,6 +1247,7 @@ export function LandingPageV4() {
           </motion.div>
         </div>
       </motion.section>
+      */}
 
       <motion.section
         className="hx-faq-section"

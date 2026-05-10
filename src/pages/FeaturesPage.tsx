@@ -3,6 +3,7 @@ import {
   Browsers,
   ChatCircleText,
   Database,
+  DeviceMobile,
   IdentificationCard,
   Lifebuoy,
   Microphone,
@@ -48,6 +49,11 @@ const features = [
     icon: BellRinging,
     title: 'Proactive support signals',
     copy: 'Spot friction, stalled onboarding, failed payments, and urgent customer moments before they become avoidable churn.',
+  },
+  {
+    icon: DeviceMobile,
+    title: 'Mobile App Integration',
+    copy: 'Embed the Lira support portal in your iOS or Android app using a WebView, register push tokens, and send notifications through proactive triggers.',
   },
 ]
 
@@ -286,6 +292,45 @@ export function FeaturesPage() {
                 </article>
               ))}
             </div>
+          </section>
+
+          <section style={{ marginTop: 96 }}>
+            <article className="bx-post-card">
+              <div className="bx-post-surface">
+                <h2 className="bx-section-title">
+                  Mobile App Integration — Flutter &amp; React Native
+                </h2>
+                <p className="bx-section-copy">
+                  Embed the Lira support portal in your iOS or Android app using a WebView and
+                  register for push notifications. Customers get the full chat, ticket, and
+                  knowledge-base experience inside your app, and Lira can reach them through
+                  proactive triggers.
+                </p>
+                <div className="bx-post-grid" style={{ marginTop: 28 }}>
+                  {[
+                    {
+                      title: 'Embed the portal',
+                      copy: 'Open a WebView pointing to your Lira support portal URL. Customers get the full chat, ticket, and knowledge-base experience inside your app.',
+                    },
+                    {
+                      title: 'Register push token',
+                      copy: 'On app start, get the FCM device token and POST it to the Lira API. Lira stores it and can send push notifications through proactive triggers.',
+                    },
+                    {
+                      title: 'Receive notifications',
+                      copy: "When Lira's proactive engine fires a mobile_push trigger, it sends a push notification directly to the customer's device.",
+                    },
+                  ].map(({ title, copy }) => (
+                    <article className="bx-post-card" key={title}>
+                      <div className="bx-post-surface">
+                        <h3 className="bx-post-title">{title}</h3>
+                        <p className="bx-post-excerpt">{copy}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            </article>
           </section>
 
           <section style={{ marginTop: 96, textAlign: 'center' }}>
