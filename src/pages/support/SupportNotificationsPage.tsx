@@ -32,7 +32,7 @@ function SupportNotificationsPage() {
   }, [])
 
   const kindIcon: Record<string, React.ReactNode> = {
-    task: <ClipboardDocumentListIcon className="h-4 w-4 shrink-0 text-violet-500" />,
+    task: <ClipboardDocumentListIcon className="h-4 w-4 shrink-0 text-gray-500" />,
     meeting_ended: <MicrophoneIcon className="h-4 w-4 shrink-0 text-emerald-500" />,
     interview: <BriefcaseIcon className="h-4 w-4 shrink-0 text-blue-500" />,
     support_escalation: <ExclamationTriangleIcon className="h-4 w-4 shrink-0 text-red-500" />,
@@ -53,7 +53,7 @@ function SupportNotificationsPage() {
           <BellIcon className="h-5 w-5 text-gray-400" />
           <h1 className="text-lg font-extrabold text-gray-900">Notifications</h1>
           {sorted.length > 0 && (
-            <span className="rounded-full bg-violet-100 px-2 py-0.5 text-xs font-semibold text-violet-700">
+            <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
               {sorted.length}
             </span>
           )}
@@ -87,7 +87,7 @@ function SupportNotificationsPage() {
                   className={cn(
                     'group flex items-start gap-3 rounded-xl border bg-white px-4 py-3 transition hover:shadow-sm',
                     selected?.id === entry.id
-                      ? 'border-violet-300 ring-1 ring-violet-200'
+                      ? 'border-gray-300 ring-1 ring-gray-200'
                       : 'border-gray-100'
                   )}
                 >

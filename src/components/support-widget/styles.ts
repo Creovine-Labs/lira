@@ -586,6 +586,31 @@ export function getWidgetStyles(primaryColor: string): string {
       70% { box-shadow: 0 0 0 16px ${primaryColor}00; }
       100% { box-shadow: 0 0 0 0 ${primaryColor}00; }
     }
+    /* Spinning conic ring around the avatar while an async action is
+       executing — clear visual signal that Lira is actively doing
+       something during silent windows. Persists until action_completed
+       or action_failed clears the active set. */
+    .lira-voice-spinring {
+      position: relative;
+    }
+    .lira-voice-spinring::before {
+      content: '';
+      position: absolute;
+      inset: -6px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, ${primaryColor}, ${primaryColor}00 70%, ${primaryColor});
+      -webkit-mask: radial-gradient(circle, transparent 60%, black 62%);
+              mask: radial-gradient(circle, transparent 60%, black 62%);
+      animation: lira-spin-ring 1.1s linear infinite;
+      pointer-events: none;
+    }
+    @keyframes lira-spin-ring {
+      to { transform: rotate(360deg); }
+    }
+    .lira-voice-working .lira-voice-label {
+      color: ${primaryColor};
+      font-weight: 700;
+    }
 
     .lira-voice-label {
       font-size: 16px;
@@ -712,5 +737,85 @@ export function getWidgetStyles(primaryColor: string): string {
     }
     .lira-confirm-status.approved { background: #ecfdf5; color: #047857; }
     .lira-confirm-status.declined { background: #f3f4f6; color: #6b7280; }
+
+    /* ── Action card (async tool progress) ───────────────────── */
+    .lira-action {
+      align-self: flex-start;
+      margin: 6px 0 6px 36px;
+      max-width: 78%;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 10px 12px;
+      transition: background 200ms ease, border-color 200ms ease;
+    }
+    .lira-action-pending { border-color: #c7d2fe; background: #eef2ff; }
+    .lira-action-success { border-color: #a7f3d0; background: #ecfdf5; }
+    .lira-action-failed  { border-color: #fecaca; background: #fef2f2; }
+    .lira-action-head { display: flex; align-items: flex-start; gap: 10px; }
+    .lira-action-icon {
+      flex: 0 0 22px; height: 22px; width: 22px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%; font-size: 13px; font-weight: 700;
+    }
+    .lira-action-pending .lira-action-icon { background: #c7d2fe; color: #3730a3; }
+    .lira-action-success .lira-action-icon { background: #10b981; color: white; }
+    .lira-action-failed  .lira-action-icon { background: #ef4444; color: white; }
+    .lira-action-main { flex: 1 1 auto; min-width: 0; }
+    .lira-action-title {
+      font-size: 13px; font-weight: 600; color: #111827;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+    .lira-action-detail {
+      font-size: 12px; color: #4b5563; margin-top: 3px;
+      line-height: 1.4;
+    }
+    .lira-action-spinner {
+      display: inline-block; width: 12px; height: 12px;
+      border: 2px solid #6366f1; border-top-color: transparent;
+      border-radius: 50%; animation: lira-spin 0.6s linear infinite;
+    }
+    @keyframes lira-spin { to { transform: rotate(360deg); } }
+
+    /* ── PIN authorization modal ─────────────────────────────── */
+    .lira-pin-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(15, 23, 42, 0.5);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 100;
+      animation: lira-fade-in 120ms ease;
+    }
+    @keyframes lira-fade-in { from { opacity: 0; } to { opacity: 1; } }
+    .lira-pin-modal {
+      background: white; border-radius: 16px;
+      width: 84%; max-width: 320px; padding: 20px;
+      box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.3);
+      animation: lira-pop-in 160ms ease-out;
+    }
+    @keyframes lira-pop-in {
+      from { transform: scale(0.92); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .lira-pin-title { font-weight: 700; font-size: 15px; color: #111827; margin-bottom: 6px; }
+    .lira-pin-body  { font-size: 13px; color: #4b5563; margin-bottom: 8px; }
+    .lira-pin-hint  {
+      font-size: 12px; color: #4338ca; background: #eef2ff;
+      border-radius: 8px; padding: 8px 10px; margin-bottom: 12px;
+    }
+    .lira-pin-input {
+      width: 100%; box-sizing: border-box;
+      font-size: 22px; letter-spacing: 0.4em; text-align: center;
+      padding: 12px; border: 1.5px solid #d1d5db; border-radius: 10px;
+      outline: none; font-family: 'SF Mono', Menlo, monospace;
+    }
+    .lira-pin-input:focus { border-color: #6366f1; }
+    .lira-pin-error {
+      font-size: 12px; color: #b91c1c;
+      margin-top: 6px; text-align: center;
+    }
+    .lira-pin-buttons {
+      display: flex; gap: 8px; margin-top: 14px;
+    }
+    .lira-pin-buttons .lira-card-btn { flex: 1 1 0; }
   `
 }

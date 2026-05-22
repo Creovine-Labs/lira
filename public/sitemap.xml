@@ -32,16 +32,70 @@
 
   <!-- Resources & Learning -->
   <url>
+    <loc>https://liraintelligence.com/docs</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
     <loc>https://liraintelligence.com/resources</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <lastmod>2026-04-11</lastmod>
+    <lastmod>2026-05-09</lastmod>
   </url>
   <url>
     <loc>https://liraintelligence.com/tutorials</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
-    <lastmod>2026-04-11</lastmod>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/chat-widget</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/verified-customers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/knowledge-base</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-04</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/human-handoff</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-01</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/email-forwarding</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/support-portal</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/proactive-outreach</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/docs/tool-packs</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-05-09</lastmod>
   </url>
 
   <!-- Blog -->
@@ -49,31 +103,57 @@
     <loc>https://liraintelligence.com/blog</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
-    <lastmod>2026-04-11</lastmod>
+    <lastmod>2026-05-09</lastmod>
   </url>
   <url>
-    <loc>https://liraintelligence.com/blog/ai-interview-process</loc>
+    <loc>https://liraintelligence.com/blog/ai-customer-support-context</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <lastmod>2026-03-18</lastmod>
+    <lastmod>2026-05-09</lastmod>
   </url>
   <url>
-    <loc>https://liraintelligence.com/blog/ai-sales-coaching</loc>
+    <loc>https://liraintelligence.com/blog/ai-support-automation-workflows</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <lastmod>2026-03-12</lastmod>
+    <lastmod>2026-05-07</lastmod>
   </url>
   <url>
-    <loc>https://liraintelligence.com/blog/knowledge-base-best-practices</loc>
+    <loc>https://liraintelligence.com/blog/knowledge-base-for-ai-support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <lastmod>2026-03-05</lastmod>
+    <lastmod>2026-05-04</lastmod>
   </url>
   <url>
-    <loc>https://liraintelligence.com/blog/meeting-intelligence-future</loc>
+    <loc>https://liraintelligence.com/blog/human-handoff-in-ai-support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
-    <lastmod>2026-02-26</lastmod>
+    <lastmod>2026-05-01</lastmod>
+  </url>
+
+  <!-- Marketing Pages -->
+  <url>
+    <loc>https://liraintelligence.com/features</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/about</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/careers</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <lastmod>2026-05-09</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/contact</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.5</priority>
+    <lastmod>2026-05-09</lastmod>
   </url>
 
   <!-- Security & Trust -->

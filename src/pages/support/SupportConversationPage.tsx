@@ -255,7 +255,7 @@ function SupportConversationPage() {
   if (!conv) {
     return (
       <div className="flex min-h-full items-center justify-center bg-[#f4f4f5]">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
       </div>
     )
   }
@@ -270,14 +270,14 @@ function SupportConversationPage() {
           </div>
           <h2 className="mb-2 text-lg font-semibold text-gray-950">Wrong organization</h2>
           <p className="mb-1 text-sm text-gray-600">This conversation belongs to:</p>
-          <p className="mb-4 text-base font-bold text-[#3730a3]">{displayName}</p>
+          <p className="mb-4 text-base font-bold text-[#020308]">{displayName}</p>
           <p className="mb-6 text-sm text-gray-500">
             Please log in with an account that has access to this organization.
           </p>
           <button
             type="button"
             onClick={handleLogoutAndRedirect}
-            className="w-full rounded-md bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+            className="w-full rounded-md bg-[#020308] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#020308]"
           >
             Log in to {displayName}
           </button>
@@ -462,7 +462,7 @@ function SupportConversationPage() {
                       onChange={(event) => handleReplyChange(event.target.value)}
                       placeholder="Type your reply..."
                       rows={2}
-                      className="min-h-14 w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm leading-6 text-gray-900 placeholder:text-gray-400 focus:border-[#3730a3] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#3730a3]/10"
+                      className="min-h-14 w-full resize-none rounded-md border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm leading-6 text-gray-900 placeholder:text-gray-400 focus:border-[#020308] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#020308]/10"
                     />
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <button
@@ -477,7 +477,7 @@ function SupportConversationPage() {
                         type="button"
                         onClick={handleSendReply}
                         disabled={sending || !replyBody.trim()}
-                        className="inline-flex h-9 items-center gap-2 rounded-md bg-[#3730a3] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="inline-flex h-9 items-center gap-2 rounded-md bg-[#020308] px-4 text-xs font-semibold text-white shadow-sm transition hover:bg-[#020308] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <PaperAirplaneIcon className="h-4 w-4" />
                         {sending ? 'Sending...' : 'Send reply'}
@@ -693,7 +693,7 @@ function TimelineMessage({
           isCustomer
             ? 'border-gray-200 bg-white text-gray-600'
             : isLira
-              ? 'border-indigo-100 bg-indigo-50 text-indigo-700'
+              ? 'border-gray-200 bg-gray-50 text-gray-700'
               : 'border-amber-100 bg-amber-50 text-amber-700'
         )}
       >
@@ -705,7 +705,7 @@ function TimelineMessage({
           isCustomer
             ? 'border-gray-200 bg-white'
             : isLira
-              ? 'border-indigo-100 bg-indigo-50/80'
+              ? 'border-gray-200 bg-gray-50/80'
               : 'border-amber-100 bg-amber-50/80'
         )}
       >
@@ -830,7 +830,7 @@ function TagEditor({
           </span>
         ))}
       </div>
-      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2 focus-within:border-[#3730a3] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#3730a3]/10">
+      <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-2 focus-within:border-[#020308] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#020308]/10">
         <TagIcon className="h-4 w-4 shrink-0 text-gray-400" />
         <input
           value={newTag}

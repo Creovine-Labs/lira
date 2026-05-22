@@ -1,3 +1,8 @@
 export { MarketingNavbar } from './Navbar'
 export { MarketingFooter } from './Footer'
 export { MarketingLayout } from './Layout'
+export { DemoCallModal } from './DemoCallModal'
+export { TestProfileModal } from './TestProfileModal'
+export { DemoEntryModal } from './DemoEntryModal'
+export { DemoChatHint } from './DemoChatHint'
+export { DemoNimbusDashboard } from './DemoNimbusDashboard'

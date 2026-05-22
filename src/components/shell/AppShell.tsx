@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { SlidersHorizontal } from '@phosphor-icons/react'
 import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -120,21 +121,42 @@ function isNavGroup(entry: NavEntry): entry is NavGroup {
   return 'children' in entry
 }
 
+function splitNavTarget(to: string) {
+  const [pathname, query = ''] = to.split('?')
+  return { pathname, search: query ? `?${query}` : '' }
+}
+
+function isNavSectionActive(currentPath: string, to: string) {
+  const { pathname } = splitNavTarget(to)
+  return currentPath === pathname || currentPath.startsWith(`${pathname}/`)
+}
+
+function isNavTargetActive(currentPath: string, currentSearch: string, to: string) {
+  const { pathname, search } = splitNavTarget(to)
+  const pathMatches = currentPath === pathname || currentPath.startsWith(`${pathname}/`)
+  if (!pathMatches) return false
+  return search ? currentSearch === search : true
+}
+
 const NAV_CORE: NavEntry[] = [
   { to: '/dashboard', icon: Squares2X2Icon, label: 'Home' },
-  { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
+  // Meetings remain in the codebase, but the app shell is customer-support-only for now.
+  // { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
 ]
 
-const SUPPORT_NAV_ACTIVATED: NavLeaf = {
-  to: '/support',
-  icon: ChatBubbleLeftEllipsisIcon,
-  label: 'Support',
-}
+const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
+  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Inbox' },
+  { to: '/support/customers', icon: UsersIcon, label: 'Customers' },
+  { to: '/support/actions', icon: ClipboardDocumentListIcon, label: 'Actions' },
+  { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
+  { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
+  { to: '/support/configuration', icon: SlidersHorizontal, label: 'Configuration' },
+]
 
 const SUPPORT_NAV_INACTIVE: NavLeaf = {
   to: '/support/activate',
   icon: ChatBubbleLeftEllipsisIcon,
-  label: 'Support',
+  label: 'Customer Support',
 }
 
 const NAV_WORKSPACE: NavGroup = {
@@ -208,7 +230,7 @@ function OrgSwitcher() {
           onClick={() => setOpen((v) => !v)}
           className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-gray-900 transition hover:bg-gray-100"
         >
-          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-[11px] font-bold text-white">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#020308] text-[11px] font-bold text-white">
             {currentOrg?.name?.charAt(0).toUpperCase() ?? '?'}
           </div>
           <span className="min-w-0 flex-1 truncate text-left">
@@ -230,17 +252,15 @@ function OrgSwitcher() {
                     onClick={() => handleSwitch(org.org_id, org.name)}
                     className={cn(
                       'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
-                      org.org_id === currentOrgId
-                        ? 'font-semibold text-violet-700'
-                        : 'text-gray-700'
+                      org.org_id === currentOrgId ? 'font-semibold text-gray-900' : 'text-gray-700'
                     )}
                   >
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-600">
                       {org.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="truncate">{org.name}</span>
                     {org.org_id === currentOrgId && (
-                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-gray-500" />
                     )}
                   </button>
                 ))}
@@ -344,17 +364,15 @@ function TopbarOrgSwitcher() {
                     onClick={() => handleSwitch(org.org_id, org.name)}
                     className={cn(
                       'flex w-full items-center gap-2.5 px-3 py-2 text-sm transition hover:bg-gray-50',
-                      org.org_id === currentOrgId
-                        ? 'font-semibold text-violet-700'
-                        : 'text-gray-700'
+                      org.org_id === currentOrgId ? 'font-semibold text-gray-900' : 'text-gray-700'
                     )}
                   >
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[10px] font-bold text-violet-600">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-gray-100 text-[10px] font-bold text-gray-600">
                       {org.name.charAt(0).toUpperCase()}
                     </div>
                     <span className="truncate">{org.name}</span>
                     {org.org_id === currentOrgId && (
-                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-violet-500" />
+                      <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-gray-500" />
                     )}
                   </button>
                 ))}
@@ -608,7 +626,7 @@ function NotificationBell() {
   }
 
   const kindIcon: Record<string, React.ReactNode> = {
-    task: <ClipboardDocumentListIcon className="mt-0.5 h-4 w-4 shrink-0 text-violet-500" />,
+    task: <ClipboardDocumentListIcon className="mt-0.5 h-4 w-4 shrink-0 text-gray-500" />,
     meeting_ended: <MicrophoneIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />,
     support_escalation: (
       <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
@@ -672,7 +690,7 @@ function NotificationBell() {
                               (o) => o.org_id === entry.orgId
                             )?.name
                             return orgName ? (
-                              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-violet-600">
+                              <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-gray-50 px-1.5 py-0.5 text-[10px] font-medium text-gray-600">
                                 <BuildingOffice2Icon className="h-2.5 w-2.5 shrink-0" />
                                 {orgName}
                               </span>
@@ -699,7 +717,7 @@ function NotificationBell() {
                   setOpen(false)
                   navigate('/support/notifications')
                 }}
-                className="text-xs font-medium text-violet-600 hover:text-violet-700"
+                className="text-xs font-medium text-gray-900 hover:text-gray-900"
               >
                 View all notifications →
               </button>
@@ -763,7 +781,7 @@ function AppShell() {
   const navEntries = useMemo<NavEntry[]>(
     () => [
       ...NAV_CORE,
-      supportActivated ? SUPPORT_NAV_ACTIVATED : SUPPORT_NAV_INACTIVE,
+      ...(supportActivated ? SUPPORT_NAV_ACTIVATED : [SUPPORT_NAV_INACTIVE]),
       NAV_WORKSPACE,
     ],
     [supportActivated]
@@ -789,7 +807,7 @@ function AppShell() {
     }
     // Auto-expand the nav group that contains the active route
     navEntries.forEach((entry) => {
-      if (isNavGroup(entry) && entry.children.some((c) => p.startsWith(c.to))) {
+      if (isNavGroup(entry) && entry.children.some((c) => isNavSectionActive(p, c.to))) {
         setExpanded((prev) => new Set([...prev, entry.label]))
       }
     })
@@ -953,29 +971,30 @@ function AppShell() {
                     </div>
                     {isOpen && (
                       <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
-                        {entry.children.map(({ to, icon: Icon, label }) => (
-                          <NavLink
-                            key={to}
-                            to={to}
-                            onClick={() => setSidebarOpen(false)}
-                            className={({ isActive }) =>
-                              cn(
+                        {entry.children.map(({ to, icon: Icon, label }) => {
+                          const active = isNavTargetActive(location.pathname, location.search, to)
+                          return (
+                            <NavLink
+                              key={to}
+                              to={to}
+                              onClick={() => setSidebarOpen(false)}
+                              className={cn(
                                 'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
-                                isActive
+                                active
                                   ? 'bg-[#1A1A1A] text-white'
                                   : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                              )
-                            }
-                          >
-                            <Icon className="h-4 w-4 shrink-0" />
-                            {label}
-                            {to === '/org/tasks' ? (
-                              <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
-                            ) : (
-                              <NavBadge count={badges[to] ?? 0} />
-                            )}
-                          </NavLink>
-                        ))}
+                              )}
+                            >
+                              <Icon className="h-4 w-4 shrink-0" />
+                              {label}
+                              {to === '/org/tasks' ? (
+                                <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                              ) : (
+                                <NavBadge count={badges[to] ?? 0} />
+                              )}
+                            </NavLink>
+                          )
+                        })}
                       </div>
                     )}
                   </div>
@@ -1074,7 +1093,9 @@ function AppShell() {
               )
             }
             const isOpen = expanded.has(entry.label)
-            const hasActive = entry.children.some((c) => location.pathname.startsWith(c.to))
+            const hasActive = entry.children.some((c) =>
+              isNavSectionActive(location.pathname, c.to)
+            )
             if (sidebarCollapsed) {
               return (
                 <div key={entry.label} className="relative">
@@ -1145,28 +1166,29 @@ function AppShell() {
                 </div>
                 {isOpen && (
                   <div className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
-                    {entry.children.map(({ to, icon: Icon, label }) => (
-                      <NavLink
-                        key={to}
-                        to={to}
-                        className={({ isActive }) =>
-                          cn(
+                    {entry.children.map(({ to, icon: Icon, label }) => {
+                      const active = isNavTargetActive(location.pathname, location.search, to)
+                      return (
+                        <NavLink
+                          key={to}
+                          to={to}
+                          className={cn(
                             'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium transition-colors',
-                            isActive
+                            active
                               ? 'bg-[#1A1A1A] text-white'
                               : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'
-                          )
-                        }
-                      >
-                        <Icon className="h-4 w-4 shrink-0" />
-                        {label}
-                        {to === '/org/tasks' ? (
-                          <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
-                        ) : (
-                          <NavBadge count={badges[to] ?? 0} />
-                        )}
-                      </NavLink>
-                    ))}
+                          )}
+                        >
+                          <Icon className="h-4 w-4 shrink-0" />
+                          {label}
+                          {to === '/org/tasks' ? (
+                            <TaskNavBadge pending={taskPending} inProgress={taskInProgress} />
+                          ) : (
+                            <NavBadge count={badges[to] ?? 0} />
+                          )}
+                        </NavLink>
+                      )
+                    })}
                   </div>
                 )}
               </div>

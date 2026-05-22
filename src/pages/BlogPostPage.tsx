@@ -1,29 +1,31 @@
-import { Link, useParams, Navigate } from 'react-router-dom'
-import { ArrowLeftIcon, ArrowRightIcon } from '@heroicons/react/24/outline'
+import { Link, Navigate, useParams } from 'react-router-dom'
+import { ArrowLeft, ArrowUpRight } from 'lucide-react'
 import { SEO } from '@/components/SEO'
-import { MarketingLayout } from '@/components/marketing'
-import { BLOG_POSTS } from './blogData'
+import { BLOG_POSTS, findBlogPostBySlug } from './blogData'
+import { BlogButton, BlogShell } from './BlogChrome'
 
 export function BlogPostPage() {
   const { slug } = useParams<{ slug: string }>()
-  const post = BLOG_POSTS.find((p) => p.slug === slug)
+  const post = findBlogPostBySlug(slug)
 
   if (!post) return <Navigate to="/blog" replace />
+  if (slug !== post.slug) return <Navigate to={`/blog/${post.slug}`} replace />
 
   const currentIdx = BLOG_POSTS.indexOf(post)
   const prev = BLOG_POSTS[currentIdx - 1]
   const next = BLOG_POSTS[currentIdx + 1]
+  const articleUrl = `https://liraintelligence.com/blog/${post.slug}`
 
   return (
-    <MarketingLayout>
+    <BlogShell article>
       <SEO
-        title={post.title}
-        description={post.excerpt}
-        keywords={`${post.category}, AI, Lira AI, ${post.title.split(' ').slice(0, 5).join(', ')}`}
+        title={post.seoTitle}
+        description={post.seoDescription}
+        keywords={post.seoKeywords}
         path={`/blog/${post.slug}`}
         type="article"
         article={{
-          publishedTime: post.date,
+          publishedTime: post.publishedTime,
           author: post.author.name,
           section: post.category,
         }}
@@ -31,100 +33,108 @@ export function BlogPostPage() {
           '@context': 'https://schema.org',
           '@type': 'BlogPosting',
           headline: post.title,
-          description: post.excerpt,
-          datePublished: post.date,
+          description: post.seoDescription,
+          datePublished: post.publishedTime,
+          dateModified: post.publishedTime,
+          keywords: post.seoKeywords.split(',').map((keyword) => keyword.trim()),
           author: { '@type': 'Person', name: post.author.name, jobTitle: post.author.role },
           publisher: {
             '@type': 'Organization',
-            name: 'Lira AI',
+            name: 'Lira',
             url: 'https://liraintelligence.com',
+            logo: {
+              '@type': 'ImageObject',
+              url: 'https://liraintelligence.com/lira_black_with_white_backgound.png',
+            },
           },
-          mainEntityOfPage: `https://liraintelligence.com/blog/${post.slug}`,
+          mainEntityOfPage: articleUrl,
           articleSection: post.category,
+          url: articleUrl,
+          isPartOf: {
+            '@type': 'Blog',
+            name: 'Lira Blog',
+            url: 'https://liraintelligence.com/blog',
+          },
         }}
       />
-      <section className="pt-32 pb-20 px-6">
-        <div className="mx-auto max-w-3xl">
-          {/* Back */}
-          <Link
-            to="/blog"
-            className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-10"
-          >
-            <ArrowLeftIcon className="h-3.5 w-3.5" />
-            All posts
-          </Link>
 
-          {/* Meta */}
-          <div className="flex flex-wrap items-center gap-3 mb-6">
-            <span className={`rounded-full px-3 py-1 text-xs font-black ${post.categoryColor}`}>
-              {post.category}
-            </span>
-            <span className="text-xs text-gray-400">{post.date}</span>
-            <span className="text-xs text-gray-400">· {post.readingTime}</span>
+      <main className="bx-main">
+        <article className="bx-container bx-article">
+          <div className="bx-back">
+            <BlogButton to="/blog">All posts</BlogButton>
           </div>
 
-          {/* Title */}
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-gray-900 leading-[1.06] mb-6">
-            {post.title}
-          </h1>
-
-          {/* Author */}
-          <div className="flex items-center gap-3 mb-12 pb-8 border-b border-gray-200">
-            <div className="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-black text-gray-600 shrink-0">
-              {post.author.initials}
+          <header className="bx-article-head">
+            <div className="bx-meta">
+              <span className="bx-chip">{post.category}</span>
+              <span>{post.date}</span>
+              <span>{post.readingTime}</span>
             </div>
-            <div>
-              <p className="text-sm font-black text-gray-900">{post.author.name}</p>
-              <p className="text-xs text-gray-400">{post.author.role}</p>
+            <h2 className="bx-article-title">{post.title}</h2>
+            <p className="bx-article-excerpt">{post.excerpt}</p>
+            <div className="bx-author">
+              <span className="bx-avatar">
+                <img src={post.author.image} alt={post.author.name} />
+              </span>
+              <div>
+                <strong>{post.author.name}</strong>
+                <span>{post.author.role}</span>
+              </div>
             </div>
-          </div>
+          </header>
 
-          {/* Body */}
-          <div className="space-y-5">
-            {post.paragraphs.map((p, i) => (
-              <p key={i} className="text-base text-gray-600 leading-[1.8]">
-                {p}
-              </p>
+          <div className="bx-prose">
+            {post.paragraphs.map((paragraph, index) => (
+              <p key={index}>{paragraph}</p>
             ))}
           </div>
 
-          {/* Post navigation */}
-          <div className="mt-16 pt-8 border-t border-gray-200 flex items-center justify-between gap-4">
+          <nav className="bx-post-nav" aria-label="Post navigation">
             {prev ? (
-              <Link
-                to={`/blog/${prev.slug}`}
-                className="group flex-1 rounded-2xl bg-white border border-gray-200 hover:border-gray-300 p-5 transition-all"
-              >
-                <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1.5 flex items-center gap-1">
-                  <ArrowLeftIcon className="h-3 w-3" />
-                  Previous
-                </p>
-                <p className="text-sm font-black text-gray-900 leading-snug group-hover:text-gray-700 transition-colors line-clamp-2">
-                  {prev.title}
-                </p>
+              <Link to={`/blog/${prev.slug}`} className="bx-post-card">
+                <div className="bx-post-surface">
+                  <p
+                    className="bx-post-nav-label"
+                    style={{ display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <ArrowLeft size={13} />
+                    Previous
+                  </p>
+                  <h3 className="bx-post-title" style={{ fontSize: 18 }}>
+                    {prev.title}
+                  </h3>
+                </div>
               </Link>
             ) : (
-              <div className="flex-1" />
+              <div />
             )}
+
             {next ? (
-              <Link
-                to={`/blog/${next.slug}`}
-                className="group flex-1 rounded-2xl bg-white border border-gray-200 hover:border-gray-300 p-5 transition-all text-right"
-              >
-                <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 mb-1.5 flex items-center justify-end gap-1">
-                  Next
-                  <ArrowRightIcon className="h-3 w-3" />
-                </p>
-                <p className="text-sm font-black text-gray-900 leading-snug group-hover:text-gray-700 transition-colors line-clamp-2">
-                  {next.title}
-                </p>
+              <Link to={`/blog/${next.slug}`} className="bx-post-card">
+                <div className="bx-post-surface">
+                  <p
+                    className="bx-post-nav-label"
+                    style={{
+                      display: 'flex',
+                      justifyContent: 'flex-end',
+                      alignItems: 'center',
+                      gap: 6,
+                    }}
+                  >
+                    Next
+                    <ArrowUpRight size={13} />
+                  </p>
+                  <h3 className="bx-post-title" style={{ fontSize: 18, textAlign: 'right' }}>
+                    {next.title}
+                  </h3>
+                </div>
               </Link>
             ) : (
-              <div className="flex-1" />
+              <div />
             )}
-          </div>
-        </div>
-      </section>
-    </MarketingLayout>
+          </nav>
+        </article>
+      </main>
+    </BlogShell>
   )
 }

@@ -52,9 +52,22 @@ class PcmPlayer {
   private ctx: AudioContext
   private nextPlayTime = 0
   private sources: AudioBufferSourceNode[] = []
+  // Per-stream jitter buffer. Nova Sonic emits PCM in ~20-40ms chunks; the
+  // network + WS decode + JS thread can stall 50ms+ at a time, especially on
+  // first audio frame after a tool round-trip. A leadtime smaller than that
+  // window causes the audio scheduler to start chunks in the past, which
+  // either drops them silently or plays them with a click. 120ms absorbs the
+  // typical jitter without an audible delay.
+  private static readonly LEADTIME_SEC = 0.12
 
   constructor() {
     this.ctx = new AudioContext({ sampleRate: 24000 })
+    // AudioContext starts in `suspended` state on Chrome (and sometimes
+    // Safari) unless explicitly resumed. The mic-click handler that builds
+    // PcmPlayer IS a user gesture, but the gesture window can close before
+    // the first audio frame arrives, leaving us silent forever. Calling
+    // resume() unconditionally is harmless when already running.
+    void this.ctx.resume().catch(() => { /* will retry on next play() */ })
   }
 
   play(pcmData: ArrayBuffer): void {
@@ -81,8 +94,14 @@ class PcmPlayer {
       if (idx !== -1) this.sources.splice(idx, 1)
     }
 
+    // Safety net: if the context suspended (page hidden, OS audio change),
+    // try resuming before scheduling. Cheap when already running.
+    if (this.ctx.state === 'suspended') {
+      void this.ctx.resume().catch(() => { /* ignore */ })
+    }
+
     const now = this.ctx.currentTime
-    const startTime = Math.max(now + 0.01, this.nextPlayTime)
+    const startTime = Math.max(now + PcmPlayer.LEADTIME_SEC, this.nextPlayTime)
     source.start(startTime)
     this.nextPlayTime = startTime + buffer.duration
   }
@@ -116,11 +135,18 @@ export class WidgetVoiceCall {
   private callbacks: VoiceCallbacks
   private orgId: string
   private visitorId: string
+  private demoContext: Record<string, unknown> | undefined
   private levelInterval: ReturnType<typeof setInterval> | null = null
 
-  constructor(orgId: string, visitorId: string, callbacks: VoiceCallbacks) {
+  constructor(
+    orgId: string,
+    visitorId: string,
+    demoContext: Record<string, unknown> | undefined,
+    callbacks: VoiceCallbacks,
+  ) {
     this.orgId = orgId
     this.visitorId = visitorId
+    this.demoContext = demoContext
     this.callbacks = callbacks
   }
 
@@ -206,6 +232,16 @@ export class WidgetVoiceCall {
 
       this.ws.onopen = () => {
         this.setState('active')
+        // Demo embeds: push the visitor's local dashboard snapshot so the AI
+        // can answer account-aware questions and the demo tools have context.
+        // No-op for production embeds (demoContext is undefined).
+        if (this.demoContext && this.ws?.readyState === WebSocket.OPEN) {
+          try {
+            this.ws.send(JSON.stringify({ type: 'demo_context', profile: this.demoContext }))
+          } catch {
+            /* ignore */
+          }
+        }
       }
 
       this.ws.onmessage = (event) => {
@@ -226,6 +262,40 @@ export class WidgetVoiceCall {
           } else if (msg.type === 'error') {
             this.callbacks.onError(msg.message || 'Voice call error')
             this.end()
+          } else if (msg.type === 'demo_action_executed' && msg.action_type) {
+            // Voice equivalent of the chat WS demo_action_executed message.
+            // Mirror it to the same CustomEvent the chat path uses so the
+            // host page (React dashboard) re-renders via one shared handler.
+            try {
+              window.dispatchEvent(
+                new CustomEvent('lira-demo-action', {
+                  detail: { type: msg.action_type, payload: msg.payload ?? {} },
+                }),
+              )
+            } catch {
+              /* ignore */
+            }
+          } else if (
+            msg.type === 'pin_required' ||
+            msg.type === 'action_started' ||
+            msg.type === 'action_completed' ||
+            msg.type === 'action_failed'
+          ) {
+            // Voice tools (Sonic-fired tool calls) emit these on the voice
+            // WS. The chat widget renders the action card + PIN modal via
+            // its own onmessage handler — to share that logic, forward
+            // these messages to it via a CustomEvent. The widget listener
+            // calls back into this voice call (sendJson) when the user
+            // submits the PIN so the response goes over the correct WS.
+            try {
+              window.dispatchEvent(
+                new CustomEvent('lira-voice-widget-event', {
+                  detail: { msg, voice: this },
+                }),
+              )
+            } catch {
+              /* ignore */
+            }
           }
         } catch {
           /* ignore */
@@ -248,6 +318,23 @@ export class WidgetVoiceCall {
       this.callbacks.onError(msg)
       this.cleanup()
       this.setState('idle')
+    }
+  }
+
+  /**
+   * Public send method so the parent widget can route pin_response /
+   * pin_cancel messages back over the SAME voice WS that issued the
+   * pin_required event. The chat WS has its own socket; we keep them
+   * separate so a voice-issued PIN can't be answered on the chat channel
+   * (or vice versa).
+   */
+  sendJson(msg: Record<string, unknown>): boolean {
+    if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return false
+    try {
+      this.ws.send(JSON.stringify(msg))
+      return true
+    } catch {
+      return false
     }
   }
 

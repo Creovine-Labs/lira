@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -6,6 +6,7 @@ import {
   PlusIcon,
   TrashIcon,
   UserGroupIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import { useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
@@ -19,18 +20,61 @@ import { cn } from '@/lib'
 function tierBadgeClass(tier: CustomerTier): string {
   switch (tier) {
     case 'vip':
-      return 'bg-purple-100 text-purple-700'
+      return 'bg-gray-100 text-gray-700'
     case 'enterprise':
-      return 'bg-indigo-100 text-indigo-700'
+      return 'bg-gray-100 text-gray-700'
     default:
       return 'bg-gray-100 text-gray-600'
   }
 }
 
 function SupportCustomersPage() {
+  const navigate = useNavigate()
+  const { currentOrgId } = useOrgStore()
+  const { config, configLoading } = useSupportStore()
+  const loadStarted = useRef(false)
+
+  useEffect(() => {
+    if (configLoading) loadStarted.current = true
+  }, [configLoading])
+
+  useEffect(() => {
+    if (!loadStarted.current) return
+    if (!configLoading && (!config || !config.activated)) {
+      navigate('/support/activate', { replace: true })
+    }
+  }, [config, configLoading, navigate])
+
+  if (!currentOrgId || configLoading) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Customers</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Manage customer profiles, tiers, and conversation history
+            </p>
+          </div>
+          <a
+            href="https://docs.liraintelligence.com/platform/customer-support"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
+        </div>
         <SupportCustomersPanel />
       </div>
     </div>
@@ -110,7 +154,7 @@ function SupportCustomersPanel() {
       <div className="mb-4 flex items-center justify-end">
         <button
           onClick={() => setShowCreate(true)}
-          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#312e81] transition"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#020308] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#020308] transition"
         >
           <PlusIcon className="h-3.5 w-3.5" />
           Add Customer
@@ -125,7 +169,7 @@ function SupportCustomersPanel() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name, email, or company…"
-          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+          className="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
         />
       </div>
 
@@ -139,26 +183,26 @@ function SupportCustomersPanel() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               placeholder="Name"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
             />
             <input
               type="email"
               value={form.email}
               onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               placeholder="Email"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
             />
             <input
               type="text"
               value={form.company}
               onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
               placeholder="Company (optional)"
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
             />
             <select
               value={form.tier}
               onChange={(e) => setForm((f) => ({ ...f, tier: e.target.value as CustomerTier }))}
-              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+              className="rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
             >
               <option value="standard">Standard</option>
               <option value="vip">VIP</option>
@@ -175,7 +219,7 @@ function SupportCustomersPanel() {
             <button
               onClick={handleCreate}
               disabled={creating || !form.name.trim() || !form.email.trim()}
-              className="rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+              className="rounded-xl bg-[#020308] px-4 py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
             >
               {creating ? 'Creating…' : 'Create'}
             </button>
@@ -186,7 +230,7 @@ function SupportCustomersPanel() {
       {/* Customer list */}
       {customersLoading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-20 shadow-sm">

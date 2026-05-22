@@ -176,6 +176,47 @@ export function ProductCustomerSupportPage() {
         </div>
       </section>
 
+      {/* Mobile App Integration */}
+      <section className="py-16 px-6 border-t border-gray-200">
+        <div className="mx-auto max-w-6xl">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
+            Mobile App Integration
+          </h2>
+          <p className="text-gray-500 mb-12 max-w-md leading-relaxed">
+            Embed the Lira support portal in your iOS or Android app using a WebView, and register
+            for push notifications.
+          </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                number: '01',
+                title: 'Embed the portal',
+                description:
+                  'Open a WebView pointing to your Lira support portal URL. Customers get the full chat, ticket, and knowledge-base experience inside your app.',
+              },
+              {
+                number: '02',
+                title: 'Register push token',
+                description:
+                  'On app start, get the FCM device token and POST it to the Lira API. Lira stores it and can send push notifications through proactive triggers.',
+              },
+              {
+                number: '03',
+                title: 'Receive notifications',
+                description:
+                  "When Lira's proactive engine fires a mobile_push trigger, it sends a push notification directly to the customer's device.",
+              },
+            ].map(({ number, title, description }) => (
+              <div key={number} className="rounded-2xl bg-white border border-gray-200 p-7">
+                <p className="text-4xl font-black text-gray-100 mb-4 leading-none">{number}</p>
+                <h3 className="font-black tracking-tight text-gray-900 mb-2">{title}</h3>
+                <p className="text-sm text-gray-500 leading-relaxed">{description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="py-20 px-6 border-t border-gray-200 text-center">
         <h2 className="mx-auto max-w-lg text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-4">
