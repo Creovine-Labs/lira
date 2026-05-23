@@ -1827,6 +1827,23 @@ class LiraSupportWidget {
         this.persistMessages()
         break
 
+      case 'system_message': {
+        // Server-pushed status line, rendered inline as a system role
+        // chat bubble. Used by the post-call processor to announce
+        // "Processing your request from the call…" before action cards
+        // start arriving, and for failure / completion notices.
+        if (!msg.body) break
+        this.isTyping = false
+        this.appendChatMessage({
+          id: `sys_${Date.now()}`,
+          role: 'system',
+          body: msg.body,
+          timestamp: new Date().toISOString(),
+        })
+        if (this.view === 'launcher') this.unreadCount++
+        break
+      }
+
       case 'history': {
         if (!Array.isArray(msg.messages)) break
         this.seenMessageIds.clear()
