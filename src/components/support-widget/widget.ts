@@ -23,7 +23,7 @@ import { WidgetSocket } from './socket'
 import { getWidgetStyles } from './styles'
 import { WidgetVoiceCall } from './voice'
 import type { VoiceState } from './voice'
-import { PipecatTransport, isPipecatEnabled } from './pipecat-transport'
+import type { PipecatTransport } from './pipecat-transport'
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
 
@@ -1595,28 +1595,28 @@ class LiraSupportWidget {
     this.unreadCount = 0
     if (this.convId) this.startPolling()
 
-    // Connect the chat transport on first open.
-    // Two paths, picked at widget mount time by the LIRA_USE_PIPECAT flag:
-    //   • Pipecat: one PipecatTransport (channel=chat). Long-lived. Tools,
-    //     LLM context, action lifecycle all live on the agent side.
-    //   • Legacy: WidgetSocket directly to Fastify's /lira/v1/support/chat.
-    //     Untouched code path — kept as fallback through Phase 4.
+    // Chat path: legacy WidgetSocket directly to Fastify's
+    // `/lira/v1/support/chat/ws/:orgId`. The Pipecat chat experiment was
+    // deprecated on 2026-05-23 — `lira-support-agent.service.ts` already
+    // does streaming, tools, HITL, history, demo mode, and escalation
+    // in-process with the chat WS, so there was no benefit to routing
+    // through a separate Python service. The `?pipecat=1` URL flag,
+    // `isPipecatEnabled()`, `startPipecatChatSession()`, and the
+    // `pipecatChat` field are all retained in the file (just unused)
+    // for easy revival if we ever want to swap LLM providers via Pipecat
+    // pipelines. The minifier dead-strips them on build.
     if (!this.socket && !this.pipecatChat) {
-      if (isPipecatEnabled()) {
-        this.startPipecatChatSession()
-      } else {
-        this.socket = new WidgetSocket(
-          this.config,
-          this.visitorId,
-          this.forceNewCase,
-          (msg) => this.handleIncoming(msg),
-          (_status) => {
-            // Could show connection status indicator
-          }
-        )
-        this.forceNewCase = false
-        this.socket.connect()
-      }
+      this.socket = new WidgetSocket(
+        this.config,
+        this.visitorId,
+        this.forceNewCase,
+        (msg) => this.handleIncoming(msg),
+        (_status) => {
+          // Could show connection status indicator
+        }
+      )
+      this.forceNewCase = false
+      this.socket.connect()
 
       // Add greeting message
       if (this.messages.length === 0 && this.config.greeting) {
