@@ -50,25 +50,19 @@ function downsampleToPcm16(float32: Float32Array, fromRate: number, toRate: numb
 
 class PcmPlayer {
   private ctx: AudioContext
-  private nextPlayTime = 0
-  private sources: AudioBufferSourceNode[] = []
-  // Per-stream jitter buffer. Nova Sonic emits PCM in ~20-40ms chunks; the
-  // network + WS decode + JS thread can stall 50ms+ at a time, especially on
-  // first audio frame after a tool round-trip. A leadtime smaller than that
-  // window causes the audio scheduler to start chunks in the past, which
-  // either drops them silently or plays them with a click.
-  //
-  // 2026-05-23: Nova Sonic V2 emits audio in noticeably more bursty patterns
-  // than V1 — short utterances arrive smoothly, but longer model outputs
-  // (multi-sentence answers, anything that involves the KB) arrive in
-  // bursts separated by 200-400ms gaps as the model thinks through more
-  // tokens before flushing audio. The previous 120ms leadtime was tuned for
-  // V1 and was too tight for V2: gaps exceeded the buffer and the scheduler
-  // played chunks late, producing the audible cracks the user reported on
-  // longer answers. 350ms comfortably absorbs V2's worst observed jitter.
-  // The tradeoff is a one-time ~230ms delay before audio starts on each
-  // utterance — perceptible but not bad for a support call.
-  private static readonly LEADTIME_SEC = 0.35
+  private node: AudioWorkletNode | null = null
+  private pending: Float32Array[] = []
+  private destroyed = false
+  private ready: Promise<void>
+  private readonly inputSampleRate = 24000
+
+  // Nova Sonic v2 can deliver longer answers in burst/gap/burst patterns. The
+  // audio thread owns this buffer so playback timing is independent of
+  // WebSocket arrival timing and main-thread stalls.
+  private static readonly START_BUFFER_SEC = 0.5
+  private static readonly START_TIMEOUT_SEC = 0.22
+  private static readonly MIN_START_BUFFER_SEC = 0.12
+  private static readonly MAX_BUFFER_SEC = 4
 
   constructor() {
     this.ctx = new AudioContext({ sampleRate: 24000 })
@@ -78,9 +72,11 @@ class PcmPlayer {
     // the first audio frame arrives, leaving us silent forever. Calling
     // resume() unconditionally is harmless when already running.
     void this.ctx.resume().catch(() => { /* will retry on next play() */ })
+    this.ready = this.initWorklet()
   }
 
   play(pcmData: ArrayBuffer): void {
+    if (this.destroyed) return
     // PCM 16-bit requires even byte count — trim trailing odd byte if present
     const byteLen = pcmData.byteLength & ~1
     if (byteLen === 0) return
@@ -91,48 +87,187 @@ class PcmPlayer {
       float32[i] = int16[i] < 0 ? int16[i] / 0x8000 : int16[i] / 0x7fff
     }
 
-    const buffer = this.ctx.createBuffer(1, float32.length, 24000)
-    buffer.getChannelData(0).set(float32)
-
-    const source = this.ctx.createBufferSource()
-    source.buffer = buffer
-    source.connect(this.ctx.destination)
-
-    this.sources.push(source)
-    source.onended = () => {
-      const idx = this.sources.indexOf(source)
-      if (idx !== -1) this.sources.splice(idx, 1)
-    }
-
     // Safety net: if the context suspended (page hidden, OS audio change),
     // try resuming before scheduling. Cheap when already running.
     if (this.ctx.state === 'suspended') {
       void this.ctx.resume().catch(() => { /* ignore */ })
     }
 
-    const now = this.ctx.currentTime
-    const startTime = Math.max(now + PcmPlayer.LEADTIME_SEC, this.nextPlayTime)
-    source.start(startTime)
-    this.nextPlayTime = startTime + buffer.duration
+    const samples =
+      this.ctx.sampleRate === this.inputSampleRate
+        ? float32
+        : resampleFloat32(float32, this.inputSampleRate, this.ctx.sampleRate)
+
+    if (!this.node) {
+      this.pending.push(samples)
+      void this.ready.then(() => this.flushPending()).catch(() => {})
+      return
+    }
+    this.postSamples(samples)
   }
 
   flush(): void {
-    for (const s of this.sources) {
-      try {
-        s.stop()
-        s.disconnect()
-      } catch {
-        /* already stopped */
-      }
+    this.pending.length = 0
+    try {
+      this.node?.port.postMessage({ type: 'flush' })
+    } catch {
+      /* ignore */
     }
-    this.sources.length = 0
-    this.nextPlayTime = 0
   }
 
   destroy(): void {
+    this.destroyed = true
     this.flush()
+    this.node?.disconnect()
+    this.node = null
     void this.ctx.close()
   }
+
+  private async initWorklet(): Promise<void> {
+    const processorCode = `
+      class PcmPlaybackProcessor extends AudioWorkletProcessor {
+        constructor(options) {
+          super();
+          const opts = options.processorOptions || {};
+          this.queue = [];
+          this.offset = 0;
+          this.queued = 0;
+          this.started = false;
+          this.framesSinceFirstData = 0;
+          this.startSamples = Math.round((opts.startBufferSec || 0.5) * sampleRate);
+          this.startTimeoutSamples = Math.round((opts.startTimeoutSec || 0.22) * sampleRate);
+          this.minStartSamples = Math.round((opts.minStartBufferSec || 0.12) * sampleRate);
+          this.maxSamples = Math.round((opts.maxBufferSec || 4) * sampleRate);
+          this.port.onmessage = (event) => {
+            const data = event.data || {};
+            if (data.type === 'push' && data.samples) this.push(data.samples);
+            else if (data.type === 'flush') this.flush();
+          };
+        }
+
+        push(samples) {
+          if (!samples || samples.length === 0) return;
+          while (this.queued + samples.length > this.maxSamples && this.queue.length > 0) {
+            const head = this.queue.shift();
+            const remaining = Math.max(0, head.length - this.offset);
+            this.queued -= remaining;
+            this.offset = 0;
+          }
+          this.queue.push(samples);
+          this.queued += samples.length;
+        }
+
+        flush() {
+          this.queue = [];
+          this.offset = 0;
+          this.queued = 0;
+          this.started = false;
+          this.framesSinceFirstData = 0;
+        }
+
+        readSample() {
+          if (this.queue.length === 0) return 0;
+          const head = this.queue[0];
+          const sample = head[this.offset++] || 0;
+          this.queued--;
+          if (this.offset >= head.length) {
+            this.queue.shift();
+            this.offset = 0;
+          }
+          return sample;
+        }
+
+        process(_inputs, outputs) {
+          const output = outputs[0];
+          const channel = output && output[0];
+          if (!channel) return true;
+
+          if (!this.started) {
+            if (this.queued > 0) {
+              this.framesSinceFirstData += channel.length;
+              if (
+                this.queued >= this.startSamples ||
+                (this.framesSinceFirstData >= this.startTimeoutSamples && this.queued >= this.minStartSamples)
+              ) {
+                this.started = true;
+              }
+            }
+            if (!this.started) {
+              channel.fill(0);
+              return true;
+            }
+          }
+
+          let underrun = 0;
+          for (let i = 0; i < channel.length; i++) {
+            if (this.queued > 0) {
+              channel[i] = this.readSample();
+            } else {
+              channel[i] = 0;
+              underrun++;
+            }
+          }
+
+          if (underrun === channel.length && this.queued === 0) {
+            this.started = false;
+            this.framesSinceFirstData = 0;
+          }
+          return true;
+        }
+      }
+      registerProcessor('lira-pcm-playback', PcmPlaybackProcessor);
+    `
+    const blob = new Blob([processorCode], { type: 'application/javascript' })
+    const blobUrl = URL.createObjectURL(blob)
+    try {
+      await this.ctx.audioWorklet.addModule(blobUrl)
+      if (this.destroyed) return
+      this.node = new AudioWorkletNode(this.ctx, 'lira-pcm-playback', {
+        numberOfInputs: 0,
+        numberOfOutputs: 1,
+        outputChannelCount: [1],
+        processorOptions: {
+          startBufferSec: PcmPlayer.START_BUFFER_SEC,
+          startTimeoutSec: PcmPlayer.START_TIMEOUT_SEC,
+          minStartBufferSec: PcmPlayer.MIN_START_BUFFER_SEC,
+          maxBufferSec: PcmPlayer.MAX_BUFFER_SEC,
+        },
+      })
+      this.node.connect(this.ctx.destination)
+      this.flushPending()
+    } finally {
+      URL.revokeObjectURL(blobUrl)
+    }
+  }
+
+  private flushPending(): void {
+    if (!this.node) return
+    for (const samples of this.pending.splice(0)) {
+      this.postSamples(samples)
+    }
+  }
+
+  private postSamples(samples: Float32Array): void {
+    try {
+      this.node?.port.postMessage({ type: 'push', samples }, [samples.buffer])
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+function resampleFloat32(input: Float32Array, fromRate: number, toRate: number): Float32Array {
+  if (fromRate === toRate || input.length === 0) return input
+  const ratio = fromRate / toRate
+  const output = new Float32Array(Math.max(1, Math.round(input.length / ratio)))
+  for (let i = 0; i < output.length; i++) {
+    const srcIdx = i * ratio
+    const low = Math.floor(srcIdx)
+    const high = Math.min(low + 1, input.length - 1)
+    const frac = srcIdx - low
+    output[i] = input[low] * (1 - frac) + input[high] * frac
+  }
+  return output
 }
 
 // ── Voice Call Manager ────────────────────────────────────────────────────────

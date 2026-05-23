@@ -1,8 +1,12 @@
 # Lira AI — Nimbus Dogfood Test Script
 
 End-to-end test scenarios for the Nimbus demo (`demo.liraintelligence.com`)
-covering both the **chat widget** (full tool execution) and the **voice call**
-(Nova Sonic, conversational only — see caveat below).
+covering the **chat widget** with full tool execution.
+
+> **Voice (Nova Sonic) is intentionally deferred** as of 2026-05-23 — see
+> [`VOICE_CHOPPINESS_INVESTIGATION.md`](./VOICE_CHOPPINESS_INVESTIGATION.md)
+> for the open issue and proposed re-architecture. This script is **chat-only**
+> until voice quality is solved on the production hardware.
 
 Use this before any customer demo. Tick each row as you go. If something fails,
 note the symptom so we can reproduce.
@@ -11,15 +15,15 @@ note the symptom so we can reproduce.
 
 ## ✅ Capability boundaries (current)
 
-| Modality | Account-aware Q&A | KB / company Q&A | Tool execution (upgrade, cancel, etc.) | HITL confirmation |
-|---|---|---|---|---|
-| **Chat (text)** | ✅ Yes | ✅ Yes | ✅ Yes | ✅ Confirm cards |
-| **Voice (Nova Sonic)** | ✅ Yes (profile facts + tool data) | ✅ Yes (`kb_search` tool) | ✅ Yes | ✅ Verbal confirmation |
+| Modality | Account-aware Q&A | KB / company Q&A | Tool execution (upgrade, cancel, etc.) | HITL confirmation | Status |
+|---|---|---|---|---|---|
+| **Chat (text)** | ✅ Yes | ✅ Yes | ✅ Yes | ⚠️ PIN gate: widget UI ready, backend dispatch in progress | Active |
+| **Voice (Nova Sonic)** | — | — | — | — | **Deferred** — see investigation doc |
 
-Both modalities can now do the full set: account-aware Q&A, KB search,
-tool execution, and HITL confirmation. The HITL UX differs by modality:
-chat uses a clickable confirm card, voice uses a verbal "is that right?"
-prompt that the model emits before write tools fire.
+The chat path now runs through the Pipecat agent (`?pipecat=1` or
+`window.__LIRA_USE_PIPECAT = true`). Cross-channel context is wired: if a
+customer chatted earlier in the same `conversationId`, the next session
+loads the prior messages so they don't have to repeat themselves.
 
 ---
 
@@ -47,11 +51,14 @@ before deploying — never set this in production.
 |---|---|---|---|
 | 0.1 | Run `cd creovine-backend && npm run dev` | Backend up on port 8080 | ☐ |
 | 0.2 | Run `cd lira-ai && npm run dev` | Frontend up on 5173 | ☐ |
-| 0.3 | Open `http://localhost:5173/demo` | Demo entry modal appears | ☐ |
+| 0.3 | Open `http://localhost:5173/demo?pipecat=1` | Demo entry modal appears; Pipecat flag is on | ☐ |
 | 0.4 | Choose "Widget on a real site" mode, name = `Test User` | Modal closes, redirected to Nimbus dashboard | ☐ |
 | 0.5 | DevTools console open | No red errors at load | ☐ |
-| 0.6 | Network tab: filter `ws` | WebSocket connects to `wss://api.creovine.com/lira/v1/support/chat/ws/org-bfad94de-...` | ☐ |
-| 0.7 | First frame after connect: `demo_context` outbound | Profile JSON includes name, plan, card, invoices snapshot | ☐ |
+| 0.6 | Network tab: filter `WS` / `Sockets` | WebSocket connects to `wss://api.creovine.com/pipecat?orgId=org-bfad94de-...&channel=chat` | ☐ |
+| 0.7 | Chat session: server should respond with bot-ready within ~1s of clicking the widget bubble | ☐ |
+
+> **Note**: `?pipecat=1` is required during dev to opt into the Pipecat
+> chat path. Without it the widget falls back to the legacy chat WS.
 
 ---
 
@@ -60,9 +67,9 @@ before deploying — never set this in production.
 | # | Action | Expected | ✅ |
 |---|---|---|---|
 | 1.1 | Sign out (sidebar → sign out) | Redirected to `/`, no Nimbus widget on landing | ☐ |
-| 1.2 | Go to `/demo` again, name = `Another Tester` | Fresh dashboard, plan defaults to Growth | ☐ |
-| 1.3 | Open a new tab → `/demo` (same browser) | Entry modal re-appears (sessionStorage scoped per-tab? — actually per browser; this should keep `Another Tester`) | ☐ |
-| 1.4 | Close all tabs, reopen `/demo` | Entry modal appears again (sessionStorage cleared) | ☐ |
+| 1.2 | Go to `/demo?pipecat=1` again, name = `Another Tester` | Fresh dashboard, plan defaults to Growth | ☐ |
+| 1.3 | Open a new tab → `/demo?pipecat=1` (same browser) | Entry modal re-appears (sessionStorage scoped per-tab? — actually per browser; this should keep `Another Tester`) | ☐ |
+| 1.4 | Close all tabs, reopen `/demo?pipecat=1` | Entry modal appears again (sessionStorage cleared) | ☐ |
 
 ---
 
@@ -102,41 +109,61 @@ These should trigger the `kb_search` tool. Look for the action result chip
 
 ## 4. Tool execution — happy path (chat only)
 
-These trigger HITL=confirm tools. Each should show a **confirm card** in the
-widget BEFORE applying the change.
+These trigger HITL=confirm tools. Each should:
+1. Show an **action card** in chat as the tool starts (`action_started`)
+2. For `hitl: 'confirm'` tools — show a **PIN gate modal** before executing
+3. Resolve to ✅ success or ❌ failure (`action_completed` / `action_failed`)
+4. Update the relevant Nimbus dashboard UI
+
+> **HITL / confirmation status (2026-05-23):**
+> Two paths handle confirmation for `hitl: 'confirm'` tools differently:
+>
+> - **Legacy chat (`?pipecat=0`, default):** clickable **confirm card**. Backend
+>   pauses the agent loop, persists pending state via `pendingTool`, sends the
+>   card; resumes on Approve/Decline.
+> - **Pipecat chat (`?pipecat=1`, what we're shipping):** **conversational
+>   confirmation**. The system prompt instructs the model to repeat back the
+>   action ("So I'm cancelling your subscription, that right?") and wait for
+>   a clear "yes" before calling the tool.
+>
+> Both satisfy "no destructive action without customer approval." The widget
+> still has a `pinPrompt` modal in code — that's dead UI from voice-PIN
+> planning. It's not used by either chat path. Leaving it for the future
+> ("enter 4-digit PIN from your email" for high-risk actions).
 
 ### 4.1 Upgrade plan
 
 | # | Action | Expected | ✅ |
 |---|---|---|---|
-| 4.1.1 | Type: `Can you upgrade me to the Business plan?` | AI asks for confirmation OR emits a confirm card with title "Upgrade plan" | ☐ |
-| 4.1.2 | Click **Approve** on the card | Card resolves to success badge | ☐ |
-| 4.1.3 | Sidebar plan badge updates to **Business** | ☐ |
-| 4.1.4 | Dashboard greeting updates ("Currently on Business plan") | ☐ |
-| 4.1.5 | AI's next reply confirms the change in natural language | ☐ |
+| 4.1.1 | Type: `Can you upgrade me to the Business plan?` | Pipecat: AI verbally asks to confirm ("So I'm upgrading you to Business — that right?"). Legacy: AI emits a confirm card. | ☐ |
+| 4.1.2 | Pipecat: reply `Yes`. Legacy: click Approve. | Action proceeds; `action_started` card appears in chat | ☐ |
+| 4.1.3 | Card resolves to ✅ success | ☐ |
+| 4.1.4 | Sidebar plan badge updates to **Business** | ☐ |
+| 4.1.5 | Dashboard greeting updates ("Currently on Business plan") | ☐ |
+| 4.1.6 | AI's next reply confirms the change in natural language | ☐ |
 
-### 4.2 Decline a confirm card
+### 4.2 Decline a confirm
 
 | # | Action | Expected | ✅ |
 |---|---|---|---|
-| 4.2.1 | Type: `Actually, downgrade me to Starter` | Confirm card appears | ☐ |
-| 4.2.2 | Click **Cancel** / decline | Card resolves to declined; plan does NOT change | ☐ |
+| 4.2.1 | Type: `Actually, downgrade me to Starter` | AI asks to confirm (Pipecat) or shows confirm card (legacy) | ☐ |
+| 4.2.2 | Pipecat: reply `No, never mind`. Legacy: click Decline. | Action declined, plan does NOT change | ☐ |
 | 4.2.3 | AI acknowledges the decline politely | ☐ |
 
 ### 4.3 Update card
 
 | # | Action | Expected | ✅ |
 |---|---|---|---|
-| 4.3.1 | `Change my card to a Mastercard ending in 1234, expires 12/30` | Confirm card with brand/last4/exp | ☐ |
-| 4.3.2 | Approve | Settings → Billing shows new card | ☐ |
+| 4.3.1 | `Change my card to a Mastercard ending in 1234, expires 12/30` | Action card with brand/last4/exp | ☐ |
+| 4.3.2 | Resolve | Settings → Billing shows new card | ☐ |
 | 4.3.3 | Sidebar / dashboard reflects updated card | ☐ |
 
 ### 4.4 Cancel subscription
 
 | # | Action | Expected | ✅ |
 |---|---|---|---|
-| 4.4.1 | `I want to cancel my subscription, the product isn't working for us` | Confirm card with reason recorded | ☐ |
-| 4.4.2 | Approve | Subscription status badge → Cancelled | ☐ |
+| 4.4.1 | `I want to cancel my subscription, the product isn't working for us` | Action card with reason recorded | ☐ |
+| 4.4.2 | Resolve | Subscription status badge → Cancelled | ☐ |
 | 4.4.3 | AI mentions access continues until period end | ☐ |
 | 4.4.4 | Try to cancel again | AI says it's already cancelled (idempotent) | ☐ |
 
@@ -151,7 +178,7 @@ widget BEFORE applying the change.
 
 | # | Action | Expected | ✅ |
 |---|---|---|---|
-| 4.6.1 | After 4.4, type `Actually, never mind, put me back on Growth` | Confirm card → approve → status returns to active, plan Growth | ☐ |
+| 4.6.1 | After 4.4, type `Actually, never mind, put me back on Growth` | Action card → resolve → status returns to active, plan Growth | ☐ |
 
 ---
 
@@ -162,7 +189,7 @@ widget BEFORE applying the change.
 | 5.1 | `Upgrade me to the Enterprise plan` (doesn't exist) | AI asks clarifying question or says only starter/growth/business available | ☐ |
 | 5.2 | Already on Business: `upgrade me to Business` | AI says you're already on it; no tool fires | ☐ |
 | 5.3 | `Update my card to brand: blah, last4: 99, exp: foo` | Tool validation rejects; AI asks for proper values | ☐ |
-| 5.4 | `Update my plan and also change my card` (two actions in one message) | Either: handles sequentially with two confirms, OR: asks which first. Should NOT silently drop one. | ☐ |
+| 5.4 | `Update my plan and also change my card` (two actions in one message) | Either: handles sequentially with two cards, OR: asks which first. Should NOT silently drop one. | ☐ |
 
 ---
 
@@ -183,10 +210,10 @@ widget BEFORE applying the change.
 | # | Action | Expected | ✅ |
 |---|---|---|---|
 | 7.1 | After 4.1 upgrade, refresh the page | Plan still Business (sessionStorage holds) | ☐ |
-| 7.2 | Open widget, scroll up | Prior conversation history loads | ☐ |
+| 7.2 | Open widget, scroll up | Prior conversation history loads (Pipecat now seeds LLM context with up to 40 prior messages from the same `conversationId`) | ☐ |
 | 7.3 | Sign out → sign back in as `New Tester` | Fresh profile, no leaked history from prior tester | ☐ |
-| 7.4 | Open `/demo` in incognito | Independent session, doesn't see your changes | ☐ |
-| 7.5 | Open `/demo` in two side-by-side tabs simultaneously | Each gets its own conv_id; messages don't cross | ☐ |
+| 7.4 | Open `/demo?pipecat=1` in incognito | Independent session, doesn't see your changes | ☐ |
+| 7.5 | Open `/demo?pipecat=1` in two side-by-side tabs simultaneously | Each gets its own conv_id; messages don't cross | ☐ |
 
 ---
 
@@ -201,92 +228,40 @@ widget BEFORE applying the change.
 
 ---
 
-## 9. Voice (Nova Sonic) — full parity with chat
-
-Voice now has the same tool set as chat. HITL is verbal: the model says
-"just to confirm — you want X, is that right?" and only fires the tool
-after you say yes. Watch the dashboard for real-time updates from voice
-tool calls (same pipeline as chat → `demo_action_executed` → dashboard
-re-render).
-
-### 9.1 Conversational + account-aware
-
-| # | Say aloud | Expected | ✅ |
-|---|---|---|---|
-| 9.1.1 | Open widget, click mic icon | Voice call connects, mic permission prompt | ☐ |
-| 9.1.2 | `Hello, what can you help me with?` | Lira greets warmly, doesn't list capabilities like a robot | ☐ |
-| 9.1.3 | `What plan am I on?` | Speaks the correct plan from CUSTOMER ACCOUNT snapshot | ☐ |
-| 9.1.4 | `Tell me about my last invoice` | Speaks correct amount/date | ☐ |
-| 9.1.5 | `What card do I have on file?` | "Visa ending 4242" etc. | ☐ |
-
-### 9.2 KB Q&A via voice
-
-| # | Say aloud | Expected | ✅ |
-|---|---|---|---|
-| 9.2.1 | `What's your refund policy?` | Lira calls `kb_search`, speaks the grounded answer | ☐ |
-| 9.2.2 | `Do you support multi-currency invoicing?` | KB-grounded response | ☐ |
-| 9.2.3 | `Do you support quantum-encrypted invoices?` | Says she doesn't have that info — must NOT hallucinate | ☐ |
-
-### 9.3 Tool execution via voice (verbal HITL)
-
-| # | Say aloud | Expected | ✅ |
-|---|---|---|---|
-| 9.3.1 | `Upgrade me to the Business plan` | Lira VERBALLY confirms: "Just to confirm — you want the Business plan for $129/mo, is that right?" | ☐ |
-| 9.3.2 | Say `Yes` | Tool fires; sidebar plan badge updates to Business in real time | ☐ |
-| 9.3.3 | Say `Change my card to a Visa ending 1111, expires 11/30` | Verbal confirm → say yes → card updated on dashboard | ☐ |
-| 9.3.4 | Say `Cancel my subscription` | Verbal confirm → say yes → status badge → Cancelled | ☐ |
-| 9.3.5 | Say `Actually, put me back on Growth` | Verbal confirm → say yes → plan reverts | ☐ |
-| 9.3.6 | Say `Reset my password` | Auto-fires (no confirmation needed) | ☐ |
-
-### 9.4 Verbal HITL decline
-
-| # | Say aloud | Expected | ✅ |
-|---|---|---|---|
-| 9.4.1 | Say `Upgrade me to Starter` | Verbal confirm | ☐ |
-| 9.4.2 | Say `No, never mind` | Lira acknowledges; plan does NOT change | ☐ |
-
-### 9.5 UX
+## 9. Privacy / data-isolation spot checks
 
 | # | Action | Expected | ✅ |
 |---|---|---|---|
-| 9.5.1 | Interrupt Lira mid-sentence by speaking | Barge-in works, she stops and listens | ☐ |
-| 9.5.2 | Stay silent for 30s | Connection stays open or graceful timeout | ☐ |
-| 9.5.3 | End call via button | UI returns to chat mode cleanly | ☐ |
-| 9.5.4 | Check dashboard after call ends | All changes from voice tool calls persisted | ☐ |
-
-**Voice findings to capture:**
-- ☐ Voice quality clear, no choppiness
-- ☐ Profile facts accurate
-- ☐ Verbal HITL works (model actually asks, doesn't just fire)
-- ☐ No hallucinations about the company
-- ☐ Dashboard re-renders live during voice tool calls
+| 9.1 | Tester A creates profile `Alice`, asks `what's my plan` | Profile reflects Alice's data | ☐ |
+| 9.2 | Sign out; tester B `Bob` creates profile, asks same | Sees Bob's data; no leak from Alice | ☐ |
+| 9.3 | Inspect DynamoDB `lira-organizations` table | NO rows added per visitor (demo profile is client-side only) | ☐ |
+| 9.4 | Disconnect WebSocket (kill backend) | Server-side in-memory demo-context cache evicts on `ws.close` | ☐ |
 
 ---
 
-## 10. Privacy / data-isolation spot checks
-
-| # | Action | Expected | ✅ |
-|---|---|---|---|
-| 10.1 | Tester A creates profile `Alice`, asks `what's my plan` | Profile reflects Alice's data | ☐ |
-| 10.2 | Sign out; tester B `Bob` creates profile, asks same | Sees Bob's data; no leak from Alice | ☐ |
-| 10.3 | Inspect DynamoDB `lira-organizations` table | NO rows added per visitor (demo profile is client-side only) | ☐ |
-| 10.4 | Disconnect WebSocket (kill backend) | Server-side in-memory demo-context cache evicts on `ws.close` | ☐ |
-
----
-
-## 11. Pre-demo confidence checklist
+## 10. Pre-demo confidence checklist
 
 Before showing this to a real prospect, all the following must be ✅:
 
 - [ ] Section 2 (account-aware): all green
 - [ ] Section 3 (KB): all green, no hallucinations on §3.5
-- [ ] Section 4 (tool execution): every tool fires + dashboard updates
+- [ ] Section 4 (tool execution): every tool fires + dashboard updates (PIN gate WIP — note this to prospect or skip for now)
 - [ ] Section 5 (edge cases): all green
 - [ ] Section 6 (escalation): handoff + handback round trips
-- [ ] Section 9 (voice): conversational + KB + tool execution + verbal HITL all working
 - [ ] No red errors in browser DevTools console during a 10-message session
 - [ ] Backend logs show no unhandled exceptions
 - [ ] Refresh mid-conversation doesn't break anything
+
+---
+
+## 11. Known limitations to disclose to a prospect (2026-05-23)
+
+Be transparent. Don't sell what isn't built.
+
+- **Voice**: deferred. Working on smoothness — not in current demo.
+- **HITL confirmation**: works on both paths today — Pipecat asks conversationally, legacy chat uses a clickable confirm card. The widget also has a leftover **PIN entry modal** (numeric code) that's not yet wired to anything; that would be a future "high-risk action" tier (e.g. confirm with a code sent to email).
+- **Cross-channel voice→chat**: voice transcripts don't yet persist to the same conversation table on hang-up, so if voice ever comes back, chat session won't see prior voice context. Reverse direction (chat→voice) works.
+- **Real tool packs**: only Stripe is wired in this repo. Other integrations (Intercom, HubSpot, Slack actions) are future work.
 
 ---
 
