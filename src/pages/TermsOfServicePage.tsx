@@ -13,18 +13,15 @@ export function TermsOfServicePage() {
         keywords="Lira AI terms of service, terms and conditions, user agreement"
         path="/terms"
       />
-      <div className="bg-white">
+      <div className="legal-page">
         {/* Hero */}
-        <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600">Legal</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Terms of Service
-          </h1>
-          <p className="mt-4 text-base text-gray-500">Last updated: {LAST_UPDATED}</p>
+        <section className="legal-hero">
+          <h1>Terms of Service</h1>
+          <p>Last updated: {LAST_UPDATED}</p>
         </section>
 
         {/* Body */}
-        <article className="prose prose-gray prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-indigo-600 hover:prose-a:text-indigo-500 mx-auto max-w-4xl px-6 pb-24">
+        <article className="legal-article">
           {/* 1 */}
           <h2>1. Acceptance of Terms</h2>
           <p>
@@ -383,31 +380,11 @@ export function TermsOfServicePage() {
           </ul>
 
           {/* Related links */}
-          <div className="not-prose mt-12 flex flex-wrap gap-4 border-t border-gray-200 pt-8">
-            <Link
-              to="/privacy"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Privacy Policy
-            </Link>
-            <Link
-              to="/cookies"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Cookie Policy
-            </Link>
-            <Link
-              to="/acceptable-use"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Acceptable Use Policy
-            </Link>
-            <Link
-              to="/security"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Security
-            </Link>
+          <div className="legal-link-row">
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/cookies">Cookie Policy</Link>
+            <Link to="/acceptable-use">Acceptable Use Policy</Link>
+            <Link to="/security">Security</Link>
           </div>
         </article>
       </div>

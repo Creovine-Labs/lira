@@ -88,7 +88,7 @@ function SupportKnowledgePage() {
                 className={cn(
                   'flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
                   activeTab === tab.key
-                    ? 'bg-[#3730a3] text-white shadow-sm'
+                    ? 'bg-[#020308] text-white shadow-sm'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
                 )}
               >
@@ -110,7 +110,7 @@ function SupportKnowledgePage() {
             <p className="text-sm text-gray-600">
               Support uses the same knowledge base as the rest of Lira. Manage your documents and
               sources from the{' '}
-              <a href="/org/knowledge" className="font-semibold text-[#3730a3] hover:underline">
+              <a href="/org/knowledge" className="font-semibold text-[#020308] hover:underline">
                 main Knowledge Base
               </a>
               .
@@ -123,7 +123,7 @@ function SupportKnowledgePage() {
           <div className="space-y-3">
             {kbDraftsLoading ? (
               <div className="flex items-center justify-center py-20">
-                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+                <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
               </div>
             ) : pendingDrafts.length === 0 ? (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-16 shadow-sm">
@@ -146,13 +146,13 @@ function SupportKnowledgePage() {
                         type="text"
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold focus:border-[#3730a3] focus:outline-none"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold focus:border-[#020308] focus:outline-none"
                       />
                       <textarea
                         value={editBody}
                         onChange={(e) => setEditBody(e.target.value)}
                         rows={6}
-                        className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                        className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                       />
                     </div>
                   ) : (

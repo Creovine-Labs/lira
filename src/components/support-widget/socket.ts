@@ -59,6 +59,12 @@ export class WidgetSocket {
     this.ws.onopen = () => {
       this.reconnectAttempts = 0
       this.onStatus('connected')
+      // Demo embeds push a snapshot of the visitor's local dashboard state so
+      // the AI agent can answer account-aware questions without persisting
+      // per-visitor data server-side. No-op for production embeds.
+      if (this.config.demoContext) {
+        this.send({ type: 'demo_context', profile: this.config.demoContext })
+      }
     }
 
     this.ws.onmessage = (event) => {

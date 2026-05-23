@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowRightIcon,
   BoltIcon,
+  BookOpenIcon,
   CheckCircleIcon,
   CheckIcon,
   ClipboardDocumentCheckIcon,
@@ -241,7 +243,7 @@ self.addEventListener('push', (event) => {
                   </code>
                   <button
                     onClick={() => copy(vapidKey, setCopiedKey)}
-                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold text-[#3730a3] hover:bg-indigo-50"
+                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold text-[#020308] hover:bg-gray-50"
                   >
                     {copiedKey ? 'Copied' : 'Copy key'}
                   </button>
@@ -274,7 +276,7 @@ self.addEventListener('push', (event) => {
             <button
               onClick={handleCheckConnection}
               disabled={checking}
-              className="w-full rounded-xl bg-[#3730a3] py-2 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+              className="w-full rounded-xl bg-[#020308] py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
             >
               {checking ? 'Checking…' : 'Check connection'}
             </button>
@@ -284,7 +286,7 @@ self.addEventListener('push', (event) => {
             href="https://docs.liraintelligence.com/platform/customer-support/proactive#web-push"
             target="_blank"
             rel="noopener noreferrer"
-            className="block text-center text-[11px] font-semibold text-[#3730a3] hover:underline"
+            className="block text-center text-[11px] font-semibold text-[#020308] hover:underline"
           >
             Full setup guide →
           </a>
@@ -360,7 +362,7 @@ function ChannelSetupModal({
                   href="https://console.twilio.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-semibold text-[#3730a3] hover:underline"
+                  className="font-semibold text-[#020308] hover:underline"
                 >
                   Twilio Console
                 </a>
@@ -379,7 +381,7 @@ function ChannelSetupModal({
                   value={accountSid}
                   onChange={(e) => setAccountSid(e.target.value)}
                   placeholder="ACxxxxxxxxxxxxxxxx"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
               <div>
@@ -395,7 +397,7 @@ function ChannelSetupModal({
                   value={authToken}
                   onChange={(e) => setAuthToken(e.target.value)}
                   placeholder="Your auth token"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
               <div>
@@ -411,13 +413,13 @@ function ChannelSetupModal({
                   value={fromNumber}
                   onChange={(e) => setFromNumber(e.target.value)}
                   placeholder="+15550001234"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
               <button
                 onClick={handleTwilioConnect}
                 disabled={saving || !accountSid.trim() || !authToken.trim() || !fromNumber.trim()}
-                className="w-full rounded-xl bg-[#3730a3] py-2 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+                className="w-full rounded-xl bg-[#020308] py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
               >
                 {saving ? 'Connecting…' : 'Connect Twilio'}
               </button>
@@ -431,7 +433,7 @@ function ChannelSetupModal({
               </p>
               <a
                 href="/org/integrations"
-                className="block w-full rounded-xl bg-[#3730a3] py-2 text-center text-xs font-semibold text-white hover:bg-[#312e81] transition"
+                className="block w-full rounded-xl bg-[#020308] py-2 text-center text-xs font-semibold text-white hover:bg-[#020308] transition"
               >
                 Go to Integrations → Slack
               </a>
@@ -447,7 +449,7 @@ function ChannelSetupModal({
                 href="https://docs.liraintelligence.com/platform/customer-support/proactive#mobile-push"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full rounded-xl bg-[#3730a3] py-2 text-center text-xs font-semibold text-white hover:bg-[#312e81] transition"
+                className="block w-full rounded-xl bg-[#020308] py-2 text-center text-xs font-semibold text-white hover:bg-[#020308] transition"
               >
                 View Mobile Push Setup Guide
               </a>
@@ -583,7 +585,7 @@ function WebhookIntegrationPanel({ orgId }: { orgId: string }) {
         className="flex w-full items-center justify-between px-5 py-4 text-left"
       >
         <div className="flex items-center gap-2">
-          <CodeBracketSquareIcon className="h-4 w-4 text-[#3730a3]" />
+          <CodeBracketSquareIcon className="h-4 w-4 text-[#020308]" />
           <div>
             <p className="text-sm font-semibold text-gray-900">Webhook integration</p>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -591,7 +593,7 @@ function WebhookIntegrationPanel({ orgId }: { orgId: string }) {
             </p>
           </div>
         </div>
-        <span className="text-xs font-semibold text-[#3730a3]">{open ? 'Hide' : 'Show'}</span>
+        <span className="text-xs font-semibold text-[#020308]">{open ? 'Hide' : 'Show'}</span>
       </button>
       {open && (
         <div className="border-t border-gray-100 px-5 pb-5 pt-4">
@@ -637,9 +639,9 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
               className={cn(
                 'flex flex-1 items-center justify-center gap-1.5 px-3 py-3 text-[11px] font-semibold transition',
                 isActive
-                  ? 'bg-[#3730a3] text-white'
+                  ? 'bg-[#020308] text-white'
                   : isDone
-                    ? 'text-[#3730a3] hover:bg-indigo-50'
+                    ? 'text-[#020308] hover:bg-gray-50'
                     : 'text-gray-300 cursor-default'
               )}
             >
@@ -682,8 +684,8 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
           <div className="space-y-2">
             {WIZARD_EXAMPLES.map((ex, i) => (
               <div key={i} className="flex items-start gap-3 rounded-xl bg-gray-50 px-3.5 py-2.5">
-                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10">
-                  <BoltIcon className="h-3 w-3 text-[#3730a3]" />
+                <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#020308]/10">
+                  <BoltIcon className="h-3 w-3 text-[#020308]" />
                 </div>
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-gray-700">{ex.event}</p>
@@ -696,7 +698,7 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
           <div className="flex justify-end pt-1">
             <button
               onClick={() => setStep('connect')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#312e81] transition"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#020308] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#020308] transition"
             >
               Set this up for my product
               <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -717,19 +719,19 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
             </p>
           </div>
 
-          <div className="rounded-xl bg-indigo-50 border border-indigo-100 px-4 py-3 space-y-1.5">
-            <p className="text-xs font-semibold text-indigo-800">What your developer does</p>
-            <ul className="space-y-1 text-xs text-indigo-700 leading-5">
+          <div className="rounded-xl bg-gray-50 border border-gray-200 px-4 py-3 space-y-1.5">
+            <p className="text-xs font-semibold text-gray-800">What your developer does</p>
+            <ul className="space-y-1 text-xs text-gray-700 leading-5">
               <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
                 Call one URL on your Lira account whenever an event occurs
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
                 Pass the event name, the customer ID, and any extra details
               </li>
               <li className="flex items-start gap-2">
-                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-indigo-400" />
+                <span className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-400" />
                 Lira matches it to your rule and sends outreach through your selected channel
               </li>
             </ul>
@@ -738,7 +740,7 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
           {/* Tech details — collapsed by default */}
           <button
             onClick={() => setShowTechDetails((v) => !v)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-[#3730a3] hover:text-[#312e81] transition"
+            className="flex items-center gap-1.5 text-xs font-semibold text-[#020308] hover:text-[#020308] transition"
           >
             <CodeBracketSquareIcon className="h-3.5 w-3.5" />
             {showTechDetails ? 'Hide' : 'Show'} technical details
@@ -756,7 +758,7 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
               href="https://docs.liraintelligence.com/platform/customer-support/proactive"
               target="_blank"
               rel="noopener noreferrer"
-              className="font-semibold text-[#3730a3] underline underline-offset-2 hover:text-[#312e81]"
+              className="font-semibold text-[#020308] underline underline-offset-2 hover:text-[#020308]"
             >
               Read the setup guide →
             </a>
@@ -771,7 +773,7 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
             </button>
             <button
               onClick={() => setStep('create')}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#312e81] transition"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#020308] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#020308] transition"
             >
               My developer is on it — next
               <ArrowRightIcon className="h-3.5 w-3.5" />
@@ -799,7 +801,7 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
             </p>
             <button
               onClick={onCreate}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#312e81] transition"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-[#020308] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#020308] transition"
             >
               <PlusIcon className="h-3.5 w-3.5" />
               Create my first rule
@@ -819,9 +821,52 @@ function ProactiveSetupWizard({ orgId, onCreate }: { orgId: string; onCreate: ()
 }
 
 function SupportProactivePage() {
+  const navigate = useNavigate()
+  const { currentOrgId } = useOrgStore()
+  const { config, configLoading } = useSupportStore()
+  const loadStarted = useRef(false)
+
+  useEffect(() => {
+    if (configLoading) loadStarted.current = true
+  }, [configLoading])
+
+  useEffect(() => {
+    if (!loadStarted.current) return
+    if (!configLoading && (!config || !config.activated)) {
+      navigate('/support/activate', { replace: true })
+    }
+  }, [config, configLoading, navigate])
+
+  if (!currentOrgId || configLoading) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Proactive</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Configure automated triggers and proactive customer outreach
+            </p>
+          </div>
+          <a
+            href="https://docs.liraintelligence.com/platform/customer-support"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
+        </div>
         <SupportProactivePanel />
       </div>
     </div>
@@ -973,7 +1018,7 @@ function SupportProactivePanel() {
   if (triggersLoading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
       </div>
     )
   }
@@ -1018,7 +1063,7 @@ function SupportProactivePanel() {
         <div className="mb-4 flex items-center justify-end">
           <button
             onClick={() => setShowCreate(true)}
-            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#312e81] transition"
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-[#020308] px-4 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-[#020308] transition"
           >
             <PlusIcon className="h-3.5 w-3.5" />
             New Rule
@@ -1037,7 +1082,7 @@ function SupportProactivePanel() {
               className={cn(
                 'flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
                 activeTab === tab.key
-                  ? 'bg-[#3730a3] text-white shadow-sm'
+                  ? 'bg-[#020308] text-white shadow-sm'
                   : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
               )}
             >
@@ -1070,7 +1115,7 @@ function SupportProactivePanel() {
                   value={form.name}
                   onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
                   placeholder="Payment Failed Alert"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
               <div>
@@ -1086,7 +1131,7 @@ function SupportProactivePanel() {
                   value={form.event_type}
                   onChange={(e) => setForm((f) => ({ ...f, event_type: e.target.value }))}
                   placeholder="payment.failed"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
             </div>
@@ -1103,7 +1148,7 @@ function SupportProactivePanel() {
                 onChange={(e) => setForm((f) => ({ ...f, outreach_template: e.target.value }))}
                 rows={3}
                 placeholder={'Hi {{customer.name}}, we noticed your payment failed…'}
-                className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                className="w-full resize-none rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
               />
             </div>
             <div>
@@ -1123,12 +1168,12 @@ function SupportProactivePanel() {
                         className={cn(
                           'relative rounded-xl border px-3 py-2 text-left transition',
                           selected
-                            ? 'border-[#3730a3] bg-indigo-50'
+                            ? 'border-[#020308] bg-gray-50'
                             : 'border-gray-200 bg-white hover:border-gray-300'
                         )}
                       >
                         {selected && (
-                          <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#3730a3]">
+                          <span className="absolute right-2 top-2 flex h-4 w-4 items-center justify-center rounded-full bg-[#020308]">
                             <CheckIcon className="h-2.5 w-2.5 text-white" />
                           </span>
                         )}
@@ -1170,7 +1215,7 @@ function SupportProactivePanel() {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, cooldown_hours: Number(e.target.value) }))
                   }
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
               <div>
@@ -1191,7 +1236,7 @@ function SupportProactivePanel() {
                       max_per_customer_per_day: Number(e.target.value),
                     }))
                   }
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#3730a3] focus:outline-none"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
                 />
               </div>
             </div>
@@ -1206,7 +1251,7 @@ function SupportProactivePanel() {
             <button
               onClick={handleCreate}
               disabled={creating || !form.name.trim() || !form.event_type.trim()}
-              className="rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+              className="rounded-xl bg-[#020308] px-4 py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
             >
               {creating ? 'Creating…' : 'Create Rule'}
             </button>

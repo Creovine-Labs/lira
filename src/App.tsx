@@ -5,7 +5,8 @@ import { Toaster } from 'sonner'
 
 import {
   DashboardPage,
-  LandingPage,
+  LandingPageV3,
+  LandingPageV4,
   HomePage,
   MeetingPage,
   MeetingsPage,
@@ -27,10 +28,18 @@ import {
   ProductCustomerSupportPage,
   PricingPage,
   DemoSitePage,
+  DemoHelpPage,
   ResourcesPage,
   TutorialsPage,
+  DocsHubPage,
+  DocArticlePage,
   BlogPage,
   BlogPostPage,
+  AboutPage,
+  FeaturesPage,
+  CareersPage,
+  BookDemoPage,
+  ContactPage,
   PrivacyPolicyPage,
   TermsOfServicePage,
   CookiePolicyPage,
@@ -48,6 +57,7 @@ import {
   AdminUsersPage,
   AdminOrganizationsPage,
   AdminEmailPage,
+  AdminDemoOpsPage,
   AdminManagementPage,
 } from '@/pages/admin'
 import {
@@ -55,7 +65,12 @@ import {
   SupportConversationPage,
   SupportNotificationsPage,
   SupportCustomerDetailPage,
-  SupportPage,
+  SupportInboxPage,
+  SupportCustomersPage,
+  SupportActionsPage,
+  SupportProactivePage,
+  SupportAnalyticsPage,
+  SupportSettingsPage,
 } from '@/pages/support'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -84,8 +99,13 @@ function AuthExpiryGuard() {
 }
 
 function App() {
-  // demo subdomain — render Nimbus demo page directly, bypassing the main router
+  // demo subdomain — render the Nimbus demo directly, bypassing the main router.
+  // Two paths supported: / (widget mode) and /help (full support page mode).
   if (window.location.hostname === 'demo.liraintelligence.com') {
+    const path = window.location.pathname
+    if (path === '/help' || path === '/help/') {
+      return <DemoHelpPage />
+    }
     return <DemoSitePage />
   }
 
@@ -93,7 +113,9 @@ function App() {
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
       <Routes>
         {/* Public routes — no shell */}
-        <Route path="/" element={<LandingPage />} />
+        <Route path="/" element={<LandingPageV4 />} />
+        <Route path="/v3" element={<LandingPageV3 />} />
+        <Route path="/v4" element={<LandingPageV4 />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
         <Route path="/signup" element={<HomePage defaultView="landing" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
@@ -106,10 +128,20 @@ function App() {
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />
+        <Route path="/demo/help" element={<DemoHelpPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
+        <Route path="/docs" element={<DocsHubPage />} />
+        <Route path="/docs/:slug" element={<DocArticlePage />} />
         <Route path="/tutorials" element={<TutorialsPage />} />
         <Route path="/blog" element={<BlogPage />} />
         <Route path="/blog/:slug" element={<BlogPostPage />} />
+        <Route path="/about-us" element={<AboutPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/features" element={<FeaturesPage />} />
+        <Route path="/feature" element={<FeaturesPage />} />
+        <Route path="/careers" element={<CareersPage />} />
+        <Route path="/book-demo" element={<BookDemoPage />} />
+        <Route path="/contact" element={<ContactPage />} />
         <Route path="/privacy" element={<PrivacyPolicyPage />} />
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/cookies" element={<CookiePolicyPage />} />
@@ -141,7 +173,13 @@ function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
           </Route>
-          <Route path="/support" element={<SupportPage />} />
+          <Route path="/support" element={<Navigate to="/support/inbox" replace />} />
+          <Route path="/support/inbox" element={<SupportInboxPage />} />
+          <Route path="/support/customers" element={<SupportCustomersPage />} />
+          <Route path="/support/actions" element={<SupportActionsPage />} />
+          <Route path="/support/proactive" element={<SupportProactivePage />} />
+          <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
+          <Route path="/support/configuration" element={<SupportSettingsPage />} />
           <Route path="/support/activate" element={<SupportActivatePage />} />
           <Route path="/support/inbox/:id" element={<SupportConversationPage />} />
           <Route path="/support/notifications" element={<SupportNotificationsPage />} />
@@ -155,6 +193,7 @@ function App() {
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="email" element={<AdminEmailPage />} />
+          <Route path="demo-ops" element={<AdminDemoOpsPage />} />
           <Route path="admins" element={<AdminManagementPage />} />
         </Route>
 

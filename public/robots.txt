@@ -5,8 +5,14 @@ User-agent: *
 Allow: /
 Allow: /products/
 Allow: /blog/
+Allow: /docs/
 Allow: /resources/
 Allow: /tutorials/
+Allow: /features
+Allow: /about
+Allow: /about-us
+Allow: /careers
+Allow: /contact
 Allow: /security
 Allow: /privacy
 Allow: /terms
@@ -31,6 +37,10 @@ Disallow: /ui-lab
 Disallow: /launch-demo
 Disallow: /login
 Disallow: /signup
+
+# Disallow public demo (sandbox; no SEO value; AI cost surface)
+Disallow: /demo
+Disallow: /demo/
 
 # Sitemap location
 Sitemap: https://liraintelligence.com/sitemap.xml

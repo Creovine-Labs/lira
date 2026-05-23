@@ -7,7 +7,7 @@ interface MarketingLayoutProps {
 
 export function MarketingLayout({ children }: MarketingLayoutProps) {
   return (
-    <div className="min-h-screen font-sans antialiased" style={{ backgroundColor: '#ebebeb' }}>
+    <div className="min-h-screen bg-[#fbfaf6] font-sans antialiased text-gray-950">
       <MarketingNavbar />
       {children}
       <MarketingFooter />

@@ -302,7 +302,7 @@ function ChatWidgetPreview({ greeting }: { greeting: string }) {
   const previewOrg = organizations.find((o) => o.org_id === currentOrgId)
   const orgName = previewOrg?.name ?? previewOrg?.profile?.company_name ?? 'Support'
   const logoUrl = previewOrg?.profile?.logo_url ?? undefined
-  const COLOR = '#3730a3'
+  const COLOR = '#020308'
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -637,7 +637,7 @@ function SupportActivatePage() {
     // The user navigates to inbox manually from there.
     if (activated) return
     if (config?.activated && config.onboarding_completed) {
-      navigate('/support?tab=inbox', { replace: true })
+      navigate('/support/inbox', { replace: true })
     }
   }, [config, navigate, activated])
 
@@ -1001,8 +1001,8 @@ function SupportActivatePage() {
           <div className="flex justify-center pt-2">
             <button
               type="button"
-              onClick={() => navigate('/support?tab=inbox', { replace: true })}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#3730a3] px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#312e81]"
+              onClick={() => navigate('/support/inbox', { replace: true })}
+              className="inline-flex items-center gap-2 rounded-xl bg-[#020308] px-8 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#020308]"
             >
               Go to Inbox
               <ArrowRightIcon className="h-4 w-4" />
@@ -1041,7 +1041,7 @@ function SupportActivatePage() {
               key={s.key}
               className={cn(
                 'h-1.5 flex-1 rounded-full transition-colors',
-                i <= currentStep ? 'bg-[#3730a3]' : 'bg-gray-200'
+                i <= currentStep ? 'bg-[#020308]' : 'bg-gray-200'
               )}
             />
           ))}
@@ -1049,7 +1049,7 @@ function SupportActivatePage() {
 
         {/* Step indicator */}
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#3730a3] text-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#020308] text-white">
             <step.icon className="h-4 w-4" />
           </div>
           <div>
@@ -1117,7 +1117,7 @@ function SupportActivatePage() {
                         setShowCustomModal(true)
                         setTimeout(() => modalInputRef.current?.focus(), 50)
                       }}
-                      className="text-xs font-semibold text-[#3730a3] hover:underline shrink-0"
+                      className="text-xs font-semibold text-[#020308] hover:underline shrink-0"
                     >
                       Change
                     </button>
@@ -1130,7 +1130,7 @@ function SupportActivatePage() {
                       setShowCustomModal(true)
                       setTimeout(() => modalInputRef.current?.focus(), 50)
                     }}
-                    className="flex w-full items-center justify-between text-sm font-semibold text-[#3730a3] hover:text-[#312e81] transition-colors"
+                    className="flex w-full items-center justify-between text-sm font-semibold text-[#020308] hover:text-[#020308] transition-colors"
                   >
                     <span>Use your own existing address instead</span>
                     <ArrowRightIcon className="h-4 w-4" />
@@ -1162,7 +1162,7 @@ function SupportActivatePage() {
                     type="checkbox"
                     checked={chatEnabled}
                     onChange={(e) => setChatEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-[#3730a3]"
+                    className="h-4 w-4 rounded border-gray-300 text-[#020308]"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -1190,7 +1190,7 @@ function SupportActivatePage() {
                         value={greeting}
                         onChange={(e) => setGreeting(e.target.value)}
                         rows={2}
-                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                        className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
                       />
                       <p className="mt-1 text-xs text-gray-400">
                         Updates in the preview as you type
@@ -1245,7 +1245,7 @@ function SupportActivatePage() {
                     type="checkbox"
                     checked={portalEnabled}
                     onChange={(e) => setPortalEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-[#3730a3]"
+                    className="h-4 w-4 rounded border-gray-300 text-[#020308]"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
@@ -1305,7 +1305,7 @@ function SupportActivatePage() {
                               setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
                             }
                             placeholder={portalSlugFinal}
-                            className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                            className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
                           />
                         </div>
                       ) : (
@@ -1319,7 +1319,7 @@ function SupportActivatePage() {
                               setPortalCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
                             }
                             placeholder="support.yourcompany.com"
-                            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
                           />
                           <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
                             Add a DNS CNAME from{' '}
@@ -1350,7 +1350,7 @@ function SupportActivatePage() {
                         </div>
                       </div>
                       <div className="rounded-lg bg-white border border-gray-200 p-4">
-                        <div className="h-8 w-48 rounded-md bg-[#3730a3]/10 mb-3" />
+                        <div className="h-8 w-48 rounded-md bg-[#020308]/10 mb-3" />
                         <div className="text-center">
                           <p className="text-sm font-semibold text-gray-700">
                             How can we help you?
@@ -1361,15 +1361,15 @@ function SupportActivatePage() {
                         </div>
                         <div className="mt-4 grid grid-cols-3 gap-2">
                           <div className="rounded-lg border border-gray-200 p-2 text-center">
-                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-indigo-50" />
+                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
                             <p className="text-[10px] text-gray-500">Submit Ticket</p>
                           </div>
                           <div className="rounded-lg border border-gray-200 p-2 text-center">
-                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-indigo-50" />
+                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
                             <p className="text-[10px] text-gray-500">My Tickets</p>
                           </div>
                           <div className="rounded-lg border border-gray-200 p-2 text-center">
-                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-indigo-50" />
+                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
                             <p className="text-[10px] text-gray-500">Live Chat</p>
                           </div>
                         </div>
@@ -1455,7 +1455,7 @@ function SupportActivatePage() {
                           <button
                             onClick={() => handleConnectIntegration(name)}
                             disabled={isConnecting || statusLoading}
-                            className="rounded-lg bg-[#3730a3] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#312e81] disabled:opacity-50 transition"
+                            className="rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
                           >
                             {isConnecting ? 'Connecting…' : 'Connect'}
                           </button>
@@ -1492,7 +1492,7 @@ function SupportActivatePage() {
                       optional
                     </span>
                   </div>
-                  <span className="text-xs font-medium text-[#3730a3]">
+                  <span className="text-xs font-medium text-[#020308]">
                     Configure in Integrations →
                   </span>
                 </a>
@@ -1677,7 +1677,7 @@ function SupportActivatePage() {
           {currentStep < STEPS.length - 1 ? (
             <button
               onClick={() => setCurrentStep((s) => s + 1)}
-              className="rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#312e81] transition"
+              className="rounded-xl bg-[#020308] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#020308] transition"
             >
               Continue
             </button>
@@ -1685,7 +1685,7 @@ function SupportActivatePage() {
             <button
               onClick={handleActivate}
               disabled={activating}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#312e81] disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-[#020308] px-6 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-[#020308] disabled:opacity-50 transition"
             >
               <RocketLaunchIcon className="h-4 w-4" />
               {activating ? 'Activating…' : 'Activate Support'}
@@ -1732,7 +1732,7 @@ function SupportActivatePage() {
                   value={modalInput}
                   onChange={(e) => setModalInput(e.target.value)}
                   placeholder="support@yourcompany.com"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
                 />
               </div>
 
@@ -1786,7 +1786,7 @@ function SupportActivatePage() {
                     setShowCustomModal(false)
                   }}
                   disabled={!modalInput.trim()}
-                  className="flex-1 rounded-xl bg-[#3730a3] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#312e81] disabled:opacity-40 transition-colors"
+                  className="flex-1 rounded-xl bg-[#020308] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#020308] disabled:opacity-40 transition-colors"
                 >
                   Confirm
                 </button>

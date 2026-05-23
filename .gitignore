@@ -28,6 +28,8 @@ test-results
 !public/lira_logo.png
 !public/favicon.png
 !public/apple-touch-icon.png
+!public/landing-v2/
+!public/landing-v2/*.png
 .env
 .env.local
 .env.*.local
@@ -39,3 +41,9 @@ docs/replytoken.txt
 *.bak
 docs/aws_secrets.txt
 docs/LIRA_MARKET_RESEARCH.md
+
+# Locally-built widget bundle for dev-mode testing — Vite serves /public/*
+# in dev; we copy `npm run build:widget`'s output here so the demo page can
+# load the unreleased widget without pushing to the CDN. Not for commit.
+public/dev/
+

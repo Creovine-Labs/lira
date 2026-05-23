@@ -1,151 +1,229 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
-import {
-  AcademicCapIcon,
-  ArrowRightIcon,
-  BookOpenIcon,
-  CodeBracketIcon,
-  DocumentTextIcon,
-} from '@heroicons/react/24/outline'
 import { MarketingLayout } from '@/components/marketing'
+import { DOCS_BASE_URL, getDocsUrl } from '@/lib/docs'
+import {
+  ArrowRight,
+  BookOpenText,
+  Browser,
+  ChatsCircle,
+  EnvelopeSimple,
+  Handshake,
+  Megaphone,
+  Plug,
+  ShieldCheck,
+} from '@phosphor-icons/react'
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-
-const SECTIONS = [
+const RESOURCE_GROUPS = [
   {
-    id: 'guides',
-    Icon: BookOpenIcon,
-    color: 'bg-gray-100 text-gray-700',
-    heading: 'How-to Guides',
-    subtitle: 'Step-by-step instructions for common tasks and workflows.',
+    label: 'How-to guides',
+    description: 'Practical setup guides for launching Lira as your customer support layer.',
     items: [
-      'Adding Lira to a Google Meet',
-      'Setting up your organisation knowledge base',
-      'Creating your first interview role',
-      'Connecting Slack for post-meeting task delivery',
-      "Configuring Lira's voice and persona",
-      'Managing team members and permissions',
+      {
+        title: 'Install the Lira chat widget',
+        summary: 'Add the script tag, choose placement, and launch website chat.',
+        href: getDocsUrl('chat-widget'),
+        Icon: ChatsCircle,
+      },
+      {
+        title: 'Verify logged-in customers',
+        summary: 'Use signed identity so Lira can personalize replies and take account actions.',
+        href: getDocsUrl('verified-customers'),
+        Icon: ShieldCheck,
+      },
+      {
+        title: 'Forward your support email',
+        summary: 'Route Gmail, Outlook, or your help address into the Lira support inbox.',
+        href: getDocsUrl('email-forwarding'),
+        Icon: EnvelopeSimple,
+      },
+      {
+        title: 'Publish a support portal',
+        summary: 'Create a customer-facing portal for chat, knowledge, and follow-up.',
+        href: getDocsUrl('support-portal'),
+        Icon: Browser,
+      },
     ],
   },
   {
-    id: 'tutorials',
-    Icon: AcademicCapIcon,
-    color: 'bg-gray-100 text-gray-700',
-    heading: 'Tutorials',
-    subtitle: 'Deeper walkthroughs to help you get the most from each product.',
+    label: 'Tutorials',
+    description: 'Walkthroughs for the workflows teams use after the first install.',
     items: [
-      'Running your first AI interview end-to-end',
-      'Building a sales playbook Lira can reference in calls',
-      'Uploading and structuring your knowledge base for best results',
-      'Using the task engine with Jira and Linear',
-      'Reading and acting on your meeting intelligence reports',
-      'Setting up escalation rules for customer support',
-    ],
-  },
-  {
-    id: 'docs',
-    Icon: DocumentTextIcon,
-    color: 'bg-gray-100 text-gray-700',
-    heading: 'Documentation',
-    subtitle: 'Full reference docs for all Lira features and settings.',
-    externalHref: 'https://docs.liraintelligence.com',
-    items: [
-      'Lira platform overview',
-      'Meeting Intelligence — full reference',
-      'Interview module configuration',
-      'Customer Support — knowledge base indexing',
-      'Webhook event schema',
-      'Roles and permissions model',
-    ],
-  },
-  {
-    id: 'api',
-    Icon: CodeBracketIcon,
-    color: 'bg-gray-100 text-gray-700',
-    heading: 'API Reference',
-    subtitle: 'Integrate Lira into your own products and workflows.',
-    items: [
-      'Authentication and API keys',
-      'Meetings API',
-      'Interviews API',
-      'Knowledge base API',
-      'Webhooks',
-      'Rate limits and error codes',
+      {
+        title: 'Build your support knowledge base',
+        summary: 'Connect docs and website content so answers are grounded in your product.',
+        href: getDocsUrl('knowledge-base'),
+        Icon: BookOpenText,
+      },
+      {
+        title: 'Handle human handoff',
+        summary: 'Escalate conversations, reply as a teammate, then hand the thread back to Lira.',
+        href: getDocsUrl('human-handoff'),
+        Icon: Handshake,
+      },
+      {
+        title: 'Create proactive outreach',
+        summary: 'Trigger email or voice follow-ups for failed payments, risk, renewals, and more.',
+        href: getDocsUrl('proactive-outreach'),
+        Icon: Megaphone,
+      },
+      {
+        title: 'Connect support tool packs',
+        summary: 'Let Lira look up subscriptions, create tickets, and call approved actions.',
+        href: getDocsUrl('tool-packs'),
+        Icon: Plug,
+      },
     ],
   },
 ]
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
+const QUICK_LINKS = [
+  { label: 'View docs', href: DOCS_BASE_URL },
+  { label: 'Watch tutorials', href: DOCS_BASE_URL },
+  { label: 'Customer support features', href: '/features' },
+]
+
+function ResourceLink({
+  href,
+  children,
+  className,
+}: {
+  href: string
+  children: ReactNode
+  className: string
+}) {
+  const isExternal = href.startsWith('http')
+
+  if (isExternal) {
+    return (
+      <a href={href} target="_blank" rel="noopener noreferrer" className={className}>
+        {children}
+      </a>
+    )
+  }
+
+  return (
+    <Link to={href} className={className}>
+      {children}
+    </Link>
+  )
+}
 
 export function ResourcesPage() {
   return (
     <MarketingLayout>
       <SEO
-        title="Resources — Guides, Tutorials, Documentation & API Reference"
-        description="Everything you need to get started with Lira AI. Step-by-step guides, video tutorials, full documentation, and API reference for meetings, interviews, knowledge base, and integrations."
-        keywords="Lira AI documentation, Lira AI guides, API reference, meeting AI tutorial, interview automation guide, knowledge base setup, Lira AI help, getting started Lira"
+        title="Resources - Customer Support Guides, Tutorials & API Reference"
+        description="Customer support guides and tutorials for launching Lira: chat widget, verified customers, email forwarding, support portal, knowledge base, handoff, proactive outreach, APIs, and webhooks."
+        keywords="Lira customer support guides, Lira chat widget, support portal, customer support API, support automation tutorials"
         path="/resources"
       />
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-6 text-center">
-        <h1 className="mx-auto max-w-xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
-          Everything you need
-          <br />
-          to get started.
-        </h1>
-        <p className="mx-auto mt-5 max-w-md text-base text-gray-500 leading-relaxed">
-          Guides, tutorials, full documentation, and API reference — all in one place.
-        </p>
-      </section>
 
-      {/* Resource sections */}
-      {SECTIONS.map(({ id, Icon, color, heading, subtitle, items, externalHref }) => (
-        <section key={id} id={id} className="py-16 px-6 border-t border-gray-200">
+      <main>
+        <section className="px-6 pb-16 pt-36">
           <div className="mx-auto max-w-6xl">
-            <div className="flex items-start gap-4 mb-10">
-              <div
-                className={`inline-flex h-11 w-11 items-center justify-center rounded-xl shrink-0 ${color}`}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
-              <div>
-                <h2 className="text-2xl font-black tracking-tight text-gray-900">{heading}</h2>
-                <p className="text-gray-500 text-sm mt-1">{subtitle}</p>
+            <div className="max-w-3xl">
+              <h1 className="text-5xl font-black leading-[1.04] tracking-tight text-gray-950 sm:text-6xl">
+                Customer support resources for launching Lira
+              </h1>
+              <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-600">
+                Guides, tutorials, documentation, and API references focused on the customer support
+                workflows available in Lira today.
+              </p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                {QUICK_LINKS.map((link) => (
+                  <ResourceLink
+                    key={link.label}
+                    href={link.href}
+                    className="inline-flex items-center gap-2 rounded-full bg-[#202527] px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
+                  >
+                    {link.label}
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </ResourceLink>
+                ))}
               </div>
             </div>
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {items.map((item) => (
+
+            <div className="mt-10 rounded-[30px] border border-gray-200 bg-white/80 p-7 lg:max-w-3xl">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#202527] text-white">
+                <BookOpenText className="h-6 w-6" weight="duotone" />
+              </div>
+              <h2 className="mt-5 text-2xl font-black tracking-tight text-gray-950">
+                Need the docs directly?
+              </h2>
+              <p className="mt-3 max-w-2xl text-sm leading-7 text-gray-600">
+                Open the official Lira docs for setup guides, platform walkthroughs, and product
+                references that match the live platform.
+              </p>
+              <div className="mt-5">
                 <a
-                  key={item}
-                  href={externalHref ?? `/resources/${item.toLowerCase().replace(/\s+/g, '-')}`}
-                  target={externalHref ? '_blank' : undefined}
-                  rel={externalHref ? 'noopener noreferrer' : undefined}
-                  className="group flex items-center justify-between gap-3 rounded-xl bg-white border border-gray-200 px-5 py-4 hover:border-gray-300 hover:shadow-sm transition-all"
+                  href={DOCS_BASE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full bg-[#202527] px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
                 >
-                  <span className="text-sm font-black text-gray-800 group-hover:text-gray-900">
-                    {item}
-                  </span>
-                  <ArrowRightIcon className="h-3.5 w-3.5 shrink-0 text-gray-300 group-hover:text-gray-600 group-hover:translate-x-0.5 transition-all" />
+                  View docs
+                  <ArrowRight className="h-3.5 w-3.5" />
                 </a>
-              ))}
+              </div>
             </div>
           </div>
         </section>
-      ))}
 
-      {/* CTA */}
-      <section className="py-20 px-6 border-t border-gray-200 text-center">
-        <h2 className="text-3xl font-black tracking-tight text-gray-900 mb-3">
-          Can't find what you need?
-        </h2>
-        <p className="text-gray-500 mb-7 text-sm">Our team is happy to help.</p>
-        <Link
-          to="/signup"
-          className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700 transition shadow-sm"
-        >
-          Talk to us
-        </Link>
-      </section>
+        {RESOURCE_GROUPS.map((group) => (
+          <section key={group.label} className="border-t border-gray-200 px-6 py-16">
+            <div className="mx-auto grid max-w-6xl gap-10 lg:grid-cols-[0.82fr_1.18fr]">
+              <div>
+                <h2 className="text-3xl font-black tracking-tight text-gray-950">{group.label}</h2>
+                <p className="mt-4 max-w-sm text-sm leading-7 text-gray-600">{group.description}</p>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                {group.items.map(({ title, summary, href, Icon }) => (
+                  <a
+                    key={title}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group rounded-2xl border border-gray-200 bg-white/78 p-5 transition hover:-translate-y-1 hover:border-gray-300 hover:shadow-[0_22px_60px_rgba(2,3,8,0.09)]"
+                  >
+                    <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#202527] text-white">
+                      <Icon className="h-5 w-5" weight="duotone" />
+                    </div>
+                    <h3 className="mt-5 text-base font-black leading-6 text-gray-950">{title}</h3>
+                    <p className="mt-2 text-sm leading-6 text-gray-600">{summary}</p>
+                    <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-gray-950">
+                      Open guide
+                      <ArrowRight className="h-3.5 w-3.5 transition group-hover:translate-x-1" />
+                    </span>
+                  </a>
+                ))}
+              </div>
+            </div>
+          </section>
+        ))}
+
+        <section className="px-6 py-16">
+          <div className="mx-auto rounded-3xl border border-gray-200 bg-white/78 p-8 text-center sm:p-12">
+            <h2 className="text-3xl font-black tracking-tight text-gray-950">
+              Want the fastest path?
+            </h2>
+            <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-gray-600">
+              Create a free account, activate customer support, and use the in-app setup checklist
+              to launch widget, email, and portal channels.
+            </p>
+            <div className="mt-7 flex justify-center">
+              <Link
+                to="/signup"
+                className="inline-flex rounded-full bg-[#202527] px-6 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-black"
+              >
+                Signup for free
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
     </MarketingLayout>
   )
 }

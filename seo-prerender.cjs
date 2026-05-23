@@ -22,15 +22,15 @@ const DEFAULT_IMAGE = `${BASE_URL}/lira_black_with_white_backgound.png`
 const ROUTES = [
   {
     path: '/',
-    title: 'Lira · Conversational Intelligence Platform',
+    title: 'Lira - AI Customer Support That Remembers and Acts',
     description:
-      'Lira is a Conversational Intelligence platform. One AI agent that handles customer support, coaches sales calls, and runs meetings, grounded in your knowledge and responding in real time.',
+      'Lira helps teams resolve customer issues across chat, email, voice, and portal with customer memory, knowledge, workflow actions, and smart escalation.',
     keywords:
-      'conversational intelligence platform, AI customer support agent, AI support automation, real-time sales coaching AI, AI meeting assistant, voice AI agent, knowledge-grounded AI, conversational AI for SaaS, AI agent grounded in knowledge base, Lira AI',
+      'AI customer support, customer support automation, AI support agent, support portal, support knowledge base, voice support AI, customer context, support workflows, Lira',
   },
   {
     path: '/products/sales',
-    title: 'AI Sales Coaching — Real-Time Objection Handling & Deal Intelligence',
+    title: 'AI Sales Coaching - Real-Time Objection Handling and Deal Intelligence',
     description:
       'Lira AI listens to every sales call in real time and tells you exactly what to say. AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and automatic CRM updates for Salesforce and HubSpot.',
     keywords:
@@ -38,7 +38,7 @@ const ROUTES = [
   },
   {
     path: '/products/customer-support',
-    title: 'AI Customer Support — Voice Agent Grounded in Your Knowledge Base',
+    title: 'AI Customer Support - Voice Agent Grounded in Your Knowledge Base',
     description:
       'Lira AI handles inbound customer support calls 24/7 with a voice agent grounded in your documentation. Smart escalation, post-call summaries, and knowledge base gap identification.',
     keywords:
@@ -46,60 +46,166 @@ const ROUTES = [
   },
   {
     path: '/resources',
-    title: 'Resources — Guides, Tutorials, Documentation & API Reference',
+    title: 'Resources - Guides, Tutorials, Documentation and Support Setup',
     description:
-      'Everything you need to get started with Lira AI. Step-by-step guides, video tutorials, full documentation, and API reference for meetings, knowledge base, and integrations.',
-    keywords: 'Lira AI documentation, API reference, meeting AI guides, getting started',
+      'Guides, tutorials, and documentation for launching Lira customer support, including widget setup, verified customers, portal setup, knowledge, and handoff.',
+    keywords:
+      'Lira documentation, customer support guides, chat widget setup, support portal docs, AI support tutorials',
+  },
+  {
+    path: '/docs',
+    title: 'Docs - Lira Customer Support Documentation',
+    description:
+      'Browse Lira customer support documentation for widget installation, portal setup, support email, knowledge base, proactive support, and human handoff.',
+    keywords:
+      'Lira docs, customer support documentation, AI customer support docs, support portal documentation, knowledge base setup',
   },
   {
     path: '/tutorials',
-    title: 'Tutorials — Learn Lira AI in Minutes',
+    title: 'Tutorials - Learn Lira Customer Support in Minutes',
     description:
-      'Video tutorials and walkthroughs to help you get the most out of Lira AI. Set up meetings, configure sales coaching, and more.',
-    keywords: 'Lira AI tutorials, video walkthrough, meeting AI tutorial, Lira AI demo',
+      'Tutorials and walkthroughs for the Lira support workflows teams use first, including knowledge setup, escalation, proactive support, and integrations.',
+    keywords:
+      'Lira tutorials, AI customer support tutorial, support workflow tutorial, knowledge base tutorial',
+  },
+  {
+    path: '/features',
+    title: 'Features - AI Customer Support for Modern Teams',
+    description:
+      'Explore Lira features for AI customer support across chat, email, voice, portal, knowledge, integrations, and workflow actions.',
+    keywords:
+      'AI customer support features, support automation software, support portal, support knowledge base, voice AI support',
+  },
+  {
+    path: '/about',
+    title: 'About - Lira',
+    description:
+      'Learn about Lira and how we help teams build faster, more connected customer support with AI, knowledge, context, and action.',
+    keywords: 'about Lira, AI customer support company, customer support automation',
+  },
+  {
+    path: '/contact',
+    title: 'Contact - Lira',
+    description:
+      'Talk to the Lira team about AI customer support, product fit, demos, and support operations.',
+    keywords: 'contact Lira, AI customer support demo, support automation contact',
+  },
+  {
+    path: '/careers',
+    title: 'Careers - Lira',
+    description:
+      'Explore careers at Lira and help build AI customer support products for modern teams.',
+    keywords: 'Lira careers, AI startup jobs, customer support software careers',
   },
   {
     path: '/blog',
-    title: 'Blog — AI, Meetings, Hiring & The Future of Work',
+    title: 'Blog - AI Customer Support, Knowledge, and Support Operations',
     description:
-      'Ideas and insights on AI meeting intelligence, sales coaching, hiring automation, and building knowledge-driven teams. Read the latest from Lira AI.',
-    keywords: 'AI meeting blog, sales coaching insights, hiring automation blog, Lira AI blog',
+      'Read Lira AI insights on customer support, support automation, knowledge bases, customer context, and human handoff.',
+    keywords:
+      'AI customer support blog, support automation blog, knowledge base blog, customer support operations',
   },
   {
-    path: '/blog/ai-interview-process',
-    title: 'How AI is Transforming First-Round Interviews',
+    path: '/blog/ai-customer-support-context',
+    title: 'AI Customer Support With Context, Memory, and Better Resolution',
     description:
-      "First-round interviews are the most time-consuming part of hiring — and the part where most bias creeps in. Here's how AI changes both.",
-    keywords: 'AI interviewing, hiring consistency, competency scoring, bias reduction',
+      'Learn why AI customer support works better when it uses customer context, conversation memory, and connected systems instead of isolated answers.',
+    keywords: 'AI customer support, customer context, customer memory, support automation',
     type: 'article',
   },
   {
-    path: '/blog/ai-sales-coaching',
-    title: '5 Ways Lira Helps Sales Teams Close More Deals',
+    path: '/blog/ai-support-automation-workflows',
+    title: 'AI Support Automation That Routes, Updates, and Resolves',
     description:
-      'Real-time objection handling, competitive intelligence, deal-stage coaching, and post-call analysis. Five ways AI transforms your sales team.',
-    keywords: 'AI sales tools, deal acceleration, sales coaching AI, objection handling',
+      'See how AI support automation becomes more valuable when it can route issues, trigger follow-up, update systems, and help teams resolve customer requests end to end.',
+    keywords:
+      'AI support automation, support workflow automation, support escalation, customer support automation',
     type: 'article',
   },
   {
-    path: '/blog/knowledge-base-best-practices',
-    title: 'Building a Knowledge Base Your AI Can Actually Use',
+    path: '/blog/knowledge-base-for-ai-support',
+    title: 'Knowledge Base for AI Customer Support: What Actually Helps',
     description:
-      'KB quality matters more than quantity. Learn how to structure your knowledge base, create canonical documents, and optimise for semantic search.',
-    keywords: 'knowledge management, AI accuracy, semantic search, knowledge base best practices',
+      'Build a knowledge base that improves AI customer support with cleaner source material, stronger structure, and documentation your team can trust.',
+    keywords: 'knowledge base for AI support, AI knowledge base, support documentation',
     type: 'article',
   },
   {
-    path: '/blog/meeting-intelligence-future',
-    title: 'The Meeting Is Only the Beginning',
+    path: '/blog/human-handoff-in-ai-support',
+    title: 'Human Handoff in AI Customer Support: How to Get It Right',
     description:
-      'Meeting intelligence goes beyond recording. Task extraction, decision logging, and organizational memory — how AI makes meetings actually useful.',
-    keywords: 'meeting AI, organizational memory, task automation, meeting intelligence',
+      'Human handoff remains essential in AI customer support. Learn how escalation, summaries, and clean routing help teams keep support fast without losing empathy.',
+    keywords: 'human handoff, AI customer support, support escalation, human in the loop support',
+    type: 'article',
+  },
+  {
+    path: '/docs/chat-widget',
+    title: 'Install the Lira Chat Widget',
+    description:
+      'Install the Lira chat widget with your org ID, greeting, color, and placement settings.',
+    keywords: 'Lira chat widget, install support widget, AI chat widget setup',
+    type: 'article',
+  },
+  {
+    path: '/docs/verified-customers',
+    title: 'Verify Logged-In Customers in Lira',
+    description:
+      'Pass signed customer identity to the Lira widget so support is personalized and tied to the right account.',
+    keywords: 'verified customers, signed customer identity, Lira HMAC widget signature',
+    type: 'article',
+  },
+  {
+    path: '/docs/email-forwarding',
+    title: 'Forward Your Support Email to Lira',
+    description:
+      'Route your support email into Lira so customer email conversations land in one support system.',
+    keywords: 'support email forwarding, Lira email setup, AI support inbox',
+    type: 'article',
+  },
+  {
+    path: '/docs/support-portal',
+    title: 'Publish a Support Portal With Lira',
+    description:
+      'Launch a branded Lira support portal with chat, ticket submission, tracking, and customer authentication.',
+    keywords: 'support portal, customer portal setup, Lira portal',
+    type: 'article',
+  },
+  {
+    path: '/docs/knowledge-base',
+    title: 'Build Your Lira Support Knowledge Base',
+    description:
+      'Ground Lira in your real support documentation with uploaded docs, web sources, and connected content.',
+    keywords: 'support knowledge base, AI support knowledge, Lira knowledge base',
+    type: 'article',
+  },
+  {
+    path: '/docs/human-handoff',
+    title: 'Handle Human Handoff in Lira Support',
+    description:
+      'Set up escalation, teammate replies, and handback so AI and human support work as one system.',
+    keywords: 'human handoff, support escalation, AI and human support',
+    type: 'article',
+  },
+  {
+    path: '/docs/proactive-outreach',
+    title: 'Create Proactive Support Outreach in Lira',
+    description:
+      'Use Lira proactive support workflows for failed payments, onboarding nudges, renewals, and customer follow-up.',
+    keywords: 'proactive support, customer outreach automation, Lira proactive support',
+    type: 'article',
+  },
+  {
+    path: '/docs/tool-packs',
+    title: 'Connect Lira Support Integrations and Tool Packs',
+    description:
+      'Connect Slack, Linear, HubSpot, Salesforce, and other support systems so Lira can act with context.',
+    keywords:
+      'support integrations, tool packs, Slack support integration, Linear support integration',
     type: 'article',
   },
   {
     path: '/security',
-    title: 'Security — How Lira AI Protects Your Data',
+    title: 'Security - How Lira AI Protects Your Data',
     description:
       'TLS 1.2+ encryption, AES-256 at rest, OAuth 2.0 PKCE, SOC 2-compliant infrastructure, and OWASP Top 10 compliance. Learn how Lira AI protects your data.',
     keywords: 'Lira AI security, data protection, encryption, SOC 2, enterprise security',

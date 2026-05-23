@@ -9,6 +9,7 @@ import {
   ShieldCheckIcon,
   Bars3Icon,
   XMarkIcon,
+  BeakerIcon,
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
 import { LiraLogo } from '@/components/LiraLogo'
@@ -18,6 +19,7 @@ const NAV_ITEMS: { to: string; icon: React.ElementType; label: string; end?: boo
   { to: '/admin/users', icon: UsersIcon, label: 'Users' },
   { to: '/admin/organizations', icon: BuildingOffice2Icon, label: 'Organizations' },
   { to: '/admin/email', icon: EnvelopeIcon, label: 'Email' },
+  { to: '/admin/demo-ops', icon: BeakerIcon, label: 'Demo Ops' },
 ]
 
 const SUPER_ADMIN_ITEMS: { to: string; icon: React.ElementType; label: string; end?: boolean }[] = [

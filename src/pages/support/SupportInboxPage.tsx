@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ChevronDownIcon,
@@ -6,6 +6,7 @@ import {
   MagnifyingGlassIcon,
   ChatBubbleLeftEllipsisIcon,
   BarsArrowDownIcon,
+  BookOpenIcon,
 } from '@heroicons/react/24/outline'
 import { useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
@@ -60,9 +61,52 @@ function timeAgo(dateStr: string): string {
 }
 
 function SupportInboxPage() {
+  const navigate = useNavigate()
+  const { currentOrgId } = useOrgStore()
+  const { config, configLoading } = useSupportStore()
+  const loadStarted = useRef(false)
+
+  useEffect(() => {
+    if (configLoading) loadStarted.current = true
+  }, [configLoading])
+
+  useEffect(() => {
+    if (!loadStarted.current) return
+    if (!configLoading && (!config || !config.activated)) {
+      navigate('/support/activate', { replace: true })
+    }
+  }, [config, configLoading, navigate])
+
+  if (!currentOrgId || configLoading) {
+    return (
+      <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-4xl">
+        {/* Header */}
+        <div className="mb-5 flex items-start justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Inbox</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Manage incoming customer conversations and escalations
+            </p>
+          </div>
+          <a
+            href="https://docs.liraintelligence.com/platform/customer-support"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
+          >
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            Docs
+          </a>
+        </div>
         <SupportInboxPanel />
       </div>
     </div>
@@ -182,7 +226,7 @@ function SupportInboxPanel() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
                 (statusFilter ?? 'all') === opt.value
-                  ? 'bg-[#3730a3] text-white'
+                  ? 'bg-[#020308] text-white'
                   : 'text-gray-500 hover:bg-gray-50'
               )}
             >
@@ -213,7 +257,7 @@ function SupportInboxPanel() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search conversations…"
-              className="w-56 rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs focus:border-[#3730a3] focus:outline-none focus:ring-1 focus:ring-[#3730a3]"
+              className="w-56 rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-xs focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
             />
           </div>
         </div>
@@ -222,7 +266,7 @@ function SupportInboxPanel() {
       {/* Conversation list */}
       {conversationsLoading ? (
         <div className="flex items-center justify-center py-20">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#3730a3] border-t-transparent" />
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-20 shadow-sm">
@@ -314,7 +358,7 @@ function ConversationRow({ conv, onClick }: { conv: SupportConversation; onClick
           <span
             role="button"
             tabIndex={0}
-            className="truncate text-sm font-semibold text-gray-900 hover:text-[#3730a3] hover:underline cursor-pointer"
+            className="truncate text-sm font-semibold text-gray-900 hover:text-[#020308] hover:underline cursor-pointer"
             onClick={(e) => {
               if (conv.customer?.customer_id) {
                 e.stopPropagation()

@@ -23,6 +23,7 @@ import { WidgetSocket } from './socket'
 import { getWidgetStyles } from './styles'
 import { WidgetVoiceCall } from './voice'
 import type { VoiceState } from './voice'
+import { PipecatTransport, isPipecatEnabled } from './pipecat-transport'
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
 
@@ -32,58 +33,118 @@ const ICON_SEND = `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l
 // Lira logo for the bot avatar — hosted on the main frontend
 const LIRA_LOGO_URL = 'https://liraintelligence.com/lira_black.png'
 const ICON_LIRA = `<img src="${LIRA_LOGO_URL}" alt="Lira" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" />`
-const ICON_PHONE = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>`
-const ICON_PHONE_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.68 13.31a16 16 0 003.41 2.6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-1.88-1.54M2.71 2.71L1 1M6.19 6.19A19.79 19.79 0 012.12 4.18 2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`
+// Mic icons — voice mode is a real-time conversation with Lira, not a "phone
+// call". Phone iconography suggested a one-way call to a human; mic iconography
+// signals "press to talk" / "voice conversation" which matches the UX.
+const ICON_MIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`
+const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`
 
 // ── Visitor ID persistence ────────────────────────────────────────────────────
+//
+// Two storage modes:
+//   1. PERSISTENT (default for all real customer embeds)
+//      - Visitor id lives in localStorage and survives across sessions
+//      - Returning visitors are recognized and pick up their chat history
+//      - This is the only mode production customers ever see
+//
+//   2. EPHEMERAL (opt-in via data-ephemeral="true" on the script tag, used
+//      ONLY by our public Nimbus demo)
+//      - Visitor id lives in sessionStorage — closes tab, fresh visitor
+//      - Chat history scoped to the visitor id so concurrent demo testers
+//        on a shared machine don't see each other's chats
+//      - This is what stops John's chat from leaking to Peter on the same
+//        demo laptop
+//
+// The two paths never share storage keys, so swapping a widget from one
+// mode to the other (e.g., if you toggled the attribute mid-deploy) won't
+// pollute the other side.
 
-function getOrCreateVisitorId(): string {
-  const KEY = 'lira_visitor_id'
+function visitorStore(ephemeral: boolean): Storage | null {
   try {
-    const existing = localStorage.getItem(KEY)
-    if (existing) return existing
+    return ephemeral ? sessionStorage : localStorage
   } catch {
-    // localStorage not available
+    return null
+  }
+}
+
+function getOrCreateVisitorId(ephemeral = false): string {
+  // Different keys per mode so production and demo never collide on a
+  // dev machine that's been used for both.
+  const KEY = ephemeral ? 'lira_visitor_id_session' : 'lira_visitor_id'
+  const store = visitorStore(ephemeral)
+  if (store) {
+    try {
+      const existing = store.getItem(KEY)
+      if (existing) return existing
+    } catch {
+      /* storage not available */
+    }
   }
   const id = 'v_' + crypto.randomUUID()
-  try {
-    localStorage.setItem(KEY, id)
-  } catch {
-    // Ignore
+  if (store) {
+    try {
+      store.setItem(KEY, id)
+    } catch {
+      /* ignore */
+    }
   }
   return id
 }
 
-// ── Message persistence (localStorage) ────────────────────────────────────────
+// ── Message persistence ──────────────────────────────────────────────────────
+//
+// Persistent mode (production): key is `lira_chat_<orgId>` — same as today.
+// Ephemeral mode (demo): key is `lira_chat_session_<orgId>_<visitorId>` so two
+// visitors who happen to share a browser get distinct chat histories.
 
-function getStorageKey(orgId: string): string {
-  return `lira_chat_${orgId}`
+function getStorageKey(orgId: string, ephemeral: boolean, visitorId?: string): string {
+  if (!ephemeral) return `lira_chat_${orgId}`
+  // visitorId is required in ephemeral mode; if missing, the resulting key
+  // still works but is shared per-tab. We always pass it in below.
+  return `lira_chat_session_${orgId}_${visitorId ?? 'anon'}`
+}
+
+function chatStore(ephemeral: boolean): Storage | null {
+  try {
+    return ephemeral ? sessionStorage : localStorage
+  } catch {
+    return null
+  }
 }
 
 function saveMessages(
   orgId: string,
   messages: ChatMessage[],
   convId: string | null,
-  unreadCount: number
+  unreadCount: number,
+  ephemeral: boolean,
+  visitorId?: string
 ): void {
+  const store = chatStore(ephemeral)
+  if (!store) return
   try {
     const payload = JSON.stringify({ messages, convId, unreadCount, ts: Date.now() })
-    localStorage.setItem(getStorageKey(orgId), payload)
+    store.setItem(getStorageKey(orgId, ephemeral, visitorId), payload)
   } catch {
     /* quota exceeded or unavailable */
   }
 }
 
 function loadMessages(
-  orgId: string
+  orgId: string,
+  ephemeral: boolean,
+  visitorId?: string
 ): { messages: ChatMessage[]; convId: string | null; unreadCount: number } | null {
+  const store = chatStore(ephemeral)
+  if (!store) return null
   try {
-    const raw = localStorage.getItem(getStorageKey(orgId))
+    const key = getStorageKey(orgId, ephemeral, visitorId)
+    const raw = store.getItem(key)
     if (!raw) return null
     const data = JSON.parse(raw)
     // Expire after 24 hours
     if (Date.now() - (data.ts ?? 0) > 24 * 60 * 60 * 1000) {
-      localStorage.removeItem(getStorageKey(orgId))
+      store.removeItem(key)
       return null
     }
     return {
@@ -104,9 +165,11 @@ function latestMessageTimestamp(messages: ChatMessage[]): string | null {
   return latest
 }
 
-function clearStoredMessages(orgId: string): void {
+function clearStoredMessages(orgId: string, ephemeral: boolean, visitorId?: string): void {
+  const store = chatStore(ephemeral)
+  if (!store) return
   try {
-    localStorage.removeItem(getStorageKey(orgId))
+    store.removeItem(getStorageKey(orgId, ephemeral, visitorId))
   } catch {
     /* ignore */
   }
@@ -123,7 +186,60 @@ class LiraSupportWidget {
   private isEscalated = false
   private reNotifyCount = 0
   private socket: WidgetSocket | null = null
+  // Pipecat transport — used in place of `socket` (chat) and `voiceCall`
+  // (voice) when the LIRA_USE_PIPECAT feature flag is on. One instance per
+  // channel: chat sessions are long-lived (opened on widget open); voice
+  // sessions are spun up on mic-click and torn down on end-call.
+  private pipecatChat: PipecatTransport | null = null
+  private pipecatVoice: PipecatTransport | null = null
   private visitorId: string
+
+  // ── PIN gate (sensitive-action authorization) ──
+  // When the server emits pin_required, we render a modal over the chat.
+  // Clearing this hides the modal. Lives in memory only — never persisted
+  // because a stale PIN prompt across reloads makes no sense.
+  // Active action IDs while in a voice call — drives the "Lira is working"
+  // overlay state. Populated when action_started arrives, cleared when
+  // action_completed/failed arrives. When non-empty during a voice call,
+  // the avatar pulse swaps to a spinning ring so the user sees Lira is
+  // doing something during silent execution periods.
+  private activeVoiceActions = new Set<string>()
+
+  private pinPrompt:
+    | {
+        action_id: string
+        tool_name: string
+        label: string
+        hint?: string
+        /** Which WS issued the prompt — determines where pin_response goes. */
+        via: 'chat' | 'voice'
+      }
+    | null = null
+  private pinError: string | null = null
+
+  // ── Storage helpers (ephemeral-aware) ──
+  // Production embeds: ephemeral=false → localStorage, key by orgId only
+  // Demo embeds: ephemeral=true → sessionStorage, key by orgId + visitorId
+
+  private persistMessages(): void {
+    saveMessages(
+      this.config.orgId,
+      this.messages,
+      this.convId,
+      this.unreadCount,
+      this.config.ephemeral === true,
+      this.visitorId,
+    )
+  }
+
+  private wipeStoredMessages(): void {
+    clearStoredMessages(
+      this.config.orgId,
+      this.config.ephemeral === true,
+      this.visitorId,
+    )
+  }
+
   private csatSubmitted = false
   private convId: string | null = null
   private pollInterval: ReturnType<typeof setInterval> | null = null
@@ -156,10 +272,19 @@ class LiraSupportWidget {
       greeting: 'Hi! How can we help you today?',
       ...config,
     }
-    this.visitorId = getOrCreateVisitorId()
+    // Demo embeds opt in to ephemeral mode via `data-ephemeral="true"`. Real
+    // customer embeds never set this flag, so their behavior is unchanged.
+    this.visitorId = getOrCreateVisitorId(this.config.ephemeral === true)
 
-    // Restore persisted messages
-    const stored = loadMessages(this.config.orgId)
+    // Restore persisted messages (from sessionStorage in ephemeral mode,
+    // localStorage otherwise — scoped to visitorId in ephemeral mode so
+    // concurrent demo testers on a shared browser don't see each other's
+    // chats).
+    const stored = loadMessages(
+      this.config.orgId,
+      this.config.ephemeral === true,
+      this.visitorId,
+    )
     if (stored) {
       this.messages = stored.messages
       this.convId = stored.convId
@@ -181,8 +306,78 @@ class LiraSupportWidget {
     this.render()
     if (this.convId) this.startPolling()
 
+    // Listen for action lifecycle + PIN events that arrive over the VOICE
+    // WebSocket (forwarded by voice.ts via a CustomEvent). Voice and chat
+    // are two separate sockets, but the widget UI is shared — this listener
+    // lets the same action-card / PIN-modal code paths fire regardless of
+    // which channel issued the event.
+    window.addEventListener('lira-voice-widget-event', (e: Event) => {
+      const detail = (e as CustomEvent<{ msg: any; voice: WidgetVoiceCall }>).detail
+      if (!detail?.msg) return
+      this.handleVoiceWidgetMessage(detail.msg, detail.voice)
+    })
+
     // Fetch org config (name, logo, color) eagerly so the launcher button reflects the brand color
     this.fetchWidgetConfig()
+  }
+
+  private currentVoiceCall: WidgetVoiceCall | null = null
+
+  private handleVoiceWidgetMessage(msg: any, voice: WidgetVoiceCall): void {
+    // Cache the voice instance so submitPin / cancelPinModal can route back
+    // through the same WS that issued the prompt.
+    this.currentVoiceCall = voice
+
+    switch (msg.type) {
+      case 'pin_required': {
+        if (!msg.action_id || !msg.tool_name) return
+        this.pinPrompt = {
+          action_id: msg.action_id,
+          tool_name: msg.tool_name,
+          label: msg.label ?? msg.tool_name,
+          hint: msg.hint,
+          via: 'voice',
+        }
+        this.render()
+        return
+      }
+      case 'action_started': {
+        if (!msg.action_id || !msg.tool_name) return
+        this.activeVoiceActions.add(msg.action_id)
+        this.appendChatMessage({
+          id: `action_${msg.action_id}`,
+          role: 'system',
+          body: '',
+          timestamp: new Date().toISOString(),
+          action: {
+            action_id: msg.action_id,
+            tool_name: msg.tool_name,
+            label: msg.label ?? msg.tool_name,
+            icon: msg.icon,
+            status: 'pending',
+          },
+        })
+        return
+      }
+      case 'action_completed': {
+        if (!msg.action_id) return
+        this.activeVoiceActions.delete(msg.action_id)
+        this.updateActionCard(msg.action_id, {
+          status: 'success',
+          detail: msg.summary ?? undefined,
+        })
+        return
+      }
+      case 'action_failed': {
+        if (!msg.action_id) return
+        this.activeVoiceActions.delete(msg.action_id)
+        this.updateActionCard(msg.action_id, {
+          status: 'failed',
+          error: msg.error ?? 'Action failed.',
+        })
+        return
+      }
+    }
   }
 
   private fetchWidgetConfig(): void {
@@ -243,7 +438,7 @@ class LiraSupportWidget {
 
     // Persist messages to localStorage after every render that has messages
     if (this.messages.length > 0) {
-      saveMessages(this.config.orgId, this.messages, this.convId, this.unreadCount)
+      this.persistMessages()
     }
   }
 
@@ -439,17 +634,20 @@ class LiraSupportWidget {
     newChatBtn.onclick = () => this.startNewConversation()
     actions.appendChild(newChatBtn)
 
-    // Voice call button (only if org has voice enabled)
+    // Voice mode button (only if org has voice enabled)
     if (this.config.voiceEnabled) {
       const callBtn = document.createElement('button')
       callBtn.className =
         'lira-header-btn' + (this.voiceState === 'active' ? ' lira-call-active' : '')
-      callBtn.innerHTML = this.voiceState === 'active' ? ICON_PHONE_OFF : ICON_PHONE
+      callBtn.innerHTML = this.voiceState === 'active' ? ICON_MIC_OFF : ICON_MIC
       callBtn.setAttribute(
         'aria-label',
-        this.voiceState === 'active' ? 'End call' : 'Start voice call'
+        this.voiceState === 'active' ? 'End voice mode' : 'Talk to Lira with voice'
       )
-      callBtn.setAttribute('title', this.voiceState === 'active' ? 'End call' : 'Call Lira')
+      callBtn.setAttribute(
+        'title',
+        this.voiceState === 'active' ? 'End voice mode' : 'Talk with Lira',
+      )
       callBtn.onclick = () => {
         if (this.voiceState === 'active' || this.voiceState === 'connecting') {
           this.endVoiceCall()
@@ -555,18 +753,30 @@ class LiraSupportWidget {
 
     // Voice call overlay (shown when a call is active)
     if (this.voiceState === 'connecting' || this.voiceState === 'active') {
+      const isWorking = this.voiceState === 'active' && this.activeVoiceActions.size > 0
       const overlay = document.createElement('div')
-      overlay.className = 'lira-voice-overlay'
+      overlay.className = 'lira-voice-overlay' + (isWorking ? ' lira-voice-working' : '')
 
       const avatarEl = document.createElement('div')
+      // When an action is in progress, swap the pulse animation for a
+      // spinning ring around the avatar — gives the user a clear visual
+      // signal that Lira is doing something during the (often silent)
+      // execution window. Mic pulse returns once the action completes.
       avatarEl.className =
-        'lira-voice-avatar' + (this.voiceState === 'active' ? ' lira-voice-pulse' : '')
+        'lira-voice-avatar' +
+        (this.voiceState === 'active' && !isWorking ? ' lira-voice-pulse' : '') +
+        (isWorking ? ' lira-voice-spinring' : '')
       avatarEl.innerHTML = ICON_LIRA
       overlay.appendChild(avatarEl)
 
       const label = document.createElement('div')
       label.className = 'lira-voice-label'
-      label.textContent = this.voiceState === 'connecting' ? 'Connecting...' : 'Speaking with Lira'
+      label.textContent =
+        this.voiceState === 'connecting'
+          ? 'Connecting...'
+          : isWorking
+            ? 'Lira is working…'
+            : 'Speaking with Lira'
       overlay.appendChild(label)
 
       if (this.voiceState === 'active') {
@@ -585,6 +795,12 @@ class LiraSupportWidget {
       overlay.appendChild(endBtn)
 
       win.appendChild(overlay)
+    }
+
+    // PIN entry modal — server-emitted on tools that require pin authorization.
+    // Renders over the chat (z-index in styles). Submit/Cancel both clear it.
+    if (this.pinPrompt) {
+      win.appendChild(this.buildPinModalEl())
     }
 
     // Input area
@@ -804,9 +1020,21 @@ class LiraSupportWidget {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   private startVoiceCall(): void {
-    if (this.voiceCall) return
+    if (this.voiceCall || this.pipecatVoice) return
 
-    this.voiceCall = new WidgetVoiceCall(this.config.orgId, this.visitorId, {
+    // ARCHITECTURE DECISION (2026-05-23): voice ALWAYS uses the legacy
+    // direct-to-Nova-Sonic path, even when ?pipecat=1 is set. The Pipecat
+    // pipeline adds enough per-chunk CPU on a small EC2 to make voice
+    // audibly choppy, and the wrapper we built didn't give us anything
+    // we couldn't get back: tool execution is now intentionally deferred
+    // to a post-call text-LLM stage (cleaner separation of concerns,
+    // see lira-postcall-processor.service.ts). Pipecat stays in use for
+    // CHAT — that's where its abstraction pays for itself.
+    //
+    // Leaving the call to `startPipecatVoiceCall()` here was the cause
+    // of the choppy voice the user reported on 2026-05-23.
+
+    this.voiceCall = new WidgetVoiceCall(this.config.orgId, this.visitorId, this.config.demoContext, {
       onStateChange: (state) => {
         this.voiceState = state
         if (state === 'active') {
@@ -818,6 +1046,10 @@ class LiraSupportWidget {
           }, 1000)
         }
         if (state === 'idle' || state === 'ended') {
+          // Clear any in-flight action tracking — once the call ends we
+          // can't receive further action_completed/failed events.
+          this.activeVoiceActions.clear()
+          this.currentVoiceCall = null
           if (this.callTimer) {
             clearInterval(this.callTimer)
             this.callTimer = null
@@ -854,10 +1086,100 @@ class LiraSupportWidget {
     if (this.voiceCall) {
       this.voiceCall.end()
     }
+    if (this.pipecatVoice) {
+      void this.pipecatVoice.stop()
+      this.pipecatVoice = null
+      this.voiceState = 'ended'
+      this.activeVoiceActions.clear()
+    }
     if (this.callTimer) {
       clearInterval(this.callTimer)
       this.callTimer = null
     }
+    this.render()
+  }
+
+  /**
+   * Pipecat-driven voice call. Single transport handles mic capture,
+   * audio playback, transcripts, tool calls, and action lifecycle events
+   * via the widget's existing handlers.
+   */
+  private startPipecatVoiceCall(): void {
+    const wsBase = this.resolvePipecatWsBase()
+    if (!wsBase) return
+    const conversationId = this.convId ?? `conv-voice-${crypto.randomUUID()}`
+
+    // Mirror the same UI state machine the legacy WidgetVoiceCall used.
+    this.voiceState = 'connecting'
+    this.render()
+
+    this.pipecatVoice = new PipecatTransport(
+      {
+        agentWsBase: wsBase,
+        orgId: this.config.orgId,
+        conversationId,
+        visitorId: this.visitorId,
+        channel: 'voice',
+      },
+      {
+        onBotReady: () => {
+          this.voiceState = 'active'
+          this.callDuration = 0
+          this.callTimer = setInterval(() => {
+            this.callDuration++
+            this.updateCallTimer()
+          }, 1000)
+          this.render()
+        },
+        onConnected: () => {
+          /* set above on bot-ready instead */
+        },
+        onDisconnected: () => {
+          if (this.callTimer) {
+            clearInterval(this.callTimer)
+            this.callTimer = null
+          }
+          this.voiceState = 'ended'
+          this.pipecatVoice = null
+          this.activeVoiceActions.clear()
+          this.render()
+        },
+        onAssistantTranscript: (text) => {
+          this.appendChatMessage({
+            id: `voice_lira_${Date.now()}`,
+            role: 'lira',
+            body: text,
+            timestamp: new Date().toISOString(),
+          })
+        },
+        onUserTranscript: (text) => {
+          this.appendChatMessage({
+            id: `voice_user_${Date.now()}`,
+            role: 'customer',
+            body: text,
+            timestamp: new Date().toISOString(),
+          })
+        },
+        onServerMessage: (msg) => {
+          // action_started, action_completed, action_failed, pin_required,
+          // demo_action_executed — all the protocol events the widget
+          // already knows how to render. Reuse handleIncoming so behavior
+          // matches the chat path exactly.
+          this.handleIncoming(msg as IncomingWsMessage)
+        },
+        onError: (err) => {
+          this.appendChatMessage({
+            id: `voice_err_${Date.now()}`,
+            role: 'system',
+            body: err,
+            timestamp: new Date().toISOString(),
+          })
+          this.voiceState = 'ended'
+          this.render()
+        },
+      },
+    )
+    void this.pipecatVoice.start()
   }
 
   /** Update only the call timer text — no DOM rebuild */
@@ -880,10 +1202,13 @@ class LiraSupportWidget {
         if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight
       })
     }
-    saveMessages(this.config.orgId, this.messages, this.convId, this.unreadCount)
+    this.persistMessages()
   }
 
   private buildMessageEl(msg: ChatMessage): HTMLElement {
+    if (msg.action) {
+      return this.buildActionEl(msg.action)
+    }
     if (msg.actionResult) {
       const chip = document.createElement('div')
       chip.className = `lira-action-chip ${msg.actionResult.ok ? 'ok' : 'fail'}`
@@ -1033,6 +1358,165 @@ class LiraSupportWidget {
     return wrap
   }
 
+  private buildActionEl(action: NonNullable<ChatMessage['action']>): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = `lira-action lira-action-${action.status}`
+
+    const head = document.createElement('div')
+    head.className = 'lira-action-head'
+
+    const icon = document.createElement('span')
+    icon.className = 'lira-action-icon'
+    if (action.status === 'pending') {
+      icon.innerHTML = '<span class="lira-action-spinner"></span>'
+    } else if (action.status === 'success') {
+      icon.textContent = '✓'
+    } else {
+      icon.textContent = '⚠'
+    }
+    head.appendChild(icon)
+
+    const main = document.createElement('div')
+    main.className = 'lira-action-main'
+
+    const title = document.createElement('div')
+    title.className = 'lira-action-title'
+    const prefix = action.icon ? `${action.icon} ` : ''
+    title.textContent =
+      action.status === 'pending'
+        ? `${prefix}${action.label}…`
+        : `${prefix}${action.label}`
+    main.appendChild(title)
+
+    const detailText =
+      action.status === 'failed' ? action.error
+      : action.status === 'success' ? action.detail
+      : 'Working on it…'
+    if (detailText) {
+      const detail = document.createElement('div')
+      detail.className = 'lira-action-detail'
+      detail.textContent = detailText
+      main.appendChild(detail)
+    }
+
+    head.appendChild(main)
+    wrap.appendChild(head)
+    return wrap
+  }
+
+  private buildPinModalEl(): HTMLElement {
+    const prompt = this.pinPrompt!
+    const backdrop = document.createElement('div')
+    backdrop.className = 'lira-pin-backdrop'
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) this.cancelPinModal()
+    })
+
+    const modal = document.createElement('div')
+    modal.className = 'lira-pin-modal'
+    modal.addEventListener('click', (e) => e.stopPropagation())
+
+    const title = document.createElement('div')
+    title.className = 'lira-pin-title'
+    title.textContent = `Confirm: ${prompt.label}`
+    modal.appendChild(title)
+
+    const body = document.createElement('div')
+    body.className = 'lira-pin-body'
+    body.textContent = 'Enter your 4-digit PIN to authorize this action.'
+    modal.appendChild(body)
+
+    if (prompt.hint) {
+      const hint = document.createElement('div')
+      hint.className = 'lira-pin-hint'
+      hint.textContent = prompt.hint
+      modal.appendChild(hint)
+    }
+
+    const input = document.createElement('input')
+    input.type = 'password'
+    input.inputMode = 'numeric'
+    input.autocomplete = 'one-time-code'
+    input.maxLength = 4
+    input.className = 'lira-pin-input'
+    input.placeholder = '••••'
+    setTimeout(() => input.focus(), 0)
+    modal.appendChild(input)
+
+    if (this.pinError) {
+      const err = document.createElement('div')
+      err.className = 'lira-pin-error'
+      err.textContent = this.pinError
+      modal.appendChild(err)
+    }
+
+    const buttons = document.createElement('div')
+    buttons.className = 'lira-pin-buttons'
+
+    const cancel = document.createElement('button')
+    cancel.className = 'lira-card-btn secondary'
+    cancel.textContent = 'Cancel'
+    cancel.onclick = () => this.cancelPinModal()
+    buttons.appendChild(cancel)
+
+    const submit = document.createElement('button')
+    submit.className = 'lira-card-btn primary'
+    submit.textContent = 'Authorize'
+    const doSubmit = () => {
+      const pin = input.value.trim()
+      if (pin.length < 4) {
+        this.pinError = 'Enter all 4 digits.'
+        this.render()
+        return
+      }
+      this.submitPin(pin)
+    }
+    submit.onclick = doSubmit
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') doSubmit()
+    })
+    buttons.appendChild(submit)
+    modal.appendChild(buttons)
+
+    backdrop.appendChild(modal)
+    return backdrop
+  }
+
+  private submitPin(pin: string): void {
+    const prompt = this.pinPrompt
+    if (!prompt) return
+    const payload = {
+      type: 'pin_response' as const,
+      action_id: prompt.action_id,
+      pin,
+    }
+    if (prompt.via === 'voice') {
+      this.currentVoiceCall?.sendJson(payload)
+    } else {
+      this.socket?.send(payload)
+    }
+    this.pinPrompt = null
+    this.pinError = null
+    this.render()
+  }
+
+  private cancelPinModal(): void {
+    const prompt = this.pinPrompt
+    if (!prompt) return
+    const payload = {
+      type: 'pin_cancel' as const,
+      action_id: prompt.action_id,
+    }
+    if (prompt.via === 'voice') {
+      this.currentVoiceCall?.sendJson(payload)
+    } else {
+      this.socket?.send(payload)
+    }
+    this.pinPrompt = null
+    this.pinError = null
+    this.render()
+  }
+
   private respondToConfirm(msg: ChatMessage, approved: boolean): void {
     if (!msg.confirm || msg.confirm.resolved) return
     msg.confirm.resolved = approved ? 'approved' : 'declined'
@@ -1068,7 +1552,7 @@ class LiraSupportWidget {
     this.csatSubmitted = false
     this.seenMessageIds.clear()
     this.stopPolling()
-    clearStoredMessages(this.config.orgId)
+    this.wipeStoredMessages()
     this.forceNewCase = true
     // Re-open fresh (will reconnect socket and add greeting)
     this.open()
@@ -1092,19 +1576,28 @@ class LiraSupportWidget {
     this.unreadCount = 0
     if (this.convId) this.startPolling()
 
-    // Connect WebSocket on first open
-    if (!this.socket) {
-      this.socket = new WidgetSocket(
-        this.config,
-        this.visitorId,
-        this.forceNewCase,
-        (msg) => this.handleIncoming(msg),
-        (_status) => {
-          // Could show connection status indicator
-        }
-      )
-      this.forceNewCase = false
-      this.socket.connect()
+    // Connect the chat transport on first open.
+    // Two paths, picked at widget mount time by the LIRA_USE_PIPECAT flag:
+    //   • Pipecat: one PipecatTransport (channel=chat). Long-lived. Tools,
+    //     LLM context, action lifecycle all live on the agent side.
+    //   • Legacy: WidgetSocket directly to Fastify's /lira/v1/support/chat.
+    //     Untouched code path — kept as fallback through Phase 4.
+    if (!this.socket && !this.pipecatChat) {
+      if (isPipecatEnabled()) {
+        this.startPipecatChatSession()
+      } else {
+        this.socket = new WidgetSocket(
+          this.config,
+          this.visitorId,
+          this.forceNewCase,
+          (msg) => this.handleIncoming(msg),
+          (_status) => {
+            // Could show connection status indicator
+          }
+        )
+        this.forceNewCase = false
+        this.socket.connect()
+      }
 
       // Add greeting message
       if (this.messages.length === 0 && this.config.greeting) {
@@ -1118,6 +1611,85 @@ class LiraSupportWidget {
     }
 
     this.render()
+  }
+
+  /**
+   * Spin up a Pipecat chat session. The transport stays open for the
+   * lifetime of the widget; each user message uses appendUserMessage().
+   * Server messages (action lifecycle, PIN prompts, transcripts) feed into
+   * the same handlers the legacy WS path uses, so the UI is identical.
+   */
+  private startPipecatChatSession(): void {
+    const wsBase = this.resolvePipecatWsBase()
+    if (!wsBase) return
+    const conversationId = this.convId ?? `conv-${crypto.randomUUID()}`
+    this.pipecatChat = new PipecatTransport(
+      {
+        agentWsBase: wsBase,
+        orgId: this.config.orgId,
+        conversationId,
+        visitorId: this.visitorId,
+        channel: 'chat',
+      },
+      {
+        onBotReady: () => {
+          /* nothing to do — initial greeting is rendered above */
+        },
+        onConnected: () => {
+          /* could show connected pip */
+        },
+        onDisconnected: () => {
+          /* keep widget UI as-is; reconnect on next message */
+        },
+        onAssistantTranscript: (text) => {
+          // Pipecat emits incremental transcripts. For chat we treat each
+          // as a final-ish message append. Phase 3 will refine to support
+          // streaming (replace-or-append by id).
+          this.appendChatMessage({
+            id: `pipecat_${Date.now()}`,
+            role: 'lira',
+            body: text,
+            timestamp: new Date().toISOString(),
+          })
+        },
+        onUserTranscript: () => {
+          /* chat path doesn't render user transcripts — user typed it,
+             we already rendered it locally on send */
+        },
+        onServerMessage: (msg) => {
+          // Route everything else into the same handler the legacy WS uses.
+          // This means action_started, pin_required, action_completed,
+          // action_failed, demo_action_executed, etc. all work unchanged.
+          this.handleIncoming(msg as IncomingWsMessage)
+        },
+        onError: (err) => {
+          this.appendChatMessage({
+            id: `pipecat_err_${Date.now()}`,
+            role: 'system',
+            body: err,
+            timestamp: new Date().toISOString(),
+          })
+        },
+      },
+    )
+    void this.pipecatChat.start()
+  }
+
+  /**
+   * Resolve the WS base URL for the Pipecat agent. Order:
+   *   1. `window.__LIRA_PIPECAT_WS` (host-page override for staging)
+   *   2. `data-pipecat-ws` on a widget script tag
+   *   3. Default: same origin as the Fastify backend, but on the
+   *      `/pipecat` path (proxied through the same CDN).
+   */
+  private resolvePipecatWsBase(): string {
+    if (typeof window === 'undefined') return ''
+    const w = window as unknown as Record<string, unknown>
+    const fromWindow = typeof w.__LIRA_PIPECAT_WS === 'string' ? (w.__LIRA_PIPECAT_WS as string) : ''
+    if (fromWindow) return fromWindow
+    const tag = document.querySelector('script[data-pipecat-ws]') as HTMLScriptElement | null
+    if (tag?.dataset.pipecatWs) return tag.dataset.pipecatWs
+    return 'wss://api.creovine.com/pipecat'
   }
 
   private close(): void {
@@ -1182,13 +1754,19 @@ class LiraSupportWidget {
       timestamp: new Date().toISOString(),
     })
 
-    // Send via WebSocket
-    this.socket?.send({
-      type: 'message',
-      body,
-      name: this.config.visitorName,
-      email: this.config.visitorEmail,
-    })
+    // Send via whichever transport is active. Pipecat path uses
+    // `appendUserMessage` (LLM context append + run_immediately). Legacy
+    // path uses the WS message protocol.
+    if (this.pipecatChat) {
+      void this.pipecatChat.appendUserMessage(body)
+    } else {
+      this.socket?.send({
+        type: 'message',
+        body,
+        name: this.config.visitorName,
+        email: this.config.visitorEmail,
+      })
+    }
 
     this.render()
   }
@@ -1247,7 +1825,7 @@ class LiraSupportWidget {
         // Persist the finalized message and clear streaming refs
         this.streamingMessageId = null
         this.streamingBubbleEl = null
-        saveMessages(this.config.orgId, this.messages, this.convId, this.unreadCount)
+        this.persistMessages()
         break
 
       case 'history': {
@@ -1413,7 +1991,7 @@ class LiraSupportWidget {
           this.seenMessageIds.clear()
           this.isResolved = false
           this.isEscalated = false
-          clearStoredMessages(this.config.orgId)
+          this.wipeStoredMessages()
         }
         if (msg.body && this.messages[0]?.id !== 'greeting') {
           this.messages.unshift({
@@ -1493,7 +2071,100 @@ class LiraSupportWidget {
         }
         break
       }
+
+      case 'demo_action_executed': {
+        // Demo-only: the AI agent simulated an account change (plan upgrade,
+        // card update, etc.). Forward to the host page via a CustomEvent so
+        // the React dashboard can call updateDemoProfile() and re-render.
+        // Real customer embeds will never receive this — the server only
+        // sends it from demo-org tool calls.
+        if (msg.action_type) {
+          try {
+            window.dispatchEvent(
+              new CustomEvent('lira-demo-action', {
+                detail: { type: msg.action_type, payload: msg.payload ?? {} },
+              })
+            )
+          } catch {
+            /* ignore */
+          }
+        }
+        break
+      }
+
+      // ── Action lifecycle ──────────────────────────────────────────
+      // The dispatcher fires these for async tools so the user can see
+      // progress in the chat (independent of what voice is saying).
+      // Each event carries an action_id; the same in-transcript message
+      // bubble updates in place as the action moves pending → final.
+      case 'action_started': {
+        if (!msg.action_id || !msg.tool_name) break
+        this.appendChatMessage({
+          id: `action_${msg.action_id}`,
+          role: 'system',
+          body: '',
+          timestamp: new Date().toISOString(),
+          action: {
+            action_id: msg.action_id,
+            tool_name: msg.tool_name,
+            label: msg.label ?? msg.tool_name,
+            icon: msg.icon,
+            status: 'pending',
+          },
+        })
+        break
+      }
+      case 'action_completed': {
+        if (!msg.action_id) break
+        this.updateActionCard(msg.action_id, {
+          status: 'success',
+          detail: msg.summary ?? undefined,
+        })
+        break
+      }
+      case 'action_failed': {
+        if (!msg.action_id) break
+        this.updateActionCard(msg.action_id, {
+          status: 'failed',
+          error: msg.error ?? 'Action failed.',
+        })
+        break
+      }
+      case 'pin_required': {
+        // Server is asking for PIN entry before a sensitive tool runs.
+        // Store + render modal. The modal sends pin_response back over WS.
+        // This case fires only for CHAT-originated tools (the chat WS
+        // delivers this branch). Voice-originated PIN prompts arrive via
+        // the lira-voice-widget-event CustomEvent set up in the
+        // constructor, which sets via='voice'.
+        if (!msg.action_id || !msg.tool_name) break
+        this.pinPrompt = {
+          action_id: msg.action_id,
+          tool_name: msg.tool_name,
+          label: msg.label ?? msg.tool_name,
+          hint: msg.hint,
+          via: 'chat',
+        }
+        this.render()
+        break
+      }
     }
+  }
+
+  private updateActionCard(
+    actionId: string,
+    patch: { status: 'success' | 'failed'; detail?: string; error?: string },
+  ): void {
+    const idx = this.messages.findIndex((m) => m.action?.action_id === actionId)
+    if (idx === -1) return
+    const existing = this.messages[idx]
+    if (!existing.action) return
+    this.messages[idx] = {
+      ...existing,
+      action: { ...existing.action, ...patch },
+    }
+    this.persistMessages()
+    this.render()
   }
 
   private submitCsat(score: number): void {
@@ -1605,7 +2276,25 @@ function readConfigFromScript(el: HTMLScriptElement): WidgetConfig | null {
     visitorEmail: el.dataset.email,
     visitorName: el.dataset.name,
     visitorSig: el.dataset.sig,
+    // Opt-in ephemeral storage — our Nimbus demo embed sets this; real
+    // customer embeds never do, so their behavior is unchanged.
+    ephemeral: el.dataset.ephemeral === 'true',
+    // Demo only: base64-encoded JSON snapshot of the visitor's local
+    // dashboard state. Decoded here, sent to the server over WS at connect.
+    demoContext: parseDemoContext(el.dataset.demoContext),
   }
+}
+
+function parseDemoContext(raw: string | undefined): Record<string, unknown> | undefined {
+  if (!raw) return undefined
+  try {
+    const json = atob(raw)
+    const parsed = JSON.parse(json)
+    if (parsed && typeof parsed === 'object') return parsed as Record<string, unknown>
+  } catch {
+    /* ignore malformed demo context */
+  }
+  return undefined
 }
 
 function init(): void {

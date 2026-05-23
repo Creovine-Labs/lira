@@ -2,99 +2,152 @@
 
 export interface BlogPost {
   slug: string
+  legacySlugs?: string[]
   title: string
+  seoTitle: string
+  seoDescription: string
+  seoKeywords: string
   category: string
   categoryColor: string
   date: string
+  publishedTime: string
   readingTime: string
   excerpt: string
-  author: { name: string; initials: string; role: string }
+  author: { name: string; initials: string; role: string; image: string }
   paragraphs: string[]
 }
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    slug: 'ai-interview-process',
-    title: 'How AI is transforming the way teams conduct first-round interviews',
-    category: 'Interviews',
+    slug: 'ai-customer-support-context',
+    legacySlugs: ['ai-interview-process'],
+    title: 'Why AI customer support needs context, not just fast replies',
+    seoTitle: 'AI Customer Support With Context, Memory, and Better Resolution',
+    seoDescription:
+      'Learn why AI customer support works better when it uses customer context, conversation memory, and connected systems instead of isolated answers.',
+    seoKeywords:
+      'AI customer support, customer support automation, AI support agent, customer context, support automation software, AI help desk, support workflows, customer memory',
+    category: 'Customer Support',
     categoryColor: 'bg-violet-100 text-violet-700',
-    date: 'March 18, 2026',
+    date: 'May 9, 2026',
+    publishedTime: '2026-05-09T09:00:00+02:00',
     readingTime: '6 min read',
     excerpt:
-      "First-round interviews are the most time-consuming part of hiring — and the part where most bias creeps in. Here's how AI changes both.",
-    author: { name: 'Amara L.', initials: 'AL', role: 'Head of Product · Lira AI' },
+      'Fast replies are not enough. AI customer support becomes far more useful when every answer starts with customer context, history, and connected systems.',
+    author: {
+      name: 'Sarah Oba',
+      initials: 'SO',
+      role: 'Co-founder, Lira',
+      image: '/sarah-oba-placeholder.svg',
+    },
     paragraphs: [
-      "Every hiring manager knows the feeling: you've got fifteen candidates to screen, a two-week window, and a full calendar. The first-round interview — meant to filter for the basics — ends up consuming three full days of your team's time.",
-      'The problem isn\'t just time. It\'s consistency. When five different interviewers run the same "first round", candidates get five different experiences. Some get grilled on technical depth. Others are asked about culture fit. Evaluation becomes apples-to-oranges before the process has even really started.',
-      'AI interviewing solves both problems simultaneously. When Lira conducts a first-round interview, every candidate gets the exact same structured experience — the same questions, the same follow-up logic, the same scoring rubric. The only variable is the candidate.',
-      "But the real value isn't just consistency. It's the insight quality. Because Lira isn't managing three more calls after this one, it can give its full attention to listening. It notices when an answer is vague and probes deeper. It picks up on confidence markers in language. It synthesises a full competency score backed by specific quotes from the conversation.",
-      'The output a hiring manager receives isn\'t just "passed" or "failed". It\'s a rich evaluation: what the candidate excelled at, where they struggled, how they compare to others interviewed for the same role, and a clear hire/no-hire recommendation with supporting evidence.',
-      'Teams using Lira for first-round interviews typically see a 40% reduction in time-to-hire and report significantly higher confidence in their shortlists — because for the first time, every candidate on the shortlist was evaluated by the same standard.',
-      'The interview process was never meant to be a marathon for HR teams. AI lets it be what it was designed to be: a fair, efficient filter that surfaces the right people faster.',
+      'A lot of AI customer support still behaves like a very fast FAQ box. It replies quickly, but it does not really know the customer, the relationship, or the work that needs to happen after the answer.',
+      'That gap is where support teams start losing trust. A customer does not care that a reply arrived in three seconds if they still have to repeat their issue, explain their plan, or wait for a human to piece together what already happened in another channel.',
+      'The strongest support experiences start with context. That means knowing what product the customer uses, what conversations already happened, what documents are relevant, and what systems hold the next action. Without that layer, AI can sound helpful while still creating more work for the team behind it.',
+      'This is why connected customer support matters so much. When your support AI can use conversation history, organization knowledge, and approved business systems together, the answer becomes more than a sentence. It becomes a useful step forward.',
+      'Context also improves escalation. When a case needs a human, the handoff is cleaner because the thread already carries the customer history, the attempted resolution, and the signals that explain why the issue needs judgment. Your team spends less time reconstructing the story and more time solving the problem.',
+      'It also improves consistency across channels. Customers now move between chat, email, voice, and portals all the time. If your support operation treats each touchpoint like a separate event, the experience feels fragmented. If your AI support layer carries the relationship across those touchpoints, the experience feels intentional.',
+      'That is the real promise of AI customer support. Not just faster answers. Better continuity, better routing, and better resolution because every reply starts with the full picture.',
     ],
   },
   {
-    slug: 'ai-sales-coaching',
-    title: '5 ways Lira helps sales teams close more deals in real time',
-    category: 'Sales',
+    slug: 'ai-support-automation-workflows',
+    legacySlugs: ['ai-sales-coaching'],
+    title: 'How AI support automation should move work forward',
+    seoTitle: 'AI Support Automation That Routes, Updates, and Resolves',
+    seoDescription:
+      'See how AI support automation becomes more valuable when it can route issues, trigger follow-up, update systems, and help teams resolve customer requests end to end.',
+    seoKeywords:
+      'AI support automation, customer support automation, support workflow automation, AI support software, support escalation, automated customer service, AI service desk',
+    category: 'Automation',
     categoryColor: 'bg-emerald-100 text-emerald-700',
-    date: 'March 12, 2026',
+    date: 'May 7, 2026',
+    publishedTime: '2026-05-07T09:00:00+02:00',
     readingTime: '5 min read',
     excerpt:
-      "Real-time AI coaching isn't about replacing salespeople — it's about giving every rep the instincts of your best closer.",
-    author: { name: 'David K.', initials: 'DK', role: 'Sales Lead · Axiom Labs' },
+      'Good AI support automation does not stop at the reply. It routes work, updates systems, and helps the team close the loop faster.',
+    author: {
+      name: 'Sarah Oba',
+      initials: 'SO',
+      role: 'Co-founder, Lira',
+      image: '/sarah-oba-placeholder.svg',
+    },
     paragraphs: [
-      "The best sales reps don't just know your product. They know exactly what to say when a prospect hesitates, how to reframe a price objection, and which story to tell when a competitor is brought up. That knowledge takes years to develop — and it lives in a handful of people's heads.",
-      'Lira changes that equation. Instead of waiting for reps to accumulate experience through trial and error, Lira gives every rep access to that knowledge in the moment they need it.',
-      'Here are five ways it works in practice.',
-      'First: real-time objection handling. The moment a prospect raises a concern — "we already have a tool for this" or "we need to check with legal" — Lira matches it against your playbook and surfaces the response that has historically worked best for that specific objection.',
-      'Second: competitive intelligence on demand. If a competitor is mentioned, Lira pulls the relevant battle card instantly. No fumbling, no "let me look that up" — just smooth, informed responses that build confidence.',
-      "Third: deal-stage awareness. Lira knows what stage of the deal you're in and coaches accordingly. It pushes for discovery in early calls and for commitment signals in closing ones.",
-      "Fourth: post-call analysis. After every call, Lira flags what worked, what was missed, and what to do before the next touchpoint. It's like having a coach debrief you after every rep.",
-      'Fifth: team-wide learning. The calls where deals are closed become training material — not manually curated, but automatically surfaced by Lira to the reps who most need to hear them.',
-      "The best sales teams don't win because their reps are naturally gifted. They win because they build systems that replicate what their best people know. Lira is that system.",
+      'A support conversation almost never ends with a single message. There is usually something behind it that needs to happen next. A teammate needs to be notified. A ticket needs to be created. A customer record needs to be updated. A follow-up needs to go out before the issue becomes churn.',
+      'That is why AI support automation should be measured by movement, not just messaging. If the AI can answer but cannot help the team act, the operation still slows down at the exact point where support becomes operational work.',
+      'The most useful automation patterns are the ones that remove repeated manual steps. Routing an urgent case to the right queue. Logging the issue in the engineering workflow. Sending an escalation alert to the team channel. Pulling the right customer context into the thread so the next person does not start from zero.',
+      'This kind of automation is also what makes support feel organized from the customer side. They do not see every internal workflow, but they feel the difference when the next reply arrives with continuity and when the right person joins with the right information already in place.',
+      'It matters for speed, but it matters even more for trust. Customers lose confidence when they hear promises with no follow-through. Support automation that updates systems and creates clear next steps closes that gap.',
+      'There is also a practical upside for managers. Once routing, escalation, and follow-up are part of the same support layer, it becomes much easier to see where time is going, where handoffs break, and which issues should be automated more confidently.',
+      'The goal is not to automate everything for the sake of it. The goal is to let AI handle the repeatable coordination work so your team can spend more time on judgment, relationships, and the moments that actually need a person.',
     ],
   },
   {
-    slug: 'knowledge-base-best-practices',
-    title: 'Building a knowledge base your AI can actually use',
+    slug: 'knowledge-base-for-ai-support',
+    legacySlugs: ['knowledge-base-best-practices'],
+    title: 'How to build a knowledge base for AI customer support',
+    seoTitle: 'Knowledge Base for AI Customer Support: What Actually Helps',
+    seoDescription:
+      'Build a knowledge base that improves AI customer support with cleaner source material, stronger structure, and documentation your team can actually trust.',
+    seoKeywords:
+      'knowledge base for AI customer support, AI knowledge base, support documentation, AI help center, support knowledge management, semantic search support',
     category: 'Knowledge Base',
     categoryColor: 'bg-blue-100 text-blue-700',
-    date: 'March 5, 2026',
+    date: 'May 4, 2026',
+    publishedTime: '2026-05-04T09:00:00+02:00',
     readingTime: '7 min read',
     excerpt:
-      "Most company knowledge bases are a graveyard of outdated docs. Here's how to build one that powers your AI — and stays useful over time.",
-    author: { name: 'Sofia R.', initials: 'SR', role: 'Head of Talent · NovaTech' },
+      'If you want better AI customer support, start with better source material. A strong knowledge base makes the difference between helpful answers and confident confusion.',
+    author: {
+      name: 'Sarah Oba',
+      initials: 'SO',
+      role: 'Co-founder, Lira',
+      image: '/sarah-oba-placeholder.svg',
+    },
     paragraphs: [
-      "There's a common misconception that an AI knowledge base is just your existing documentation — uploaded, indexed, done. In practice, the quality of AI answers is almost entirely determined by the quality of the documents behind them.",
-      'If your knowledge base is a graveyard of outdated PDFs, conflicting policy versions, and documents nobody maintains, your AI assistant will confidently give wrong answers. The garbage-in-garbage-out principle applies, and it applies harshly.',
-      "Here's what we've learned about building a knowledge base that actually performs.",
-      "Start with canonical documents, not comprehensive ones. You don't need every version of every document — you need the authoritative one. Create a clear ownership model: every document has one owner responsible for keeping it current.",
-      'Structure matters more than length. Lira retrieves information by semantic similarity, not by reading documents top to bottom. Short, well-titled sections retrieve better than sprawling documents with no clear hierarchy. Think of each heading as a retrieval unit.',
-      'Include your Q&A content explicitly. Support tickets, Slack FAQ channels, and internal wiki Q&As are goldmines. Converting these into clean question-answer format dramatically improves retrieval accuracy for common customer queries.',
-      "Build freshness into your process. A knowledge base that's accurate today but not maintained becomes a liability within six months. Build a quarterly review cycle, and connect your KB updates to your product release process.",
-      'Test your AI before you deploy it. Upload your documents and then interrogate Lira with real questions your customers or team would ask. The gaps and confusions you find in testing are the gaps that will embarrass you in production.',
-      "The teams getting the most value from Lira's knowledge base feature aren't the ones with the most documents — they're the ones with the best-maintained, best-structured ones. Quality over volume, every time.",
+      'AI customer support is only as strong as the information it can rely on. When the source material is messy, outdated, duplicated, or incomplete, the support experience becomes shaky no matter how polished the interface looks.',
+      'A good knowledge base for AI support is not just a storage folder full of documents. It is a maintained operating layer for answers your team actually stands behind. That means product explanations, support policies, troubleshooting flows, onboarding steps, billing guidance, and exception handling rules that stay current as the product changes.',
+      'The first priority is clarity around what is canonical. If the same answer exists in three different places with three different versions, your team will hesitate and your AI will too. Pick the trusted version, name the owner, and retire the rest.',
+      'The second priority is structure. Long documents are not automatically bad, but support knowledge works best when information is broken into clean sections with clear headings. That helps both people and retrieval systems find the right answer quickly.',
+      'The third priority is relevance. Teams often upload broad company material and forget the real support questions that customers ask every day. The most useful additions are often the simple ones: cancellation rules, plan differences, setup steps, refund logic, permission models, and issue-specific troubleshooting.',
+      'A strong workflow also includes testing. Ask your AI the real questions customers ask in chat, email, and calls. Check where it hesitates, overreaches, or misses a detail. Those moments are usually not model problems. They are documentation problems.',
+      'The best knowledge bases keep getting better after launch. Every escalation, every confusing reply, and every repeated question gives you a signal about what the support system still needs. That is how your documentation becomes a living asset instead of an archive.',
     ],
   },
   {
-    slug: 'meeting-intelligence-future',
-    title: 'The meeting is only the beginning: what AI does after you hang up',
-    category: 'Meeting Intelligence',
+    slug: 'human-handoff-in-ai-support',
+    legacySlugs: ['meeting-intelligence-future'],
+    title: 'Why human handoff is still essential in AI customer support',
+    seoTitle: 'Human Handoff in AI Customer Support: How to Get It Right',
+    seoDescription:
+      'Human handoff remains essential in AI customer support. Learn how escalation, summaries, and clean routing help teams keep support fast without losing empathy.',
+    seoKeywords:
+      'human handoff in AI customer support, support escalation, AI customer service, human in the loop support, customer support workflows, support operations',
+    category: 'Operations',
     categoryColor: 'bg-amber-100 text-amber-700',
-    date: 'February 26, 2026',
+    date: 'May 1, 2026',
+    publishedTime: '2026-05-01T09:00:00+02:00',
     readingTime: '4 min read',
     excerpt:
-      'Recording a meeting is easy. Turning what was said into action is the hard part — and the part AI is just beginning to crack.',
-    author: { name: 'Amara L.', initials: 'AL', role: 'Head of Product · Lira AI' },
+      'AI can resolve a lot, but not every support moment should stay automated. Strong human handoff is what keeps speed, empathy, and accountability working together.',
+    author: {
+      name: 'Sarah Oba',
+      initials: 'SO',
+      role: 'Co-founder, Lira',
+      image: '/sarah-oba-placeholder.svg',
+    },
     paragraphs: [
-      'We\'ve been recording meetings for years. The recordings sit in Google Drive, unwatched, taking up storage and creating an illusion that the information is somehow "captured".',
-      'Recording is not capture. Recording is storage. Capture is what happens when the content of a conversation becomes something your team can actually act on.',
-      'The gap between those two things is where most organisations leak enormous amounts of strategic value. Decisions get made in meetings that never show up in any system of record. Tasks are assigned verbally and then forgotten by Tuesday. Insights shared in a 40-person all-hands remain in the heads of the thirty people who actually listened.',
-      "Meeting intelligence — real meeting intelligence, not just transcription — changes this. When Lira participates in a meeting, it's not just capturing what was said. It's understanding the structure of the conversation: what was proposed, what was agreed, what was assigned to whom, and what questions remained open.",
-      'After the call, that understanding gets transformed into outputs your team can immediately act on. Tasks with owners and deadlines go to Slack. Key decisions get logged to a searchable record. Open questions become agenda items for the next meeting.',
-      'The value compounds over time. When you can ask "what did we decide about the pricing model in Q4?" and get an accurate answer backed by source quotes from three meetings, your organisational memory stops being tied to the people who were in the room.',
-      'The meeting was always just the beginning. AI is finally making it possible to capture everything that follows.',
+      'There is a strange idea in some AI support conversations that success means never involving a human. In practice, the opposite is true. The best support systems know exactly when a person should step in and make that transition feel smooth.',
+      'Customers do not mind automation when it is useful. What they mind is getting trapped in it. The moment they are dealing with an exception, a sensitive account issue, or a case that needs judgment, they want to feel that a real team is available and informed.',
+      'That is why human handoff is not a fallback feature. It is part of the product experience. Good escalation should carry the reason for the handoff, the conversation history, the attempted resolution, and the context a teammate needs to continue without making the customer repeat everything again.',
+      'It also helps internally. Support leaders need to know which issues are being escalated most often, which ones point to knowledge gaps, and which ones should always go to a human from the start. Those patterns make the support system smarter over time.',
+      'The strongest teams treat AI and human support as one operation, not two separate worlds. AI handles the repeatable front line. Humans handle exceptions, nuance, and relationship-critical moments. The customer should feel continuity across both.',
+      'When that handoff is done well, support gets faster without becoming colder. That balance is what makes AI customer support feel mature instead of brittle.',
     ],
   },
 ]
+
+export function findBlogPostBySlug(slug?: string) {
+  if (!slug) return undefined
+  return BLOG_POSTS.find((post) => post.slug === slug || post.legacySlugs?.includes(slug))
+}

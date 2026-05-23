@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
-const LAST_UPDATED = 'March 25, 2026'
+const LAST_UPDATED = 'May 20, 2026'
 
 export function PrivacyPolicyPage() {
   return (
@@ -13,18 +13,15 @@ export function PrivacyPolicyPage() {
         keywords="Lira AI privacy policy, data privacy, personal data protection, GDPR, privacy rights"
         path="/privacy"
       />
-      <div className="bg-white">
+      <div className="legal-page">
         {/* Hero */}
-        <section className="mx-auto max-w-4xl px-6 pt-32 pb-12">
-          <p className="text-sm font-semibold uppercase tracking-widest text-indigo-600">Legal</p>
-          <h1 className="mt-3 text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-            Privacy Policy
-          </h1>
-          <p className="mt-4 text-base text-gray-500">Last updated: {LAST_UPDATED}</p>
+        <section className="legal-hero">
+          <h1>Privacy Policy</h1>
+          <p>Last updated: {LAST_UPDATED}</p>
         </section>
 
         {/* Body */}
-        <article className="prose prose-gray prose-headings:font-semibold prose-headings:tracking-tight prose-a:text-indigo-600 hover:prose-a:text-indigo-500 mx-auto max-w-4xl px-6 pb-24">
+        <article className="legal-article">
           {/* 1 */}
           <h2>1. Introduction</h2>
           <p>
@@ -131,13 +128,75 @@ export function PrivacyPolicyPage() {
             <li>
               <strong>Cookies & Similar Technologies:</strong> We use essential cookies for
               authentication and session management, and optional analytics cookies to understand
-              how the Service is used. See our{' '}
-              <Link to="/cookies" className="text-indigo-600 hover:text-indigo-500">
-                Cookie Policy
-              </Link>{' '}
-              for details.
+              how the Service is used. See our <Link to="/cookies">Cookie Policy</Link> for details.
             </li>
           </ul>
+
+          <h3>2.4 Public Demo Site</h3>
+          <p>
+            We operate a public, no-login demo of our AI customer support agent at{' '}
+            <strong>demo.liraintelligence.com</strong> (also reachable at{' '}
+            <strong>liraintelligence.com/demo</strong>). The demo includes a fictional company
+            called "Nimbus" used solely to give visitors a realistic context for trying the
+            product. When you use the demo, we process the following on a pseudonymous basis to
+            prevent abuse and manage usage limits — not to identify you personally:
+          </p>
+          <ul>
+            <li>
+              <strong>Anonymous session token:</strong> a randomly generated identifier stored in
+              an HttpOnly cookie (and a mirror in localStorage for UX). Retention: up to 12 months
+              (sliding window, reset on visit).
+            </li>
+            <li>
+              <strong>Hashed IP address:</strong> your IP address is hashed with a daily-rotating
+              salt server-side and used only for IP-level rate limiting. We do not store your raw
+              IP. Retention: 24 hours rolling.
+            </li>
+            <li>
+              <strong>Browser fingerprint signal:</strong> a low-entropy signal (roughly 16 bits;
+              combining user agent, time zone, screen size, and a canvas hash) used solely to
+              detect quota-bypass attempts. Not joined to any marketing or analytics graph.
+              Retention: 24 hours rolling.
+            </li>
+            <li>
+              <strong>Conversation transcripts:</strong> the messages you and the AI exchange in
+              the demo are stored keyed to the anonymous session token (never to your hashed IP at
+              the row level) for the purposes of product analytics, prompt iteration, and abuse
+              review. Any content that appears to be real personal data (e.g., what looks like an
+              SSN, credit card number, or similar) is automatically redacted before storage.
+              Retention: 30 days, then deleted.
+            </li>
+            <li>
+              <strong>Optional test profile:</strong> if you choose to create a test profile
+              inside the demo (a synthetic Nimbus customer with a first name, plan tier, and
+              optional notes), that profile is stored against your anonymous session token only,
+              flagged as synthetic, and never joined to any production customer record. Retention:
+              24 hours.
+            </li>
+            <li>
+              <strong>Captured email (only if you explicitly provide it):</strong> if you give us
+              your email through the demo's "Speak to an expert" flow, we treat that as a standard
+              business contact under Sections 2.1 and 3 of this policy. We do not retroactively
+              link your captured email to demo conversations that took place before you provided
+              it.
+            </li>
+          </ul>
+          <p>
+            The legal basis for processing these signals is our legitimate interest in preventing
+            abuse, controlling cost, and ensuring the demo remains usable for all visitors. We do
+            not use these signals for advertising or to build a marketing profile of you. EU and
+            UK visitors can request information about, or deletion of, data we hold by emailing{' '}
+            <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>. Note
+            that records collected before you identify yourself (anonymous-session-keyed) cannot
+            be located on request — that is a deliberate privacy feature, not a limitation.
+          </p>
+          <p>
+            The demo is a sandbox. <strong>Do not enter real account credentials, real banking
+            details, real medical information, or any other real personal data into the
+            demo</strong> — it is monitored, logged, and not a private channel. If you have a real
+            support question for your company's deployment of Lira, please use your organization's
+            own support flow, not the public demo.
+          </p>
 
           {/* 3 */}
           <h2>3. How We Use Your Information</h2>
@@ -378,31 +437,11 @@ export function PrivacyPolicyPage() {
           </ul>
 
           {/* Related links */}
-          <div className="not-prose mt-12 flex flex-wrap gap-4 border-t border-gray-200 pt-8">
-            <Link
-              to="/terms"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Terms of Service
-            </Link>
-            <Link
-              to="/cookies"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Cookie Policy
-            </Link>
-            <Link
-              to="/acceptable-use"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Acceptable Use Policy
-            </Link>
-            <Link
-              to="/security"
-              className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50"
-            >
-              Security
-            </Link>
+          <div className="legal-link-row">
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/cookies">Cookie Policy</Link>
+            <Link to="/acceptable-use">Acceptable Use Policy</Link>
+            <Link to="/security">Security</Link>
           </div>
         </article>
       </div>

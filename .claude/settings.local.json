@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sips -g pixelWidth -g pixelHeight /Users/apple/creovine_main/lira-ai/public/landing-v1/hero-2.jpg)",
+      "Bash(cp hero-2.jpg hero-2.png.bak)",
+      "Bash(sips -s format jpeg -s formatOptions 82 hero-2.jpg --out hero-2-new.jpg)",
+      "Bash(ffmpeg -y -i hero-2.jpg -c:v libwebp -quality 78 -compression_level 6 hero-2.webp)",
+      "Bash(python3 -c \"from PIL import Image; print\\(Image.__version__\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(mv hero-2-new.jpg hero-2.jpg)",
+      "Bash(rm hero-2.png.bak)",
+      "Bash(grep -nC1 'whileInView=\"show\"' /Users/apple/creovine_main/lira-ai/src/pages/LandingPageV4.tsx)",
+      "Bash(perl -i -0777 -pe 's/^[ \\\\t]+initial=\"hidden\"\\\\n[ \\\\t]+whileInView=\"show\"\\\\n[ \\\\t]+viewport=\\\\{viewport\\\\}\\\\n//gm' src/pages/LandingPageV4.tsx)",
+      "Bash(npx tsc *)",
+      "Bash(vercel --prod --yes)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:www.bvp.com)",
+      "WebFetch(domain:sacra.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.ada.cx)",
+      "Bash(npm run *)",
+      "Bash(ssh -i ~/.ssh/creovine-api-key.pem -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 -o BatchMode=yes ubuntu@98.92.255.171 'whoami && pwd && ls ~ 2>/dev/null | head -20')",
+      "Bash(pkill -f \"tsx watch src/index.ts\")",
+      "Read(//Users/apple/creovine_main/creovine-backend/**)",
+      "Bash(./deploy-auto.sh)",
+      "Bash(curl -sS https://api.creovine.com/health)",
+      "Bash(curl -sI https://demo.liraintelligence.com/demo)",
+      "Bash(vercel --version)",
+      "Bash(vercel ls *)",
+      "Bash(curl -sL -o /tmp/landing.html https://liraintelligence.com)",
+      "Read(//tmp/**)",
+      "Bash(curl -sI https://liraintelligence.com)",
+      "WebFetch(domain:docs.pipecat.ai)",
+      "WebFetch(domain:docs.livekit.io)",
+      "WebFetch(domain:repost.aws)",
+      "WebFetch(domain:aws.amazon.com)",
+      "WebFetch(domain:www.daily.co)",
+      "WebFetch(domain:platform.openai.com)",
+      "WebFetch(domain:openai.com)"
+    ]
+  }
+}
