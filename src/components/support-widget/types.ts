@@ -111,7 +111,6 @@ export interface IncomingWsMessage {
     | 'action_completed'
     | 'action_failed'
     | 'pin_required'
-    | 'system_message'
   body?: string
   conv_id?: string
   status?: string

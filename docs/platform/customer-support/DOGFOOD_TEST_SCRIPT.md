@@ -193,55 +193,6 @@ These trigger HITL=confirm tools. Each should:
 
 ---
 
-## 5b. Voice → post-call action flow (new architecture)
-
-The voice path doesn't execute actions on the call — Lira captures intent
-verbally, then the post-call processor (`lira-postcall.service.ts`) runs
-the same `runAgent` loop with the voice transcript as history. Action
-cards stream into the chat panel after hang-up.
-
-**Important:** the chat widget must stay OPEN during and after the call.
-If the customer closes the widget after hanging up, the post-call
-processor logs a warning and skips (Phase 2: queue-for-next-open).
-
-### 5b.1 Single-action call
-
-| # | Action | Expected | ✅ |
-|---|---|---|---|
-| 5b.1.1 | Open chat widget, then click the call icon | Voice call connects | ☐ |
-| 5b.1.2 | Say: `Cancel my subscription, please` | Lira verbally acknowledges and says she'll "line that up for after we hang up" | ☐ |
-| 5b.1.3 | Say: `That's all, thanks` | Lira summarises ("So: cancel your subscription. That right?") | ☐ |
-| 5b.1.4 | Say: `Yes` | Lira says "I'll process that — you'll see updates in the chat below in a few seconds" then hangs up | ☐ |
-| 5b.1.5 | Chat panel: a system message appears "Processing your request from the call…" | ☐ |
-| 5b.1.6 | Within ~5s, an action card appears showing `stripe_cancel_subscription` running, then ✅ Cancelled | ☐ |
-| 5b.1.7 | Nimbus dashboard reflects the cancellation | ☐ |
-| 5b.1.8 | Server log (`journalctl -u creovine-api`): `[postcall] starting … voice_turns=N` and `[postcall] done … tools=1 ms=…` | ☐ |
-
-### 5b.2 Multi-action call
-
-| # | Action | Expected | ✅ |
-|---|---|---|---|
-| 5b.2.1 | Call again, say `I want to upgrade to Business and reset my password` | Lira captures both intents verbally | ☐ |
-| 5b.2.2 | At end of call, Lira summarises both ("So: upgrade to Business, and reset your password. That right?") | ☐ |
-| 5b.2.3 | After hang-up, chat shows TWO action cards in sequence (each `action_started` → `action_completed`) | ☐ |
-| 5b.2.4 | Dashboard reflects both changes | ☐ |
-
-### 5b.3 Call with read-only Q&A (no actions)
-
-| # | Action | Expected | ✅ |
-|---|---|---|---|
-| 5b.3.1 | Call, ask only KB questions (`what's your refund policy?`) | Lira answers in voice | ☐ |
-| 5b.3.2 | Hang up | Chat shows a brief "All set from our call!" or equivalent — no action cards | ☐ |
-
-### 5b.4 Edge: widget closed after hangup
-
-| # | Action | Expected | ✅ |
-|---|---|---|---|
-| 5b.4.1 | Make a call requesting an action; immediately close the entire widget | Server log: `[postcall] no open chat WS for conv … — skipping` | ☐ |
-| 5b.4.2 | Reopen the widget | No post-call cards (we don't queue today). Customer would need to repeat the request in chat. | ☐ |
-
----
-
 ## 6. Escalation
 
 | # | Action | Expected | ✅ |

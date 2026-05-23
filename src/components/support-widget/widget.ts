@@ -23,7 +23,7 @@ import { WidgetSocket } from './socket'
 import { getWidgetStyles } from './styles'
 import { WidgetVoiceCall } from './voice'
 import type { VoiceState } from './voice'
-import type { PipecatTransport } from './pipecat-transport'
+import { PipecatTransport, isPipecatEnabled } from './pipecat-transport'
 
 // ── SVG icons ─────────────────────────────────────────────────────────────────
 
@@ -38,6 +38,23 @@ const ICON_LIRA = `<img src="${LIRA_LOGO_URL}" alt="Lira" style="width:100%;heig
 // signals "press to talk" / "voice conversation" which matches the UX.
 const ICON_MIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`
 const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`
+
+// ── Feature flags ─────────────────────────────────────────────────────────────
+//
+// Voice (Nova Sonic) was disabled across the widget on 2026-05-23 — multiple
+// sessions of debugging couldn't get stable, smooth audio playback on the
+// current EC2 (Nova Sonic V2's bursty output exceeds our jitter buffer on
+// longer answers; the underlying issue is most likely upstream chunk timing
+// from Bedrock, not anything we can fix client-side). Voice is parked until
+// we can either (a) revisit with proper dedicated compute per call
+// (AgentCore Runtime, see VOICE_ARCHITECTURE.md §8) or (b) switch to a
+// different speech stack that emits steadier audio (Deepgram STT + Cartesia
+// TTS, see VOICE_CHOPPINESS_INVESTIGATION.md §10 option J).
+//
+// To re-enable: flip this constant to `true`, rebuild widget, redeploy. The
+// backend voice WS, transcript persistence, post-call wiring, and audio
+// playback code are all left intact so reactivation is a one-line change.
+const VOICE_FEATURE_ENABLED = false
 
 // ── Visitor ID persistence ────────────────────────────────────────────────────
 //
@@ -634,8 +651,10 @@ class LiraSupportWidget {
     newChatBtn.onclick = () => this.startNewConversation()
     actions.appendChild(newChatBtn)
 
-    // Voice mode button (only if org has voice enabled)
-    if (this.config.voiceEnabled) {
+    // Voice mode button (only if voice is enabled platform-wide AND org has it on).
+    // Voice is currently disabled by the VOICE_FEATURE_ENABLED feature flag —
+    // see comment near the constant for why and how to bring it back.
+    if (VOICE_FEATURE_ENABLED && this.config.voiceEnabled) {
       const callBtn = document.createElement('button')
       callBtn.className =
         'lira-header-btn' + (this.voiceState === 'active' ? ' lira-call-active' : '')
@@ -1577,26 +1596,27 @@ class LiraSupportWidget {
     if (this.convId) this.startPolling()
 
     // Connect the chat transport on first open.
-    // Chat path: legacy WidgetSocket directly to Fastify's
-    // `/lira/v1/support/chat/ws/:orgId`. The Pipecat experiment for chat
-    // is deprecated (2026-05-23) — `lira-support-agent.service.ts` already
-    // does everything we need (streaming, tools, HITL, history, demo mode,
-    // escalation) and runs in-process with the chat WS, so there's no
-    // benefit to routing through Pipecat. The `pipecatChat` field is
-    // retained for now in case we ever revive a streaming-LLM pattern
-    // that genuinely needs it; it's never instantiated in the current code.
+    // Two paths, picked at widget mount time by the LIRA_USE_PIPECAT flag:
+    //   • Pipecat: one PipecatTransport (channel=chat). Long-lived. Tools,
+    //     LLM context, action lifecycle all live on the agent side.
+    //   • Legacy: WidgetSocket directly to Fastify's /lira/v1/support/chat.
+    //     Untouched code path — kept as fallback through Phase 4.
     if (!this.socket && !this.pipecatChat) {
-      this.socket = new WidgetSocket(
-        this.config,
-        this.visitorId,
-        this.forceNewCase,
-        (msg) => this.handleIncoming(msg),
-        (_status) => {
-          // Could show connection status indicator
-        }
-      )
-      this.forceNewCase = false
-      this.socket.connect()
+      if (isPipecatEnabled()) {
+        this.startPipecatChatSession()
+      } else {
+        this.socket = new WidgetSocket(
+          this.config,
+          this.visitorId,
+          this.forceNewCase,
+          (msg) => this.handleIncoming(msg),
+          (_status) => {
+            // Could show connection status indicator
+          }
+        )
+        this.forceNewCase = false
+        this.socket.connect()
+      }
 
       // Add greeting message
       if (this.messages.length === 0 && this.config.greeting) {
@@ -1826,23 +1846,6 @@ class LiraSupportWidget {
         this.streamingBubbleEl = null
         this.persistMessages()
         break
-
-      case 'system_message': {
-        // Server-pushed status line, rendered inline as a system role
-        // chat bubble. Used by the post-call processor to announce
-        // "Processing your request from the call…" before action cards
-        // start arriving, and for failure / completion notices.
-        if (!msg.body) break
-        this.isTyping = false
-        this.appendChatMessage({
-          id: `sys_${Date.now()}`,
-          role: 'system',
-          body: msg.body,
-          timestamp: new Date().toISOString(),
-        })
-        if (this.view === 'launcher') this.unreadCount++
-        break
-      }
 
       case 'history': {
         if (!Array.isArray(msg.messages)) break
