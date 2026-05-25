@@ -2,10 +2,7 @@ import { useRef, useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon,
-  ArrowRightIcon,
-  BoltIcon,
   CheckIcon,
-  ChatBubbleLeftRightIcon,
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
@@ -14,7 +11,6 @@ import {
   SparklesIcon,
   UserPlusIcon,
   UsersIcon,
-  VideoCameraIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
@@ -23,7 +19,9 @@ import {
   createOrganization,
   describeUrlPublic,
   joinOrganization,
+  saveAttribution,
   validateInviteCode,
+  type AttributionSource,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 
@@ -52,12 +50,14 @@ type FlowStep =
   | 'org-name'
   | 'industry'
   | 'details'
+  | 'surface'
   | 'success'
   | 'invite'
   | 'join-code'
-  | 'module'
+  | 'attribution'
 
 const STEP_BACK: Partial<Record<FlowStep, FlowStep>> = {
+  surface: 'details',
   'org-name': 'choose',
   industry: 'org-name',
   details: 'industry',
@@ -68,23 +68,17 @@ const LEFT_HEADINGS: Partial<Record<FlowStep, string>> = {
   'org-name': 'Create your\nworkspace',
   industry: 'Tailor your\nexperience',
   details: 'Almost\nthere',
+  surface: 'Where will\nLira live?',
   invite: 'Grow your\nteam',
   'join-code': 'Join your\nteam',
-  module: 'Choose your\nfirst module',
+  attribution: 'Quick\nquestion',
 }
 
-// TODO(api): persist to user.preferred_module via creovine-api once field exists.
-// For now we stash in localStorage so the dashboard + routing can read it.
-export type PreferredModule = 'support' | 'sales' | 'meetings' | 'unsure'
-const PREFERRED_MODULE_KEY = 'lira.preferred_module'
-
-function persistPreferredModule(choice: PreferredModule) {
-  try {
-    localStorage.setItem(PREFERRED_MODULE_KEY, choice)
-  } catch {
-    // ignore storage errors (private mode, etc.)
-  }
-}
+// 2026-05-24 — the module-picker step ("What brings you to Lira?") was
+// removed because the product is customer-support only for now. Onboarding
+// now flows: create org → success → /support/activate. The PreferredModule
+// type, MODULE_OPTIONS list, and persistPreferredModule helper went with
+// it (nothing else read them). Restore from git if sales+meetings ship.
 
 function CelebrationGraphic() {
   return (
@@ -120,125 +114,6 @@ function CelebrationGraphic() {
       <circle cx="37" cy="123" r="3" fill="#3730a3" />
       <circle cx="123" cy="123" r="3" fill="#4338ca" />
     </svg>
-  )
-}
-
-// ── Module picker step ──────────────────────────────────────────────────────
-
-const MODULE_OPTIONS: {
-  id: PreferredModule
-  title: string
-  description: string
-  Icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
-  accent: string
-  recommended?: boolean
-}[] = [
-  {
-    id: 'support',
-    title: 'Customer Support',
-    description: 'Launch an AI support agent — chat, portal, email — grounded in your knowledge.',
-    Icon: ChatBubbleLeftRightIcon,
-    accent: '#3730a3',
-    recommended: true,
-  },
-  {
-    id: 'sales',
-    title: 'Sales Coaching',
-    description: 'Real-time objection handling and CRM auto-fill on every call.',
-    Icon: BoltIcon,
-    accent: '#f59e0b',
-  },
-  {
-    id: 'meetings',
-    title: 'Meeting Intelligence',
-    description: 'Lira joins your meetings, contributes, and closes the loop on action items.',
-    Icon: VideoCameraIcon,
-    accent: '#10b981',
-  },
-  {
-    id: 'unsure',
-    title: 'Not sure yet — show me around',
-    description: "We'll take you to the dashboard with all modules visible.",
-    Icon: SparklesIcon,
-    accent: '#6366f1',
-  },
-]
-
-function ModuleStep({ onPick }: { onPick: (choice: PreferredModule) => void }) {
-  const [selected, setSelected] = useState<PreferredModule>('support')
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
-          One more thing
-        </p>
-        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
-          What brings you to Lira?
-        </h1>
-        <p className="mt-2 text-sm text-gray-500">
-          Pick what you'd like to set up first. You can always enable the others later from your
-          dashboard.
-        </p>
-      </div>
-
-      <div className="space-y-2.5">
-        {MODULE_OPTIONS.map((opt) => {
-          const { Icon } = opt
-          const isSelected = selected === opt.id
-          return (
-            <button
-              key={opt.id}
-              type="button"
-              onClick={() => setSelected(opt.id)}
-              className={`group relative flex w-full items-start gap-4 rounded-xl border px-5 py-4 text-left transition ${
-                isSelected
-                  ? 'border-[#3730a3] bg-[#3730a3]/5 shadow-sm'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
-              }`}
-            >
-              <div
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background: `${opt.accent}14`,
-                  color: opt.accent,
-                }}
-              >
-                <Icon className="h-5 w-5" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-gray-900">{opt.title}</p>
-                  {opt.recommended && (
-                    <span className="inline-flex items-center rounded-full bg-[#3730a3]/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#3730a3]">
-                      Recommended
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">{opt.description}</p>
-              </div>
-              <div
-                className={`mt-0.5 h-5 w-5 shrink-0 rounded-full border-2 transition ${
-                  isSelected ? 'border-[#3730a3] bg-[#3730a3]' : 'border-gray-300 bg-white'
-                }`}
-              >
-                {isSelected && <CheckIcon className="h-full w-full p-0.5 text-white" />}
-              </div>
-            </button>
-          )
-        })}
-      </div>
-
-      <div className="flex items-center justify-end border-t border-gray-100 pt-4">
-        <button
-          onClick={() => onPick(selected)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-[#3730a3] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
-        >
-          Continue
-          <ArrowRightIcon className="h-4 w-4" />
-        </button>
-      </div>
-    </div>
   )
 }
 
@@ -401,6 +276,131 @@ function SparkleGraphic() {
   )
 }
 
+// ── Attribution step ────────────────────────────────────────────────────────
+//
+// Optional one-question step asking how the user found Lira. Used for
+// marketing-channel attribution on the admin dashboard. Skippable —
+// Continue saves; Skip moves on without an API call.
+
+const ATTRIBUTION_OPTIONS: { id: AttributionSource; label: string; emoji: string }[] = [
+  { id: 'google', label: 'Google search', emoji: '🔎' },
+  { id: 'linkedin', label: 'LinkedIn', emoji: '💼' },
+  { id: 'friend', label: 'Friend or colleague', emoji: '👋' },
+  { id: 'youtube', label: 'YouTube', emoji: '📺' },
+  { id: 'twitter', label: 'X / Twitter', emoji: '🐦' },
+  { id: 'ai_tool', label: 'ChatGPT or another AI tool', emoji: '🤖' },
+  { id: 'blog', label: 'Blog post or article', emoji: '📝' },
+  { id: 'podcast', label: 'Podcast', emoji: '🎙️' },
+  { id: 'event', label: 'Conference or event', emoji: '🎪' },
+  { id: 'sales_outreach', label: 'Lira team reached out', emoji: '📨' },
+  { id: 'other', label: 'Other', emoji: '✨' },
+]
+
+function AttributionStep({ onDone }: { onDone: () => void }) {
+  const [selected, setSelected] = useState<AttributionSource | null>(null)
+  const [detail, setDetail] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const handleContinue = async () => {
+    if (!selected) return
+    setSubmitting(true)
+    try {
+      await saveAttribution(selected, detail.trim() || undefined)
+    } catch (err) {
+      // Non-blocking — attribution is best-effort. Log and move on.
+      console.warn('[onboarding] failed to save attribution', err)
+    } finally {
+      setSubmitting(false)
+      onDone()
+    }
+  }
+
+  const showDetail = selected === 'other'
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
+          Quick question
+        </p>
+        <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+          How did you hear about us?
+        </h1>
+        <p className="mt-2 text-sm text-gray-500">
+          Helps us understand which channels are working. Totally optional — you can skip.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        {ATTRIBUTION_OPTIONS.map((opt) => {
+          const isSelected = selected === opt.id
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => setSelected(opt.id)}
+              className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm transition ${
+                isSelected
+                  ? 'border-[#3730a3] bg-[#3730a3]/5'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <span className="text-lg" aria-hidden>
+                {opt.emoji}
+              </span>
+              <span
+                className={`flex-1 ${isSelected ? 'font-semibold text-[#3730a3]' : 'text-gray-700'}`}
+              >
+                {opt.label}
+              </span>
+              {isSelected && <CheckIcon className="h-4 w-4 text-[#3730a3]" />}
+            </button>
+          )
+        })}
+      </div>
+
+      {showDetail && (
+        <div>
+          <label
+            htmlFor="attribution-detail"
+            className="text-xs font-semibold uppercase tracking-wide text-gray-500"
+          >
+            Tell us more (optional)
+          </label>
+          <input
+            id="attribution-detail"
+            type="text"
+            value={detail}
+            onChange={(e) => setDetail(e.target.value)}
+            placeholder="A specific podcast, a community, a referrer..."
+            maxLength={200}
+            className="mt-1.5 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none focus:border-[#3730a3]"
+          />
+        </div>
+      )}
+
+      <div className="flex items-center justify-end gap-2 border-t border-gray-100 pt-4">
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={submitting}
+          className="rounded-lg px-4 py-2.5 text-sm font-semibold text-gray-500 transition hover:text-gray-900 disabled:opacity-50"
+        >
+          Skip
+        </button>
+        <button
+          type="button"
+          onClick={handleContinue}
+          disabled={!selected || submitting}
+          className="rounded-lg bg-[#3730a3] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {submitting ? 'Saving…' : 'Continue'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function OnboardingPage() {
   const navigate = useNavigate()
   const { token, emailVerified } = useAuthStore()
@@ -419,6 +419,10 @@ function OnboardingPage() {
   const [website, setWebsite] = useState('')
   const [description, setDescription] = useState('')
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null)
+  // Deployment surface preference — captured on the 'surface' step before
+  // org creation so handleCreate can persist it. Drives the in-chat
+  // onboarding guide's install instructions later.
+  const [surfaces, setSurfaces] = useState<'web' | 'mobile' | 'both'>('web')
   const [autoDescribe, setAutoDescribe] = useState(false)
   const [describingUrl, setDescribingUrl] = useState(false)
   const [describeError, setDescribeError] = useState<string | null>(null)
@@ -454,6 +458,7 @@ function OnboardingPage() {
         website: website.trim() ? normalizeUrl(website) : undefined,
         description: description.trim() || undefined,
         logo_url: logoDataUrl ?? undefined,
+        surfaces,
       })
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
@@ -599,7 +604,8 @@ function OnboardingPage() {
                 <UsersIcon className="h-20 w-20 text-[#3730a3]" />
               </div>
               <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
-                Bring your team on board so everyone can collaborate across support, sales, and meetings.
+                Bring your team on board so everyone can collaborate across support, sales, and
+                meetings.
               </p>
             </>
           ) : (
@@ -643,7 +649,7 @@ function OnboardingPage() {
                 </div>
                 <div className="border-t border-gray-100 pt-4">
                   <button
-                    onClick={() => setStep('module')}
+                    onClick={() => setStep('attribution')}
                     className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
                   >
                     Continue
@@ -652,16 +658,13 @@ function OnboardingPage() {
               </div>
             )}
 
-            {/* Step: module picker */}
-            {step === 'module' && (
-              <ModuleStep
-                onPick={(choice) => {
-                  persistPreferredModule(choice)
-                  if (choice === 'support') navigate('/support/activate')
-                  else navigate('/dashboard')
-                }}
-              />
-            )}
+            {/* Step: attribution ("how did you hear about us") — optional.
+                Both Continue and Skip land the user on /dashboard where the
+                embedded Lira onboarding widget greets them and walks them
+                through setup conversationally (instead of dumping them in
+                /support/activate). Continue POSTs the selection; Skip is a
+                no-op API-wise. */}
+            {step === 'attribution' && <AttributionStep onDone={() => navigate('/dashboard')} />}
 
             {/* Step: invite */}
             {step === 'invite' && (
@@ -872,8 +875,8 @@ function OnboardingPage() {
                     What industry are you in?
                   </h1>
                   <p className="mt-2 text-sm text-gray-500">
-                    Lira uses this to understand your business across every conversation and
-                    deliver smarter, more relevant responses.
+                    Lira uses this to understand your business across every conversation and deliver
+                    smarter, more relevant responses.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
@@ -1128,15 +1131,15 @@ function OnboardingPage() {
                       <button
                         type="button"
                         disabled={creating}
-                        onClick={handleCreate}
+                        onClick={() => setStep('surface')}
                         className="text-sm text-gray-400 transition hover:text-gray-600 disabled:opacity-40"
                       >
-                        Skip &amp; create
+                        Skip &amp; continue
                       </button>
                     )}
                     <button
                       disabled={creating}
-                      onClick={handleCreate}
+                      onClick={() => setStep('surface')}
                       className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
                     >
                       {creating ? (
@@ -1147,13 +1150,100 @@ function OnboardingPage() {
                             className="h-4 w-4 animate-spin opacity-50"
                             style={{ animationDuration: '1.2s' }}
                           />
-                          Creating…
+                          Loading…
                         </span>
                       ) : (
-                        'Create workspace'
+                        'Continue'
                       )}
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* Step: surface — which deployment surface are they planning?
+                Drives the in-chat install instructions later (web embed vs
+                mobile WebView wrapper). Saved on createOrganization(). */}
+            {step === 'surface' && (
+              <div className="space-y-6">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
+                    Where will Lira live?
+                  </p>
+                  <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900">
+                    Pick your surface
+                  </h1>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Helps Lira tailor your install instructions. You can change this later.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 gap-3">
+                  {(
+                    [
+                      {
+                        id: 'web',
+                        title: 'Web only',
+                        desc: 'You only need the chat widget on a website (marketing site, dashboard, web app).',
+                        emoji: '🖥️',
+                      },
+                      {
+                        id: 'mobile',
+                        title: 'Mobile app only',
+                        desc: 'You only need Lira inside an iOS or Android app. Today this is a WebView wrapper; native SDKs are roadmap.',
+                        emoji: '📱',
+                      },
+                      {
+                        id: 'both',
+                        title: 'Both web and mobile',
+                        desc: 'You plan to ship Lira on both your web product and your mobile app.',
+                        emoji: '🌐',
+                      },
+                    ] as const
+                  ).map((opt) => {
+                    const isSelected = surfaces === opt.id
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setSurfaces(opt.id)}
+                        className={`flex items-start gap-3 rounded-xl border px-4 py-3.5 text-left transition ${
+                          isSelected
+                            ? 'border-[#3730a3] bg-[#3730a3]/5 shadow-sm'
+                            : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span className="text-xl" aria-hidden>
+                          {opt.emoji}
+                        </span>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <p
+                              className={`text-sm font-semibold ${
+                                isSelected ? 'text-[#3730a3]' : 'text-gray-900'
+                              }`}
+                            >
+                              {opt.title}
+                            </p>
+                          </div>
+                          <p className="mt-0.5 text-xs leading-5 text-gray-500">{opt.desc}</p>
+                        </div>
+                        <CheckIcon
+                          className={`mt-0.5 h-4 w-4 shrink-0 ${
+                            isSelected ? 'text-[#3730a3]' : 'text-transparent'
+                          }`}
+                        />
+                      </button>
+                    )
+                  })}
+                </div>
+                <div className="flex items-center justify-end gap-2 border-t border-gray-100 pt-4">
+                  <button
+                    disabled={creating}
+                    onClick={handleCreate}
+                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
+                  >
+                    {creating ? 'Creating…' : 'Create workspace'}
+                  </button>
                 </div>
               </div>
             )}

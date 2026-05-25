@@ -50,6 +50,8 @@ import {
   VerifyEmailPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  MyTicketsPage,
+  MyTicketDetailPage,
 } from '@/pages'
 import {
   AdminShell,
@@ -59,6 +61,7 @@ import {
   AdminEmailPage,
   AdminDemoOpsPage,
   AdminManagementPage,
+  AdminInvitesPage,
 } from '@/pages/admin'
 import {
   SupportActivatePage,
@@ -70,7 +73,10 @@ import {
   SupportActionsPage,
   SupportProactivePage,
   SupportAnalyticsPage,
-  SupportSettingsPage,
+  SupportTicketsPage,
+  SupportTicketDetailPage,
+  // SupportSettingsPage removed 2026-05-24 — content consolidated into
+  // /settings → Support. The /support/configuration route now redirects.
 } from '@/pages/support'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
@@ -151,6 +157,8 @@ function App() {
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>
           <Route path="/profile" element={<MemberProfilePage />} />
+          <Route path="/tickets" element={<MyTicketsPage />} />
+          <Route path="/tickets/:ticketNumber" element={<MyTicketDetailPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/meeting" element={<MeetingPage />} />
           <Route path="/meetings" element={<MeetingsPage />} />
@@ -173,13 +181,18 @@ function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
           </Route>
-          <Route path="/support" element={<Navigate to="/support/inbox" replace />} />
+          <Route path="/support" element={<Navigate to="/support/tickets" replace />} />
+          <Route path="/support/tickets" element={<SupportTicketsPage />} />
+          <Route path="/support/tickets/:ticketId" element={<SupportTicketDetailPage />} />
           <Route path="/support/inbox" element={<SupportInboxPage />} />
           <Route path="/support/customers" element={<SupportCustomersPage />} />
           <Route path="/support/actions" element={<SupportActionsPage />} />
           <Route path="/support/proactive" element={<SupportProactivePage />} />
           <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
-          <Route path="/support/configuration" element={<SupportSettingsPage />} />
+          {/* /support/configuration was consolidated into /settings → Support
+              sub-tabs (Secret + Mobile). Keep the route as a redirect so any
+              bookmarks / agent links still work. */}
+          <Route path="/support/configuration" element={<Navigate to="/settings" replace />} />
           <Route path="/support/activate" element={<SupportActivatePage />} />
           <Route path="/support/inbox/:id" element={<SupportConversationPage />} />
           <Route path="/support/notifications" element={<SupportNotificationsPage />} />
@@ -194,6 +207,7 @@ function App() {
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="email" element={<AdminEmailPage />} />
           <Route path="demo-ops" element={<AdminDemoOpsPage />} />
+          <Route path="invites" element={<AdminInvitesPage />} />
           <Route path="admins" element={<AdminManagementPage />} />
         </Route>
 

@@ -2,17 +2,23 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
+  ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   BuildingOffice2Icon,
-  CalendarDaysIcon,
+  // CalendarDaysIcon removed alongside the commented-out 'Calendar Sync' tab.
   ChatBubbleLeftEllipsisIcon,
   ClipboardDocumentIcon,
+  ClipboardDocumentCheckIcon,
   CodeBracketIcon,
   Cog6ToothIcon,
+  DevicePhoneMobileIcon,
+  EyeIcon,
+  EyeSlashIcon,
   GlobeAltIcon,
   CreditCardIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
+  KeyIcon,
   LockClosedIcon,
   MicrophoneIcon,
   ShieldCheckIcon,
@@ -38,6 +44,7 @@ import {
   deleteAccount,
   leaveOrganization,
 } from '@/services/api'
+import { rotateWidgetSecret } from '@/services/api/support-api'
 import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 
@@ -742,7 +749,8 @@ function AccountSection() {
 // ── Support Settings section ──────────────────────────────────────────────────
 
 function SupportSettingsSection() {
-  const { currentOrgId } = useOrgStore()
+  const { currentOrgId, organizations } = useOrgStore()
+  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
   const { config, loadConfig, updateConfig } = useSupportStore()
   const [saving, setSaving] = useState(false)
 
@@ -782,7 +790,15 @@ function SupportSettingsSection() {
     setChatEnabled(config.chat_enabled)
     setVoiceEnabled(config.voice_enabled)
     setPortalEnabled(config.portal_enabled ?? false)
-    setPortalSlug(config.portal_slug ?? '')
+    // If portal is on but no slug was ever persisted (older activations had a
+    // bug where the slug was sent as undefined), derive one from the org name
+    // so the field shows something meaningful. User can edit + Save to commit.
+    const derivedSlug =
+      (currentOrg?.name ?? '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '') || 'my-company'
+    setPortalSlug(config.portal_slug || (config.portal_enabled ? derivedSlug : ''))
     setCustomDomain(config.custom_domain ?? '')
     setPortalColor(config.portal_color ?? config.widget_color ?? '#3730a3')
     setPortalLogoUrl(config.portal_logo_url ?? '')
@@ -791,16 +807,20 @@ function SupportSettingsSection() {
     setPortalVoiceEnabled(config.portal_voice_enabled ?? config.voice_enabled ?? true)
     setPortalTicketsEnabled(config.portal_tickets_enabled ?? true)
     setPortalTrackEnabled(config.portal_track_enabled ?? true)
-    setWidgetColor(config.widget_color ?? '#3730a3')
-    setAutoReplyEnabled(config.auto_reply_enabled)
-    setConfidenceThreshold(config.confidence_threshold)
-    setForceEscalateIntents(config.force_escalate_intents.join(', '))
+    setWidgetColor(config.widget_color ?? '#1A1A1A')
+    setAutoReplyEnabled(config.auto_reply_enabled ?? true)
+    setConfidenceThreshold(config.confidence_threshold ?? 0.5)
+    // Fields may be undefined when the support module isn't activated
+    // yet (backend now returns `{ org_id, activated: false }` instead of
+    // 404 for un-activated orgs). Defaulting prevents the .join() crash
+    // that blanked this whole tab.
+    setForceEscalateIntents((config.force_escalate_intents ?? []).join(', '))
     setSlackChannel(config.escalation_slack_channel ?? '')
     setLinearTeam(config.escalation_linear_team ?? '')
     setEscalationEmail(config.escalation_email ?? '')
     setGreetingMessage(config.greeting_message ?? 'Hello! How can I help you today?')
     setSlaHours(config.sla_hours ?? 4)
-  }, [config])
+  }, [config, currentOrg?.name])
 
   const handleSave = useCallback(async () => {
     if (!currentOrgId) return
@@ -869,10 +889,12 @@ function SupportSettingsSection() {
   ])
 
   const [activeTab, setActiveTab] = useState<
-    'widget' | 'channels' | 'portal' | 'behavior' | 'escalation'
+    'widget' | 'secret' | 'channels' | 'portal' | 'behavior' | 'escalation' | 'mobile'
   >('widget')
 
-  if (!config) {
+  // Show the "not activated" prompt for both null configs AND for the
+  // empty default the backend now returns for unactivated orgs.
+  if (!config || !config.activated) {
     return (
       <Section icon={ChatBubbleLeftEllipsisIcon} title="Customer Support">
         <p className="text-sm text-muted-foreground">
@@ -887,74 +909,222 @@ function SupportSettingsSection() {
   }
 
   const SUPPORT_TABS = [
-    { key: 'widget' as const, label: 'Widget', icon: CodeBracketIcon },
+    { key: 'widget' as const, label: 'Web SDK', icon: CodeBracketIcon },
+    { key: 'secret' as const, label: 'Secret', icon: KeyIcon },
     { key: 'channels' as const, label: 'Channels', icon: EnvelopeIcon },
-    { key: 'portal' as const, label: 'Portal', icon: GlobeAltIcon },
+    { key: 'portal' as const, label: 'Hosted', icon: GlobeAltIcon },
     { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
     { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
+    { key: 'mobile' as const, label: 'Mobile', icon: DevicePhoneMobileIcon },
   ]
 
+  const escapedGreeting = (greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '&quot;')
+  const widgetEmbedSnippet = [
+    '<script',
+    '  src="https://widget.liraintelligence.com/v1/widget.js"',
+    `  data-org-id="${config.org_id}"`,
+    `  data-greeting="${escapedGreeting}"`,
+    '  data-position="bottom-right">',
+    '</script>',
+  ].join('\n')
+  const fullPageEmbedSnippet = [
+    '<div id="lira-support-root" style="height: 720px;"></div>',
+    '<script',
+    '  src="https://widget.liraintelligence.com/v1/widget.js"',
+    `  data-org-id="${config.org_id}"`,
+    '  data-mode="fullscreen"',
+    '  data-target="#lira-support-root"',
+    `  data-greeting="${escapedGreeting}">`,
+    '</script>',
+  ].join('\n')
+  const jsSdkSnippet = [
+    '<div id="lira-support-root" style="height: 720px;"></div>',
+    '<script src="https://widget.liraintelligence.com/v1/widget.js"></script>',
+    '<script>',
+    '  window.Lira.init({',
+    `    orgId: '${config.org_id}',`,
+    "    orgName: 'Your company',",
+    `    primaryColor: '${widgetColor}',`,
+    `    greeting: '${(greetingMessage ?? 'Hi! How can we help?').replace(/'/g, "\\'")}'`,
+    '  })',
+    '',
+    '  window.Lira.identify({',
+    '    email: currentUser.email,',
+    '    name: currentUser.name,',
+    '    sig: serverGeneratedHmac',
+    '  })',
+    '',
+    '  window.Lira.setContext({',
+    '    route: window.location.pathname,',
+    '    account: { id: currentUser.accountId, plan: currentUser.plan }',
+    '  })',
+    '',
+    "  window.Lira.mountSupportPage('#lira-support-root')",
+    '</script>',
+  ].join('\n')
+  const npmSdkSnippet = [
+    '# After @liraintelligence/support is published to your npm registry',
+    'npm install @liraintelligence/support',
+    '',
+    "import { init, identify, setContext, mountSupportPage, registerAction } from '@liraintelligence/support'",
+    '',
+    `await init({ orgId: '${config.org_id}', orgName: 'Your company' })`,
+    'await identify({ email: currentUser.email, name: currentUser.name, sig: serverGeneratedHmac })',
+    'await setContext({ route: window.location.pathname, account: currentUser.account })',
+    '',
+    "registerAction('billing.open_checkout', async ({ payload }) => {",
+    '  await openCheckout(payload)',
+    "  return { ok: true, message: 'Checkout opened' }",
+    '})',
+    '',
+    "await mountSupportPage('#lira-support-root')",
+  ].join('\n')
+
   return (
-    <div className="space-y-4">
-      {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
-        {SUPPORT_TABS.map((tab) => {
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition',
-                activeTab === tab.key
-                  ? 'bg-[#1A1A1A] text-white shadow-sm'
-                  : 'text-gray-500 hover:bg-white hover:text-gray-900'
-              )}
-            >
-              <Icon className="h-3.5 w-3.5 shrink-0" />
-              {tab.label}
-            </button>
-          )
-        })}
+    <div className="space-y-4 pb-24">
+      {/* Tab bar + top Save button */}
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">
+          {SUPPORT_TABS.map((tab) => {
+            const Icon = tab.icon
+            return (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-semibold transition',
+                  activeTab === tab.key
+                    ? 'bg-[#1A1A1A] text-white shadow-sm'
+                    : 'text-gray-500 hover:bg-white hover:text-gray-900'
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                {tab.label}
+              </button>
+            )
+          })}
+        </div>
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={saving}
+          className="shrink-0 bg-[#1A1A1A] text-white hover:bg-[#333] disabled:opacity-50"
+        >
+          {saving ? 'Saving…' : 'Save'}
+        </Button>
       </div>
 
-      {/* ── Widget tab ── */}
+      {/* ── Web SDK tab ── */}
       {activeTab === 'widget' && (
         <div className="space-y-4">
-          {/* Embed code */}
+          {/* Full-page SDK */}
           <div className="rounded-lg border px-4 py-4 space-y-3">
             <div>
-              <p className="text-sm font-medium text-foreground">Embed Code</p>
+              <p className="text-sm font-medium text-foreground">
+                Full-page Support SDK, recommended
+              </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Paste before the <code className="font-mono">&lt;/body&gt;</code> tag on every page
-                where you want the chat widget.
+                Add this to your own route, for example <code className="font-mono">/support</code>,
+                so customers stay inside your product while Lira powers chat, tickets, identity, and
+                AI actions.
               </p>
             </div>
             <div className="relative">
               <pre className="overflow-x-auto rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
-                {[
-                  '<script',
-                  '  src="https://widget.liraintelligence.com/v1/widget.js"',
-                  `  data-org-id="${config.org_id}"`,
-                  `  data-greeting="${(greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '&quot;')}"`,
-                  '  data-position="bottom-right">',
-                  '</script>',
-                ].join('\n')}
+                {fullPageEmbedSnippet}
               </pre>
               <button
                 type="button"
                 onClick={() => {
-                  const code = [
-                    '<script',
-                    '  src="https://widget.liraintelligence.com/v1/widget.js"',
-                    `  data-org-id="${config.org_id}"`,
-                    `  data-greeting="${(greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '"')}"`,
-                    '  data-position="bottom-right">',
-                    '</script>',
-                  ].join('\n')
-                  navigator.clipboard.writeText(code)
-                  toast.success('Embed code copied!')
+                  navigator.clipboard.writeText(fullPageEmbedSnippet)
+                  toast.success('Full-page SDK code copied!')
+                }}
+                className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 hover:bg-gray-600 transition"
+              >
+                <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                Copy
+              </button>
+            </div>
+            <p className="text-[11px] text-gray-400">
+              For logged-in products, use the Secret tab to sign visitors server-side, then pass
+              identity and account context with <code className="font-mono">window.Lira</code>.
+            </p>
+          </div>
+
+          {/* JS SDK API */}
+          <div className="rounded-lg border px-4 py-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">JavaScript SDK API</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Use this form when your app needs to identify signed-in users and send live product
+                context such as account plan, route, or billing status.
+              </p>
+            </div>
+            <div className="relative">
+              <pre className="overflow-x-auto rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                {jsSdkSnippet}
+              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(jsSdkSnippet)
+                  toast.success('JavaScript SDK code copied!')
+                }}
+                className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 hover:bg-gray-600 transition"
+              >
+                <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                Copy
+              </button>
+            </div>
+          </div>
+
+          {/* NPM SDK */}
+          <div className="rounded-lg border px-4 py-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">NPM package, publish-ready</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Use <code className="font-mono">@liraintelligence/support</code> in React, Next.js,
+                Vue, or any bundled web app when your engineers want typed imports and registered
+                actions. Registry publishing requires npm authentication.
+              </p>
+            </div>
+            <div className="relative">
+              <pre className="overflow-x-auto rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                {npmSdkSnippet}
+              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(npmSdkSnippet)
+                  toast.success('NPM SDK example copied!')
+                }}
+                className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 hover:bg-gray-600 transition"
+              >
+                <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                Copy
+              </button>
+            </div>
+          </div>
+
+          {/* Floating widget */}
+          <div className="rounded-lg border px-4 py-4 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-foreground">Floating Chat Widget</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Optional launcher for marketing pages, dashboards, and areas where you want a
+                compact support entry point instead of a full support route.
+              </p>
+            </div>
+            <div className="relative">
+              <pre className="overflow-x-auto rounded-lg bg-gray-900 px-4 py-3 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                {widgetEmbedSnippet}
+              </pre>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(widgetEmbedSnippet)
+                  toast.success('Widget code copied!')
                 }}
                 className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 hover:bg-gray-600 transition"
               >
@@ -1030,27 +1200,40 @@ function SupportSettingsSection() {
         </div>
       )}
 
+      {/* ── Secret tab ── HMAC widget secret + identified-visitor guide.
+          Migrated from the old /support/configuration page; the secret is
+          the only thing customers really need from there. */}
+      {activeTab === 'secret' && (
+        <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
+      )}
+
+      {/* ── Mobile tab ── placeholder. Native iOS/Android SDKs are on the
+          roadmap; this tab exists today so customers see we have a plan. */}
+      {activeTab === 'mobile' && <SupportMobileTab />}
+
       {/* ── Channels tab ── */}
       {activeTab === 'channels' && (
         <div className="space-y-4">
-          {/* Support Portal — configure in Portal tab */}
+          {/* Web SDK — configure in Web SDK tab */}
           <button
             type="button"
             className="w-full rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition text-left"
-            onClick={() => setActiveTab('portal')}
+            onClick={() => setActiveTab('widget')}
           >
             <div className="flex items-center gap-2">
-              <GlobeAltIcon className="h-4 w-4 text-gray-400" />
-              <p className="text-sm font-medium text-gray-500">Support Portal</p>
-              <span className="text-xs text-gray-400">→ Portal tab</span>
+              <CodeBracketIcon className="h-4 w-4 text-gray-400" />
+              <p className="text-sm font-medium text-gray-500">Full-page Support SDK</p>
+              <span className="text-xs text-gray-400">→ Web SDK tab</span>
             </div>
           </button>
 
           {/* Chat */}
           <div className="flex items-start justify-between rounded-lg border px-4 py-3">
             <div>
-              <p className="text-sm font-medium text-foreground">Chat Widget</p>
-              <p className="text-xs text-muted-foreground">Embeddable live chat for your website</p>
+              <p className="text-sm font-medium text-foreground">Web Chat Runtime</p>
+              <p className="text-xs text-muted-foreground">
+                Enables the floating widget and full-page support SDK surfaces.
+              </p>
             </div>
             <label aria-label="Toggle chat widget" className="flex items-center gap-2">
               <input
@@ -1151,16 +1334,31 @@ function SupportSettingsSection() {
         </div>
       )}
 
-      {/* ── Portal tab ── */}
+      {/* ── Hosted fallback tab ── */}
       {activeTab === 'portal' && (
         <div className="space-y-4">
+          {/* What this is + what to do with it */}
+          <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 space-y-2">
+            <p className="text-sm font-semibold text-blue-900">Hosted portal fallback</p>
+            <p className="text-xs text-blue-900/80 leading-relaxed">
+              For production B2B apps, use the Web SDK tab to mount Lira inside your own support
+              route, such as <code className="font-mono">yourcompany.com/support</code>. That keeps
+              your URL, app shell, and customer experience under your control.
+            </p>
+            <p className="text-xs text-blue-900/80 leading-relaxed">
+              The hosted portal remains available as a no-code fallback for temporary launches,
+              emails, or teams that cannot touch their product code yet. It should not be the main
+              integration path for customers like LemonPay.
+            </p>
+          </div>
+
           {/* Access */}
           <div className="rounded-lg border px-4 py-3 space-y-3">
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-sm font-medium text-foreground">Support Portal</p>
+                <p className="text-sm font-medium text-foreground">Hosted Support Portal</p>
                 <p className="text-xs text-muted-foreground">
-                  A branded page where customers submit tickets, track status, and chat.
+                  Optional Lira-hosted fallback page for customers without an SDK integration.
                 </p>
               </div>
               <label aria-label="Toggle support portal" className="flex items-center gap-2">
@@ -1254,7 +1452,7 @@ function SupportSettingsSection() {
 
             {!portalEnabled && (
               <p className="text-xs text-muted-foreground">
-                Enable the portal to configure its URL, branding, and features.
+                Enable the hosted fallback to configure its URL, branding, and features.
               </p>
             )}
           </div>
@@ -1617,16 +1815,20 @@ function SupportSettingsSection() {
         </div>
       )}
 
-      {/* Save */}
-      <div className="flex justify-end pt-2">
-        <Button
-          size="sm"
-          onClick={handleSave}
-          disabled={saving}
-          className="bg-[#1A1A1A] text-white hover:bg-[#333] disabled:opacity-50"
-        >
-          {saving ? 'Saving…' : 'Save Support Settings'}
-        </Button>
+      {/* Sticky bottom Save bar — kept out of the widget bubble's zone
+          (bottom-right, ~80px) via pr-24 so the button is always clickable. */}
+      <div className="sticky bottom-0 -mx-4 mt-4 border-t border-gray-200 bg-white/95 px-4 py-3 pr-24 backdrop-blur sm:-mx-6 sm:px-6 sm:pr-32">
+        <div className="flex items-center justify-end gap-3">
+          <p className="text-xs text-gray-400">Changes save on click — no auto-save.</p>
+          <Button
+            size="sm"
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-[#1A1A1A] text-white hover:bg-[#333] disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save Support Settings'}
+          </Button>
+        </div>
       </div>
     </div>
   )
@@ -1645,13 +1847,231 @@ type SettingsTab =
 
 const SETTINGS_TABS = [
   { id: 'account' as SettingsTab, icon: UserCircleIcon, label: 'Account' },
-  { id: 'ai' as SettingsTab, icon: SparklesIcon, label: 'Lira Configuration' },
+  // 'Lira Configuration' (voice/AI) is hidden until voice is brought back.
+  // The AI section is still rendered under activeTab === 'ai' for direct URL
+  // access, but it's not in the nav so customers don't see half-built UI.
+  // { id: 'ai' as SettingsTab, icon: SparklesIcon, label: 'Lira Configuration' },
   { id: 'organization' as SettingsTab, icon: BuildingOffice2Icon, label: 'Organization' },
-  { id: 'calendar' as SettingsTab, icon: CalendarDaysIcon, label: 'Calendar Sync' },
+  // Calendar sync is for the (deprecated) meetings module; not part of the
+  // support-only product. Restore when meetings is reintroduced.
+  // { id: 'calendar' as SettingsTab, icon: CalendarDaysIcon, label: 'Calendar Sync' },
   { id: 'support' as SettingsTab, icon: ChatBubbleLeftEllipsisIcon, label: 'Support' },
   { id: 'subscription' as SettingsTab, icon: ShieldCheckIcon, label: 'Subscription' },
   { id: 'billing' as SettingsTab, icon: CreditCardIcon, label: 'Billing' },
 ]
+
+// ── Support → Secret sub-tab ──────────────────────────────────────────────
+// Migrated from the deleted /support/configuration page. Holds the HMAC
+// widget secret (with reveal/copy/rotate) plus the identified-visitor
+// explainer and code samples. The secret is auto-generated on first
+// activate; rotation invalidates all prior signatures.
+
+function SupportSecretTab({
+  orgId,
+  secret: initialSecret,
+}: {
+  orgId: string
+  secret: string | null
+}) {
+  const [secret, setSecret] = useState<string | null>(initialSecret)
+  const [show, setShow] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const [rotating, setRotating] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+
+  const handleCopy = () => {
+    if (!secret) return
+    navigator.clipboard.writeText(secret).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
+  }
+  const handleRotate = async () => {
+    if (!confirming) {
+      setConfirming(true)
+      return
+    }
+    setRotating(true)
+    setConfirming(false)
+    try {
+      const fresh = await rotateWidgetSecret(orgId)
+      setSecret(fresh)
+      toast.success('Widget secret rotated. Update your server before deploying.')
+    } catch {
+      toast.error('Failed to rotate secret')
+    } finally {
+      setRotating(false)
+    }
+  }
+  const masked = secret ? secret.slice(0, 8) + '••••••••••••••••••••••••' : ''
+  const idSnippet = secret
+    ? [
+        '// Server side (Node example):',
+        "const crypto = require('crypto');",
+        "const sig = crypto.createHmac('sha256', process.env.LIRA_WIDGET_SECRET)",
+        '  .update(currentUser.email)',
+        "  .digest('hex');",
+        '',
+        '// Then inject into the page:',
+        '<script',
+        '  src="https://widget.liraintelligence.com/v1/widget.js"',
+        `  data-org-id="${orgId}"`,
+        '  data-email="{{ user.email }}"',
+        '  data-name="{{ user.name }}"',
+        '  data-sig="{{ sig }}">',
+        '</script>',
+      ].join('\n')
+    : ''
+
+  return (
+    <div className="space-y-4">
+      {/* Widget secret row */}
+      <div className="rounded-lg border px-4 py-4 space-y-2">
+        <p className="text-sm font-medium text-foreground">Widget secret</p>
+        <p className="text-xs text-muted-foreground">
+          Store this as <code className="rounded bg-gray-100 px-1">LIRA_WIDGET_SECRET</code> on your
+          server. Use it to HMAC-sign identified visitor emails. Never expose it client-side.
+        </p>
+        {secret ? (
+          <div className="flex items-center gap-2 pt-1">
+            <span className="flex-1 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-xs text-gray-800 select-all">
+              {show ? secret : masked}
+            </span>
+            <button
+              onClick={() => setShow((v) => !v)}
+              title={show ? 'Hide' : 'Reveal'}
+              className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+            >
+              {show ? <EyeSlashIcon className="h-4 w-4" /> : <EyeIcon className="h-4 w-4" />}
+            </button>
+            <button
+              onClick={handleCopy}
+              title="Copy"
+              className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+            >
+              {copied ? (
+                <>
+                  <ClipboardDocumentCheckIcon className="h-3.5 w-3.5 text-emerald-500" />
+                  Copied
+                </>
+              ) : (
+                <>
+                  <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                  Copy
+                </>
+              )}
+            </button>
+            <button
+              onClick={handleRotate}
+              disabled={rotating}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition',
+                confirming
+                  ? 'border-red-300 bg-red-50 text-red-700 hover:bg-red-100'
+                  : 'border-gray-200 bg-white text-gray-600 hover:bg-gray-50'
+              )}
+            >
+              <ArrowPathIcon className={cn('h-3.5 w-3.5', rotating && 'animate-spin')} />
+              {confirming ? 'Confirm rotate' : 'Rotate'}
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400">Secret not available. Activate support first.</p>
+        )}
+        <div className="flex items-start gap-1.5 pt-2 text-xs text-amber-700">
+          <ExclamationTriangleIcon className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+          <span>Rotating invalidates all existing HMAC signatures. Update your server first.</span>
+        </div>
+      </div>
+
+      {/* Identified visitor embed code */}
+      {secret && (
+        <div className="rounded-lg border px-4 py-4 space-y-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">Identified visitor install</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Pass the signed identity from your server so Lira recognises the logged-in user.
+            </p>
+          </div>
+          <div className="relative">
+            <pre className="overflow-x-auto rounded-lg bg-gray-950 px-4 py-3 font-mono text-[11px] leading-relaxed text-gray-200 whitespace-pre">
+              {idSnippet}
+            </pre>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(idSnippet)
+                toast.success('Code copied')
+              }}
+              className="absolute right-2 top-2 flex items-center gap-1 rounded-md bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-200 hover:bg-gray-600 transition"
+            >
+              <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+              Copy
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Explainer */}
+      <div className="rounded-lg border px-4 py-4">
+        <p className="text-sm font-medium text-foreground mb-2">How identified visitors work</p>
+        <ol className="space-y-2 text-sm text-gray-600">
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[10px] font-bold text-white">
+              1
+            </span>
+            <span>Your user logs into your platform (you manage authentication).</span>
+          </li>
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[10px] font-bold text-white">
+              2
+            </span>
+            <span>
+              Your server computes{' '}
+              <code className="rounded bg-gray-100 px-1 text-[11px]">
+                HMAC-SHA256(LIRA_WIDGET_SECRET, user.email)
+              </code>{' '}
+              and injects it into the script tag.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[10px] font-bold text-white">
+              3
+            </span>
+            <span>
+              Lira verifies the signature server-side and treats the visitor as a verified customer.
+              The AI can read their data and act on their account.
+            </span>
+          </li>
+          <li className="flex gap-2">
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[10px] font-bold text-white">
+              4
+            </span>
+            <span>If the signature is wrong or missing, Lira treats the visitor as anonymous.</span>
+          </li>
+        </ol>
+      </div>
+    </div>
+  )
+}
+
+// ── Support → Mobile sub-tab ──────────────────────────────────────────────
+// Placeholder for native iOS/Android SDKs. Visible today so customers
+// know the surface is on the roadmap; the actual SDK ships later.
+
+function SupportMobileTab() {
+  return (
+    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
+      <DevicePhoneMobileIcon className="mx-auto h-8 w-8 text-gray-400" />
+      <p className="mt-3 text-sm font-semibold text-gray-700">Native mobile SDKs coming soon</p>
+      <p className="mt-1 mx-auto max-w-md text-xs text-gray-500">
+        Until then, mobile apps can open your own in-app support route in a WebView and mount the
+        full-page Web SDK there. The hosted portal is only a fallback when you cannot ship that
+        route yet.
+      </p>
+    </div>
+  )
+}
 
 function SettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('account')

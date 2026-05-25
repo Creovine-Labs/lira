@@ -273,6 +273,25 @@ export function AdminUsersPage() {
                   Joined {new Date(selectedUser.createdAt).toLocaleDateString()}
                 </p>
 
+                {/* Attribution — "how did you hear about us" */}
+                <div className="mt-5 border-t border-gray-100 pt-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                    Heard about us via
+                  </p>
+                  {selectedUser.heardAboutUs ? (
+                    <p className="mt-1.5 text-sm text-gray-700">
+                      {formatAttributionSource(selectedUser.heardAboutUs)}
+                      {selectedUser.heardAboutUsDetail && (
+                        <span className="text-gray-400"> — {selectedUser.heardAboutUsDetail}</span>
+                      )}
+                    </p>
+                  ) : (
+                    <p className="mt-1.5 text-sm text-gray-400">
+                      Not provided (skipped during onboarding)
+                    </p>
+                  )}
+                </div>
+
                 {/* Organizations */}
                 <div className="mt-5 border-t border-gray-100 pt-4">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
@@ -345,4 +364,26 @@ export function AdminUsersPage() {
       )}
     </div>
   )
+}
+
+/**
+ * Map a `heardAboutUs` slug from the backend to a human-readable label
+ * for the admin UI. Keep in sync with ATTRIBUTION_OPTIONS in
+ * OnboardingPage.tsx. Unknown slugs fall back to a title-cased version.
+ */
+export function formatAttributionSource(source: string): string {
+  const map: Record<string, string> = {
+    google: 'Google search',
+    linkedin: 'LinkedIn',
+    friend: 'Friend or colleague',
+    youtube: 'YouTube',
+    twitter: 'X / Twitter',
+    ai_tool: 'ChatGPT or another AI tool',
+    blog: 'Blog post or article',
+    podcast: 'Podcast',
+    event: 'Conference or event',
+    sales_outreach: 'Lira team reached out',
+    other: 'Other',
+  }
+  return map[source] ?? source.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
 }

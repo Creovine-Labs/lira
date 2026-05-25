@@ -10,6 +10,7 @@ import {
   Bars3Icon,
   XMarkIcon,
   BeakerIcon,
+  TicketIcon,
 } from '@heroicons/react/24/outline'
 import { cn } from '@/lib'
 import { LiraLogo } from '@/components/LiraLogo'
@@ -18,6 +19,7 @@ const NAV_ITEMS: { to: string; icon: React.ElementType; label: string; end?: boo
   { to: '/admin', icon: Squares2X2Icon, label: 'Overview', end: true },
   { to: '/admin/users', icon: UsersIcon, label: 'Users' },
   { to: '/admin/organizations', icon: BuildingOffice2Icon, label: 'Organizations' },
+  { to: '/admin/invites', icon: TicketIcon, label: 'Invites' },
   { to: '/admin/email', icon: EnvelopeIcon, label: 'Email' },
   { to: '/admin/demo-ops', icon: BeakerIcon, label: 'Demo Ops' },
 ]

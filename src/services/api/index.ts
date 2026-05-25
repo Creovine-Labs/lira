@@ -142,11 +142,11 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 /** Google Sign-In — pass the ID token returned by @react-oauth/google */
-export async function googleLogin(credential: string): Promise<LoginResponse> {
+export async function googleLogin(credential: string, inviteCode?: string): Promise<LoginResponse> {
   const res = await fetch(`${env.VITE_API_URL}/v1/auth/google`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ credential }),
+    body: JSON.stringify({ credential, ...(inviteCode ? { inviteCode } : {}) }),
   })
   if (!res.ok) {
     let body: Record<string, string> = {}
@@ -166,12 +166,19 @@ export async function signup(
   name: string,
   email: string,
   password: string,
-  company?: string
+  company?: string,
+  inviteCode?: string
 ): Promise<LoginResponse> {
   const res = await fetch(`${env.VITE_API_URL}/v1/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, email, password, ...(company ? { company } : {}) }),
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      ...(company ? { company } : {}),
+      ...(inviteCode ? { inviteCode } : {}),
+    }),
   })
   if (!res.ok) {
     let body: Record<string, string> = {}
@@ -485,6 +492,8 @@ export interface OrganizationProfile {
   products?: OrgProduct[]
   terminology?: OrgTerminology[]
   custom_instructions?: string
+  /** Self-reported deployment surface — set during onboarding. */
+  surfaces?: 'web' | 'mobile' | 'both'
 }
 
 export interface Organization {
@@ -2522,6 +2531,8 @@ export interface AdminDashboardOverview {
   verifiedUsers: number
   unverifiedUsers: number
   signupTrend: { date: string; count: number }[]
+  /** Self-reported "how did you hear about us" counts, sorted desc. */
+  attributionBreakdown: { source: string | null; count: number }[]
 }
 
 export interface AdminOrgItem {
@@ -2559,6 +2570,8 @@ export interface AdminUser {
 }
 
 export interface AdminUserDetail extends AdminUser {
+  heardAboutUs: string | null
+  heardAboutUsDetail: string | null
   organizations: {
     org_id: string
     org_name: string
@@ -2639,6 +2652,108 @@ export async function adminDemoteUser(userId: string): Promise<AdminUser> {
   return apiFetch(`/v1/platform/admin/users/${encodeURIComponent(userId)}/demote`, {
     method: 'POST',
   })
+}
+
+// ── Concierge onboarding invites ─────────────────────────────────────────────
+
+export type InvitePlanTier = 'STARTER' | 'GROWTH' | 'ENTERPRISE'
+export type InviteSurfaceHint = 'WEB' | 'MOBILE' | 'BOTH'
+
+export interface InviteStatus {
+  id: string
+  code: string
+  url: string
+  prospectCompany: string | null
+  prospectEmail: string | null
+  planTier: string
+  surfaceHint: string | null
+  notes: string | null
+  expiresAt: string
+  usedAt: string | null
+  usedByUserId: string | null
+  usedByTenantId: string | null
+  revokedAt: string | null
+  createdAt: string
+  state: 'active' | 'used' | 'expired' | 'revoked'
+}
+
+export interface CreateInvitePayload {
+  prospectCompany: string
+  prospectEmail?: string
+  planTier?: InvitePlanTier
+  surfaceHint?: InviteSurfaceHint
+  notes?: string
+  expiresInDays?: number
+}
+
+export async function adminCreateInvite(payload: CreateInvitePayload): Promise<InviteStatus> {
+  return apiFetch('/v1/platform/admin/invites', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function adminListInvites(limit?: number): Promise<InviteStatus[]> {
+  const q = limit ? `?limit=${limit}` : ''
+  return apiFetch(`/v1/platform/admin/invites${q}`)
+}
+
+export async function adminRevokeInvite(id: string): Promise<InviteStatus> {
+  return apiFetch(`/v1/platform/admin/invites/${encodeURIComponent(id)}/revoke`, {
+    method: 'POST',
+  })
+}
+
+// ── Lira's own onboarding widget — signed identity for embedding ────────────
+
+export interface LiraWidgetCreds {
+  orgId: string
+  email: string
+  name: string | null
+  sig: string
+}
+
+/** 503 → backend isn't configured for the onboarding widget (env vars missing). */
+export async function getLiraWidgetCreds(): Promise<LiraWidgetCreds> {
+  return apiFetch('/v1/auth/me/lira-widget')
+}
+
+// ── Attribution ("how did you hear about us") ────────────────────────────────
+
+export type AttributionSource =
+  | 'google'
+  | 'linkedin'
+  | 'friend'
+  | 'youtube'
+  | 'twitter'
+  | 'ai_tool'
+  | 'blog'
+  | 'podcast'
+  | 'event'
+  | 'sales_outreach'
+  | 'other'
+
+export async function saveAttribution(source: AttributionSource, detail?: string): Promise<void> {
+  await apiFetch('/v1/auth/me/attribution', {
+    method: 'PATCH',
+    body: JSON.stringify({ source, ...(detail?.trim() ? { detail: detail.trim() } : {}) }),
+  })
+}
+
+/** Public — validate a concierge-onboarding invite code without consuming.
+ *  Returns `{ valid: false, reason }` for invalid codes. Distinct from
+ *  `validateInviteCode()` which handles org member invites. */
+export async function validatePlatformInvite(code: string): Promise<
+  | {
+      valid: true
+      prospectCompany: string | null
+      prospectEmail: string | null
+      planTier: string
+      surfaceHint: string | null
+    }
+  | { valid: false; reason: string }
+> {
+  return apiFetch(`/v1/auth/invite/${encodeURIComponent(code)}`)
 }
 
 // ── Calendar Sync ─────────────────────────────────────────────────────────────

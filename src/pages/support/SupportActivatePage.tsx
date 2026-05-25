@@ -6,8 +6,14 @@ import {
   EnvelopeIcon,
   ChatBubbleLeftEllipsisIcon,
   GlobeAltIcon,
-  PuzzlePieceIcon,
   BookOpenIcon,
+  PlusIcon,
+  TrashIcon,
+  LockClosedIcon,
+  KeyIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  ArrowPathRoundedSquareIcon,
   RocketLaunchIcon,
   ClipboardDocumentIcon,
   XMarkIcon,
@@ -20,17 +26,6 @@ import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import { cn } from '@/lib'
 import {
-  getSlackAuthUrl,
-  getLinearAuthUrl,
-  getHubSpotAuthUrl,
-  getSalesforceAuthUrl,
-  getSlackStatus,
-  getLinearStatus,
-  getHubSpotStatus,
-  getSalesforceStatus,
-  disconnectSlack,
-  disconnectLinear,
-  disconnectHubSpot,
   listKBEntries,
   listDocuments,
   listConnectedDocuments,
@@ -40,8 +35,8 @@ import {
   type DocumentRecord,
   type ConnectedSourceStatus,
   type CrawlStatus,
-  disconnectSalesforce,
 } from '@/services/api'
+import { rotateWidgetSecret } from '@/services/api/support-api'
 
 // Mirror backend slug logic so we can show a preview before activation
 function previewSupportEmail(orgName: string, orgId: string): string {
@@ -583,7 +578,7 @@ function ChatWidgetPreview({ greeting }: { greeting: string }) {
 const STEPS = [
   { key: 'email', label: 'Email Setup', icon: EnvelopeIcon },
   { key: 'chat', label: 'Channels', icon: ChatBubbleLeftEllipsisIcon },
-  { key: 'integrations', label: 'Connect Integrations', icon: PuzzlePieceIcon },
+  { key: 'integrations', label: 'Ticket Notifications', icon: EnvelopeIcon },
   { key: 'knowledge', label: 'Seed Knowledge', icon: BookOpenIcon },
   { key: 'activate', label: 'Test & Activate', icon: RocketLaunchIcon },
 ] as const
@@ -592,7 +587,7 @@ function SupportActivatePage() {
   const navigate = useNavigate()
   const { currentOrgId, organizations, updateOrganization } = useOrgStore()
   const { userEmail } = useAuthStore()
-  const { config, activateModule, updateConfig } = useSupportStore()
+  const { config, activateModule, updateConfig, loadConfig } = useSupportStore()
   const [currentStep, setCurrentStep] = useState<number>(0)
   const [customSupportEmail, setCustomSupportEmail] = useState('')
   const [showCustomModal, setShowCustomModal] = useState(false)
@@ -605,15 +600,17 @@ function SupportActivatePage() {
   const [portalCustomDomain, setPortalCustomDomain] = useState('')
   const [activating, setActivating] = useState(false)
   const [activated, setActivated] = useState(false)
+  const [showSecret, setShowSecret] = useState(false)
+  const [rotating, setRotating] = useState(false)
+  const [confirmingRotate, setConfirmingRotate] = useState(false)
 
-  // Step 3 — integration statuses
-  const [integrationStatus, setIntegrationStatus] = useState<Record<string, boolean>>({})
-  const [statusLoading, setStatusLoading] = useState(false)
-  const [connectingIntegration, setConnectingIntegration] = useState<string | null>(null)
-
-  // Step 3 — escalation email
+  // Step 3 — ticketing notification email + CC list (enterprise can add up to 2)
   const [escalationEmail, setEscalationEmail] = useState('')
+  const [ccEmails, setCcEmails] = useState<string[]>([])
   const escalationEmailInitialized = useRef(false)
+  // Enterprise gating — wire to real org plan when plans land. For now, off.
+  const isEnterprise = false
+  const MAX_CC = 2
 
   // Step 4 — knowledge base preview
   const [kbEntries, setKbEntries] = useState<KBEntry[]>([])
@@ -641,43 +638,16 @@ function SupportActivatePage() {
     }
   }, [config, navigate, activated])
 
-  // Set default escalation email from logged-in user (once only)
+  // Set default ticketing email + CC list from saved config (once only)
   useEffect(() => {
     if (!escalationEmailInitialized.current && userEmail) {
       escalationEmailInitialized.current = true
       setEscalationEmail(config?.escalation_email ?? userEmail)
+      if (config?.escalation_cc_emails?.length) {
+        setCcEmails(config.escalation_cc_emails.slice(0, MAX_CC))
+      }
     }
-  }, [userEmail, config?.escalation_email])
-
-  // Load integration statuses when step 3 is active
-  const loadIntegrationStatuses = useCallback(async () => {
-    if (!currentOrgId) return
-    setStatusLoading(true)
-    try {
-      const [slack, linear, hubspot, salesforce] = await Promise.allSettled([
-        getSlackStatus(currentOrgId),
-        getLinearStatus(currentOrgId),
-        getHubSpotStatus(currentOrgId),
-        getSalesforceStatus(currentOrgId),
-      ])
-      setIntegrationStatus({
-        Slack: slack.status === 'fulfilled' ? slack.value.connected : false,
-        Linear: linear.status === 'fulfilled' ? linear.value.connected : false,
-        HubSpot: hubspot.status === 'fulfilled' ? hubspot.value.connected : false,
-        Salesforce: salesforce.status === 'fulfilled' ? salesforce.value.connected : false,
-      })
-    } catch {
-      // ignore
-    } finally {
-      setStatusLoading(false)
-    }
-  }, [currentOrgId])
-
-  useEffect(() => {
-    if (currentStep === 2) {
-      loadIntegrationStatuses()
-    }
-  }, [currentStep, loadIntegrationStatuses])
+  }, [userEmail, config?.escalation_email, config?.escalation_cc_emails])
 
   // Load KB data when step 4 (knowledge) becomes active
   useEffect(() => {
@@ -704,74 +674,24 @@ function SupportActivatePage() {
     }
   }, [currentStep, currentOrgId])
 
-  const handleDisconnectIntegration = useCallback(
-    async (name: string) => {
-      if (!currentOrgId) return
-      try {
-        const disconnectFns: Record<string, (id: string) => Promise<void>> = {
-          Slack: disconnectSlack,
-          Linear: disconnectLinear,
-          HubSpot: disconnectHubSpot,
-          Salesforce: disconnectSalesforce,
-        }
-        await disconnectFns[name]?.(currentOrgId)
-        setIntegrationStatus((prev) => ({ ...prev, [name]: false }))
-        toast.success(`${name} disconnected`)
-      } catch {
-        toast.error(`Failed to disconnect ${name}`)
-      }
-    },
-    [currentOrgId]
-  )
-
-  const handleConnectIntegration = useCallback(
-    (name: string) => {
-      if (!currentOrgId) return
-      const authUrls: Record<string, string> = {
-        Slack: getSlackAuthUrl(currentOrgId),
-        Linear: getLinearAuthUrl(currentOrgId),
-        HubSpot: getHubSpotAuthUrl(currentOrgId),
-        Salesforce: getSalesforceAuthUrl(currentOrgId),
-      }
-      const url = authUrls[name]
-      if (!url) return
-
-      setConnectingIntegration(name)
-      const popup = window.open(url, `connect-${name}`, 'width=650,height=750,left=200,top=100')
-
-      // eslint-disable-next-line prefer-const
-      let fallbackInterval: ReturnType<typeof setInterval>
-      // eslint-disable-next-line prefer-const
-      let safetyTimeout: ReturnType<typeof setTimeout>
-
-      const cleanup = () => {
-        clearInterval(fallbackInterval)
-        clearTimeout(safetyTimeout)
-        window.removeEventListener('message', onMessage)
-        setConnectingIntegration(null)
-      }
-
-      // Primary: popup posts a message via window.opener after OAuth completes
-      const onMessage = async (event: MessageEvent) => {
-        if (!event.data || event.data.type !== 'oauth_callback') return
-        cleanup()
-        await loadIntegrationStatuses()
-      }
-      window.addEventListener('message', onMessage)
-
-      // Fallback: user manually closed the popup without completing OAuth
-      fallbackInterval = setInterval(() => {
-        if (!popup || popup.closed) {
-          cleanup()
-          loadIntegrationStatuses()
-        }
-      }, 1_000)
-
-      // Safety cleanup after 5 minutes
-      safetyTimeout = setTimeout(cleanup, 5 * 60_000)
-    },
-    [currentOrgId, loadIntegrationStatuses]
-  )
+  const handleRotateSecret = useCallback(async () => {
+    if (!currentOrgId) return
+    if (!confirmingRotate) {
+      setConfirmingRotate(true)
+      return
+    }
+    setRotating(true)
+    setConfirmingRotate(false)
+    try {
+      await rotateWidgetSecret(currentOrgId)
+      await loadConfig(currentOrgId)
+      toast.success('Widget secret rotated — update your customer integration before deploying')
+    } catch {
+      toast.error('Failed to rotate secret')
+    } finally {
+      setRotating(false)
+    }
+  }, [currentOrgId, confirmingRotate, loadConfig])
 
   const handleActivate = useCallback(async () => {
     if (!currentOrgId) return
@@ -781,15 +701,25 @@ function SupportActivatePage() {
       // before the success screen renders
       setActivated(true)
       await activateModule(currentOrgId)
+      // Refresh config so widget_secret (set server-side on activation) is
+      // available on the success screen.
+      await loadConfig(currentOrgId)
       await updateConfig(currentOrgId, {
         email_enabled: true,
         custom_support_email: customSupportEmail || undefined,
         chat_enabled: chatEnabled,
         greeting_message: greeting.trim() || undefined,
         portal_enabled: portalEnabled,
-        portal_slug: portalSlug.trim() || undefined,
+        // Persist the *resolved* slug (derived from org name if the user
+        // didn't type a custom one) so it matches the URL shown on the
+        // success screen and shows up in Settings → Portal afterwards.
+        portal_slug: portalEnabled ? portalSlugFinal : portalSlug.trim() || undefined,
         custom_domain: portalCustomDomain.trim().toLowerCase() || undefined,
         escalation_email: escalationEmail.trim() || undefined,
+        escalation_cc_emails: ccEmails
+          .map((e) => e.trim())
+          .filter(Boolean)
+          .slice(0, MAX_CC),
         onboarding_completed: true,
         onboarding_step: 'complete',
       })
@@ -809,6 +739,7 @@ function SupportActivatePage() {
     portalSlug,
     portalCustomDomain,
     escalationEmail,
+    ccEmails,
     activateModule,
     updateConfig,
     navigate,
@@ -823,6 +754,50 @@ function SupportActivatePage() {
     `  data-greeting="${(greeting.trim() || 'Hi! How can we help you today?').replace(/"/g, '&quot;')}"\n` +
     '  data-position="bottom-right">\n' +
     '</script>'
+  const fullPageSdkCode =
+    '<div id="lira-support-root" style="height: 720px;"></div>\n' +
+    '<script\n' +
+    '  src="https://widget.liraintelligence.com/v1/widget.js"\n' +
+    `  data-org-id="${currentOrgId ?? 'YOUR_ORG_ID'}"\n` +
+    '  data-mode="fullscreen"\n' +
+    '  data-target="#lira-support-root"\n' +
+    `  data-greeting="${(greeting.trim() || 'Hi! How can we help you today?').replace(/"/g, '&quot;')}">\n` +
+    '</script>'
+  const jsSdkCode =
+    '<div id="lira-support-root" style="height: 720px;"></div>\n' +
+    '<script src="https://widget.liraintelligence.com/v1/widget.js"></script>\n' +
+    '<script>\n' +
+    '  window.Lira.init({\n' +
+    `    orgId: '${currentOrgId ?? 'YOUR_ORG_ID'}',\n` +
+    `    orgName: '${(currentOrg?.name ?? 'Your company').replace(/'/g, "\\'")}',\n` +
+    `    greeting: '${(greeting.trim() || 'Hi! How can we help you today?').replace(/'/g, "\\'")}'\n` +
+    '  })\n' +
+    '\n' +
+    '  window.Lira.identify({\n' +
+    '    email: currentUser.email,\n' +
+    '    name: currentUser.name,\n' +
+    '    sig: serverGeneratedHmac\n' +
+    '  })\n' +
+    '\n' +
+    '  window.Lira.setContext({\n' +
+    '    route: window.location.pathname,\n' +
+    '    account: { id: currentUser.accountId, plan: currentUser.plan }\n' +
+    '  })\n' +
+    '\n' +
+    "  window.Lira.mountSupportPage('#lira-support-root')\n" +
+    '</script>'
+  const npmSdkCode =
+    '# After @liraintelligence/support is published to your npm registry\n' +
+    'npm install @liraintelligence/support\n\n' +
+    "import { init, identify, setContext, mountSupportPage, registerAction } from '@liraintelligence/support'\n\n" +
+    `await init({ orgId: '${currentOrgId ?? 'YOUR_ORG_ID'}', orgName: '${(currentOrg?.name ?? 'Your company').replace(/'/g, "\\'")}' })\n` +
+    'await identify({ email: currentUser.email, name: currentUser.name, sig: serverGeneratedHmac })\n' +
+    'await setContext({ route: window.location.pathname, account: currentUser.account })\n\n' +
+    "registerAction('billing.open_checkout', async ({ payload }) => {\n" +
+    '  await openCheckout(payload)\n' +
+    "  return { ok: true, message: 'Checkout opened' }\n" +
+    '})\n\n' +
+    "await mountSupportPage('#lira-support-root')"
 
   const portalSlugFinal =
     portalSlug.trim() ||
@@ -832,13 +807,6 @@ function SupportActivatePage() {
       .replace(/^-+|-+$/g, '') ||
     'my-company'
   const portalUrl = `https://support.liraintelligence.com/${portalSlugFinal}`
-  const portalIframeCode =
-    `<iframe\n` +
-    `  src="${portalUrl}?embed=true"\n` +
-    `  width="100%" height="700"\n` +
-    `  frameborder="0"\n` +
-    `  style="border: none; border-radius: 12px;">\n` +
-    `</iframe>`
 
   if (activated) {
     return (
@@ -853,7 +821,9 @@ function SupportActivatePage() {
               You&apos;re live!
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Lira is now handling customer support for your organization.
+              Lira is now handling support for {currentOrg?.name ?? 'your organization'}. Start with
+              the full-page SDK for their own support route, then add the optional widget or hosted
+              fallback if needed.
             </p>
           </div>
 
@@ -885,17 +855,96 @@ function SupportActivatePage() {
             </div>
           </div>
 
+          {/* Full-page SDK — only if chat/runtime was enabled */}
+          {chatEnabled && (
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2">
+                <RocketLaunchIcon className="h-4 w-4 text-gray-500" />
+                <p className="text-sm font-semibold text-gray-800">
+                  Full-page Support SDK, recommended
+                </p>
+              </div>
+              <p className="text-xs text-gray-500">
+                Ask the customer&apos;s dev team to create their own support route, for example{' '}
+                <code className="font-mono text-gray-600">/support</code>, and paste this into the
+                page. Their customers stay on their domain while Lira powers chat, tickets,
+                identity, and AI actions.
+              </p>
+              <div className="relative">
+                <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                  {fullPageSdkCode}
+                </pre>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigator.clipboard.writeText(fullPageSdkCode)
+                    toast.success('Full-page SDK code copied!')
+                  }}
+                  className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                >
+                  <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                  Copy
+                </button>
+              </div>
+              <details className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                <summary className="cursor-pointer text-xs font-semibold text-gray-600">
+                  Logged-in app integration with identity and context
+                </summary>
+                <div className="relative mt-2">
+                  <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                    {jsSdkCode}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(jsSdkCode)
+                      toast.success('JavaScript SDK code copied!')
+                    }}
+                    className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                  >
+                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                    Copy
+                  </button>
+                </div>
+              </details>
+              <details className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-2">
+                <summary className="cursor-pointer text-xs font-semibold text-gray-600">
+                  NPM package install for bundled apps, publish-ready
+                </summary>
+                <div className="relative mt-2">
+                  <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
+                    {npmSdkCode}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(npmSdkCode)
+                      toast.success('NPM SDK example copied!')
+                    }}
+                    className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                  >
+                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                    Copy
+                  </button>
+                </div>
+              </details>
+            </div>
+          )}
+
           {/* Widget embed code — only if chat was enabled */}
           {chatEnabled && (
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-3">
               <div className="flex items-center gap-2">
                 <ChatBubbleLeftEllipsisIcon className="h-4 w-4 text-gray-500" />
-                <p className="text-sm font-semibold text-gray-800">Install Chat Widget</p>
+                <p className="text-sm font-semibold text-gray-800">
+                  Floating Chat Widget, optional
+                </p>
               </div>
               <p className="text-xs text-gray-500">
                 Paste this snippet before the{' '}
                 <code className="font-mono text-gray-600">&lt;/body&gt;</code> tag on every page
-                where you want the chat widget to appear.
+                where you want a compact chat launcher. This uses the same Lira runtime as the
+                full-page SDK.
               </p>
               <div className="relative">
                 <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
@@ -921,22 +970,113 @@ function SupportActivatePage() {
               <p className="text-[11px] text-gray-400">
                 You can copy this code again any time from{' '}
                 <strong className="font-medium text-gray-500">
-                  Support → Settings → Widget tab
+                  Settings → Support → Web SDK tab
                 </strong>
                 .
               </p>
             </div>
           )}
 
-          {/* Support Portal — only if enabled */}
+          {/* Widget Secret — always shown so the customer's dev team has it on hand */}
+          {chatEnabled && (
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-3">
+              <div className="flex items-center gap-2">
+                <KeyIcon className="h-4 w-4 text-gray-500" />
+                <p className="text-sm font-semibold text-gray-800">Widget Secret</p>
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                  <LockClosedIcon className="h-2.5 w-2.5" />
+                  Server-side only
+                </span>
+              </div>
+              <p className="text-xs text-gray-500">
+                Use this if {currentOrg?.name ?? 'your customer'}&apos;s platform has logged-in
+                users. Their backend signs each logged-in visitor&apos;s email with this secret
+                (HMAC-SHA256) and passes the signature to the widget, so Lira knows it&apos;s really
+                that user — not someone spoofing their email.
+              </p>
+              <p className="text-[11px] text-gray-400">
+                If their site is fully public with no accounts, you can skip this — anonymous
+                visitors work out of the box.
+              </p>
+              <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
+                <code className="flex-1 break-all font-mono text-xs text-gray-800">
+                  {config?.widget_secret
+                    ? showSecret
+                      ? config.widget_secret
+                      : '•'.repeat(Math.min(40, config.widget_secret.length))
+                    : 'Loading…'}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => setShowSecret((v) => !v)}
+                  disabled={!config?.widget_secret}
+                  className="shrink-0 rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700 disabled:opacity-40"
+                  title={showSecret ? 'Hide' : 'Show'}
+                >
+                  {showSecret ? (
+                    <EyeSlashIcon className="h-4 w-4" />
+                  ) : (
+                    <EyeIcon className="h-4 w-4" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!config?.widget_secret) return
+                    navigator.clipboard.writeText(config.widget_secret)
+                    toast.success('Secret copied!')
+                  }}
+                  disabled={!config?.widget_secret}
+                  className="shrink-0 rounded-lg p-1.5 text-gray-400 transition hover:bg-gray-200 hover:text-gray-700 disabled:opacity-40"
+                >
+                  <ClipboardDocumentIcon className="h-4 w-4" />
+                </button>
+              </div>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <a
+                  href="https://docs.liraintelligence.com/platform/customer-support/web-sdk#signed-identity"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-900"
+                >
+                  <BookOpenIcon className="h-3 w-3" />
+                  How to sign visitor emails on the server
+                </a>
+                <button
+                  type="button"
+                  onClick={handleRotateSecret}
+                  disabled={rotating || !config?.widget_secret}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-[11px] font-semibold transition',
+                    confirmingRotate
+                      ? 'bg-red-600 text-white hover:bg-red-700'
+                      : 'border border-gray-200 text-gray-500 hover:border-gray-400 hover:text-gray-900'
+                  )}
+                >
+                  <ArrowPathRoundedSquareIcon className="h-3 w-3" />
+                  {rotating ? 'Rotating…' : confirmingRotate ? 'Click again to confirm' : 'Rotate'}
+                </button>
+              </div>
+              {confirmingRotate && (
+                <p className="text-[11px] text-red-600">
+                  Rotating invalidates the current secret. Any logged-in visitors signed with the
+                  old secret will fail to verify until {currentOrg?.name ?? 'the customer'}&apos;s
+                  backend is updated.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Hosted portal fallback — only if enabled */}
           {portalEnabled && (
             <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-3">
               <div className="flex items-center gap-2">
                 <GlobeAltIcon className="h-4 w-4 text-gray-500" />
-                <p className="text-sm font-semibold text-gray-800">Support Portal</p>
+                <p className="text-sm font-semibold text-gray-800">Hosted Portal Fallback</p>
               </div>
               <p className="text-xs text-gray-500">
-                Your customers can visit this page to submit tickets, track status, and chat.
+                Use this as a temporary no-code fallback or email link. For production B2B apps, the
+                full-page SDK above is the primary integration.
               </p>
               <div className="flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-2.5">
                 <code className="flex-1 break-all font-mono text-sm text-gray-800">
@@ -962,38 +1102,24 @@ function SupportActivatePage() {
                 </a>
               </div>
 
-              <div className="space-y-2">
-                <p className="text-xs font-medium text-gray-500">Embed on your site (optional)</p>
-                <div className="relative">
-                  <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
-                    {portalIframeCode}
-                  </pre>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(portalIframeCode)
-                      toast.success('Embed code copied!')
-                    }}
-                    className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
-                  >
-                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                    Copy
-                  </button>
-                </div>
-              </div>
+              <p className="rounded-xl border border-amber-100 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
+                Do not iframe this page into a customer product. If the customer wants{' '}
+                <code className="font-mono">lemonpay.com/support</code>, use the full-page SDK so
+                Lira runs inside their own route.
+              </p>
             </div>
           )}
 
           {/* Docs link */}
           <div className="flex justify-center">
             <a
-              href="https://docs.liraintelligence.com/platform/customer-support/setup"
+              href="https://docs.liraintelligence.com/platform/customer-support/web-sdk"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 px-3 py-2 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
             >
               <BookOpenIcon className="h-3.5 w-3.5" />
-              Not sure what to do next? View the setup guide
+              Not sure what to do next? View the SDK integration guide
             </a>
           </div>
 
@@ -1148,11 +1274,11 @@ function SupportActivatePage() {
           {step.key === 'chat' && (
             <div className="space-y-5">
               <p className="text-sm text-gray-600">
-                Choose how customers reach you. Enable a chat widget, a full support portal, or
-                both.
+                Enable the web runtime that powers the full-page SDK and optional floating widget.
+                The hosted portal is available only as a no-code fallback.
               </p>
 
-              {/* ── Chat Widget card ────────────────────── */}
+              {/* ── Web SDK card ────────────────────── */}
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <label
                   aria-label="Toggle chat widget"
@@ -1167,10 +1293,10 @@ function SupportActivatePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <ChatBubbleLeftEllipsisIcon className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-800">Chat Widget</span>
+                      <span className="text-sm font-medium text-gray-800">Web SDK Runtime</span>
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Floating chat button on your website — instant AI responses
+                      Full-page support embed for your own /support route, plus optional widget
                     </p>
                   </div>
                 </label>
@@ -1197,22 +1323,23 @@ function SupportActivatePage() {
                       </p>
                     </div>
 
-                    {/* ── Embed code preview ──────────────────── */}
+                    {/* ── SDK code preview ──────────────────── */}
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-gray-500">Embed snippet</p>
+                      <p className="text-xs font-semibold text-gray-500">
+                        Full-page support SDK snippet
+                      </p>
                       <p className="text-xs text-gray-400">
-                        Paste this before{' '}
-                        <code className="font-mono text-gray-500">&lt;/body&gt;</code> on every page
-                        where you want the widget.
+                        Paste this inside the customer&apos;s own support route, for example{' '}
+                        <code className="font-mono text-gray-500">/support</code>.
                       </p>
                       <div className="relative">
                         <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
-                          {embedCode}
+                          {fullPageSdkCode}
                         </pre>
                         <button
                           type="button"
                           onClick={() => {
-                            navigator.clipboard.writeText(embedCode)
+                            navigator.clipboard.writeText(fullPageSdkCode)
                             toast.success('Copied!')
                           }}
                           className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
@@ -1228,14 +1355,17 @@ function SupportActivatePage() {
                         <code className="font-mono">data-name</code>, and{' '}
                         <code className="font-mono">data-sig</code>. After activation, grab your{' '}
                         <strong className="font-medium text-gray-500">widget secret</strong> from{' '}
-                        <strong className="font-medium text-gray-500">Support → Settings</strong>.
+                        <strong className="font-medium text-gray-500">
+                          Settings → Support → Secret
+                        </strong>
+                        . The floating widget snippet is also available after activation.
                       </p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ── Support Portal card ─────────────────── */}
+              {/* ── Hosted portal fallback card ─────────────────── */}
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <label
                   aria-label="Toggle support portal"
@@ -1250,10 +1380,12 @@ function SupportActivatePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <GlobeAltIcon className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-800">Support Portal</span>
+                      <span className="text-sm font-medium text-gray-800">
+                        Hosted Portal Fallback
+                      </span>
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Full-page support experience — ticket creation, tracking &amp; live chat
+                      Optional Lira-hosted URL for temporary no-code launches
                     </p>
                   </div>
                 </label>
@@ -1331,7 +1463,7 @@ function SupportActivatePage() {
                               support.liraintelligence.com
                             </code>
                             , then enter your domain above. Your default URL still works — this adds
-                            an alias.
+                            an alias for the fallback page.
                           </p>
                         </div>
                       )}
@@ -1380,11 +1512,11 @@ function SupportActivatePage() {
                     <div className="space-y-1.5">
                       <p className="text-xs font-semibold text-gray-500">What customers get:</p>
                       {[
+                        'Temporary support page while SDK integration is pending',
                         'Submit and track support tickets',
-                        'View conversation history with AI & human agents',
-                        'Live chat powered by your existing widget',
-                        'Magic-link sign in — no passwords needed',
-                        'Your brand colors and logo applied automatically',
+                        'Live chat powered by the same Lira runtime',
+                        'Magic-link sign in, no passwords needed',
+                        'Brand colors and logo applied automatically',
                       ].map((item) => (
                         <div key={item} className="flex items-start gap-2">
                           <CheckCircleIcon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-green-500" />
@@ -1400,15 +1532,16 @@ function SupportActivatePage() {
 
           {step.key === 'integrations' && (
             <div className="space-y-5">
-              {/* Escalation email — top, mandatory */}
+              {/* Primary ticket-notification email */}
               <div className="rounded-xl border bg-white px-4 py-4 space-y-2">
                 <div className="flex items-center gap-2">
                   <EnvelopeIcon className="h-4 w-4 text-gray-500" />
-                  <p className="text-sm font-semibold text-gray-800">Escalation Email</p>
+                  <p className="text-sm font-semibold text-gray-800">Ticketing Email</p>
                 </div>
                 <p className="text-xs text-gray-500">
-                  When Lira can&apos;t confidently answer a customer, she sends an alert to this
-                  address. It defaults to your account email. Change it to a team email if needed.
+                  When Lira opens a ticket on a customer&apos;s behalf, we send the alert here.
+                  Defaults to your account email. Switch to a shared inbox if your team handles
+                  tickets together.
                 </p>
                 <input
                   type="email"
@@ -1419,83 +1552,64 @@ function SupportActivatePage() {
                 />
               </div>
 
-              {/* Optional notification channels */}
-              <div>
-                <p className="text-sm text-gray-600 mb-3">
-                  Optionally connect your team tools to also receive escalation alerts there —
-                  notifications only, replies always happen in your Lira inbox. You can skip any you
-                  don&apos;t use.
-                </p>
-                <div className="space-y-2">
-                  {(['Slack', 'Linear', 'HubSpot', 'Salesforce'] as const).map((name) => {
-                    const isConnected = integrationStatus[name] === true
-                    const isConnecting = connectingIntegration === name
-                    return (
-                      <div
-                        key={name}
-                        className="flex items-center justify-between rounded-xl border bg-white px-4 py-3"
-                      >
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-gray-800">{name}</span>
-                          {isConnected && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700">
-                              <CheckCircleIcon className="h-3 w-3" />
-                              Connected
-                            </span>
-                          )}
-                        </div>
-                        {isConnected ? (
-                          <button
-                            onClick={() => handleDisconnectIntegration(name)}
-                            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-500 hover:border-red-300 hover:text-red-600 transition"
-                          >
-                            Disconnect
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleConnectIntegration(name)}
-                            disabled={isConnecting || statusLoading}
-                            className="rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
-                          >
-                            {isConnecting ? 'Connecting…' : 'Connect'}
-                          </button>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-                {statusLoading && (
-                  <p className="mt-2 text-xs text-gray-400">Checking connection status…</p>
-                )}
-                <p className="mt-3 text-xs text-gray-400">
-                  You can update all integrations any time from{' '}
-                  <strong>Settings → Integrations</strong>.
-                </p>
-              </div>
-
-              {/* Support agent tool packs */}
-              <div>
-                <p className="text-sm font-semibold text-gray-700 mb-2">Support agent tools</p>
-                <p className="text-xs text-gray-500 mb-2">
-                  Connect external services so Lira can take actions on behalf of customers — e.g.
-                  look up account data, create tickets, or send notifications.
-                </p>
-                <a
-                  href="/org/integrations"
-                  className="flex items-center justify-between rounded-xl border bg-white px-4 py-3 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium text-gray-800">
-                      Third-party integrations
-                    </span>
-                    <span className="text-[11px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                      optional
-                    </span>
+              {/* CC emails — enterprise only, max 2 */}
+              <div className="rounded-xl border bg-white px-4 py-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-800">Additional recipients</p>
+                    {!isEnterprise && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                        <LockClosedIcon className="h-2.5 w-2.5" />
+                        Enterprise
+                      </span>
+                    )}
                   </div>
-                  <span className="text-xs font-medium text-[#020308]">
-                    Configure in Integrations →
-                  </span>
-                </a>
+                  {isEnterprise && ccEmails.length < MAX_CC && (
+                    <button
+                      onClick={() => setCcEmails((prev) => [...prev, ''])}
+                      className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2 py-1 text-[11px] font-semibold text-gray-600 hover:border-gray-400 hover:text-gray-900 transition"
+                    >
+                      <PlusIcon className="h-3 w-3" /> Add email
+                    </button>
+                  )}
+                </div>
+                <p className="text-xs text-gray-500">
+                  CC up to {MAX_CC} additional teammates on every ticket notification.
+                </p>
+                {!isEnterprise ? (
+                  <p className="text-xs text-gray-400 italic">
+                    Upgrade to Enterprise to CC more teammates on ticket alerts.
+                  </p>
+                ) : ccEmails.length === 0 ? (
+                  <p className="text-xs text-gray-400 italic">
+                    No additional recipients. Click &ldquo;Add email&rdquo; to include teammates.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {ccEmails.map((email, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="email"
+                          value={email}
+                          onChange={(e) =>
+                            setCcEmails((prev) =>
+                              prev.map((v, j) => (j === i ? e.target.value : v))
+                            )
+                          }
+                          placeholder="teammate@company.com"
+                          className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10"
+                        />
+                        <button
+                          onClick={() => setCcEmails((prev) => prev.filter((_, j) => j !== i))}
+                          className="rounded-lg border border-gray-200 p-2 text-gray-400 hover:border-red-300 hover:text-red-600 transition"
+                          aria-label="Remove recipient"
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1649,10 +1763,10 @@ function SupportActivatePage() {
                           ? `${customSupportEmail} → ${liraAddress}`
                           : liraAddress}
                       </li>
-                      <li>Chat widget: {chatEnabled ? 'Enabled' : 'Disabled'}</li>
+                      <li>Web SDK runtime: {chatEnabled ? 'Enabled' : 'Disabled'}</li>
                       {portalEnabled && (
                         <li>
-                          Support portal:{' '}
+                          Hosted fallback:{' '}
                           {portalCustomDomain.trim() ? portalCustomDomain.trim() : portalUrl}
                         </li>
                       )}

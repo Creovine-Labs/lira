@@ -31,6 +31,7 @@ export interface SupportConfig {
   escalation_slack_channel?: string
   escalation_linear_team?: string
   escalation_email?: string
+  escalation_cc_emails?: string[]
   greeting_message?: string
   sla_hours?: number
   widget_color?: string
@@ -725,4 +726,98 @@ export async function disableToolPack(orgId: string, packId: string): Promise<vo
     `/lira/v1/support/tool-packs/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(packId)}`,
     { method: 'DELETE' }
   )
+}
+
+// ── Support tickets (separate from conversations) ───────────────────────────
+
+export interface SupportTicketRecord {
+  ticket_id: string
+  ticket_number?: string
+  org_id: string
+  conv_id: string
+  visitor_email?: string
+  visitor_name?: string
+  source?: 'lira_onboarding' | 'customer_widget' | 'email' | 'voice' | 'manual'
+  subject: string
+  summary?: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+  assignee_user_id?: string
+  escalation_reason: string
+  created_at: string
+  updated_at: string
+  resolved_at?: string
+}
+
+export interface SupportTicketMessageRecord {
+  message_id: string
+  ticket_id: string
+  org_id: string
+  sender: 'visitor' | 'agent' | 'system'
+  sender_user_id?: string
+  sender_name?: string
+  body: string
+  created_at: string
+}
+
+export async function listTicketsForOrg(orgId: string): Promise<SupportTicketRecord[]> {
+  const data = await supportFetch<{ tickets: SupportTicketRecord[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`
+  )
+  return data.tickets
+}
+
+export async function getTicketForOrg(
+  orgId: string,
+  ticketId: string
+): Promise<{ ticket: SupportTicketRecord; messages: SupportTicketMessageRecord[] }> {
+  return supportFetch(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}`
+  )
+}
+
+export async function replyToTicket(
+  orgId: string,
+  ticketId: string,
+  body: string
+): Promise<SupportTicketMessageRecord> {
+  const data = await supportFetch<{ message: SupportTicketMessageRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/reply`,
+    { method: 'POST', body: JSON.stringify({ body }) }
+  )
+  return data.message
+}
+
+export async function resolveTicket(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/resolve`,
+    { method: 'POST' }
+  )
+  return data.ticket
+}
+
+/** Visitor-facing: list tickets I opened (identity = email). No JWT auth. */
+export async function listTicketsForVisitor(
+  orgId: string,
+  visitorEmail: string
+): Promise<SupportTicketRecord[]> {
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/visitor/${encodeURIComponent(orgId)}/${encodeURIComponent(visitorEmail)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to list tickets')
+  const data = (await res.json()) as { tickets: SupportTicketRecord[] }
+  return data.tickets
+}
+
+/** Visitor-facing: fetch a ticket by its human-readable number + thread. */
+export async function getTicketByNumber(
+  orgId: string,
+  ticketNumber: string
+): Promise<{ ticket: SupportTicketRecord; messages: SupportTicketMessageRecord[] }> {
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/by-number/${encodeURIComponent(ticketNumber)}?org_id=${encodeURIComponent(orgId)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Ticket not found')
+  return (await res.json()) as {
+    ticket: SupportTicketRecord
+    messages: SupportTicketMessageRecord[]
+  }
 }

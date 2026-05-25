@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { SlidersHorizontal } from '@phosphor-icons/react'
+// SlidersHorizontal removed alongside the support 'Configuration' nav item.
 import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -22,6 +22,7 @@ import {
   PuzzlePieceIcon,
   ShieldCheckIcon,
   Squares2X2Icon,
+  TicketIcon,
   UserIcon,
   UsersIcon,
   XMarkIcon,
@@ -47,6 +48,7 @@ import {
 import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/support-api'
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
+import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
 import { cn } from '@/lib'
 
 // ── Sidebar badge helper ──────────────────────────────────────────────────────
@@ -145,12 +147,19 @@ const NAV_CORE: NavEntry[] = [
 ]
 
 const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
-  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Inbox' },
+  { to: '/support/tickets', icon: TicketIcon, label: 'Tickets' },
   { to: '/support/customers', icon: UsersIcon, label: 'Customers' },
   { to: '/support/actions', icon: ClipboardDocumentListIcon, label: 'Actions' },
   { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
   { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
-  { to: '/support/configuration', icon: SlidersHorizontal, label: 'Configuration' },
+  // "Chat history" (previously "Inbox") demoted below Analytics — it's now
+  // a QA/audit surface for reviewing what Lira told customers, not the
+  // primary operator work queue. Tickets are the operator's daily queue.
+  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Chat history' },
+  // 'Configuration' sidebar item removed 2026-05-24 — its content
+  // (widget secret + identified-visitor docs + mobile placeholder) was
+  // consolidated into /settings → Support sub-tabs (Secret + Mobile).
+  // The /support/configuration route now redirects to /settings.
 ]
 
 const SUPPORT_NAV_INACTIVE: NavLeaf = {
@@ -458,6 +467,16 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
           >
             <UserIcon className="h-4 w-4 text-gray-400" />
             My Profile
+          </button>
+          <button
+            onClick={() => {
+              setOpen(false)
+              navigate('/tickets')
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
+          >
+            <TicketIcon className="h-4 w-4 text-gray-400" />
+            My Tickets
           </button>
           {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
             <button
@@ -864,6 +883,11 @@ function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
+      {/* Lira's own onboarding widget — greets the user by name and
+          walks them through setup. Lives at shell level so it persists
+          across page navigation. Renders nothing if the backend isn't
+          configured for it (LIRA_INTERNAL_ORG_ID env var missing). */}
+      <LiraOnboardingWidget />
       {/* ── Mobile drawer overlay ── */}
       {sidebarOpen && (
         <>

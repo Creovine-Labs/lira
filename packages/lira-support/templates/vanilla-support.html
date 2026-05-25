@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Support — {{ORG_NAME}}</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 0;
+        padding: 32px;
+      }
+      h1 {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
+      p {
+        color: #64748b;
+        margin-bottom: 24px;
+      }
+      #lira-support-root {
+        max-width: 960px;
+        margin: 0 auto;
+        min-height: 720px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Support</h1>
+    <p>Ask anything. Our AI answers instantly and opens a ticket for our team if it can't.</p>
+
+    <div id="lira-support-root"></div>
+
+    <script
+      src="https://widget.liraintelligence.com/v1/widget.js"
+      data-org-id="{{ORG_ID}}"
+      data-mode="fullscreen"
+      data-target="#lira-support-root"
+      data-greeting="Hi! How can we help?"
+    ></script>
+  </body>
+</html>

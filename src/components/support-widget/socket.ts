@@ -14,6 +14,7 @@ type StatusHandler = (status: 'connecting' | 'connected' | 'disconnected') => vo
 
 const WS_BASE = 'wss://api.creovine.com/lira/v1/support/chat'
 const MAX_RECONNECT_DELAY = 30_000
+const MAX_PENDING_MESSAGES = 20
 
 export class WidgetSocket {
   private ws: WebSocket | null = null
@@ -25,6 +26,7 @@ export class WidgetSocket {
   private closed = false
   private visitorId: string
   private forceNewCase: boolean
+  private pendingMessages: OutgoingWsMessage[] = []
 
   constructor(
     config: WidgetConfig,
@@ -65,6 +67,7 @@ export class WidgetSocket {
       if (this.config.demoContext) {
         this.send({ type: 'demo_context', profile: this.config.demoContext })
       }
+      this.flushPendingMessages()
     }
 
     this.ws.onmessage = (event) => {
@@ -89,6 +92,15 @@ export class WidgetSocket {
   send(msg: OutgoingWsMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg))
+      return
+    }
+
+    // User-visible actions should not disappear if the visitor sends while
+    // the socket is still connecting or briefly reconnecting. Typing pings are
+    // intentionally dropped because they are transient and can be noisy.
+    if (!this.closed && msg.type !== 'typing') {
+      this.pendingMessages.push(msg)
+      if (this.pendingMessages.length > MAX_PENDING_MESSAGES) this.pendingMessages.shift()
     }
   }
 
@@ -106,5 +118,13 @@ export class WidgetSocket {
     const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), MAX_RECONNECT_DELAY)
     this.reconnectAttempts++
     this.reconnectTimer = setTimeout(() => this.connect(), delay)
+  }
+
+  private flushPendingMessages(): void {
+    if (this.ws?.readyState !== WebSocket.OPEN) return
+    const pending = this.pendingMessages.splice(0)
+    for (const msg of pending) {
+      this.ws.send(JSON.stringify(msg))
+    }
   }
 }

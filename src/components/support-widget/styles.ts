@@ -14,6 +14,12 @@ export function getWidgetStyles(primaryColor: string): string {
       line-height: 1.5;
       color: #1a1a2e;
     }
+    :host([data-lira-mode="fullscreen"]) {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 640px;
+    }
 
     * {
       box-sizing: border-box;
@@ -35,12 +41,13 @@ export function getWidgetStyles(primaryColor: string): string {
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 0 4px 14px rgba(0,0,0,0.18);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 12px 30px rgba(15,23,42,0.18), 0 2px 8px rgba(15,23,42,0.12);
+      transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
     }
     .lira-launcher:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+      transform: translateY(-1px) scale(1.04);
+      box-shadow: 0 18px 36px rgba(15,23,42,0.22), 0 4px 10px rgba(15,23,42,0.14);
+      filter: saturate(1.08);
     }
     .lira-launcher.bottom-right {
       bottom: 20px;
@@ -105,10 +112,13 @@ export function getWidgetStyles(primaryColor: string): string {
       max-height: calc(100vh - 100px);
       border-radius: 20px;
       background: #ffffff;
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      border: 1px solid rgba(226,232,240,0.92);
+      box-shadow: 0 24px 70px rgba(15,23,42,0.18), 0 8px 20px rgba(15,23,42,0.08);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+    }
+    .lira-chat-window.lira-anim-in {
       animation: lira-slide-up 0.25s ease-out;
     }
     .lira-chat-window.bottom-right {
@@ -118,6 +128,17 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-chat-window.bottom-left {
       bottom: 84px;
       left: 20px;
+    }
+    .lira-chat-window.lira-fullscreen {
+      position: relative;
+      z-index: 1;
+      inset: auto;
+      width: 100%;
+      height: 100%;
+      min-height: 640px;
+      max-height: none;
+      border-radius: 14px;
+      box-shadow: none;
     }
 
     @media (max-width: 440px) {
@@ -129,6 +150,13 @@ export function getWidgetStyles(primaryColor: string): string {
         left: 8px;
         border-radius: 14px;
       }
+      .lira-chat-window.lira-fullscreen {
+        width: 100%;
+        height: 100%;
+        min-height: 600px;
+        inset: auto;
+        border-radius: 0;
+      }
     }
 
     @keyframes lira-slide-up {
@@ -139,7 +167,7 @@ export function getWidgetStyles(primaryColor: string): string {
     /* ── Header ──────────────────────────────────────────────── */
 
     .lira-header {
-      background: ${primaryColor};
+      background: linear-gradient(135deg, ${primaryColor} 0%, color-mix(in srgb, ${primaryColor} 82%, #111827 18%) 100%);
       color: white;
       padding: 14px 16px;
       display: flex;
@@ -245,11 +273,11 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 16px;
+      padding: 18px 16px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      background: #ffffff;
+      gap: 10px;
+      background: linear-gradient(180deg, #f8fafc 0%, #ffffff 58%);
     }
     .lira-messages::-webkit-scrollbar {
       width: 4px;
@@ -257,6 +285,240 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-messages::-webkit-scrollbar-thumb {
       background: #d1d5db;
       border-radius: 2px;
+    }
+
+    /* ── First-visit hero welcome ───────────────────────────── */
+    /* Replaces the empty message list when autoOpenFirstVisit is on and
+       no conversation has started yet. Auto-dismissed by appendChatMessage
+       the moment a first bubble lands. Designed to feel premium: subtle
+       gradient backdrop, breathing rings around the avatar, staggered
+       fade-ins for each piece of copy, CTA arrow that slides on hover. */
+
+    .lira-hero {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 28px 18px;
+      text-align: center;
+      gap: 6px;
+      background:
+        radial-gradient(ellipse 80% 60% at 50% 28%, rgba(99, 102, 241, 0.10) 0%, rgba(99, 102, 241, 0) 70%),
+        linear-gradient(180deg, #fafbff 0%, #ffffff 70%);
+      overflow: hidden;
+    }
+
+    /* Decorative animated glow behind the avatar. */
+    .lira-hero-glow {
+      position: absolute;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 220px;
+      height: 220px;
+      pointer-events: none;
+      background: radial-gradient(circle at center, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0) 65%);
+      filter: blur(10px);
+      animation: lira-hero-glow 6s ease-in-out infinite;
+    }
+    @keyframes lira-hero-glow {
+      0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
+      50%      { opacity: 1;   transform: translateX(-50%) scale(1.08); }
+    }
+
+    /* Avatar with two breathing rings around it. */
+    .lira-hero-avatar-wrap {
+      position: relative;
+      width: 80px;
+      height: 80px;
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1;
+      animation: lira-hero-fade-up 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-hero-ring {
+      position: absolute;
+      top: 50%; left: 50%;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 1.5px solid ${primaryColor};
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      animation: lira-hero-ring 2.6s ease-out infinite;
+    }
+    .lira-hero-ring-1 { animation-delay: 0s; }
+    .lira-hero-ring-2 { animation-delay: 1.3s; }
+    @keyframes lira-hero-ring {
+      0%   { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
+      60%  { opacity: 0.18; }
+      100% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
+    }
+    .lira-hero-avatar {
+      position: relative;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.9) inset,
+        0 10px 28px -10px rgba(15, 23, 42, 0.35),
+        0 2px 6px -2px rgba(15, 23, 42, 0.2);
+    }
+    .lira-hero-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+
+    .lira-hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #475569;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 4px 10px 4px 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      animation: lira-hero-fade-up 520ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-hero-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22c55e;
+      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
+      animation: lira-hero-dot-pulse 2s ease-out infinite;
+    }
+    @keyframes lira-hero-dot-pulse {
+      0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
+      80%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+    }
+
+    .lira-hero-title {
+      font-size: 24px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #0f172a;
+      margin: 0;
+      animation: lira-hero-fade-up 520ms 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-hero-subtitle {
+      font-size: 13.5px;
+      line-height: 1.55;
+      color: #64748b;
+      margin: 6px 0 18px;
+      max-width: 296px;
+      animation: lira-hero-fade-up 520ms 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .lira-hero-cta {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 92%, #ffffff 8%) 0%, ${primaryColor} 100%);
+      color: #ffffff;
+      border: none;
+      border-radius: 14px;
+      padding: 13px 22px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      width: 100%;
+      max-width: 280px;
+      transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease, opacity 0.15s ease;
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.12) inset,
+        0 8px 20px -8px rgba(15, 23, 42, 0.35),
+        0 1px 3px rgba(15, 23, 42, 0.16);
+      animation: lira-hero-fade-up 520ms 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-hero-cta:hover {
+      transform: translateY(-1px);
+      box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.15) inset,
+        0 14px 28px -10px rgba(15, 23, 42, 0.45),
+        0 2px 6px rgba(15, 23, 42, 0.22);
+    }
+    .lira-hero-cta:hover .lira-hero-cta-arrow {
+      transform: translateX(3px);
+    }
+    .lira-hero-cta:active {
+      transform: translateY(0) scale(0.985);
+    }
+    .lira-hero-cta-arrow {
+      width: 16px;
+      height: 16px;
+      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+
+    .lira-hero-hint {
+      font-size: 11.5px;
+      color: #94a3b8;
+      margin: 12px 0 0;
+      animation: lira-hero-fade-up 520ms 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    @keyframes lira-hero-fade-up {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Suggestion pills row (above the input) ─────────────── */
+    /* Sits between the messages list and the input area. Hidden when
+       activeSuggestions is empty. Each chip is the literal text the
+       user will send if clicked. */
+    .lira-suggestions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 8px 14px 4px;
+      background: #ffffff;
+      border-top: 1px solid #f1f5f9;
+    }
+    .lira-suggestion-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 999px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      font-family: inherit;
+      color: #334155;
+      cursor: pointer;
+      transition: background 0.12s ease, border-color 0.12s ease, transform 0.1s ease, color 0.12s ease;
+      animation: lira-chip-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-suggestion-chip:hover {
+      background: ${primaryColor};
+      border-color: ${primaryColor};
+      color: #ffffff;
+    }
+    .lira-suggestion-chip:active {
+      transform: scale(0.97);
+    }
+    @keyframes lira-chip-in {
+      from { opacity: 0; transform: translateY(4px); }
+      to   { opacity: 1; transform: translateY(0); }
     }
 
     /* Message row — avatar + body */
@@ -318,11 +580,12 @@ export function getWidgetStyles(primaryColor: string): string {
     /* Individual message bubbles */
     .lira-msg {
       max-width: 85%;
-      padding: 10px 14px;
+      padding: 10px 13px;
       border-radius: 16px;
       font-size: 14px;
       line-height: 1.5;
       word-break: break-word;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
     }
     /* Bubbles inside a row (lira/agent) — parent already constrains width */
     .lira-msg-body .lira-msg {
@@ -340,6 +603,7 @@ export function getWidgetStyles(primaryColor: string): string {
       background: ${primaryColor};
       color: white;
       border-bottom-right-radius: 4px;
+      box-shadow: 0 6px 14px rgba(15,23,42,0.12);
     }
     .lira-msg.agent {
       align-self: flex-start;
@@ -355,6 +619,228 @@ export function getWidgetStyles(primaryColor: string): string {
       font-size: 12px;
       text-align: center;
       padding: 4px 8px;
+      box-shadow: none;
+    }
+    .lira-handoff {
+      align-self: stretch;
+      display: flex;
+      gap: 10px;
+      padding: 11px 12px;
+      border: 1px solid #dbeafe;
+      border-left: 3px solid #2563eb;
+      border-radius: 10px;
+      background: #eff6ff;
+      color: #1e3a8a;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    }
+    .lira-handoff-icon {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: #dbeafe;
+      color: #2563eb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+    }
+    .lira-handoff-icon svg {
+      width: 15px;
+      height: 15px;
+    }
+    .lira-handoff-content {
+      min-width: 0;
+    }
+    .lira-handoff-title {
+      font-size: 12px;
+      font-weight: 750;
+      color: #1d4ed8;
+      margin-bottom: 2px;
+    }
+    .lira-handoff-body {
+      font-size: 12px;
+      line-height: 1.45;
+      color: #1e40af;
+    }
+
+    /* Rich assistant output */
+    .lira-rich-text {
+      white-space: normal;
+    }
+    .lira-rich-text p {
+      margin: 0;
+    }
+    .lira-rich-text p + p,
+    .lira-rich-text p + ul,
+    .lira-rich-text p + ol,
+    .lira-rich-text ul + p,
+    .lira-rich-text ol + p,
+    .lira-rich-text p + .lira-table-wrap,
+    .lira-rich-text .lira-table-wrap + p,
+    .lira-rich-text .lira-code-block + p,
+    .lira-rich-text p + .lira-code-block {
+      margin-top: 9px;
+    }
+    .lira-rich-text strong {
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .lira-rich-text em {
+      font-style: italic;
+      color: #334155;
+    }
+    .lira-rich-text a {
+      color: ${primaryColor};
+      font-weight: 650;
+      text-decoration: none;
+      border-bottom: 1px solid color-mix(in srgb, ${primaryColor} 36%, transparent);
+    }
+    .lira-rich-text a:hover {
+      border-bottom-color: currentColor;
+    }
+    .lira-rich-text code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      background: #f1f5f9;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      padding: 1px 5px;
+      word-break: break-word;
+    }
+    .lira-rich-text ul,
+    .lira-rich-text ol {
+      margin: 6px 0 0 18px;
+      padding: 0;
+    }
+    .lira-rich-text li {
+      padding-left: 2px;
+      margin: 3px 0;
+    }
+    .lira-md-heading {
+      font-size: 13px;
+      font-weight: 750;
+      color: #0f172a;
+      margin-bottom: 6px;
+    }
+    .lira-table-wrap {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      border: 1px solid #dbe3ee;
+      border-radius: 10px;
+      background: #ffffff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.7);
+    }
+    .lira-md-table {
+      width: 100%;
+      min-width: 420px;
+      border-collapse: collapse;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #334155;
+    }
+    .lira-md-table th {
+      background: #f1f5f9;
+      color: #0f172a;
+      font-weight: 750;
+      text-align: left;
+      white-space: nowrap;
+    }
+    .lira-md-table th,
+    .lira-md-table td {
+      padding: 8px 9px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: top;
+    }
+    .lira-md-table td + td,
+    .lira-md-table th + th {
+      border-left: 1px solid #e2e8f0;
+    }
+    .lira-md-table tbody tr:last-child td {
+      border-bottom: 0;
+    }
+    .lira-md-table tbody tr:nth-child(even) td {
+      background: #f8fafc;
+    }
+    .lira-code-block {
+      margin-top: 9px;
+      overflow: hidden;
+      border: 1px solid #dbe3ee;
+      border-radius: 10px;
+      background: #0f172a;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
+    }
+    .lira-code-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 8px 7px 10px;
+      background: #111827;
+      border-bottom: 1px solid rgba(148,163,184,0.2);
+    }
+    .lira-code-lang {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #cbd5e1;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+    .lira-copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      height: 24px;
+      padding: 0 8px;
+      border: 1px solid rgba(148,163,184,0.24);
+      border-radius: 7px;
+      background: rgba(255,255,255,0.06);
+      color: #e2e8f0;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .lira-copy-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: rgba(226,232,240,0.36);
+    }
+    .lira-copy-btn.copied {
+      color: #86efac;
+      border-color: rgba(134,239,172,0.32);
+      background: rgba(22,163,74,0.16);
+    }
+    .lira-copy-btn svg {
+      width: 13px;
+      height: 13px;
+      flex-shrink: 0;
+    }
+    .lira-code-block pre {
+      margin: 0;
+      padding: 12px;
+      overflow-x: auto;
+      max-width: 100%;
+      color: #e5edf6;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre;
+    }
+    .lira-code-block pre code {
+      display: block;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      color: inherit;
+      font-size: inherit;
+      word-break: normal;
     }
 
     /* Typing indicator */
@@ -363,14 +849,22 @@ export function getWidgetStyles(primaryColor: string): string {
       align-items: flex-start;
       gap: 8px;
     }
-    .lira-typing {
+    .lira-typing-card {
       display: flex;
-      gap: 4px;
-      padding: 10px 16px;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 11px;
       background: #ffffff;
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+    }
+    .lira-typing {
+      display: flex;
+      gap: 4px;
+      padding: 0;
+      background: transparent;
     }
     .lira-typing span {
       width: 6px;
@@ -381,28 +875,172 @@ export function getWidgetStyles(primaryColor: string): string {
     }
     .lira-typing span:nth-child(2) { animation-delay: 0.2s; }
     .lira-typing span:nth-child(3) { animation-delay: 0.4s; }
+    .lira-working-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #64748b;
+      white-space: nowrap;
+    }
 
     @keyframes lira-bounce {
       0%, 80%, 100% { transform: translateY(0); }
       40% { transform: translateY(-6px); }
     }
 
+    /* ── Guided assist panel ─────────────────────────────────── */
+
+    .lira-assist-panel {
+      flex-shrink: 0;
+      padding: 9px 14px 8px;
+      border-top: 1px solid #edf0f5;
+      background: rgba(255,255,255,0.96);
+    }
+    .lira-insight-card {
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      background: #f8fafc;
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    .lira-insight-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12px;
+      font-weight: 750;
+      color: #0f172a;
+      margin-bottom: 7px;
+    }
+    .lira-insight-badge {
+      flex: 0 0 auto;
+      padding: 2px 6px;
+      border-radius: 999px;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 10px;
+      font-weight: 750;
+    }
+    .lira-insight-list {
+      margin: 0 0 9px 18px;
+      padding: 0;
+      color: #475569;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .lira-insight-list li {
+      margin: 2px 0;
+      padding-left: 2px;
+    }
+    .lira-mini-copy {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      height: 28px;
+      padding: 0 9px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #ffffff;
+      color: #334155;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s, color 0.15s;
+    }
+    .lira-mini-copy:hover {
+      border-color: ${primaryColor};
+      color: ${primaryColor};
+    }
+    .lira-mini-copy.copied {
+      border-color: #16a34a;
+      color: #15803d;
+      background: #f0fdf4;
+    }
+    .lira-mini-copy svg {
+      width: 13px;
+      height: 13px;
+    }
+    .lira-plan-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .lira-plan-pill {
+      min-width: 0;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      background: #ffffff;
+      padding: 7px 6px;
+      text-align: center;
+    }
+    .lira-plan-pill strong,
+    .lira-plan-pill span {
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lira-plan-pill strong {
+      color: #0f172a;
+      font-size: 11px;
+    }
+    .lira-plan-pill span {
+      color: #64748b;
+      font-size: 11px;
+      margin-top: 2px;
+    }
+    .lira-quick-replies {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding-bottom: 1px;
+      scrollbar-width: none;
+    }
+    .lira-quick-replies::-webkit-scrollbar {
+      display: none;
+    }
+    .lira-quick-reply {
+      flex: 0 0 auto;
+      max-width: 210px;
+      height: 30px;
+      padding: 0 10px;
+      border: 1px solid #d8dee8;
+      border-radius: 999px;
+      background: #ffffff;
+      color: #334155;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 650;
+      cursor: pointer;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .lira-quick-reply:hover {
+      border-color: ${primaryColor};
+      color: ${primaryColor};
+      background: color-mix(in srgb, ${primaryColor} 7%, #ffffff);
+    }
+
     /* ── Input area ──────────────────────────────────────────── */
 
     .lira-input-area {
       border-top: 1px solid #e5e7eb;
-      padding: 12px 16px;
+      padding: 12px 14px;
       display: flex;
       gap: 8px;
       align-items: flex-end;
       flex-shrink: 0;
-      background: #ffffff;
+      background: rgba(255,255,255,0.96);
+      box-shadow: 0 -8px 18px rgba(15,23,42,0.03);
     }
     .lira-input-area textarea {
       flex: 1;
-      border: 1px solid #d1d5db;
-      border-radius: 12px;
-      padding: 8px 12px;
+      border: 1px solid #d8dee8;
+      border-radius: 14px;
+      padding: 9px 12px;
       font-size: 14px;
       font-family: inherit;
       resize: none;
@@ -410,12 +1048,13 @@ export function getWidgetStyles(primaryColor: string): string {
       min-height: 36px;
       line-height: 1.4;
       outline: none;
-      transition: border-color 0.15s;
-      background: #fafafa;
+      transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+      background: #f8fafc;
     }
     .lira-input-area textarea:focus {
       border-color: ${primaryColor};
       background: #fff;
+      box-shadow: 0 0 0 3px color-mix(in srgb, ${primaryColor} 12%, transparent);
     }
     .lira-input-area textarea::placeholder {
       color: #9ca3af;
@@ -436,7 +1075,12 @@ export function getWidgetStyles(primaryColor: string): string {
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: opacity 0.15s;
+      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 8px 16px color-mix(in srgb, ${primaryColor} 24%, transparent);
+    }
+    .lira-send-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 10px 20px color-mix(in srgb, ${primaryColor} 30%, transparent);
     }
     .lira-send-btn:disabled {
       opacity: 0.4;

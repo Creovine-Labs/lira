@@ -92,9 +92,13 @@ function SupportInboxPage() {
         <div className="mb-5 flex items-start justify-between">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Inbox</h1>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Chat history</h1>
             <p className="mt-1 text-sm text-gray-400">
-              Manage incoming customer conversations and escalations
+              Read-only audit of every AI chat. Questions that needed a human became{' '}
+              <a href="/support/tickets" className="underline hover:text-gray-700">
+                tickets
+              </a>
+              .
             </p>
           </div>
           <a

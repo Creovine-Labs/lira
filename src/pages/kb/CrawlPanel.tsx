@@ -254,6 +254,7 @@ function CrawlPanel() {
           <div className="flex flex-col gap-3 sm:flex-row">
             <input
               type="url"
+              data-lira-action="kb-crawl-url"
               className="flex-1 rounded-xl border border-white/20 bg-white px-4 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
               placeholder="https://example.com"
               value={crawlUrl}
@@ -264,6 +265,7 @@ function CrawlPanel() {
               disabled={isCrawling}
             />
             <button
+              data-lira-action="kb-crawl-start"
               onClick={handleCrawl}
               disabled={crawling || isCrawling || !crawlUrl.trim()}
               className="flex items-center gap-2 rounded-xl bg-[#3730a3] px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-40"

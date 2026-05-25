@@ -27,7 +27,7 @@ import { readDemoProfile, updateDemoProfile, type DemoProfile } from './demo-pro
 const WIDGET_SRC = import.meta.env.DEV
   ? `/dev/widget.js?v=${Date.now()}`
   : 'https://widget.liraintelligence.com/v1/widget.js'
-const WIDGET_SCRIPT_ID = 'lira-support-widget'
+const WIDGET_SCRIPT_ID = 'lira-support-widget-loader'
 // The Nimbus demo org id. Matches the same value baked into seo-prerender.cjs
 // so the SPA and the prerendered static HTML mount the widget against the
 // same org. Override via VITE_DEMO_ORG_ID env var when targeting a different
@@ -61,7 +61,7 @@ async function hmacSha256(secret: string, message: string): Promise<string> {
     enc.encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ['sign'],
+    ['sign']
   )
   const sig = await crypto.subtle.sign('HMAC', key, enc.encode(message))
   return Array.from(new Uint8Array(sig))
@@ -74,15 +74,26 @@ export interface UseLiraWidgetResult {
   testVisitor: boolean
 }
 
+export interface UseLiraWidgetOptions {
+  mode?: 'bubble' | 'fullscreen'
+  target?: string
+  enabled?: boolean
+}
+
 /**
  * Mount the Lira support widget on the page. Tears down on unmount so the
  * widget cleanly switches when the visitor navigates between /demo and
  * /demo/help (the shared session lets the conversation continue).
  */
-export function useLiraWidget(): UseLiraWidgetResult {
+export function useLiraWidget(options: UseLiraWidgetOptions = {}): UseLiraWidgetResult {
   const [testVisitor, setTestVisitor] = useState(false)
+  const mode = options.mode ?? 'bubble'
+  const target = options.target
+  const enabled = options.enabled ?? true
 
   useEffect(() => {
+    if (!enabled) return
+
     const orgId = resolveOrgId()
     const visitorMode = isTestVisitorMode()
 
@@ -97,7 +108,8 @@ export function useLiraWidget(): UseLiraWidgetResult {
     // dashboard re-renders. The widget dispatches `lira-demo-action` after
     // receiving `demo_action_executed` from the server.
     const onDemoAction = (event: Event) => {
-      const detail = (event as CustomEvent<{ type: string; payload: Record<string, unknown> }>).detail
+      const detail = (event as CustomEvent<{ type: string; payload: Record<string, unknown> }>)
+        .detail
       if (!detail) return
       applyDemoAction(detail.type, detail.payload)
     }
@@ -112,7 +124,15 @@ export function useLiraWidget(): UseLiraWidgetResult {
       script.src = WIDGET_SRC
       script.async = true
       script.setAttribute('data-org-id', orgId)
-      script.setAttribute('data-position', 'bottom-right')
+      script.setAttribute('data-title', 'Nimbus Support')
+      script.setAttribute('data-color', '#1A1A1A')
+      script.setAttribute('data-greeting', 'Hi! I can help with your Nimbus account.')
+      script.setAttribute('data-mode', mode)
+      if (mode === 'fullscreen' && target) {
+        script.setAttribute('data-target', target)
+      } else {
+        script.setAttribute('data-position', 'bottom-right')
+      }
       // Ephemeral storage: opt-in flag ONLY our public demo (Nimbus) sets.
       // The widget reads this and stores visitor id + chat history in
       // sessionStorage instead of localStorage, scoped to visitor id. That
@@ -144,7 +164,7 @@ export function useLiraWidget(): UseLiraWidgetResult {
         // Loud warning if anyone tries to use ?visitor=test in production
         console.warn(
           '[DemoSite] ?visitor=test is ignored in production builds. ' +
-            'The HMAC test-visitor flow only runs in development.',
+            'The HMAC test-visitor flow only runs in development.'
         )
       }
 
@@ -155,20 +175,24 @@ export function useLiraWidget(): UseLiraWidgetResult {
 
     return () => {
       window.removeEventListener('lira-demo-action', onDemoAction)
+      // Prefer the public SDK destroy hook. This removes the shadow host and
+      // disconnects the socket cleanly before we remove script tags.
+      const api = (window as unknown as { Lira?: { destroy?: () => void } }).Lira
+      try {
+        api?.destroy?.()
+      } catch {
+        /* widget already gone */
+      }
       // Remove the loader script tag we injected.
-      document.querySelectorAll<HTMLElement>(`script#${WIDGET_SCRIPT_ID}`).forEach((el) =>
-        el.remove(),
-      )
+      document
+        .querySelectorAll<HTMLElement>(`script#${WIDGET_SCRIPT_ID}`)
+        .forEach((el) => el.remove())
       // Remove the widget host element the bundle creates (id matches the
       // script tag id — `lira-support-widget` — but they're separate nodes
       // so we have to clean them up explicitly, not just via getElementById).
       document
         .querySelectorAll<HTMLElement>(
-          [
-            `[id^="${WIDGET_SCRIPT_ID}"]`,
-            '[id^="lira-widget"]',
-            '[id^="lira-support"]',
-          ].join(','),
+          [`[id^="${WIDGET_SCRIPT_ID}"]`, '[id^="lira-widget"]', '[id^="lira-support"]'].join(',')
         )
         .forEach((el) => el.remove())
       // Also try the public destroy hook the bundle exposes, in case the
@@ -180,8 +204,9 @@ export function useLiraWidget(): UseLiraWidgetResult {
         /* widget already gone */
       }
       delete (window as unknown as Record<string, unknown>).LiraWidget
+      delete (window as unknown as Record<string, unknown>).Lira
     }
-  }, [])
+  }, [enabled, mode, target])
 
   return { testVisitor }
 }

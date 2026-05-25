@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Navigate, Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Navigate, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import {
   ArrowLeftIcon,
@@ -15,6 +15,7 @@ import {
   login as apiLogin,
   signup as apiSignup,
   googleLogin as apiGoogleLogin,
+  validatePlatformInvite,
   credentials,
   listOrganizations,
   sendOtp,
@@ -231,7 +232,15 @@ function LoginForm({
   initialView?: AuthView
 }) {
   const { setCredentials } = useAuthStore()
-  const [authView, setAuthView] = useState<AuthView>(initialView ?? 'landing')
+  const [searchParams] = useSearchParams()
+  const inviteCode = searchParams.get('invite')?.trim() || null
+
+  // When an invite code is present we force the signup view and treat
+  // signup as gated. Without a code, signup is hidden — only login is
+  // reachable (public sign-up is disabled per concierge-onboarding model).
+  const [authView, setAuthView] = useState<AuthView>(
+    inviteCode ? 'signup' : (initialView ?? 'landing')
+  )
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -242,6 +251,45 @@ function LoginForm({
   const [errorAction, setErrorAction] = useState<
     { label: string; view: AuthView } | { label: string; href: string } | null
   >(null)
+
+  // Invite metadata — validated server-side (read-only). Shown as a banner
+  // above the signup form ("You're being invited to set up Lira for X").
+  const [inviteInfo, setInviteInfo] = useState<
+    | { state: 'loading' }
+    | { state: 'valid'; company: string | null; planTier: string }
+    | { state: 'invalid'; reason: string }
+    | null
+  >(inviteCode ? { state: 'loading' } : null)
+
+  useEffect(() => {
+    if (!inviteCode) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const result = await validatePlatformInvite(inviteCode)
+        if (cancelled) return
+        if (result.valid) {
+          setInviteInfo({
+            state: 'valid',
+            company: result.prospectCompany,
+            planTier: result.planTier,
+          })
+          if (result.prospectEmail) setEmail(result.prospectEmail)
+        } else {
+          setInviteInfo({ state: 'invalid', reason: result.reason })
+        }
+      } catch {
+        if (!cancelled)
+          setInviteInfo({
+            state: 'invalid',
+            reason: 'Could not validate this invite — please try again later.',
+          })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [inviteCode])
 
   function showError(
     msg: string,
@@ -282,7 +330,7 @@ function LoginForm({
         // ignore decode errors
       }
 
-      const res = await apiGoogleLogin(response.credential)
+      const res = await apiGoogleLogin(response.credential, inviteCode ?? undefined)
       setCredentials(
         res.token,
         res.user.email,
@@ -362,7 +410,13 @@ function LoginForm({
     setError(null)
     setErrorAction(null)
     try {
-      const res = await apiSignup(name.trim(), email.trim(), password.trim())
+      const res = await apiSignup(
+        name.trim(),
+        email.trim(),
+        password.trim(),
+        undefined,
+        inviteCode ?? undefined
+      )
       setCredentials(
         res.token,
         res.user.email,
@@ -725,8 +779,39 @@ function LoginForm({
                   <h1 className="text-3xl font-bold tracking-tight text-gray-900">
                     Create your account
                   </h1>
-                  <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {inviteCode
+                      ? 'Finish setting up your Lira account using your invitation.'
+                      : 'Get started with Lira.'}
+                  </p>
                 </div>
+
+                {/* Invite banner — only when arriving via a /signup?invite=XXX link.
+                    Validates server-side. Hides the form on invalid codes so the
+                    user gets a clean error instead of a confusing rejection at submit. */}
+                {inviteCode && inviteInfo?.state === 'loading' && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Checking your invitation…
+                  </div>
+                )}
+                {inviteCode && inviteInfo?.state === 'valid' && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+                    <div className="font-semibold text-emerald-800">
+                      You&apos;re invited to set up Lira
+                      {inviteInfo.company ? ` for ${inviteInfo.company}` : ''}.
+                    </div>
+                    <div className="mt-0.5 text-emerald-700">
+                      Plan: <strong>{inviteInfo.planTier}</strong>. Create your account below to
+                      land in your dashboard.
+                    </div>
+                  </div>
+                )}
+                {inviteCode && inviteInfo?.state === 'invalid' && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <strong>This invitation isn&apos;t valid.</strong> {inviteInfo.reason}. Please
+                    contact the person who sent you the link.
+                  </div>
+                )}
                 <form
                   id="auth-signup-form"
                   onSubmit={handleSignup}
@@ -861,7 +946,8 @@ function LoginForm({
                       !name.trim() ||
                       !email.trim() ||
                       !password.trim() ||
-                      password.trim().length < 8
+                      password.trim().length < 8 ||
+                      (Boolean(inviteCode) && inviteInfo?.state !== 'valid')
                     }
                     className="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
                   >

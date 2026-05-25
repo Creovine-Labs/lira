@@ -4,6 +4,14 @@
 
 export interface WidgetConfig {
   orgId: string
+  /**
+   * SDK render surface. `bubble` keeps the existing floating launcher.
+   * `fullscreen` mounts the support UI directly into a customer-owned
+   * container, e.g. their `/support` route.
+   */
+  mode?: 'bubble' | 'fullscreen'
+  /** CSS selector or HTMLElement target used by fullscreen SDK embeds. */
+  target?: string | HTMLElement
   position?: 'bottom-right' | 'bottom-left'
   primaryColor?: string
   greeting?: string
@@ -33,6 +41,19 @@ export interface WidgetConfig {
    * agent can answer account-aware questions. Never persisted server-side.
    */
   demoContext?: Record<string, unknown>
+  /**
+   * Opt-in: when true, the widget auto-opens on the first page-load for a
+   * given orgId, and STAYS open across page reloads until the visitor
+   * clicks the close button. After the first close, it never auto-opens
+   * again for that orgId on that browser. Persisted in localStorage under
+   * `lira_widget_dismissed_<orgId>`.
+   *
+   * Used by the Lira admin dashboard so new customers see the onboarding
+   * widget pop without having to discover the launcher. Production
+   * customer embeds typically leave this off — too aggressive for general
+   * web visitors who didn't ask for chat.
+   */
+  autoOpenFirstVisit?: boolean
 }
 
 export interface ChatMessage {
@@ -111,6 +132,8 @@ export interface IncomingWsMessage {
     | 'action_completed'
     | 'action_failed'
     | 'pin_required'
+    | 'suggestions'
+    | 'lira_action'
   body?: string
   conv_id?: string
   status?: string
@@ -136,8 +159,12 @@ export interface IncomingWsMessage {
   ok?: boolean
   label?: string
   url?: string
-  target?: '_self' | '_blank'
-  // ── demo_action_executed fields ──────────────────────────────────────
+  /** For 'navigate' messages: window target ('_self' | '_blank').
+   *  For 'lira_action' messages: free-form data-lira-action key. */
+  target?: string
+  // ── demo_action_executed + lira_action fields ─────────────────────────
+  /** action_type for demo_action_executed ('upgrade_plan', etc.) OR
+   *  for lira_action ('prefill_input', 'click'). */
   action_type?: string
   payload?: Record<string, unknown>
   // ── action lifecycle + PIN gate fields ───────────────────────────────
@@ -147,10 +174,23 @@ export interface IncomingWsMessage {
   data?: Record<string, unknown>
   error?: string
   hint?: string
+  /** For type: 'suggestions' — clickable chips below the latest reply. */
+  suggestions?: string[]
+  /** For type: 'lira_action' — string value (e.g. URL to prefill into an input). */
+  value?: string
 }
 
 export interface OutgoingWsMessage {
-  type: 'message' | 'typing' | 'end' | 'confirm_response' | 'demo_context' | 'pin_response' | 'pin_cancel'
+  type:
+    | 'message'
+    | 'typing'
+    | 'end'
+    | 'confirm_response'
+    | 'demo_context'
+    | 'context_update'
+    | 'pin_response'
+    | 'pin_cancel'
+    | 'customer_action_result'
   body?: string
   name?: string
   email?: string
@@ -158,9 +198,18 @@ export interface OutgoingWsMessage {
   approved?: boolean
   /** demo_context payload — visitor's local dashboard snapshot (demo only). */
   profile?: Record<string, unknown>
+  /** Live product context from an embedding host. */
+  context?: Record<string, unknown>
   /** PIN modal response — keys the dispatcher's awaitPin by action_id. */
   action_id?: string
   pin?: string
+  /** customer_action_result — outcome of an SDK-registered host action. */
+  actionName?: string
+  actionType?: string
+  target?: string
+  ok?: boolean
+  message?: string
+  data?: Record<string, unknown>
 }
 
 export type WidgetView = 'launcher' | 'pre-chat' | 'chat' | 'csat'
