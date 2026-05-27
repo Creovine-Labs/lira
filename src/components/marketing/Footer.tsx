@@ -113,7 +113,7 @@ export function MarketingFooter() {
 
         <div className="mt-12 flex flex-col gap-3 border-t border-gray-200 pt-6 text-xs text-gray-400 sm:flex-row sm:items-center sm:justify-between">
           <span>© 2026 Lira. All rights reserved.</span>
-          <span>AI customer support that remembers, routes, and follows through.</span>
+          <span>Intelligent customer support that remembers, routes, and follows through.</span>
         </div>
       </div>
     </footer>

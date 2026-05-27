@@ -8,9 +8,11 @@ import {
   CheckCircleIcon,
   ClockIcon,
   NoSymbolIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline'
 import {
   adminCreateInvite,
+  adminDeleteInvite,
   adminListInvites,
   adminRevokeInvite,
   type InviteStatus,
@@ -62,6 +64,26 @@ export function AdminInvitesPage() {
     }
   }
 
+  const handleDelete = async (invite: InviteStatus) => {
+    if (invite.state === 'active') {
+      toast.error('Revoke active invites before deleting them')
+      return
+    }
+    if (
+      !confirm(
+        `Delete the ${invite.state} invite for ${invite.prospectCompany ?? 'this prospect'}? This removes it from the admin list permanently.`
+      )
+    )
+      return
+    try {
+      await adminDeleteInvite(invite.id)
+      toast.success('Invite deleted')
+      void load()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete invite')
+    }
+  }
+
   const stats = {
     active: invites.filter((i) => i.state === 'active').length,
     used: invites.filter((i) => i.state === 'used').length,
@@ -76,7 +98,8 @@ export function AdminInvitesPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-950">Invites</h1>
           <p className="mt-1 max-w-2xl text-sm text-slate-500">
             Generate a concierge-onboarding link for a prospect after a sales call. They use it to
-            sign up for the first time — public signup is otherwise disabled.
+            sign up for the first time. Expired and used invites stay here for audit until you
+            delete them.
           </p>
         </div>
         <button
@@ -121,7 +144,14 @@ export function AdminInvitesPage() {
                 </td>
               </tr>
             ) : (
-              invites.map((inv) => <InviteRow key={inv.id} invite={inv} onRevoke={handleRevoke} />)
+              invites.map((inv) => (
+                <InviteRow
+                  key={inv.id}
+                  invite={inv}
+                  onRevoke={handleRevoke}
+                  onDelete={handleDelete}
+                />
+              ))
             )}
           </tbody>
         </table>
@@ -188,9 +218,11 @@ function StateBadge({ state }: { state: InviteStatus['state'] }) {
 function InviteRow({
   invite,
   onRevoke,
+  onDelete,
 }: {
   invite: InviteStatus
   onRevoke: (id: string, company: string | null) => void
+  onDelete: (invite: InviteStatus) => void
 }) {
   const copyUrl = async () => {
     try {
@@ -255,6 +287,16 @@ function InviteRow({
             <span className="text-[11px] text-slate-400">
               {invite.usedAt && new Date(invite.usedAt).toLocaleDateString()}
             </span>
+          )}
+          {invite.state !== 'active' && (
+            <button
+              type="button"
+              onClick={() => onDelete(invite)}
+              title="Delete invite"
+              className="rounded-md border border-slate-200 px-2 py-1 text-xs font-medium text-slate-500 transition hover:border-rose-300 hover:text-rose-600"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </button>
           )}
         </div>
       </td>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'sonner'
@@ -50,6 +50,7 @@ import {
   VerifyEmailPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  AcceptInvitePage,
   MyTicketsPage,
   MyTicketDetailPage,
 } from '@/pages'
@@ -83,6 +84,7 @@ import { AppShell } from '@/components/shell'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { credentials } from '@/services/api'
 import { env } from '@/env'
+import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
 /** Listens for JWT expiry events dispatched by apiFetch and forces re-login. */
 function AuthExpiryGuard() {
@@ -95,6 +97,7 @@ function AuthExpiryGuard() {
       credentials.clear()
       clearCredentials()
       clearOrgStore()
+      resetLiraWidgetSession()
       navigate('/', { replace: true })
     }
     window.addEventListener('lira:auth-expired', handler)
@@ -102,6 +105,33 @@ function AuthExpiryGuard() {
   }, [clearCredentials, clearOrgStore, navigate])
 
   return null
+}
+
+function RootRoute() {
+  const token = useAuthStore((s) => s.token)
+  const [authHydrated, setAuthHydrated] = useState(useAuthStore.persist.hasHydrated())
+
+  useEffect(() => {
+    if (authHydrated) return
+    return useAuthStore.persist.onFinishHydration(() => setAuthHydrated(true))
+  }, [authHydrated])
+
+  if (!authHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="h-8 w-8 animate-spin opacity-60"
+          style={{ animationDuration: '1.2s' }}
+        />
+      </div>
+    )
+  }
+
+  if (token) return <Navigate to="/dashboard" replace />
+
+  return <LandingPageV4 />
 }
 
 function App() {
@@ -119,7 +149,7 @@ function App() {
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
       <Routes>
         {/* Public routes — no shell */}
-        <Route path="/" element={<LandingPageV4 />} />
+        <Route path="/" element={<RootRoute />} />
         <Route path="/v3" element={<LandingPageV3 />} />
         <Route path="/v4" element={<LandingPageV4 />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
@@ -128,6 +158,7 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/launch-demo" element={<LaunchDemoPage />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />

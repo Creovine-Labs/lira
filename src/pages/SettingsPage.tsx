@@ -682,7 +682,7 @@ function AccountSection() {
               <span className="font-semibold text-gray-900">
                 {organizations.find((o) => o.org_id === leavingOrgId)?.name ?? leavingOrgId}
               </span>{' '}
-              immediately. You will need a new invite code to rejoin.
+              immediately. An admin will need to send you a new invitation to rejoin.
             </p>
             <div className="mt-5 flex justify-end gap-3">
               <button

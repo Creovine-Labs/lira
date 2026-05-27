@@ -252,6 +252,84 @@ export function getWidgetStyles(primaryColor: string): string {
       height: 18px;
       fill: currentColor;
     }
+    .lira-back-btn {
+      margin-right: -4px;
+    }
+    .lira-widget-tabs {
+      display: flex;
+      gap: 5px;
+      padding: 5px;
+      margin: 0 18px 8px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(248,250,252,0.92));
+      border: 1px solid rgba(203,213,225,0.86);
+      border-radius: 999px;
+      box-shadow:
+        0 16px 34px rgba(15,23,42,0.12),
+        0 2px 7px rgba(15,23,42,0.07),
+        inset 0 1px 0 rgba(255,255,255,0.9);
+      backdrop-filter: blur(14px);
+      flex-shrink: 0;
+      animation: lira-bottom-nav-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-widget-tab {
+      position: relative;
+      flex: 1;
+      height: 38px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      background: transparent;
+      color: #64748b;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      transition:
+        background 0.18s ease,
+        color 0.18s ease,
+        border-color 0.18s ease,
+        transform 0.14s ease,
+        box-shadow 0.18s ease;
+    }
+    .lira-widget-tab:hover {
+      background: rgba(248,250,252,0.92);
+      color: #0f172a;
+    }
+    .lira-widget-tab:active {
+      transform: scale(0.98);
+    }
+    .lira-widget-tab.active {
+      background: #0f172a;
+      border-color: #0f172a;
+      color: #ffffff;
+      box-shadow: 0 7px 16px rgba(15,23,42,0.16);
+    }
+    .lira-widget-tab.active:hover {
+      background: #0f172a;
+      color: #ffffff;
+    }
+    .lira-widget-tab.active::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      bottom: 5px;
+      width: 4px;
+      height: 4px;
+      border-radius: 999px;
+      background: #2dd4bf;
+      transform: translateX(-50%);
+    }
+    .lira-widget-tab:not(.active) {
+      color: #64748b;
+    }
+    .lira-widget-tab:not(.active):hover {
+      background: rgba(255,255,255,0.92);
+      color: #0f172a;
+    }
+    @keyframes lira-bottom-nav-in {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
     .lira-header-text-btn {
       background: rgba(255,255,255,0.15);
       border: none;
@@ -519,6 +597,285 @@ export function getWidgetStyles(primaryColor: string): string {
     @keyframes lira-chip-in {
       from { opacity: 0; transform: translateY(4px); }
       to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Public site home surface */
+    .lira-home {
+      flex: 1;
+      overflow-y: auto;
+      background:
+        radial-gradient(ellipse 72% 44% at 50% 6%, rgba(45,212,191,0.16) 0%, rgba(45,212,191,0) 70%),
+        radial-gradient(ellipse 54% 40% at 8% 92%, rgba(245,158,11,0.09) 0%, rgba(245,158,11,0) 72%),
+        linear-gradient(180deg, #fbfcff 0%, #f8fafc 58%, #ffffff 100%);
+      padding: 22px 18px 12px;
+      animation: lira-home-fade-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-hero {
+      position: relative;
+      border: 1px solid rgba(226,232,240,0.95);
+      border-radius: 20px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.9) 100%);
+      padding: 82px 20px 19px;
+      text-align: center;
+      overflow: hidden;
+      box-shadow:
+        0 22px 50px rgba(15,23,42,0.1),
+        0 1px 0 rgba(255,255,255,0.95) inset;
+    }
+    .lira-home-hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(135deg, rgba(20,184,166,0.12), rgba(255,255,255,0) 34%),
+        linear-gradient(225deg, rgba(15,23,42,0.07), rgba(255,255,255,0) 36%);
+    }
+    .lira-home-glow {
+      position: absolute;
+      top: -72px;
+      left: 50%;
+      width: 270px;
+      height: 270px;
+      pointer-events: none;
+      background:
+        radial-gradient(circle at center, rgba(20,184,166,0.18) 0%, rgba(15,23,42,0.08) 34%, rgba(15,23,42,0) 66%);
+      filter: blur(9px);
+      transform: translateX(-50%);
+      animation: lira-home-glow 6s ease-in-out infinite;
+    }
+    .lira-home-logo-wrap {
+      position: relative;
+      z-index: 2;
+      width: 86px;
+      height: 86px;
+      margin: 0 auto -58px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: lira-home-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 78px;
+      height: 78px;
+      border-radius: 999px;
+      border: 1.5px solid rgba(15,23,42,0.22);
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      animation: lira-home-ring 2.8s ease-out infinite;
+    }
+    .lira-home-ring-2 {
+      animation-delay: 1.4s;
+    }
+    .lira-home-orbit {
+      position: absolute;
+      width: 7px;
+      height: 7px;
+      border-radius: 999px;
+      background: #14b8a6;
+      box-shadow: 0 0 0 5px rgba(20,184,166,0.12);
+    }
+    .lira-home-orbit-1 {
+      top: 10px;
+      right: 14px;
+      animation: lira-home-float-a 4.8s ease-in-out infinite;
+    }
+    .lira-home-orbit-2 {
+      left: 12px;
+      bottom: 15px;
+      width: 5px;
+      height: 5px;
+      background: #64748b;
+      box-shadow: 0 0 0 5px rgba(100,116,139,0.1);
+      animation: lira-home-float-b 5.4s ease-in-out infinite;
+    }
+    .lira-home-logo {
+      position: relative;
+      width: 58px;
+      height: 58px;
+      border-radius: 19px;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow:
+        0 18px 36px rgba(15,23,42,0.16),
+        0 1px 0 rgba(255,255,255,0.95) inset;
+    }
+    .lira-home-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .lira-home-title {
+      font-size: 19px;
+      line-height: 1.2;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 7px;
+      letter-spacing: 0;
+      animation: lira-home-rise 520ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-kicker {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 24px;
+      padding: 4px 9px;
+      margin: 0 0 10px;
+      border: 1px solid rgba(203,213,225,0.9);
+      border-radius: 999px;
+      background: rgba(248,250,252,0.82);
+      color: #475569;
+      font-size: 10.5px;
+      font-weight: 750;
+      letter-spacing: 0;
+      animation: lira-home-rise 520ms 110ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-subtitle {
+      font-size: 13px;
+      line-height: 1.55;
+      color: #64748b;
+      margin: 0 0 16px;
+      animation: lira-home-rise 520ms 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-primary {
+      width: 100%;
+      height: 44px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 92%, #ffffff 8%) 0%, ${primaryColor} 100%);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 750;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.16) inset,
+        0 11px 22px rgba(15,23,42,0.18);
+      transition: transform 0.14s ease, box-shadow 0.14s ease, opacity 0.14s ease;
+      animation: lira-home-rise 520ms 200ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(15,23,42,0.18);
+    }
+    .lira-home-primary:active {
+      transform: translateY(0);
+      opacity: 0.92;
+    }
+    .lira-home-primary-arrow {
+      transition: transform 0.18s ease;
+    }
+    .lira-home-primary:hover .lira-home-primary-arrow {
+      transform: translateX(3px);
+    }
+    .lira-home-cards {
+      display: grid;
+      gap: 8px;
+      margin-top: 13px;
+    }
+    .lira-home-card {
+      width: 100%;
+      text-align: left;
+      border: 1px solid rgba(226,232,240,0.95);
+      border-radius: 14px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.98), rgba(248,250,252,0.9));
+      padding: 10px 11px;
+      font-family: inherit;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: border-color 0.14s ease, transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+      animation: lira-home-rise 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+    .lira-home-card:nth-child(1) {
+      animation-delay: 250ms;
+    }
+    .lira-home-card:nth-child(2) {
+      animation-delay: 310ms;
+    }
+    .lira-home-card:nth-child(3) {
+      animation-delay: 370ms;
+    }
+    .lira-home-card:hover {
+      border-color: rgba(148,163,184,0.72);
+      background: #ffffff;
+      transform: translateY(-1px);
+      box-shadow: 0 10px 22px rgba(15,23,42,0.08);
+    }
+    .lira-home-card-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: #0f172a;
+      color: #ffffff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      font-size: 10.5px;
+      font-weight: 850;
+      box-shadow: 0 8px 18px rgba(15,23,42,0.14);
+    }
+    .lira-home-card:nth-child(2) .lira-home-card-icon {
+      background: #0f766e;
+    }
+    .lira-home-card:nth-child(3) .lira-home-card-icon {
+      background: #475569;
+    }
+    .lira-home-card-copy {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .lira-home-card-title {
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .lira-home-card-body {
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    @keyframes lira-home-fade-in {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes lira-home-rise {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes lira-home-glow {
+      0%, 100% { opacity: 0.62; transform: translateX(-50%) scale(1); }
+      50%      { opacity: 0.9; transform: translateX(-50%) scale(1.08); }
+    }
+    @keyframes lira-home-ring {
+      0%   { opacity: 0.55; transform: translate(-50%, -50%) scale(0.72); }
+      70%  { opacity: 0.12; }
+      100% { opacity: 0; transform: translate(-50%, -50%) scale(1.58); }
+    }
+    @keyframes lira-home-float-a {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50%      { transform: translate3d(-5px, 6px, 0); }
+    }
+    @keyframes lira-home-float-b {
+      0%, 100% { transform: translate3d(0, 0, 0); }
+      50%      { transform: translate3d(6px, -5px, 0); }
     }
 
     /* Message row — avatar + body */
@@ -1167,9 +1524,9 @@ export function getWidgetStyles(primaryColor: string): string {
 
     .lira-powered {
       text-align: center;
-      padding: 6px;
+      padding: 4px 6px 7px;
       font-size: 10px;
-      color: #b0b0b0;
+      color: #a3a3a3;
       flex-shrink: 0;
       background: #fff;
     }

@@ -5,9 +5,12 @@ export type LiraConfig = Partial<WidgetConfig> & {
 }
 
 export type LiraVisitorIdentity = {
-  email?: string
-  name?: string
-  sig?: string
+  /** Visitor email. Pass `null` to clear (treated as logout for this field); omit to preserve. */
+  email?: string | null
+  /** Visitor display name. Pass `null` to clear; omit to preserve. */
+  name?: string | null
+  /** HMAC-SHA256 of email computed server-side with the widget secret. Pass `null` to clear; omit to preserve. */
+  sig?: string | null
 }
 
 export type LiraContext = Record<string, unknown>
@@ -19,6 +22,13 @@ export type LiraSupportInstance = {
 export type LiraBrowserApi = {
   init: (config: Partial<WidgetConfig>) => LiraBrowserApi
   identify: (visitor: LiraVisitorIdentity) => LiraBrowserApi
+  /**
+   * Clears any logged-in identity on this device. Wipes the user's chat
+   * history off this device and rotates the anonymous chat scope so the
+   * next visitor starts with a clean history. Call this from your app's
+   * logout handler.
+   */
+  logout: () => LiraBrowserApi
   setContext: (context: LiraContext) => LiraBrowserApi
   track: (eventName: string, payload?: Record<string, unknown>) => LiraBrowserApi
   mountWidget: (config?: Partial<WidgetConfig>) => LiraSupportInstance
@@ -83,6 +93,17 @@ export function identify(visitor: LiraVisitorIdentity): LiraBrowserApi {
   return getApi().identify(visitor)
 }
 
+/**
+ * Clears the current visitor identity on this device. Wipes their chat
+ * history off this browser and rotates the anonymous scope so a subsequent
+ * visitor starts clean. Wire this on your logout button.
+ *
+ * Equivalent to `identify({ email: null, name: null, sig: null })`.
+ */
+export function logout(): LiraBrowserApi {
+  return getApi().logout()
+}
+
 export function setContext(context: LiraContext): LiraBrowserApi {
   return getApi().setContext(context)
 }
@@ -110,6 +131,7 @@ export const LiraSupport = {
   load: loadLira,
   init,
   identify,
+  logout,
   setContext,
   track,
   mountWidget,

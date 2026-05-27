@@ -4,23 +4,26 @@ import {
   ArrowRightOnRectangleIcon,
   ArrowsRightLeftIcon,
   BookOpenIcon,
-  DocumentDuplicateIcon,
+  ClipboardDocumentCheckIcon,
+  ClipboardDocumentIcon,
+  EnvelopeIcon,
   ShieldCheckIcon,
+  TrashIcon,
   UserMinusIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
-
-import { cn } from '@/lib'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   listOrgMembers,
   updateMemberRole,
   removeMember,
-  regenerateInviteCode,
   transferOwnership,
-  getOrganization,
   leaveOrganization,
+  createEmployeeInvite,
+  listEmployeeInvites,
+  revokeEmployeeInvite,
+  type EmployeeInvite,
   type OrgMembership,
 } from '@/services/api'
 
@@ -40,25 +43,35 @@ function OrgMembersPage() {
   })
 
   const [members, setMembers] = useState<OrgMembership[]>([])
-  const [inviteCode, setInviteCode] = useState('')
+  const [invites, setInvites] = useState<EmployeeInvite[]>([])
   const [loading, setLoading] = useState(true)
-  const [regenerating, setRegenerating] = useState(false)
   const [transferTarget, setTransferTarget] = useState<OrgMembership | null>(null)
   const [transferring, setTransferring] = useState(false)
   const [leavingOrg, setLeavingOrg] = useState(false)
   const [removeTarget, setRemoveTarget] = useState<OrgMembership | null>(null)
   const [removing, setRemoving] = useState(false)
 
+  // Invite-by-email form state
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'member' | 'admin'>('member')
+  const [creatingInvite, setCreatingInvite] = useState(false)
+  const [justCreated, setJustCreated] = useState<EmployeeInvite | null>(null)
+  const [copiedToken, setCopiedToken] = useState<string | null>(null)
+
   const loadData = useCallback(async () => {
     if (!currentOrgId) return
     setLoading(true)
     try {
-      const [memberList, org] = await Promise.all([
-        listOrgMembers(currentOrgId),
-        getOrganization(currentOrgId),
-      ])
+      const memberList = await listOrgMembers(currentOrgId)
       setMembers(memberList)
-      setInviteCode(org.invite_code)
+      // Invite list is admin/owner-only on the backend — silently ignore 403
+      // for plain members so the page still renders for them.
+      try {
+        const inviteList = await listEmployeeInvites(currentOrgId)
+        setInvites(inviteList)
+      } catch {
+        setInvites([])
+      }
     } catch {
       toast.error('Failed to load members')
     } finally {
@@ -92,18 +105,60 @@ function OrgMembersPage() {
     }
   }
 
-  async function handleRegenerate() {
+  async function handleCreateInvite() {
     if (!currentOrgId) return
-    setRegenerating(true)
-    try {
-      const code = await regenerateInviteCode(currentOrgId)
-      setInviteCode(code)
-      toast.success('Invite code regenerated')
-    } catch {
-      toast.error('Failed to regenerate code')
-    } finally {
-      setRegenerating(false)
+    const email = inviteEmail.trim().toLowerCase()
+    if (!email || !/.+@.+\..+/.test(email)) {
+      toast.error('Enter a valid email address')
+      return
     }
+    if (invites.some((i) => i.state === 'active' && i.email === email)) {
+      toast.error('An active invite already exists for that email')
+      return
+    }
+    setCreatingInvite(true)
+    try {
+      const { invite } = await createEmployeeInvite(currentOrgId, {
+        email,
+        role: inviteRole,
+      })
+      setInvites((prev) => [invite, ...prev])
+      setJustCreated(invite)
+      setInviteEmail('')
+      setInviteRole('member')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create invite')
+    } finally {
+      setCreatingInvite(false)
+    }
+  }
+
+  async function handleRevokeInvite(token: string) {
+    if (!currentOrgId) return
+    try {
+      await revokeEmployeeInvite(currentOrgId, token)
+      setInvites((prev) =>
+        prev.map((i) =>
+          i.token === token ? { ...i, state: 'revoked', revoked_at: new Date().toISOString() } : i
+        )
+      )
+      toast.success('Invite revoked')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to revoke invite')
+    }
+  }
+
+  // Build the accept URL from the current origin so links generated in dev
+  // (npm run dev) point at the local server instead of the backend's
+  // FRONTEND_URL env value. The backend uses FRONTEND_URL for the email link.
+  function acceptUrlFor(token: string): string {
+    return `${window.location.origin}/accept-invite?token=${encodeURIComponent(token)}`
+  }
+
+  function copyInviteLink(invite: EmployeeInvite) {
+    navigator.clipboard.writeText(acceptUrlFor(invite.token))
+    setCopiedToken(invite.token)
+    setTimeout(() => setCopiedToken((c) => (c === invite.token ? null : c)), 2000)
   }
 
   async function handleTransferOwnership() {
@@ -135,11 +190,6 @@ function OrgMembersPage() {
     } finally {
       setLeavingOrg(false)
     }
-  }
-
-  function copyCode() {
-    navigator.clipboard.writeText(inviteCode)
-    toast.success('Invite code copied!')
   }
 
   const currentMember = members.find((m) => m.user_id === userId)
@@ -187,43 +237,161 @@ function OrgMembersPage() {
           </a>
         </div>
 
-        {/* Invite Code */}
-        <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
-          <h2 className="mb-1 text-sm font-bold text-gray-900">Invite Code</h2>
-          <p className="mb-4 text-sm text-gray-400">
-            Share this code with teammates so they can join your organization.
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 font-mono text-lg font-bold tracking-widest text-gray-900">
-              {inviteCode || '—'}
-            </div>
-            <button
-              onClick={copyCode}
-              disabled={!inviteCode}
-              className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
-              title="Copy invite code"
-            >
-              <DocumentDuplicateIcon className="h-4 w-4" />
-              Copy
-            </button>
-            {isOwnerOrAdmin && (
+        {/* Invite by email (admin/owner only) */}
+        {isOwnerOrAdmin && (
+          <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
+            <h2 className="mb-1 text-sm font-bold text-gray-900">Invite a teammate</h2>
+            <p className="mb-4 text-sm text-gray-400">
+              Send a one-time, expiring invite link tied to a specific email address. The invitee
+              sets a password and lands directly in this organization.
+            </p>
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-[220px] flex-1">
+                <label
+                  htmlFor="invite-email"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Email address
+                </label>
+                <div className="relative">
+                  <EnvelopeIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    id="invite-email"
+                    type="email"
+                    placeholder="teammate@company.com"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    disabled={creatingInvite}
+                    className="w-full rounded-xl border border-gray-200 bg-white py-2 pl-9 pr-3 text-sm text-gray-900 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                  />
+                </div>
+              </div>
+              <div>
+                <label
+                  htmlFor="invite-role"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Role
+                </label>
+                <select
+                  id="invite-role"
+                  value={inviteRole}
+                  onChange={(e) => setInviteRole(e.target.value as 'admin' | 'member')}
+                  disabled={creatingInvite}
+                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 outline-none transition focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                >
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
               <button
-                onClick={handleRegenerate}
-                disabled={regenerating}
-                className="flex items-center gap-1.5 rounded-xl border border-gray-200 px-3 py-2 text-sm font-medium text-gray-600 transition hover:bg-gray-50 disabled:opacity-50"
-                title="Regenerate invite code"
+                onClick={handleCreateInvite}
+                disabled={creatingInvite || !inviteEmail.trim()}
+                className="rounded-xl bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:opacity-50"
               >
-                <img
-                  src="/lira_black.png"
-                  alt="Loading"
-                  className={cn('h-4 w-4 opacity-50', regenerating && 'animate-spin')}
-                  style={regenerating ? { animationDuration: '1.2s' } : undefined}
-                />
-                Regenerate
+                {creatingInvite ? 'Generating…' : 'Generate invite link'}
               </button>
+            </div>
+
+            {justCreated && (
+              <div className="mt-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700">
+                  Invite ready for {justCreated.email}
+                </p>
+                <p className="mt-1 text-xs text-emerald-700/80">
+                  Share this link. It expires{' '}
+                  {new Date(justCreated.expires_at).toLocaleDateString()} and can only be used once.
+                </p>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <code className="min-w-0 flex-1 truncate rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs text-gray-700">
+                    {acceptUrlFor(justCreated.token)}
+                  </code>
+                  <button
+                    onClick={() => copyInviteLink(justCreated)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-lg border border-emerald-300 bg-white px-3 py-2 text-xs font-medium text-emerald-700 transition hover:bg-emerald-100"
+                  >
+                    {copiedToken === justCreated.token ? (
+                      <>
+                        <ClipboardDocumentCheckIcon className="h-4 w-4" />
+                        Copied
+                      </>
+                    ) : (
+                      <>
+                        <ClipboardDocumentIcon className="h-4 w-4" />
+                        Copy link
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             )}
           </div>
-        </div>
+        )}
+
+        {/* Pending invites */}
+        {isOwnerOrAdmin && invites.length > 0 && (
+          <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
+            <div className="border-b border-gray-100 px-6 py-4">
+              <h2 className="text-sm font-bold text-gray-900">Invites ({invites.length})</h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {invites.map((inv) => (
+                <div
+                  key={inv.token}
+                  className="flex flex-wrap items-center gap-3 px-4 sm:px-6 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-gray-900">{inv.email}</p>
+                    <p className="text-xs text-gray-400">
+                      {inv.role === 'admin' ? 'Admin · ' : 'Member · '}
+                      {inv.state === 'active'
+                        ? `Expires ${new Date(inv.expires_at).toLocaleDateString()}`
+                        : inv.state === 'used'
+                          ? `Accepted ${inv.used_at ? new Date(inv.used_at).toLocaleDateString() : ''}`
+                          : inv.state === 'revoked'
+                            ? 'Revoked'
+                            : 'Expired'}
+                      {inv.invited_by_name ? ` · by ${inv.invited_by_name}` : ''}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      inv.state === 'active'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : inv.state === 'used'
+                          ? 'bg-gray-100 text-gray-500'
+                          : 'bg-amber-50 text-amber-700'
+                    }`}
+                  >
+                    {inv.state}
+                  </span>
+                  {inv.state === 'active' && (
+                    <>
+                      <button
+                        onClick={() => copyInviteLink(inv)}
+                        className="rounded-xl border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-50"
+                        title="Copy invite link"
+                      >
+                        {copiedToken === inv.token ? (
+                          <ClipboardDocumentCheckIcon className="h-4 w-4 text-emerald-600" />
+                        ) : (
+                          <ClipboardDocumentIcon className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleRevokeInvite(inv.token)}
+                        className="rounded-xl p-1.5 text-gray-400 transition hover:bg-red-50 hover:text-red-500"
+                        title="Revoke invite"
+                      >
+                        <TrashIcon className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Members list */}
         <div className="rounded-2xl border border-white/60 bg-white shadow-sm">
@@ -327,7 +495,8 @@ function OrgMembersPage() {
           <div className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm">
             <h2 className="mb-1 text-sm font-bold text-red-600">Danger Zone</h2>
             <p className="mb-4 text-sm text-gray-400">
-              Leaving this organization is permanent. You will need a new invite code to rejoin.
+              Leaving this organization is permanent. An admin will need to send you a new
+              invitation to rejoin.
             </p>
             <button
               onClick={() => setLeavingOrg(true)}
@@ -359,7 +528,7 @@ function OrgMembersPage() {
                 <span className="font-semibold text-gray-900">
                   {removeTarget.name ?? removeTarget.email ?? removeTarget.user_id}
                 </span>{' '}
-                from this organization? They will need a new invite code to rejoin.
+                from this organization? They will need a new invitation to rejoin.
               </p>
               <div className="mt-5 flex justify-end gap-3">
                 <button
@@ -395,8 +564,8 @@ function OrgMembersPage() {
             <div className="w-full max-w-md rounded-2xl border border-white/60 bg-white p-6 shadow-xl">
               <h3 className="text-base font-bold text-gray-900">Leave Organization?</h3>
               <p className="mt-2 text-sm text-gray-500">
-                You will be removed from this organization immediately. You’ll need a new invite
-                code to rejoin.
+                You will be removed from this organization immediately. An admin will need to send
+                you a new invitation to rejoin.
               </p>
               <div className="mt-5 flex justify-end gap-3">
                 <button

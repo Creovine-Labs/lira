@@ -3,6 +3,30 @@ import { credentials } from './index'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** Handoff Layer (§6.2) — automatic escalation triggers, tunable per org. */
+export interface HandoffTriggersConfig {
+  sentiment_enabled?: boolean
+  repeated_failure_enabled?: boolean
+  repeated_failure_threshold?: number
+  vip_auto_enabled?: boolean
+  multi_turn_confusion_enabled?: boolean
+  multi_turn_confusion_threshold?: number
+  sla_pressure_enabled?: boolean
+  sla_pressure_minutes?: number
+}
+
+/** Built-in defaults — mirror HANDOFF_TRIGGER_DEFAULTS on the backend. */
+export const HANDOFF_TRIGGER_DEFAULTS: Required<HandoffTriggersConfig> = {
+  sentiment_enabled: true,
+  repeated_failure_enabled: true,
+  repeated_failure_threshold: 3,
+  vip_auto_enabled: true,
+  multi_turn_confusion_enabled: true,
+  multi_turn_confusion_threshold: 3,
+  sla_pressure_enabled: true,
+  sla_pressure_minutes: 30,
+}
+
 export interface SupportConfig {
   PK: string
   SK: string
@@ -43,6 +67,7 @@ export interface SupportConfig {
   ai_replies_this_month: number
   onboarding_completed: boolean
   onboarding_step: string
+  handoff_triggers?: HandoffTriggersConfig
   created_at: string
   updated_at: string
 }
@@ -730,6 +755,29 @@ export async function disableToolPack(orgId: string, packId: string): Promise<vo
 
 // ── Support tickets (separate from conversations) ───────────────────────────
 
+/** Structured handoff brief (§6.3) — generated when a ticket is opened. */
+export interface HandoffBrief {
+  customer_summary: string
+  issue_summary: string
+  urgency: 'low' | 'medium' | 'high' | 'urgent'
+  what_agent_tried: string[]
+  what_human_needs_to_do: string
+  suggested_response: string
+  generated_at: string
+  model_used: string
+}
+
+/** Round-trip learning (§6.4) — captured when a human resolves a ticket. */
+export interface HandoffResolution {
+  ai_assessment?: 'correct' | 'partial' | 'wrong'
+  knowledge_gap?: boolean
+  gap_note?: string
+  outcome_note?: string
+  kb_draft_id?: string
+  resolved_by?: string
+  captured_at: string
+}
+
 export interface SupportTicketRecord {
   ticket_id: string
   ticket_number?: string
@@ -744,6 +792,9 @@ export interface SupportTicketRecord {
   status: 'open' | 'in_progress' | 'resolved' | 'closed'
   assignee_user_id?: string
   escalation_reason: string
+  handoff_trigger?: string
+  handoff_brief?: HandoffBrief
+  handoff_resolution?: HandoffResolution
   created_at: string
   updated_at: string
   resolved_at?: string
@@ -788,12 +839,36 @@ export async function replyToTicket(
   return data.message
 }
 
-export async function resolveTicket(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
+/** Round-trip learning feedback captured at resolve time (§6.4). All optional. */
+export interface ResolveTicketFeedback {
+  ai_assessment?: 'correct' | 'partial' | 'wrong'
+  knowledge_gap?: boolean
+  gap_note?: string
+  outcome_note?: string
+}
+
+export async function resolveTicket(
+  orgId: string,
+  ticketId: string,
+  feedback?: ResolveTicketFeedback
+): Promise<SupportTicketRecord> {
   const data = await supportFetch<{ ticket: SupportTicketRecord }>(
     `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/resolve`,
-    { method: 'POST' }
+    { method: 'POST', body: JSON.stringify(feedback ?? {}) }
   )
   return data.ticket
+}
+
+/** Regenerate the structured handoff brief for a ticket (§6.3). */
+export async function regenerateHandoffBrief(
+  orgId: string,
+  ticketId: string
+): Promise<HandoffBrief> {
+  const data = await supportFetch<{ brief: HandoffBrief }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/handoff-brief/regenerate`,
+    { method: 'POST' }
+  )
+  return data.brief
 }
 
 /** Visitor-facing: list tickets I opened (identity = email). No JWT auth. */

@@ -212,4 +212,4 @@ export interface OutgoingWsMessage {
   data?: Record<string, unknown>
 }
 
-export type WidgetView = 'launcher' | 'pre-chat' | 'chat' | 'csat'
+export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat' | 'csat'

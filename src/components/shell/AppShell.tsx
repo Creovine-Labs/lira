@@ -50,6 +50,7 @@ import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
 import { cn } from '@/lib'
+import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
 // ── Sidebar badge helper ──────────────────────────────────────────────────────
 function NavBadge({ count }: { count: number }) {
@@ -183,6 +184,55 @@ const NAV_WORKSPACE: NavGroup = {
 
 const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
 
+// ── Contact-team modal (gates self-serve new-org creation) ───────────────────
+// New organizations are provisioned by the Lira team after a sales conversation
+// (payment plan + limits configured server-side, then a signup link is issued).
+// This modal replaces the old in-app "New organization" wizard entry point.
+function ContactToCreateOrgModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10">
+            <BuildingOffice2Icon className="h-5 w-5 text-[#3730a3]" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-gray-900">Need another organization?</h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-gray-600">
+              New organizations on Lira are provisioned by our team so we can scope your plan, usage
+              limits, and rollout to your business needs. Reach out and we'll get you set up with a
+              fresh signup link.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:text-gray-900"
+          >
+            Close
+          </button>
+          <a
+            href="mailto:team@liraintelligence.com?subject=New%20organization%20request"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+          >
+            <EnvelopeIcon className="h-4 w-4" />
+            Contact the Lira team
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Org switcher dropdown ──────────────────────────────────────────────────────
 function OrgSwitcher() {
   const navigate = useNavigate()
@@ -192,6 +242,7 @@ function OrgSwitcher() {
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
+  const [contactOpen, setContactOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -279,7 +330,7 @@ function OrgSwitcher() {
             <button
               onClick={() => {
                 setOpen(false)
-                navigate('/onboarding')
+                setContactOpen(true)
               }}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
             >
@@ -289,6 +340,7 @@ function OrgSwitcher() {
           </div>
         )}
       </div>
+      <ContactToCreateOrgModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   )
 }
@@ -302,6 +354,7 @@ function TopbarOrgSwitcher() {
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
+  const [contactOpen, setContactOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -391,7 +444,7 @@ function TopbarOrgSwitcher() {
             <button
               onClick={() => {
                 setOpen(false)
-                navigate('/onboarding')
+                setContactOpen(true)
               }}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
             >
@@ -401,6 +454,7 @@ function TopbarOrgSwitcher() {
           </div>
         )}
       </div>
+      <ContactToCreateOrgModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   )
 }
@@ -835,6 +889,7 @@ function AppShell() {
   function handleSignOut() {
     clearCredentials()
     clear()
+    resetLiraWidgetSession()
     navigate('/', { replace: true })
   }
 

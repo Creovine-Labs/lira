@@ -500,7 +500,8 @@ export interface Organization {
   org_id: string
   name: string
   owner_id: string
-  invite_code: string
+  /** Legacy field from the static-invite-code era — no longer set on new orgs. */
+  invite_code?: string
   profile: OrganizationProfile
   created_at: string
   updated_at: string
@@ -651,15 +652,6 @@ export async function deleteOrganization(orgId: string): Promise<void> {
   await apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}`, { method: 'DELETE' })
 }
 
-export async function joinOrganization(
-  inviteCode: string
-): Promise<{ organization: Organization; membership: OrgMembership }> {
-  return apiFetch('/lira/v1/orgs/join', {
-    method: 'POST',
-    body: JSON.stringify({ invite_code: inviteCode }),
-  })
-}
-
 export async function leaveOrganization(orgId: string): Promise<void> {
   await apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}/leave`, { method: 'POST' })
 }
@@ -745,18 +737,96 @@ export async function transferOwnership(orgId: string, newOwnerId: string): Prom
   })
 }
 
-export async function regenerateInviteCode(orgId: string): Promise<string> {
-  const data = await apiFetch<{ invite_code: string }>(
-    `/lira/v1/orgs/${encodeURIComponent(orgId)}/invite-code/regenerate`,
-    { method: 'POST' }
-  )
-  return data.invite_code
+// ── Per-employee org invites (admin-issued, one-time, expiring) ─────────────
+//
+// The user-facing "join an organization" flow now goes through these instead
+// of the static LRA-XXXX invite code. Org admins/owners create one per
+// employee; the invitee accepts via the public /accept-invite page.
+
+export type EmployeeInviteState = 'active' | 'used' | 'revoked' | 'expired'
+
+export interface EmployeeInvite {
+  token: string
+  org_id: string
+  org_name: string
+  email: string
+  role: 'admin' | 'member'
+  invited_by_user_id: string
+  invited_by_name?: string
+  created_at: string
+  expires_at: string
+  used_at?: string
+  used_by_user_id?: string
+  revoked_at?: string
+  state: EmployeeInviteState
+  accept_url: string
 }
 
-export async function validateInviteCode(
-  code: string
-): Promise<{ valid: boolean; organization?: { name: string; org_id: string } }> {
-  return apiFetch(`/lira/v1/orgs/invite/${encodeURIComponent(code)}/validate`)
+export async function createEmployeeInvite(
+  orgId: string,
+  payload: { email: string; role?: 'admin' | 'member'; expires_in_days?: number }
+): Promise<{ invite: EmployeeInvite; accept_url: string }> {
+  return apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}/employee-invites`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function listEmployeeInvites(orgId: string): Promise<EmployeeInvite[]> {
+  const data = await apiFetch<{ invites: EmployeeInvite[] }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/employee-invites`
+  )
+  return data.invites
+}
+
+export async function revokeEmployeeInvite(orgId: string, token: string): Promise<void> {
+  await apiFetch(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/employee-invites/${encodeURIComponent(token)}/revoke`,
+    { method: 'POST' }
+  )
+}
+
+export interface EmployeeInviteSummary {
+  token: string
+  org_id: string
+  org_name: string
+  email: string
+  role: 'admin' | 'member'
+  invited_by_name?: string
+  expires_at: string
+  state: EmployeeInviteState
+  account_exists_in_tenant: boolean
+}
+
+export async function validateEmployeeInvite(token: string): Promise<EmployeeInviteSummary> {
+  const data = await apiFetch<{ invite: EmployeeInviteSummary }>(
+    `/lira/v1/orgs/employee-invites/${encodeURIComponent(token)}/validate`
+  )
+  return data.invite
+}
+
+export interface AcceptEmployeeInviteResponse {
+  accessToken: string
+  user: {
+    id: string
+    email: string
+    name: string
+    tenantId: string
+    role: string
+    emailVerified: boolean
+  }
+  org: { org_id: string; name: string }
+  isNewAccount: boolean
+}
+
+export async function acceptEmployeeInvite(
+  token: string,
+  payload: { name?: string; password?: string }
+): Promise<AcceptEmployeeInviteResponse> {
+  return apiFetch(`/lira/v1/orgs/employee-invites/${encodeURIComponent(token)}/accept`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
 }
 
 export interface DashboardStats {
@@ -2544,7 +2614,6 @@ export interface AdminOrgItem {
   owner_name?: string
   member_count: number
   created_at?: string
-  invite_code?: string
   usage: Record<string, number>
   limits: Record<string, number>
 }
@@ -2595,6 +2664,28 @@ export async function adminGetOrganization(orgId: string): Promise<AdminOrgDetai
 export async function adminDeleteOrganization(orgId: string): Promise<void> {
   return apiFetch(`/v1/platform/admin/lira/organizations/${encodeURIComponent(orgId)}`, {
     method: 'DELETE',
+  })
+}
+
+export interface AdminCreateOrgPayload {
+  name: string
+  owner_email?: string
+  owner_user_id?: string
+  tenant_id?: string
+  profile?: Record<string, unknown>
+}
+
+export interface AdminCreateOrgResponse {
+  organization: Organization
+  owner: { id: string; email: string; name: string | null; tenantId: string }
+}
+
+export async function adminCreateOrgForUser(
+  payload: AdminCreateOrgPayload
+): Promise<AdminCreateOrgResponse> {
+  return apiFetch('/v1/platform/admin/lira/organizations', {
+    method: 'POST',
+    body: JSON.stringify(payload),
   })
 }
 
@@ -2704,6 +2795,14 @@ export async function adminRevokeInvite(id: string): Promise<InviteStatus> {
   })
 }
 
+export async function adminDeleteInvite(
+  id: string
+): Promise<{ deleted: boolean; invite: InviteStatus }> {
+  return apiFetch(`/v1/platform/admin/invites/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+}
+
 // ── Lira's own onboarding widget — signed identity for embedding ────────────
 
 export interface LiraWidgetCreds {
@@ -2742,7 +2841,7 @@ export async function saveAttribution(source: AttributionSource, detail?: string
 
 /** Public — validate a concierge-onboarding invite code without consuming.
  *  Returns `{ valid: false, reason }` for invalid codes. Distinct from
- *  `validateInviteCode()` which handles org member invites. */
+ *  per-employee invites (which use `validateEmployeeInvite()`). */
 export async function validatePlatformInvite(code: string): Promise<
   | {
       valid: true

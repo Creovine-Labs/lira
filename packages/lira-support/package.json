@@ -1,6 +1,6 @@
 {
   "name": "@liraintelligence/support",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Lira Support Web SDK for full-page support embeds, floating widgets, identity, context, and customer actions.",
   "type": "module",
   "license": "MIT",
@@ -42,6 +42,7 @@
     "*.d.ts",
     "cli.cjs",
     "templates",
+    "skills",
     "README.md",
     "LICENSE"
   ],

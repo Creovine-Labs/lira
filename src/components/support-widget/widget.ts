@@ -34,6 +34,7 @@ import {
 
 const ICON_CHAT = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.04 2 11c0 2.62 1.23 4.98 3.16 6.6L4 22l4.64-2.32C9.69 19.89 10.82 20 12 20c5.52 0 10-4.04 10-9S17.52 2 12 2z"/></svg>`
 const ICON_CLOSE = `<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`
+const ICON_ARROW_LEFT = `<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 const ICON_SEND = `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`
@@ -63,16 +64,6 @@ const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 // backend voice WS, transcript persistence, post-call wiring, and audio
 // playback code are all left intact so reactivation is a one-line change.
 const VOICE_FEATURE_ENABLED = false
-const BASIC_EMBED_SNIPPET = `<script
-  src="https://widget.liraintelligence.com/v1/widget.js"
-  data-org-id="YOUR_ORG_ID"
-  data-position="bottom-right">
-</script>`
-
-type QuickReply = {
-  label: string
-  body: string
-}
 
 // ── Visitor ID persistence ────────────────────────────────────────────────────
 //
@@ -128,15 +119,54 @@ function getOrCreateVisitorId(ephemeral = false): string {
 
 // ── Message persistence ──────────────────────────────────────────────────────
 //
-// Persistent mode (production): key is `lira_chat_<orgId>` — same as today.
-// Ephemeral mode (demo): key is `lira_chat_session_<orgId>_<visitorId>` so two
-// visitors who happen to share a browser get distinct chat histories.
+// Identity-aware storage. We never share a chat history across identities on
+// the same browser — that was the LemonPay leak that surfaced this rewrite.
+//
+//   • Identified visitor:    lira_chat_<orgId>_u_<lowercase-email>
+//   • Anonymous visitor:     lira_chat_<orgId>_anon_<anonChatId>
+//   • Ephemeral (demo only): lira_chat_session_<orgId>_<visitorId>
+//
+// The anon scope is keyed by a separate `lira_anon_chat_id` we rotate on
+// logout, so the next anonymous user on a shared device starts clean.
 
-function getStorageKey(orgId: string, ephemeral: boolean, visitorId?: string): string {
-  if (!ephemeral) return `lira_chat_${orgId}`
-  // visitorId is required in ephemeral mode; if missing, the resulting key
-  // still works but is shared per-tab. We always pass it in below.
-  return `lira_chat_session_${orgId}_${visitorId ?? 'anon'}`
+function getAnonChatId(): string {
+  const KEY = 'lira_anon_chat_id'
+  try {
+    const existing = localStorage.getItem(KEY)
+    if (existing) return existing
+  } catch {
+    /* no localStorage available */
+  }
+  const id = 'a_' + crypto.randomUUID()
+  try {
+    localStorage.setItem(KEY, id)
+  } catch {
+    /* ignore */
+  }
+  return id
+}
+
+function rotateAnonChatId(): string {
+  const id = 'a_' + crypto.randomUUID()
+  try {
+    localStorage.setItem('lira_anon_chat_id', id)
+  } catch {
+    /* ignore */
+  }
+  return id
+}
+
+function getStorageKey(
+  orgId: string,
+  ephemeral: boolean,
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
+): string {
+  if (ephemeral) {
+    return `lira_chat_session_${orgId}_${identity.visitorId ?? 'anon'}`
+  }
+  const email = identity.email?.trim().toLowerCase()
+  if (email) return `lira_chat_${orgId}_u_${email}`
+  return `lira_chat_${orgId}_anon_${identity.anonChatId ?? getAnonChatId()}`
 }
 
 function chatStore(ephemeral: boolean): Storage | null {
@@ -153,13 +183,13 @@ function saveMessages(
   convId: string | null,
   unreadCount: number,
   ephemeral: boolean,
-  visitorId?: string
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
 ): void {
   const store = chatStore(ephemeral)
   if (!store) return
   try {
     const payload = JSON.stringify({ messages, convId, unreadCount, ts: Date.now() })
-    store.setItem(getStorageKey(orgId, ephemeral, visitorId), payload)
+    store.setItem(getStorageKey(orgId, ephemeral, identity), payload)
   } catch {
     /* quota exceeded or unavailable */
   }
@@ -168,12 +198,12 @@ function saveMessages(
 function loadMessages(
   orgId: string,
   ephemeral: boolean,
-  visitorId?: string
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
 ): { messages: ChatMessage[]; convId: string | null; unreadCount: number } | null {
   const store = chatStore(ephemeral)
   if (!store) return null
   try {
-    const key = getStorageKey(orgId, ephemeral, visitorId)
+    const key = getStorageKey(orgId, ephemeral, identity)
     const raw = store.getItem(key)
     if (!raw) return null
     const data = JSON.parse(raw)
@@ -209,11 +239,15 @@ function isSafeLink(href: string): boolean {
   }
 }
 
-function clearStoredMessages(orgId: string, ephemeral: boolean, visitorId?: string): void {
+function clearStoredMessages(
+  orgId: string,
+  ephemeral: boolean,
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
+): void {
   const store = chatStore(ephemeral)
   if (!store) return
   try {
-    store.removeItem(getStorageKey(orgId, ephemeral, visitorId))
+    store.removeItem(getStorageKey(orgId, ephemeral, identity))
   } catch {
     /* ignore */
   }
@@ -238,6 +272,12 @@ class LiraSupportWidget {
   private pipecatChat: PipecatTransport | null = null
   private pipecatVoice: PipecatTransport | null = null
   private visitorId: string
+  // Per-anonymous-session id used to scope localStorage. Rotated on logout
+  // so the next anonymous user on a shared device gets a clean slate.
+  private anonChatId: string = getAnonChatId()
+  // Last identity we saw in `configure(...)`. Used to detect login/logout/
+  // switch transitions and react (clear local cache, fetch server history).
+  private lastIdentityEmail: string | null = null
 
   // ── PIN gate (sensitive-action authorization) ──
   // When the server emits pin_required, we render a modal over the chat.
@@ -260,9 +300,22 @@ class LiraSupportWidget {
   } | null = null
   private pinError: string | null = null
 
-  // ── Storage helpers (ephemeral-aware) ──
-  // Production embeds: ephemeral=false → localStorage, key by orgId only
-  // Demo embeds: ephemeral=true → sessionStorage, key by orgId + visitorId
+  // ── Storage helpers (identity-aware) ──
+  // Production embeds: ephemeral=false → localStorage, scoped by identity
+  // (logged-in email when known, otherwise a rotating anon chat id).
+  // Demo embeds: ephemeral=true → sessionStorage, scoped by visitorId.
+
+  private currentStorageIdentity(): {
+    email?: string | null
+    anonChatId?: string
+    visitorId?: string
+  } {
+    return {
+      email: this.config.visitorEmail ?? null,
+      anonChatId: this.anonChatId,
+      visitorId: this.visitorId,
+    }
+  }
 
   private persistMessages(): void {
     saveMessages(
@@ -271,12 +324,16 @@ class LiraSupportWidget {
       this.convId,
       this.unreadCount,
       this.config.ephemeral === true,
-      this.visitorId
+      this.currentStorageIdentity()
     )
   }
 
   private wipeStoredMessages(): void {
-    clearStoredMessages(this.config.orgId, this.config.ephemeral === true, this.visitorId)
+    clearStoredMessages(
+      this.config.orgId,
+      this.config.ephemeral === true,
+      this.currentStorageIdentity()
+    )
   }
 
   private csatSubmitted = false
@@ -320,7 +377,6 @@ class LiraSupportWidget {
   private shadow: ShadowRoot
   private messagesEl: HTMLElement | null = null
   private inputEl: HTMLTextAreaElement | null = null
-  private assistPanelEl: HTMLElement | null = null
   private lastCustomerPrompt = ''
   private latestRuntimeContext: LiraRuntimeContext | null = null
   private readonly runtimeContextHandler = (e: Event) => {
@@ -342,12 +398,16 @@ class LiraSupportWidget {
     // Demo embeds opt in to ephemeral mode via `data-ephemeral="true"`. Real
     // customer embeds never set this flag, so their behavior is unchanged.
     this.visitorId = getOrCreateVisitorId(this.config.ephemeral === true)
+    this.lastIdentityEmail = this.config.visitorEmail?.trim().toLowerCase() ?? null
 
-    // Restore persisted messages (from sessionStorage in ephemeral mode,
-    // localStorage otherwise — scoped to visitorId in ephemeral mode so
-    // concurrent demo testers on a shared browser don't see each other's
-    // chats).
-    const stored = loadMessages(this.config.orgId, this.config.ephemeral === true, this.visitorId)
+    // Restore persisted messages from the identity-scoped key — so a logged-in
+    // visitor only sees their own history, never another user's chat that
+    // happened to be on the same browser.
+    const stored = loadMessages(
+      this.config.orgId,
+      this.config.ephemeral === true,
+      this.currentStorageIdentity()
+    )
     if (stored) {
       // When the hero welcome is in play, filter out the synthetic
       // greeting / server_welcome messages from prior versions of the
@@ -419,11 +479,131 @@ class LiraSupportWidget {
   }
 
   configure(config: Partial<WidgetConfig>): void {
+    const prevEmail = this.lastIdentityEmail
     this.config = { ...this.config, ...config }
     this.host.dataset.liraMode = this.isFullscreen() ? 'fullscreen' : 'bubble'
     const styleEl = this.shadow.querySelector('style')
     if (styleEl) styleEl.textContent = getWidgetStyles(this.config.primaryColor!)
-    this.render()
+
+    // Detect identity transitions and react. The widget's chat state must
+    // never leak across identities on a shared device:
+    //   • prev=null → new=X  (login):    drop anon cache, hydrate X's history
+    //   • prev=X    → new=Y  (switch):   drop X's cache, hydrate Y's history
+    //   • prev=X    → new=null (logout): drop X's cache, rotate anon id
+    const newEmail = this.config.visitorEmail?.trim().toLowerCase() ?? null
+    if (newEmail !== prevEmail) {
+      this.handleIdentityTransition(prevEmail, newEmail)
+    } else {
+      this.render()
+    }
+  }
+
+  private handleIdentityTransition(prevEmail: string | null, newEmail: string | null): void {
+    // 1) Persist whatever's currently in state under the OLD identity, then
+    //    wipe the old key so it can't be read back by future widget loads
+    //    on this browser.
+    const prevIdentity = {
+      email: prevEmail,
+      anonChatId: this.anonChatId,
+      visitorId: this.visitorId,
+    }
+    saveMessages(
+      this.config.orgId,
+      this.messages,
+      this.convId,
+      this.unreadCount,
+      this.config.ephemeral === true,
+      prevIdentity
+    )
+    clearStoredMessages(this.config.orgId, this.config.ephemeral === true, prevIdentity)
+
+    // 2) Switch to the new identity in memory.
+    this.lastIdentityEmail = newEmail
+    this.messages = []
+    this.convId = null
+    this.unreadCount = 0
+
+    // 3) On logout, rotate the anon chat id so the next anonymous user on
+    //    this device cannot see anything the previous identified user did.
+    if (!newEmail) {
+      this.anonChatId = rotateAnonChatId()
+    }
+
+    // 4) Hydrate the new identity's state. For identified visitors we ask
+    //    the server first (cross-device truth); fall back to whatever's
+    //    cached locally under the new key. For anonymous we just read the
+    //    new local key.
+    if (newEmail && this.config.visitorSig) {
+      this.fetchServerHistory(newEmail, this.config.visitorSig)
+        .then((server) => {
+          if (server) {
+            this.messages = server.messages
+            this.convId = server.convId
+            this.unreadCount = 0
+          } else {
+            const local = loadMessages(
+              this.config.orgId,
+              this.config.ephemeral === true,
+              this.currentStorageIdentity()
+            )
+            if (local) {
+              this.messages = local.messages
+              this.convId = local.convId
+              this.unreadCount = local.unreadCount
+            }
+          }
+          this.persistMessages()
+          this.render()
+        })
+        .catch(() => {
+          this.render()
+        })
+    } else {
+      const local = loadMessages(
+        this.config.orgId,
+        this.config.ephemeral === true,
+        this.currentStorageIdentity()
+      )
+      if (local) {
+        this.messages = local.messages
+        this.convId = local.convId
+        this.unreadCount = local.unreadCount
+      }
+      this.render()
+    }
+  }
+
+  private async fetchServerHistory(
+    email: string,
+    sig: string
+  ): Promise<{ messages: ChatMessage[]; convId: string | null } | null> {
+    try {
+      const url =
+        `https://api.creovine.com/lira/v1/support/chat/history/${this.config.orgId}` +
+        `?email=${encodeURIComponent(email)}&sig=${encodeURIComponent(sig)}`
+      const res = await fetch(url, { method: 'GET' })
+      if (!res.ok) return null
+      const data = (await res.json()) as {
+        conv_id: string | null
+        messages: Array<{
+          id?: string
+          role: ChatMessage['role']
+          body: string
+          timestamp: string
+          sender_name?: string
+          sender_avatar?: string
+        }>
+      }
+      const messages: ChatMessage[] = (data.messages ?? []).map((m) => ({
+        id: m.id ?? `srv-${m.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+        role: m.role,
+        body: m.body,
+        timestamp: m.timestamp,
+      }))
+      return { messages, convId: data.conv_id ?? null }
+    } catch {
+      return null
+    }
   }
 
   private isFullscreen(): boolean {
@@ -552,6 +732,8 @@ class LiraSupportWidget {
 
     if (this.view === 'launcher') {
       this.renderLauncher()
+    } else if (this.view === 'home') {
+      this.renderHome()
     } else if (this.view === 'pre-chat') {
       this.renderPreChatForm()
     } else if (this.view === 'chat') {
@@ -571,7 +753,10 @@ class LiraSupportWidget {
     btn.className = `lira-launcher ${this.config.position}`
     btn.innerHTML = ICON_CHAT
     btn.setAttribute('aria-label', 'Open chat')
-    btn.onclick = () => this.open()
+    btn.onclick = () => {
+      if (this.shouldUseHomeSurface()) this.openHome()
+      else this.open()
+    }
     if (this.unreadCount > 0) {
       const badge = document.createElement('span')
       badge.className = 'lira-unread-badge'
@@ -579,6 +764,177 @@ class LiraSupportWidget {
       btn.appendChild(badge)
     }
     this.shadow.appendChild(btn)
+  }
+
+  private shouldUseHomeSurface(): boolean {
+    return !this.isFullscreen() && this.config.demoContext?.platform === 'lira-public-site'
+  }
+
+  private openHome(): void {
+    const fromLauncher = this.view === 'launcher'
+    this.view = 'home'
+    this.unreadCount = 0
+    if (fromLauncher) this.chatAnimPlayed = false
+    this.render()
+  }
+
+  private buildWidgetTabs(active: 'home' | 'chat'): HTMLElement {
+    const tabs = document.createElement('div')
+    tabs.className = 'lira-widget-tabs lira-widget-tabs-bottom'
+
+    const home = document.createElement('button')
+    home.className = `lira-widget-tab ${active === 'home' ? 'active' : ''}`
+    home.type = 'button'
+    home.textContent = 'Home'
+    home.onclick = () => this.openHome()
+    tabs.appendChild(home)
+
+    const chat = document.createElement('button')
+    chat.className = `lira-widget-tab ${active === 'chat' ? 'active' : ''}`
+    chat.type = 'button'
+    chat.textContent = 'Chat'
+    chat.onclick = () => this.open()
+    tabs.appendChild(chat)
+
+    return tabs
+  }
+
+  private sendHomePrompt(body: string): void {
+    this.open()
+    requestAnimationFrame(() => this.sendSuggestedReply(body))
+  }
+
+  private renderHome(): void {
+    const win = document.createElement('div')
+    win.className = this.chatWindowClass()
+
+    const header = document.createElement('div')
+    header.className = 'lira-header'
+
+    const headerAvatar = document.createElement('div')
+    headerAvatar.className = 'lira-header-avatar'
+    headerAvatar.innerHTML = ICON_LIRA
+    header.appendChild(headerAvatar)
+
+    const headerInfo = document.createElement('div')
+    headerInfo.className = 'lira-header-info'
+    headerInfo.innerHTML = `
+      <div class="lira-header-title">Lira</div>
+      <div class="lira-header-subtitle"><span class="lira-online-dot"></span> Online</div>
+    `
+    header.appendChild(headerInfo)
+
+    const actions = document.createElement('div')
+    actions.className = 'lira-header-actions'
+    const closeBtn = document.createElement('button')
+    closeBtn.className = 'lira-header-btn'
+    closeBtn.innerHTML = ICON_CLOSE
+    closeBtn.setAttribute('aria-label', 'Close widget')
+    closeBtn.onclick = () => this.close()
+    actions.appendChild(closeBtn)
+    header.appendChild(actions)
+    win.appendChild(header)
+
+    const home = document.createElement('div')
+    home.className = 'lira-home'
+
+    const hero = document.createElement('section')
+    hero.className = 'lira-home-hero'
+
+    const glow = document.createElement('div')
+    glow.className = 'lira-home-glow'
+    hero.appendChild(glow)
+
+    const logo = document.createElement('div')
+    logo.className = 'lira-home-logo-wrap'
+    logo.innerHTML = `
+      <span class="lira-home-ring lira-home-ring-1"></span>
+      <span class="lira-home-ring lira-home-ring-2"></span>
+      <span class="lira-home-orbit lira-home-orbit-1"></span>
+      <span class="lira-home-orbit lira-home-orbit-2"></span>
+      <span class="lira-home-logo">${ICON_LIRA}</span>
+    `
+    home.appendChild(logo)
+
+    const title = document.createElement('h3')
+    title.className = 'lira-home-title'
+    title.textContent = 'Welcome to Lira'
+    hero.appendChild(title)
+
+    const primary = document.createElement('button')
+    primary.className = 'lira-home-primary'
+    primary.type = 'button'
+    primary.innerHTML = `Start a conversation <span class="lira-home-primary-arrow">&rarr;</span>`
+    primary.onclick = () => this.open()
+    hero.appendChild(primary)
+
+    home.appendChild(hero)
+
+    const cards = document.createElement('div')
+    cards.className = 'lira-home-cards'
+    const prompts = [
+      {
+        icon: '01',
+        title: 'Install Lira',
+        body: 'Get the SDK and embed snippets for your app.',
+        prompt: 'How do I integrate the Lira support SDK on my app?',
+      },
+      {
+        icon: '02',
+        title: 'See what it can do',
+        body: 'Conversations, tickets, actions, and handoff.',
+        prompt: 'What can Lira do for a B2B support team?',
+      },
+      {
+        icon: '03',
+        title: 'Account help',
+        body: 'Login, password reset, invites, and billing.',
+        prompt: 'I need help with my Lira account.',
+      },
+    ]
+
+    for (const item of prompts) {
+      const card = document.createElement('button')
+      card.className = 'lira-home-card'
+      card.type = 'button'
+      card.onclick = () => this.sendHomePrompt(item.prompt)
+
+      const cardIcon = document.createElement('span')
+      cardIcon.className = 'lira-home-card-icon'
+      cardIcon.textContent = item.icon
+      card.appendChild(cardIcon)
+
+      const cardCopy = document.createElement('span')
+      cardCopy.className = 'lira-home-card-copy'
+
+      const cardTitle = document.createElement('span')
+      cardTitle.className = 'lira-home-card-title'
+      cardTitle.textContent = item.title
+      cardCopy.appendChild(cardTitle)
+
+      const cardBody = document.createElement('span')
+      cardBody.className = 'lira-home-card-body'
+      cardBody.textContent = item.body
+      cardCopy.appendChild(cardBody)
+
+      card.appendChild(cardCopy)
+
+      cards.appendChild(card)
+    }
+    home.appendChild(cards)
+
+    win.appendChild(home)
+
+    win.appendChild(this.buildWidgetTabs('home'))
+
+    const powered = document.createElement('div')
+    powered.className = 'lira-powered'
+    powered.innerHTML =
+      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
+    win.appendChild(powered)
+
+    this.shadow.appendChild(win)
+    this.renderLauncher()
   }
 
   private renderPreChatForm(): void {
@@ -727,6 +1083,16 @@ class LiraSupportWidget {
     const logoUrl = this.config.logoUrl
     const initial = orgName.charAt(0).toUpperCase()
 
+    if (this.shouldUseHomeSurface()) {
+      const backBtn = document.createElement('button')
+      backBtn.className = 'lira-header-btn lira-back-btn'
+      backBtn.innerHTML = ICON_ARROW_LEFT
+      backBtn.setAttribute('aria-label', 'Back to home')
+      backBtn.setAttribute('title', 'Back to home')
+      backBtn.onclick = () => this.openHome()
+      header.appendChild(backBtn)
+    }
+
     // Header avatar
     const headerAvatar = document.createElement('div')
     headerAvatar.className = 'lira-header-avatar'
@@ -823,10 +1189,6 @@ class LiraSupportWidget {
 
     win.appendChild(messagesDiv)
     this.messagesEl = messagesDiv
-
-    const assistPanel = this.buildAssistPanelEl()
-    this.assistPanelEl = assistPanel
-    if (assistPanel) win.appendChild(assistPanel)
 
     // Voice call overlay (shown when a call is active)
     if (this.voiceState === 'connecting' || this.voiceState === 'active') {
@@ -945,7 +1307,9 @@ class LiraSupportWidget {
 
     win.appendChild(inputArea)
 
-    // Powered by
+    // Bottom Home/Chat tabs are intentionally NOT rendered on the chat view —
+    // they steal vertical space and the chat panel already has a left-arrow
+    // header button (lira-back-btn) that returns to the home surface.
     const powered = document.createElement('div')
     powered.className = 'lira-powered'
     powered.innerHTML =
@@ -1163,7 +1527,6 @@ class LiraSupportWidget {
   private showTypingIndicator(): void {
     if (!this.messagesEl) return
     if (this.messagesEl.querySelector('.lira-typing-row')) return
-    this.updateAssistPanel()
     const typingRow = this.buildTypingIndicatorEl()
     this.messagesEl.appendChild(typingRow)
     requestAnimationFrame(() => {
@@ -1190,7 +1553,6 @@ class LiraSupportWidget {
     if (value) this.showTypingIndicator()
     else {
       this.hideTypingIndicator()
-      this.updateAssistPanel()
     }
   }
 
@@ -1249,20 +1611,40 @@ class LiraSupportWidget {
   }
 
   private getWorkingLabel(): string {
-    const prompt = this.lastCustomerPrompt.toLowerCase()
+    // Friendly, human-sounding status text shown while Lira is composing a
+    // reply. Each category has 2–3 variants picked at random so consecutive
+    // turns don't feel like a robot reading the same script. Avoid leaking
+    // implementation details (e.g. "Searching docs", "Querying vectors") —
+    // the visitor doesn't care; they care that someone is working on it.
+    const pick = (variants: string[]) => variants[Math.floor(Math.random() * variants.length)]
+
+    const prompt = this.lastCustomerPrompt.trim().toLowerCase()
+
+    // Short / casual greetings — a one-line "Hello" deserves a calm, brief
+    // status, not "Putting that together…". Match by EXACT short message or
+    // a tiny set of conversational openers.
+    if (
+      prompt.length <= 15 ||
+      /^(hi|hello|hey|sup|yo|hola|howdy|good (morning|afternoon|evening)|hey there|hi there)\b/.test(
+        prompt
+      )
+    ) {
+      return pick(['One moment...', 'Just a sec...', 'On it...'])
+    }
+
     if (/(install|embed|script|website|widget|logged-in|logged in)/.test(prompt)) {
-      return 'Preparing setup steps...'
+      return pick(['Pulling the install steps...', 'Setting that up for you...'])
     }
     if (/(price|pricing|plan|starter|growth|business|billing)/.test(prompt)) {
-      return 'Checking plan details...'
+      return pick(['Looking up the plan details...', 'Pulling pricing...'])
     }
     if (/(payment|invoice|receipt|subscription|account|card|failed|failure)/.test(prompt)) {
-      return 'Checking account context...'
+      return pick(['Pulling that up...', 'Looking into your account...'])
     }
     if (/(error|issue|problem|not showing|not working|broken|stuck)/.test(prompt)) {
-      return 'Looking into the issue...'
+      return pick(['Thinking this through...', 'Working on it...'])
     }
-    return 'Searching docs...'
+    return pick(['Thinking...', 'One moment...'])
   }
 
   /**
@@ -1420,7 +1802,6 @@ class LiraSupportWidget {
 
       const el = this.buildMessageEl(msg)
       this.messagesEl.appendChild(el)
-      this.updateAssistPanel()
       requestAnimationFrame(() => {
         if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight
       })
@@ -1768,186 +2149,24 @@ class LiraSupportWidget {
     }
   }
 
-  private buildAssistPanelEl(): HTMLElement | null {
-    if (this.isTyping || this.streamingMessageId || this.isResolved || this.isEscalated) return null
-
-    // Onboarding embeds (Lira's own admin-dashboard widget) drive their
-    // suggestion chips entirely from the server via the
-    // `lira_suggest_next_actions` tool. The legacy keyword-derived
-    // assistPanel would race with those server suggestions and show
-    // off-topic chips like "Show pricing" / "Install Lira" alongside
-    // the real onboarding chips. Skip it for those embeds.
-    if (this.config.autoOpenFirstVisit) return null
-
-    const latest = this.latestAssistantMessage()
-    if (!latest || latest.id === 'greeting' || latest.id === 'server_welcome') return null
-
-    const insight = this.buildInsightCardEl(latest.body)
-    const replies = this.deriveQuickReplies(latest.body)
-    if (!insight && replies.length === 0) return null
-
-    const panel = document.createElement('div')
-    panel.className = 'lira-assist-panel'
-    panel.setAttribute('aria-label', 'Suggested next steps')
-
-    if (insight) panel.appendChild(insight)
-    if (replies.length > 0) {
-      const row = document.createElement('div')
-      row.className = 'lira-quick-replies'
-      for (const reply of replies) {
-        const btn = document.createElement('button')
-        btn.type = 'button'
-        btn.className = 'lira-quick-reply'
-        btn.textContent = reply.label
-        btn.onclick = () => this.sendSuggestedReply(reply.body)
-        row.appendChild(btn)
-      }
-      panel.appendChild(row)
+  private normalizeServerSuggestions(raw: unknown[]): string[] {
+    // Trust the server. The LLM is required to call lira_suggest_next_actions
+    // after every reply with chip text tailored to the actual conversation —
+    // overriding it client-side based on keyword regexes (as the old code
+    // did) caused stale "Chat widget / Full support page / Both" pills to
+    // appear on unrelated questions whenever the reply text happened to
+    // mention those phrases in passing. Just clean and dedupe.
+    const seen = new Set<string>()
+    const out: string[] = []
+    for (const s of raw) {
+      const str = String(s ?? '').trim()
+      if (!str) continue
+      const key = str.toLowerCase()
+      if (seen.has(key)) continue
+      seen.add(key)
+      out.push(str)
     }
-
-    return panel
-  }
-
-  private updateAssistPanel(): void {
-    if (this.view !== 'chat') return
-    const inputArea = this.shadow.querySelector('.lira-input-area')
-    if (!inputArea?.parentElement) return
-
-    this.assistPanelEl?.remove()
-    const next = this.buildAssistPanelEl()
-    this.assistPanelEl = next
-    if (next) inputArea.parentElement.insertBefore(next, inputArea)
-  }
-
-  private latestAssistantMessage(): ChatMessage | null {
-    for (let i = this.messages.length - 1; i >= 0; i--) {
-      const msg = this.messages[i]
-      if ((msg.role === 'lira' || msg.role === 'agent') && msg.body.trim()) return msg
-      if (msg.role === 'customer') return null
-    }
-    return null
-  }
-
-  private buildInsightCardEl(body: string): HTMLElement | null {
-    const lower = body.toLowerCase()
-
-    if (
-      /(widget\.liraintelligence\.com|data-org-id|single script tag|install lira|embed)/.test(lower)
-    ) {
-      const card = document.createElement('div')
-      card.className = 'lira-insight-card'
-
-      const head = document.createElement('div')
-      head.className = 'lira-insight-head'
-      const title = document.createElement('span')
-      title.textContent = 'Install checklist'
-      const badge = document.createElement('span')
-      badge.className = 'lira-insight-badge'
-      badge.textContent = 'Demo'
-      head.appendChild(title)
-      head.appendChild(badge)
-      card.appendChild(head)
-
-      const list = document.createElement('ol')
-      list.className = 'lira-insight-list'
-      for (const item of [
-        'Paste the script before the closing body tag.',
-        'Replace YOUR_ORG_ID with the real organization ID.',
-        'Add signed visitor fields when users are logged in.',
-      ]) {
-        const li = document.createElement('li')
-        li.textContent = item
-        list.appendChild(li)
-      }
-      card.appendChild(list)
-
-      const copy = document.createElement('button')
-      copy.type = 'button'
-      copy.className = 'lira-mini-copy'
-      copy.innerHTML = `${ICON_COPY}<span>Copy embed</span>`
-      copy.onclick = () => this.copyText(BASIC_EMBED_SNIPPET, copy)
-      card.appendChild(copy)
-      return card
-    }
-
-    if (/(starter plan|growth plan|business plan|\$19|\$49|\$129|pricing)/.test(lower)) {
-      const card = document.createElement('div')
-      card.className = 'lira-insight-card'
-
-      const head = document.createElement('div')
-      head.className = 'lira-insight-head'
-      head.textContent = 'Plan snapshot'
-      card.appendChild(head)
-
-      const plans = document.createElement('div')
-      plans.className = 'lira-plan-strip'
-      for (const plan of [
-        ['Starter', '$19'],
-        ['Growth', '$49'],
-        ['Business', '$129'],
-      ]) {
-        const item = document.createElement('div')
-        item.className = 'lira-plan-pill'
-        item.innerHTML = `<strong>${plan[0]}</strong><span>${plan[1]}/mo</span>`
-        plans.appendChild(item)
-      }
-      card.appendChild(plans)
-      return card
-    }
-
-    return null
-  }
-
-  private deriveQuickReplies(body: string): QuickReply[] {
-    const lower = body.toLowerCase()
-
-    if (
-      /(widget\.liraintelligence\.com|data-org-id|single script tag|install lira|embed)/.test(lower)
-    ) {
-      return [
-        {
-          label: 'Logged-in user example',
-          body: 'Show me a short JavaScript example for identifying a logged-in user.',
-        },
-        {
-          label: 'Where do I paste it?',
-          body: 'Where exactly should I paste the Lira widget script on my website?',
-        },
-        {
-          label: 'Security note',
-          body: 'Explain data-sig and how to keep identified visitors secure.',
-        },
-      ]
-    }
-
-    if (/(starter plan|growth plan|business plan|\$19|\$49|\$129|pricing)/.test(lower)) {
-      return [
-        { label: 'Compare plans', body: 'Compare the Nimbus plans in a simple table.' },
-        { label: 'Best plan for teams', body: 'Which Nimbus plan is best for a growing team?' },
-        { label: 'What is included?', body: 'What support and integrations are included?' },
-      ]
-    }
-
-    if (/(invoice|payment|billing|subscription|card|receipt)/.test(lower)) {
-      return [
-        { label: 'Check invoice status', body: 'Can you check the status of my latest invoice?' },
-        { label: 'Payment failed', body: 'What should I do if my payment failed?' },
-        { label: 'Update billing', body: 'How do I update my billing details?' },
-      ]
-    }
-
-    if (/(couldn't find|don't have|team member|teammate|support team)/.test(lower)) {
-      return [
-        { label: 'Try another question', body: 'Let me ask this another way.' },
-        { label: 'Start fresh', body: 'Start a new conversation.' },
-      ]
-    }
-
-    return [
-      { label: 'Show pricing', body: 'Can you explain your pricing in 3 bullet points?' },
-      { label: 'Install Lira', body: 'Can you show me how to install Lira on my website?' },
-      { label: 'Full support page', body: 'What can I test on the full support page?' },
-    ]
+    return out
   }
 
   private sendSuggestedReply(body: string): void {
@@ -2349,7 +2568,13 @@ class LiraSupportWidget {
     return true
   }
 
-  private open(): void {
+  /**
+   * Programmatically open the chat panel. Public — can be called from
+   * `window.LiraWidget.open()` or via the SDK `Lira.open()` shortcut.
+   * If a pre-chat form is required, that's shown instead of jumping
+   * straight to the conversation.
+   */
+  open(): void {
     // Show pre-chat form if enabled AND visitor hasn't provided identity yet
     const needsPreChat =
       this.config.preChatFormEnabled &&
@@ -2360,6 +2585,7 @@ class LiraSupportWidget {
     if (needsPreChat) {
       this.view = 'pre-chat'
       this.render()
+      this.dispatchLifecycle('open')
       return
     }
 
@@ -2404,9 +2630,17 @@ class LiraSupportWidget {
     }
 
     this.render()
+    this.dispatchLifecycle('open')
   }
 
-  private close(): void {
+  /**
+   * Programmatically close the chat panel. Public — can be called from
+   * `window.LiraWidget.close()` or via the SDK `Lira.close()` shortcut.
+   * Fullscreen embeds (mountSupportPage) treat this as "go back to the
+   * main chat view" rather than closing the surface entirely, since the
+   * surface is the customer's own container.
+   */
+  close(): void {
     if (this.isFullscreen()) {
       this.view = 'chat'
       this.render()
@@ -2418,6 +2652,54 @@ class LiraSupportWidget {
     // this browser+org. No-op for embeds that didn't opt into autoOpen.
     if (this.config.autoOpenFirstVisit) this.markDismissed()
     this.render()
+    this.dispatchLifecycle('close')
+  }
+
+  /**
+   * Flip between open and closed. Convenience for "Need help?" buttons
+   * a customer hangs off their own UI.
+   */
+  toggle(): void {
+    if (this.view === 'launcher') {
+      this.open()
+    } else {
+      this.close()
+    }
+  }
+
+  /**
+   * Open the chat and prefill the composer with `preloadText`. Mirrors
+   * Intercom's `showNewMessage(text)`. Useful for "Contact us about X"
+   * links that should land the visitor in chat with a head start.
+   */
+  showNewMessage(preloadText?: string): void {
+    this.open()
+    if (preloadText && this.inputEl) {
+      this.inputEl.value = preloadText
+      this.inputEl.dispatchEvent(new Event('input', { bubbles: true }))
+      this.inputEl.focus()
+    }
+  }
+
+  /**
+   * Best-effort lifecycle event dispatcher. Host pages can listen with
+   * window.addEventListener('lira:open', ...) etc. for analytics, badges,
+   * or to coordinate with their own UI. Detail carries the org id so
+   * multi-widget hosts can disambiguate.
+   */
+  private dispatchLifecycle(
+    event: 'open' | 'close' | 'unread_count' | 'message',
+    detail?: Record<string, unknown>
+  ): void {
+    try {
+      window.dispatchEvent(
+        new CustomEvent(`lira:${event}`, {
+          detail: { orgId: this.config.orgId, ...(detail ?? {}) },
+        })
+      )
+    } catch {
+      /* CustomEvent unavailable on very old runtimes — silently no-op */
+    }
   }
 
   /** localStorage key for the "user dismissed the auto-open widget" flag.
@@ -2538,7 +2820,8 @@ class LiraSupportWidget {
       this.convId = msg.conv_id
       if (!this.isResolved) this.startPolling()
     }
-    if (msg.status === 'escalated') this.isEscalated = true
+    // 'escalated' no longer locks the widget — the AI never hands the live chat
+    // to a human. Escalation opens an async ticket; the chat stays AI-driven.
     if (msg.status === 'resolved') this.isResolved = true
 
     switch (msg.type) {
@@ -2579,7 +2862,10 @@ class LiraSupportWidget {
           })
           const bubbles = this.messagesEl?.querySelectorAll<HTMLElement>('.lira-msg.lira') ?? []
           this.streamingBubbleEl = bubbles.length > 0 ? bubbles[bubbles.length - 1] : null
-          if (this.view === 'launcher') this.unreadCount++
+          if (this.view === 'launcher') {
+            this.unreadCount++
+            this.dispatchLifecycle('unread_count', { count: this.unreadCount })
+          }
           break
         }
         const activeMsg = this.messages.find((m) => m.id === this.streamingMessageId)
@@ -2594,7 +2880,10 @@ class LiraSupportWidget {
           // Keep pinned to bottom while streaming
           if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight
         }
-        if (this.view === 'launcher') this.unreadCount++
+        if (this.view === 'launcher') {
+          this.unreadCount++
+          this.dispatchLifecycle('unread_count', { count: this.unreadCount })
+        }
         break
       }
 
@@ -2614,7 +2903,6 @@ class LiraSupportWidget {
         this.setTyping(false)
         this.streamingMessageId = null
         this.streamingBubbleEl = null
-        this.updateAssistPanel()
         this.persistMessages()
         break
       }
@@ -2644,7 +2932,8 @@ class LiraSupportWidget {
           sender_avatar: m.sender_avatar,
         }))
         for (const m of this.messages) this.seenMessageIds.add(m.id)
-        this.isEscalated = msg.status === 'escalated'
+        // Never lock on escalated — the live chat is always AI-driven now.
+        this.isEscalated = false
         this.isResolved = msg.status === 'resolved'
         this.lastPollTime = latestMessageTimestamp(this.messages)
         if (!this.isResolved && this.convId) this.startPolling()
@@ -2664,6 +2953,7 @@ class LiraSupportWidget {
           })
           if (this.view === 'launcher') {
             this.unreadCount++
+            this.dispatchLifecycle('unread_count', { count: this.unreadCount })
             this.updateLauncherBadge()
           }
         }
@@ -2685,6 +2975,7 @@ class LiraSupportWidget {
           })
           if (this.view === 'launcher') {
             this.unreadCount++
+            this.dispatchLifecycle('unread_count', { count: this.unreadCount })
             this.updateLauncherBadge()
           }
         }
@@ -2711,13 +3002,16 @@ class LiraSupportWidget {
         this.isResolved = false
         if (this.view === 'launcher') {
           this.unreadCount++
+          this.dispatchLifecycle('unread_count', { count: this.unreadCount })
           this.updateLauncherBadge()
         }
         break
 
       case 'escalated':
+        // Legacy event — backend no longer sends this for widget chats (escalation
+        // now opens an async ticket instead of handing off). Kept as a soft no-op
+        // for old clients: show the message, but DO NOT lock the widget.
         this.setTyping(false)
-        // Clean up any orphaned empty streaming bubble (agent called escalate mid-stream)
         if (this.streamingMessageId) {
           this.messages = this.messages.filter(
             (m) => m.id !== this.streamingMessageId || m.body.trim().length > 0
@@ -2725,7 +3019,6 @@ class LiraSupportWidget {
           this.streamingMessageId = null
           this.streamingBubbleEl = null
         }
-        this.isEscalated = true
         if (msg.body) {
           this.messages.push({
             id: `esc_${Date.now()}`,
@@ -2734,32 +3027,13 @@ class LiraSupportWidget {
             timestamp: new Date().toISOString(),
           })
         }
-        // Subtle follow-up hint — keeps the conversation feeling natural
-        this.messages.push({
-          id: `esc_hint_${Date.now()}`,
-          role: 'system',
-          body: 'If you don\'t get a reply, type "Still waiting?" and we will send the team another alert.',
-          timestamp: new Date().toISOString(),
-        })
-        // Start HTTP polling so agent replies reach the customer even if WS drops
         this.startPolling()
         this.render()
         break
 
       case 'status':
         this.setTyping(false)
-        if (msg.status === 'escalated') {
-          // Human has the conversation — show a quiet system acknowledgement, no AI noise
-          if (msg.body) {
-            this.messages.push({
-              id: `esc_ack_${Date.now()}`,
-              role: 'system',
-              body: msg.body,
-              timestamp: new Date().toISOString(),
-            })
-            this.render()
-          }
-        } else if (msg.status === 'resolved') {
+        if (msg.status === 'resolved') {
           this.stopPolling()
           this.isResolved = true
           this.messages.push({
@@ -2774,6 +3048,17 @@ class LiraSupportWidget {
             this.view = 'csat'
             this.render()
           }, 2500)
+        } else if (msg.body) {
+          // Non-resolved status with a body — e.g. a ticket-opened acknowledgement
+          // ("I've opened ticket LIRA-XXXX..."). Show it as a system note. The
+          // chat stays fully active; the AI keeps responding.
+          this.messages.push({
+            id: `status_${Date.now()}`,
+            role: 'system',
+            body: msg.body,
+            timestamp: new Date().toISOString(),
+          })
+          this.render()
         }
         break
 
@@ -2846,7 +3131,10 @@ class LiraSupportWidget {
             buttons: msg.buttons,
           },
         })
-        if (this.view === 'launcher') this.unreadCount++
+        if (this.view === 'launcher') {
+          this.unreadCount++
+          this.dispatchLifecycle('unread_count', { count: this.unreadCount })
+        }
         break
       }
 
@@ -2866,7 +3154,10 @@ class LiraSupportWidget {
             body: msg.body ?? 'Proceed?',
           },
         })
-        if (this.view === 'launcher') this.unreadCount++
+        if (this.view === 'launcher') {
+          this.unreadCount++
+          this.dispatchLifecycle('unread_count', { count: this.unreadCount })
+        }
         break
       }
 
@@ -2982,7 +3273,7 @@ class LiraSupportWidget {
         // sendMessage(). Surgical DOM update via updateSuggestionsRow()
         // avoids a full re-render that would blink the chat.
         const next = Array.isArray(msg.suggestions) ? msg.suggestions : []
-        this.activeSuggestions = next
+        this.activeSuggestions = this.normalizeServerSuggestions(next)
           .map((s) => String(s ?? '').trim())
           .filter((s) => s.length > 0)
           .slice(0, 4)
@@ -3089,6 +3380,7 @@ class LiraSupportWidget {
             })
             if (this.view === 'launcher') {
               this.unreadCount++
+              this.dispatchLifecycle('unread_count', { count: this.unreadCount })
               unreadBumped = true
             }
           }
@@ -3189,9 +3481,12 @@ function parseDemoContext(raw: string | undefined): Record<string, unknown> | un
 }
 
 type LiraVisitorIdentity = {
-  email?: string
-  name?: string
-  sig?: string
+  /** Visitor email. Pass `null` to clear (logout this field); omit to preserve. */
+  email?: string | null
+  /** Visitor display name. Pass `null` to clear; omit to preserve. */
+  name?: string | null
+  /** HMAC-SHA256 signature of email, computed server-side. Pass `null` to clear; omit to preserve. */
+  sig?: string | null
 }
 
 type LiraActionRequest = {
@@ -3215,10 +3510,27 @@ type LiraActionHandler = (
 type LiraPublicApi = {
   init: (config: Partial<WidgetConfig>) => LiraPublicApi
   identify: (visitor: LiraVisitorIdentity) => LiraPublicApi
+  /**
+   * Clears any logged-in identity on this device and rotates the anonymous
+   * chat scope so the next visitor starts with a clean history. Call this
+   * from your app's logout handler.
+   */
+  logout: () => LiraPublicApi
   setContext: (context: Record<string, unknown>) => LiraPublicApi
   track: (eventName: string, payload?: Record<string, unknown>) => LiraPublicApi
   registerAction: (name: string, handler: LiraActionHandler) => LiraPublicApi
   unregisterAction: (name: string) => LiraPublicApi
+  /** Programmatically open the chat from the host's own UI (e.g. a "Need help?" button). */
+  open: () => LiraPublicApi
+  /** Programmatically close the chat. */
+  close: () => LiraPublicApi
+  /** Flip between open and closed. */
+  toggle: () => LiraPublicApi
+  /**
+   * Open the chat with the composer prefilled. Useful for "Contact us
+   * about <feature>" links that should land the visitor mid-thought.
+   */
+  showNewMessage: (preloadText?: string) => LiraPublicApi
   mountWidget: (config?: Partial<WidgetConfig>) => LiraSupportWidget
   mountSupportPage: (
     target: string | HTMLElement,
@@ -3325,13 +3637,55 @@ const Lira: LiraPublicApi = {
   },
 
   identify(visitor: LiraVisitorIdentity): LiraPublicApi {
+    // Explicit `null` means "clear this field" (treated as logout for that
+    // dimension). Missing keys preserve whatever was there before. Empty
+    // string is treated the same as null — clears.
+    const next = (
+      cur: string | null | undefined,
+      incoming: string | null | undefined
+    ): string | undefined => {
+      if (incoming === undefined) return cur ?? undefined
+      if (incoming === null || incoming === '') return undefined
+      return incoming
+    }
     sdkConfig = {
       ...sdkConfig,
-      visitorEmail: visitor.email ?? sdkConfig.visitorEmail,
-      visitorName: visitor.name ?? sdkConfig.visitorName,
-      visitorSig: visitor.sig ?? sdkConfig.visitorSig,
+      visitorEmail: next(sdkConfig.visitorEmail, visitor.email),
+      visitorName: next(sdkConfig.visitorName, visitor.name),
+      visitorSig: next(sdkConfig.visitorSig, visitor.sig),
     }
     sdkWidget?.configure(sdkConfig)
+    return Lira
+  },
+
+  logout(): LiraPublicApi {
+    sdkConfig = {
+      ...sdkConfig,
+      visitorEmail: undefined,
+      visitorName: undefined,
+      visitorSig: undefined,
+    }
+    sdkWidget?.configure(sdkConfig)
+    return Lira
+  },
+
+  open(): LiraPublicApi {
+    sdkWidget?.open()
+    return Lira
+  },
+
+  close(): LiraPublicApi {
+    sdkWidget?.close()
+    return Lira
+  },
+
+  toggle(): LiraPublicApi {
+    sdkWidget?.toggle()
+    return Lira
+  },
+
+  showNewMessage(preloadText?: string): LiraPublicApi {
+    sdkWidget?.showNewMessage(preloadText)
     return Lira
   },
 

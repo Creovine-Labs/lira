@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeftIcon,
+  ArrowPathIcon,
   CheckCircleIcon,
   ChatBubbleLeftRightIcon,
   ClockIcon,
+  LightBulbIcon,
+  SparklesIcon,
   TicketIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { useAuthStore, useOrgStore } from '@/app/store'
@@ -14,8 +18,10 @@ import {
   getTicketForOrg,
   replyToTicket,
   resolveTicket,
+  regenerateHandoffBrief,
   type SupportTicketRecord,
   type SupportTicketMessageRecord,
+  type ResolveTicketFeedback,
 } from '@/services/api/support-api'
 import { cn } from '@/lib'
 
@@ -168,6 +174,9 @@ export function SupportTicketDetailPage() {
   const [messages, setMessages] = useState<SupportTicketMessageRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [resolving, setResolving] = useState(false)
+  const [replyDraft, setReplyDraft] = useState('')
+  const [showResolveModal, setShowResolveModal] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
 
   const load = useCallback(async () => {
     if (!currentOrgId || !ticketId) return
@@ -187,17 +196,38 @@ export function SupportTicketDetailPage() {
     void load()
   }, [load])
 
-  const handleResolve = async () => {
+  const handleResolve = async (feedback?: ResolveTicketFeedback) => {
     if (!currentOrgId || !ticket) return
     setResolving(true)
     try {
-      const updated = await resolveTicket(currentOrgId, ticket.ticket_id)
+      const updated = await resolveTicket(currentOrgId, ticket.ticket_id, feedback)
       setTicket(updated)
-      toast.success('Ticket resolved')
+      setShowResolveModal(false)
+      toast.success(
+        feedback?.knowledge_gap ||
+          feedback?.ai_assessment === 'wrong' ||
+          feedback?.ai_assessment === 'partial'
+          ? 'Resolved — a KB draft was queued for review'
+          : 'Ticket resolved'
+      )
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to resolve')
     } finally {
       setResolving(false)
+    }
+  }
+
+  const handleRegenerateBrief = async () => {
+    if (!currentOrgId || !ticket) return
+    setRegenerating(true)
+    try {
+      const brief = await regenerateHandoffBrief(currentOrgId, ticket.ticket_id)
+      setTicket((prev) => (prev ? { ...prev, handoff_brief: brief } : prev))
+      toast.success('Brief regenerated')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to regenerate brief')
+    } finally {
+      setRegenerating(false)
     }
   }
 
@@ -246,7 +276,7 @@ export function SupportTicketDetailPage() {
             {ticket.priority !== 'medium' && <PriorityChip priority={ticket.priority} />}
             {!isClosed && (
               <button
-                onClick={handleResolve}
+                onClick={() => setShowResolveModal(true)}
                 disabled={resolving}
                 className="ml-auto rounded-lg bg-emerald-600 px-3 py-1 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
               >
@@ -281,6 +311,16 @@ export function SupportTicketDetailPage() {
             )}
           </div>
         </div>
+
+        <HandoffBriefCard
+          ticket={ticket}
+          regenerating={regenerating}
+          onRegenerate={handleRegenerateBrief}
+          onUseSuggestion={(text) => {
+            setReplyDraft(text)
+            toast.success('Suggested reply loaded — edit before sending')
+          }}
+        />
 
         <div className="space-y-3">
           {messages.map((m) => (
@@ -326,6 +366,8 @@ export function SupportTicketDetailPage() {
             ticketId={ticket.ticket_id}
             orgId={ticket.org_id}
             senderName={userName ?? 'Teammate'}
+            body={replyDraft}
+            onBodyChange={setReplyDraft}
             onSent={(msg, status) => {
               setMessages((prev) => [...prev, msg])
               if (status) setTicket((prev) => (prev ? { ...prev, status } : prev))
@@ -333,6 +375,14 @@ export function SupportTicketDetailPage() {
           />
         )}
       </div>
+
+      {showResolveModal && (
+        <ResolveModal
+          resolving={resolving}
+          onClose={() => setShowResolveModal(false)}
+          onResolve={handleResolve}
+        />
+      )}
     </div>
   )
 }
@@ -340,14 +390,17 @@ export function SupportTicketDetailPage() {
 function AgentReplyForm({
   ticketId,
   orgId,
+  body,
+  onBodyChange,
   onSent,
 }: {
   ticketId: string
   orgId: string
   senderName: string
+  body: string
+  onBodyChange: (v: string) => void
   onSent: (msg: SupportTicketMessageRecord, newStatus?: SupportTicketRecord['status']) => void
 }) {
-  const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
 
   const send = async () => {
@@ -358,7 +411,7 @@ function AgentReplyForm({
       const msg = await replyToTicket(orgId, ticketId, text)
       // Server auto-transitions open → in_progress on first agent reply
       onSent(msg, 'in_progress')
-      setBody('')
+      onBodyChange('')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Reply failed')
     } finally {
@@ -370,7 +423,7 @@ function AgentReplyForm({
     <div className="rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
       <textarea
         value={body}
-        onChange={(e) => setBody(e.target.value)}
+        onChange={(e) => onBodyChange(e.target.value)}
         rows={4}
         placeholder="Reply to the visitor — they'll get an email."
         className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
@@ -428,5 +481,281 @@ function PriorityChip({ priority }: { priority: SupportTicketRecord['priority'] 
     >
       {priority}
     </span>
+  )
+}
+
+// ── Handoff brief (§6.3) ──────────────────────────────────────────────────────
+
+const TRIGGER_LABELS: Record<string, string> = {
+  vip_auto: 'VIP customer',
+  sentiment: 'Negative sentiment',
+  repeated_failure: 'Repeated failure',
+  multi_turn_confusion: 'Going in circles',
+  sla_pressure: 'SLA pressure',
+  force_escalate: 'Sensitive intent',
+  agent: 'AI handed off',
+  ai_unknown: 'AI unsure',
+  usage_cap: 'Reply cap reached',
+  manual: 'Manually escalated',
+  error: 'AI error',
+}
+
+function HandoffBriefCard({
+  ticket,
+  regenerating,
+  onRegenerate,
+  onUseSuggestion,
+}: {
+  ticket: SupportTicketRecord
+  regenerating: boolean
+  onRegenerate: () => void
+  onUseSuggestion: (text: string) => void
+}) {
+  const brief = ticket.handoff_brief
+
+  // No brief yet (still generating async, or generation failed) — offer to make one.
+  if (!brief) {
+    return (
+      <div className="rounded-2xl border border-indigo-100 bg-indigo-50/40 p-4 shadow-sm">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="h-4 w-4 text-indigo-500" />
+            <p className="text-sm font-semibold text-indigo-900">Handoff brief</p>
+          </div>
+          <button
+            onClick={onRegenerate}
+            disabled={regenerating}
+            className="inline-flex items-center gap-1 rounded-lg bg-white px-2.5 py-1 text-xs font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50 disabled:opacity-60"
+          >
+            <ArrowPathIcon className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} />
+            {regenerating ? 'Generating…' : 'Generate'}
+          </button>
+        </div>
+        <p className="mt-1.5 text-xs text-indigo-700/70">
+          Lira can summarize who this is, what they need, and a suggested reply so you can act fast.
+        </p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/50 px-4 py-2.5">
+        <div className="flex items-center gap-2">
+          <SparklesIcon className="h-4 w-4 text-indigo-500" />
+          <p className="text-sm font-semibold text-indigo-900">Handoff brief</p>
+          {ticket.handoff_trigger && TRIGGER_LABELS[ticket.handoff_trigger] && (
+            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-indigo-600">
+              {TRIGGER_LABELS[ticket.handoff_trigger]}
+            </span>
+          )}
+        </div>
+        <button
+          onClick={onRegenerate}
+          disabled={regenerating}
+          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 transition hover:bg-white disabled:opacity-60"
+        >
+          <ArrowPathIcon className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} />
+          {regenerating ? 'Regenerating…' : 'Regenerate'}
+        </button>
+      </div>
+
+      <div className="space-y-4 p-4">
+        <BriefRow label="Customer">{brief.customer_summary}</BriefRow>
+        <BriefRow label="Issue">{brief.issue_summary}</BriefRow>
+
+        {brief.what_agent_tried.length > 0 && (
+          <div>
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              What Lira tried
+            </p>
+            <ul className="space-y-1">
+              {brief.what_agent_tried.map((step, i) => (
+                <li key={i} className="flex gap-2 text-sm text-gray-700">
+                  <span className="text-gray-300">→</span>
+                  <span>{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2">
+          <p className="mb-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-700">
+            What you need to do
+          </p>
+          <p className="text-sm font-medium text-amber-900">{brief.what_human_needs_to_do}</p>
+        </div>
+
+        {brief.suggested_response && (
+          <div>
+            <div className="mb-1 flex items-center justify-between">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                Suggested reply
+              </p>
+              <button
+                onClick={() => onUseSuggestion(brief.suggested_response)}
+                className="rounded-lg bg-slate-950 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-slate-800"
+              >
+                Use this reply
+              </button>
+            </div>
+            <p className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
+              {brief.suggested_response}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function BriefRow({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <p className="mb-0.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">{label}</p>
+      <p className="text-sm text-gray-700">{children}</p>
+    </div>
+  )
+}
+
+// ── Resolve + round-trip learning (§6.4) ──────────────────────────────────────
+
+function ResolveModal({
+  resolving,
+  onClose,
+  onResolve,
+}: {
+  resolving: boolean
+  onClose: () => void
+  onResolve: (feedback?: ResolveTicketFeedback) => void
+}) {
+  const [assessment, setAssessment] = useState<ResolveTicketFeedback['ai_assessment']>()
+  const [knowledgeGap, setKnowledgeGap] = useState(false)
+  const [gapNote, setGapNote] = useState('')
+  const [outcomeNote, setOutcomeNote] = useState('')
+
+  const willDraft = knowledgeGap || assessment === 'wrong' || assessment === 'partial'
+
+  const submit = () => {
+    onResolve({
+      ai_assessment: assessment,
+      knowledge_gap: knowledgeGap || undefined,
+      gap_note: gapNote.trim() || undefined,
+      outcome_note: outcomeNote.trim() || undefined,
+    })
+  }
+
+  const assessmentOptions: {
+    value: NonNullable<ResolveTicketFeedback['ai_assessment']>
+    label: string
+    cls: string
+  }[] = [
+    { value: 'correct', label: 'AI was right', cls: 'data-[on=true]:bg-emerald-600' },
+    { value: 'partial', label: 'Partly right', cls: 'data-[on=true]:bg-amber-500' },
+    { value: 'wrong', label: 'AI was wrong', cls: 'data-[on=true]:bg-red-600' },
+  ]
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">Resolve ticket</h2>
+          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100">
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="mb-4 text-xs text-gray-400">
+          Tell Lira how this went — it's optional, and it's how Lira gets better at handling this
+          next time.
+        </p>
+
+        <div className="space-y-4">
+          <div>
+            <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              How did the AI do?
+            </p>
+            <div className="flex gap-1.5">
+              {assessmentOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  data-on={assessment === opt.value}
+                  onClick={() => setAssessment(assessment === opt.value ? undefined : opt.value)}
+                  className={cn(
+                    'flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-xs font-semibold text-slate-600 transition data-[on=true]:border-transparent data-[on=true]:text-white',
+                    opt.cls
+                  )}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+              What did you do to resolve it?
+            </p>
+            <textarea
+              value={outcomeNote}
+              onChange={(e) => setOutcomeNote(e.target.value)}
+              rows={3}
+              placeholder="e.g. Issued the refund and confirmed the new plan price."
+              className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+            />
+          </div>
+
+          <label className="flex items-start gap-2 text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={knowledgeGap}
+              onChange={(e) => setKnowledgeGap(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>Knowledge was missing that should be added to the KB</span>
+          </label>
+
+          {knowledgeGap && (
+            <textarea
+              value={gapNote}
+              onChange={(e) => setGapNote(e.target.value)}
+              rows={2}
+              placeholder="What was missing? (optional)"
+              className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+            />
+          )}
+
+          {willDraft && (
+            <div className="flex items-start gap-2 rounded-lg border border-emerald-100 bg-emerald-50/60 px-3 py-2 text-xs text-emerald-800">
+              <LightBulbIcon className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
+              <span>Lira will draft a KB entry from your answer and queue it for review.</span>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            onClick={() => onResolve()}
+            disabled={resolving}
+            className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 transition hover:bg-gray-100 disabled:opacity-60"
+          >
+            Skip &amp; resolve
+          </button>
+          <button
+            onClick={submit}
+            disabled={resolving}
+            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:opacity-60"
+          >
+            {resolving ? 'Resolving…' : 'Resolve'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }

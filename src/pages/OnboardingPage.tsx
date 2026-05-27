@@ -3,14 +3,9 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import {
   ArrowLeftIcon,
   CheckIcon,
-  ClipboardDocumentIcon,
-  ClipboardDocumentCheckIcon,
   ExclamationCircleIcon,
   PencilIcon,
-  PlusIcon,
   SparklesIcon,
-  UserPlusIcon,
-  UsersIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 
@@ -18,9 +13,7 @@ import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   createOrganization,
   describeUrlPublic,
-  joinOrganization,
   saveAttribution,
-  validateInviteCode,
   type AttributionSource,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
@@ -45,23 +38,16 @@ const INDUSTRIES = [
   'Telecommunications',
 ]
 
-type FlowStep =
-  | 'choose'
-  | 'org-name'
-  | 'industry'
-  | 'details'
-  | 'surface'
-  | 'success'
-  | 'invite'
-  | 'join-code'
-  | 'attribution'
+// Onboarding is the post-signup wizard for a brand-new account that came in
+// off a concierge signup invite. The account-creation flow ("create vs join an
+// org") was removed — joining an existing org now happens via per-employee
+// invite links issued by the org admin from the members page, not here.
+type FlowStep = 'org-name' | 'industry' | 'details' | 'surface' | 'success' | 'attribution'
 
 const STEP_BACK: Partial<Record<FlowStep, FlowStep>> = {
   surface: 'details',
-  'org-name': 'choose',
   industry: 'org-name',
   details: 'industry',
-  'join-code': 'choose',
 }
 
 const LEFT_HEADINGS: Partial<Record<FlowStep, string>> = {
@@ -69,8 +55,6 @@ const LEFT_HEADINGS: Partial<Record<FlowStep, string>> = {
   industry: 'Tailor your\nexperience',
   details: 'Almost\nthere',
   surface: 'Where will\nLira live?',
-  invite: 'Grow your\nteam',
-  'join-code': 'Join your\nteam',
   attribution: 'Quick\nquestion',
 }
 
@@ -406,11 +390,8 @@ function OnboardingPage() {
   const { token, emailVerified } = useAuthStore()
   const { addOrganization, setCurrentOrg } = useOrgStore()
 
-  const [step, setStep] = useState<FlowStep>('choose')
+  const [step, setStep] = useState<FlowStep>('org-name')
   const [createdOrgName, setCreatedOrgName] = useState('')
-  const [createdInviteCode, setCreatedInviteCode] = useState('')
-  const [inviteCopied, setInviteCopied] = useState(false)
-  const [messageCopied, setMessageCopied] = useState(false)
 
   // Create org state
   const [orgName, setOrgName] = useState('')
@@ -430,12 +411,6 @@ function OnboardingPage() {
   const [creating, setCreating] = useState(false)
   const describeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const logoInputRef = useRef<HTMLInputElement>(null)
-
-  // Join org state
-  const [inviteCode, setInviteCode] = useState('')
-  const [joining, setJoining] = useState(false)
-  const [validating, setValidating] = useState(false)
-  const [validatedOrg, setValidatedOrg] = useState<{ name: string; org_id: string } | null>(null)
 
   // Email not verified — must complete OTP before onboarding
   if (token && emailVerified === false) {
@@ -463,8 +438,7 @@ function OnboardingPage() {
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       setCreatedOrgName(organization.name)
-      setCreatedInviteCode(organization.invite_code)
-      setStep('invite')
+      setStep('success')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create organization')
     } finally {
@@ -541,72 +515,25 @@ function OnboardingPage() {
     }
   }
 
-  async function handleValidate() {
-    const code = inviteCode.trim().toUpperCase()
-    // Full invite code format is LRA-XXXX (8 chars); don't fire until complete
-    if (code.length < 8) return
-    setValidating(true)
-    setValidatedOrg(null)
-    try {
-      const res = await validateInviteCode(code)
-      if (res.valid && res.organization) {
-        setValidatedOrg(res.organization)
-      } else {
-        toast.error('Invalid invite code')
-      }
-    } catch {
-      toast.error('Could not validate invite code')
-    } finally {
-      setValidating(false)
-    }
-  }
-
-  async function handleJoin() {
-    const code = inviteCode.trim().toUpperCase()
-    if (!code) return
-    setJoining(true)
-    try {
-      const { organization } = await joinOrganization(code)
-      addOrganization(organization)
-      setCurrentOrg(organization.org_id)
-      toast.success(`Joined ${organization.name}!`)
-      navigate('/dashboard')
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to join organization')
-    } finally {
-      setJoining(false)
-    }
-  }
-
   return (
     <div className="flex min-h-screen">
       {/* ── Left panel ── */}
       <aside className="hidden md:flex w-[360px] shrink-0 flex-col bg-gradient-to-br from-white via-gray-50 to-[#3730a3]/10 px-10 py-10">
         <LiraLogo size="md" />
         <div className="flex flex-1 flex-col justify-center gap-6">
-          {step === 'choose' ? (
-            <>
-              <SparkleGraphic />
-              <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
-                One platform for every conversation your business has.
-              </p>
-            </>
-          ) : step === 'success' ? (
+          {step === 'success' ? (
             <>
               <CelebrationGraphic />
               <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
                 Your workspace is live and ready for your team.
               </p>
             </>
-          ) : step === 'invite' ? (
+          ) : step === 'org-name' ? (
             <>
-              <div className="flex h-[160px] w-[160px] items-center justify-center rounded-full bg-[#3730a3]/10">
-                <UsersIcon className="h-20 w-20 text-[#3730a3]" />
-              </div>
-              <p className="max-w-[220px] text-sm leading-relaxed text-gray-500">
-                Bring your team on board so everyone can collaborate across support, sales, and
-                meetings.
-              </p>
+              <SparkleGraphic />
+              <h2 className="whitespace-pre-line text-5xl font-bold leading-tight tracking-tight text-gray-900">
+                {LEFT_HEADINGS[step] ?? ''}
+              </h2>
             </>
           ) : (
             <h2 className="whitespace-pre-line text-5xl font-bold leading-tight tracking-tight text-gray-900">
@@ -638,7 +565,8 @@ function OnboardingPage() {
                     You're all set.
                   </h1>
                   <p className="text-base text-gray-500">
-                    Your workspace is live. Let's set up your first module and put Lira to work.
+                    Your workspace is live. You can invite teammates any time from
+                    <span className="font-medium text-gray-700"> Members</span> in the sidebar.
                   </p>
                 </div>
                 <div className="rounded-2xl border border-[#3730a3]/20 bg-[#3730a3]/5 px-6 py-5">
@@ -666,163 +594,6 @@ function OnboardingPage() {
                 no-op API-wise. */}
             {step === 'attribution' && <AttributionStep onDone={() => navigate('/dashboard')} />}
 
-            {/* Step: invite */}
-            {step === 'invite' && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <p className="text-sm font-semibold uppercase tracking-widest text-[#3730a3]">
-                    Invite your team
-                  </p>
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    Share your invite code
-                  </h1>
-                  <p className="text-sm text-gray-500">
-                    Lira works best when your whole team is on board. Share the code below so
-                    teammates can join{' '}
-                    <span className="font-medium text-gray-700">{createdOrgName}</span> — they can
-                    participate in customer support, sales coaching, meeting intelligence, and more.
-                    Tasks, summaries, and notifications will flow to the right people automatically.
-                  </p>
-                </div>
-
-                {/* Invite code */}
-                <div className="rounded-2xl border border-[#3730a3]/20 bg-[#3730a3]/5 px-6 py-5">
-                  <p className="text-xs font-medium uppercase tracking-widest text-[#3730a3]/70">
-                    Invite Code
-                  </p>
-                  <div className="mt-2 flex items-center gap-3">
-                    <p className="text-3xl font-bold tracking-widest text-[#3730a3]">
-                      {createdInviteCode}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        navigator.clipboard.writeText(createdInviteCode)
-                        setInviteCopied(true)
-                        setTimeout(() => setInviteCopied(false), 2000)
-                      }}
-                      className="flex items-center gap-1 rounded-lg border border-[#3730a3]/30 bg-white px-2.5 py-1.5 text-xs font-medium text-[#3730a3] transition hover:bg-[#3730a3]/5"
-                    >
-                      {inviteCopied ? (
-                        <>
-                          <ClipboardDocumentCheckIcon className="h-3.5 w-3.5" />
-                          Copied
-                        </>
-                      ) : (
-                        <>
-                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                          Copy code
-                        </>
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Copyable invite message */}
-                <div className="space-y-2">
-                  <p className="text-xs font-medium uppercase tracking-widest text-gray-400">
-                    Or share this message
-                  </p>
-                  <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3.5 text-sm leading-relaxed text-gray-700">
-                    <p>
-                      Hey team! We just set up a workspace for{' '}
-                      <span className="font-semibold text-gray-900">{createdOrgName}</span> on Lira,
-                      a Conversational Intelligence platform that handles customer support, coaches
-                      sales calls in real time, and runs our meetings — all from one place.
-                    </p>
-                    <p className="mt-2">Here's how to get set up: </p>
-                    <p className="mt-1">
-                      1. Go to{' '}
-                      <span className="font-medium text-[#3730a3]">
-                        https://liraintelligence.com
-                      </span>
-                      <br />
-                      2. Sign up and choose{' '}
-                      <span className="font-semibold">"Join an organization"</span>
-                      <br />
-                      3. Enter invite code:{' '}
-                      <span className="font-bold tracking-wider">{createdInviteCode}</span>
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const msg = `Hey team! We just set up a workspace for ${createdOrgName} on Lira, a Conversational Intelligence platform that handles customer support, coaches sales calls in real time, and runs our meetings — all from one place.\n\nHere's how to get set up:\n1. Go to https://liraintelligence.com\n2. Sign up and choose "Join an organization"\n3. Enter invite code: ${createdInviteCode}`
-                      navigator.clipboard.writeText(msg)
-                      setMessageCopied(true)
-                      setTimeout(() => setMessageCopied(false), 2000)
-                    }}
-                    className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-medium text-gray-600 transition hover:border-gray-300 hover:text-gray-800"
-                  >
-                    {messageCopied ? (
-                      <>
-                        <ClipboardDocumentCheckIcon className="h-3.5 w-3.5 text-emerald-600" />
-                        Copied!
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                        Copy message
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                <div className="border-t border-gray-100 pt-4">
-                  <button
-                    onClick={() => setStep('success')}
-                    className="rounded-lg bg-[#3730a3] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#312e81]"
-                  >
-                    Continue
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step: choose */}
-            {step === 'choose' && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    How do you want to get started?
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Organizations let Lira understand your team's context.
-                  </p>
-                </div>
-                <div className="space-y-3">
-                  <button
-                    onClick={() => setStep('org-name')}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-[#3730a3]/40 hover:bg-[#3730a3]/5"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10 transition group-hover:bg-[#3730a3]/20">
-                      <PlusIcon className="h-5 w-5 text-[#3730a3]" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">Create an organization</p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Set up your team's workspace from scratch
-                      </p>
-                    </div>
-                  </button>
-                  <button
-                    onClick={() => setStep('join-code')}
-                    className="group flex w-full items-center gap-4 rounded-xl border border-gray-200 bg-white px-5 py-4 text-left transition hover:border-emerald-400 hover:bg-emerald-50/50"
-                  >
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-100 transition group-hover:bg-emerald-200">
-                      <UserPlusIcon className="h-5 w-5 text-emerald-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">Join an organization</p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        Join a team using an invite code
-                      </p>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            )}
-
             {/* Step: org-name */}
             {step === 'org-name' && (
               <div className="space-y-8">
@@ -848,14 +619,7 @@ function OnboardingPage() {
                     maxLength={100}
                   />
                 </div>
-                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                  <button
-                    onClick={goBack}
-                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-                  >
-                    <ArrowLeftIcon className="h-4 w-4" />
-                    Back
-                  </button>
+                <div className="flex items-center justify-end border-t border-gray-100 pt-4">
                   <button
                     disabled={!orgName.trim()}
                     onClick={() => setStep('industry')}
@@ -1243,88 +1007,6 @@ function OnboardingPage() {
                     className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
                   >
                     {creating ? 'Creating…' : 'Create workspace'}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step: join-code */}
-            {step === 'join-code' && (
-              <div className="space-y-8">
-                <div>
-                  <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    Enter your invite code
-                  </h1>
-                  <p className="mt-2 text-sm text-gray-500">
-                    Ask your team admin for the invite code to join their workspace.
-                  </p>
-                </div>
-                <div className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label htmlFor="ob-invite" className="text-sm font-medium text-gray-700">
-                      Invite code
-                    </label>
-                    <input
-                      id="ob-invite"
-                      type="text"
-                      className="w-full rounded-lg border border-gray-300 px-3.5 py-2.5 font-mono text-sm uppercase tracking-widest text-gray-900 outline-none placeholder:normal-case placeholder:tracking-normal placeholder:text-gray-400 focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 transition"
-                      placeholder="LRA-XXXX"
-                      value={inviteCode}
-                      onChange={(e) => {
-                        setInviteCode(e.target.value)
-                        setValidatedOrg(null)
-                      }}
-                      maxLength={10}
-                    />
-                  </div>
-                  {validatedOrg && (
-                    <div className="rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-3">
-                      <p className="text-sm font-medium text-emerald-700">
-                        Organization found: {validatedOrg.name}
-                      </p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex items-center justify-between border-t border-gray-100 pt-4">
-                  <button
-                    onClick={goBack}
-                    className="flex items-center gap-1.5 text-sm text-gray-500 transition hover:text-gray-900"
-                  >
-                    <ArrowLeftIcon className="h-4 w-4" />
-                    Back
-                  </button>
-                  <button
-                    disabled={
-                      joining || validating || (!validatedOrg && inviteCode.trim().length < 8)
-                    }
-                    onClick={validatedOrg ? handleJoin : handleValidate}
-                    className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
-                  >
-                    {joining ? (
-                      <span className="flex items-center gap-2">
-                        <img
-                          src="/lira_black.png"
-                          alt="Loading"
-                          className="h-4 w-4 animate-spin opacity-50"
-                          style={{ animationDuration: '1.2s' }}
-                        />
-                        Joining…
-                      </span>
-                    ) : validating ? (
-                      <span className="flex items-center gap-2">
-                        <img
-                          src="/lira_black.png"
-                          alt="Loading"
-                          className="h-4 w-4 animate-spin opacity-50"
-                          style={{ animationDuration: '1.2s' }}
-                        />
-                        Validating…
-                      </span>
-                    ) : validatedOrg ? (
-                      `Join ${validatedOrg.name}`
-                    ) : (
-                      'Validate code'
-                    )}
                   </button>
                 </div>
               </div>

@@ -185,6 +185,9 @@ function AuthSparkle() {
 
 // ── Auth view types ───────────────────────────────────────────────────────────
 
+// 'landing' is now a sign-in screen — public self-serve signup is disabled.
+// 'signup' is only reachable when arriving via a concierge ?invite=XXX link
+// (or, in future, a per-employee /accept-invite token, which uses its own page).
 type AuthView = 'landing' | 'login' | 'signup'
 
 const AUTH_BACK: Partial<Record<AuthView, AuthView>> = {
@@ -196,6 +199,11 @@ const AUTH_LEFT_HEADINGS: Partial<Record<AuthView, string>> = {
   login: 'Welcome\nback!',
   signup: "Let's get\nstarted",
 }
+
+// Public marketing site where prospects can request an account
+// ("speak to an expert"). New accounts on Lira are issued by the team
+// after a sales conversation, not self-serve.
+const SPEAK_TO_TEAM_URL = 'https://liraintelligence.com'
 // ── Google icon ─────────────────────────────────────────────────────────────
 
 function GoogleIcon() {
@@ -478,14 +486,20 @@ function LoginForm({
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
           <div className="mx-auto w-full max-w-[420px]">
-            {/* ── Landing ── */}
+            {/* ── Landing ──
+                Sign-in screen for existing accounts. New accounts are issued
+                by the Lira team — there is no self-serve signup. Users who
+                land here without an account are directed to the marketing site
+                to speak with the team. */}
             {authView === 'landing' && (
               <div className="space-y-8">
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    Create your account
+                    Sign in to Lira
                   </h1>
-                  <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Welcome back. Pick up where you left off.
+                  </p>
                 </div>
                 <div className="space-y-3">
                   {env.VITE_GOOGLE_LOGIN_CLIENT_ID && (
@@ -518,7 +532,7 @@ function LoginForm({
                     <div className="h-px flex-1 bg-gray-200" />
                   </div>
                   <button
-                    onClick={() => goTo('signup')}
+                    onClick={() => goTo('login')}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
                   >
                     Continue with email
@@ -574,13 +588,15 @@ function LoginForm({
                   </div>
                 )}
                 <p className="text-sm text-gray-500">
-                  Already have an account?{' '}
-                  <button
-                    onClick={() => goTo('login')}
+                  New to Lira?{' '}
+                  <a
+                    href={SPEAK_TO_TEAM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                   >
-                    Sign in
-                  </button>
+                    Speak to our team →
+                  </a>
                 </p>
               </div>
             )}
@@ -722,13 +738,15 @@ function LoginForm({
                     )}
                   </form>
                   <p className="text-sm text-gray-500">
-                    Don&apos;t have an account?{' '}
-                    <button
-                      onClick={() => goTo('landing')}
+                    New to Lira?{' '}
+                    <a
+                      href={SPEAK_TO_TEAM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                     >
-                      Sign up
-                    </button>
+                      Speak to our team →
+                    </a>
                   </p>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">

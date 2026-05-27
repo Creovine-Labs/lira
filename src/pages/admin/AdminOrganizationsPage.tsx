@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react'
-import { XMarkIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { PlusIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline'
+import { toast } from 'sonner'
 import {
   adminListOrganizations,
   adminGetOrganization,
   adminDeleteOrganization,
+  adminCreateOrgForUser,
 } from '@/services/api'
 import type { AdminOrgItem, AdminOrgDetail } from '@/services/api'
 import { cn } from '@/lib'
@@ -41,6 +43,49 @@ export function AdminOrganizationsPage() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<AdminOrgDetail | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [provisionOpen, setProvisionOpen] = useState(false)
+  const [provisionEmail, setProvisionEmail] = useState('')
+  const [provisionTenant, setProvisionTenant] = useState('')
+  const [provisionName, setProvisionName] = useState('')
+  const [provisioning, setProvisioning] = useState(false)
+
+  async function handleProvision() {
+    const email = provisionEmail.trim().toLowerCase()
+    const name = provisionName.trim()
+    if (!email || !name) {
+      toast.error('Owner email and organization name are required')
+      return
+    }
+    setProvisioning(true)
+    try {
+      const res = await adminCreateOrgForUser({
+        owner_email: email,
+        tenant_id: provisionTenant.trim() || undefined,
+        name,
+      })
+      toast.success(`Provisioned ${res.organization.name} for ${res.owner.email}`)
+      // Refresh the table so the new org shows up immediately
+      const refreshed = await adminListOrganizations().catch(() => null)
+      if (refreshed) setOrgs(refreshed)
+      setProvisionOpen(false)
+      setProvisionEmail('')
+      setProvisionTenant('')
+      setProvisionName('')
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to provision organization'
+      // The backend surfaces AMBIGUOUS_OWNER when one email matches multiple
+      // tenants — prompt for tenant_id explicitly when that happens.
+      if (msg.includes('Multiple users') || msg.includes('AMBIGUOUS_OWNER')) {
+        toast.error(
+          'Multiple accounts share that email — paste the tenant ID into the field below.'
+        )
+      } else {
+        toast.error(msg)
+      }
+    } finally {
+      setProvisioning(false)
+    }
+  }
 
   useEffect(() => {
     adminListOrganizations()
@@ -78,8 +123,111 @@ export function AdminOrganizationsPage() {
 
   return (
     <div className="px-6 py-6">
-      <h1 className="text-lg font-semibold text-gray-900">Organizations</h1>
-      <p className="mt-0.5 text-sm text-gray-400">{orgs.length} organizations</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold text-gray-900">Organizations</h1>
+          <p className="mt-0.5 text-sm text-gray-400">{orgs.length} organizations</p>
+        </div>
+        <button
+          onClick={() => setProvisionOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-3 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Provision org for existing user
+        </button>
+      </div>
+
+      {/* Provision modal — for spinning up a second/third org under a
+          customer who already has an account. New customers should go
+          through the concierge invite flow on the Invites page instead. */}
+      {provisionOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            role="presentation"
+            className="absolute inset-0 bg-black/40"
+            onClick={() => !provisioning && setProvisionOpen(false)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <h3 className="text-base font-semibold text-gray-900">Provision a new organization</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Creates a new Lira organization owned by an existing user. They'll see it appear in
+              their org switcher. For brand-new customers, use the Invites page instead.
+            </p>
+
+            <div className="mt-4 space-y-3">
+              <div>
+                <label
+                  htmlFor="prov-email"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Owner email
+                </label>
+                <input
+                  id="prov-email"
+                  type="email"
+                  value={provisionEmail}
+                  onChange={(e) => setProvisionEmail(e.target.value)}
+                  disabled={provisioning}
+                  placeholder="owner@company.com"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="prov-name"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Organization name
+                </label>
+                <input
+                  id="prov-name"
+                  type="text"
+                  value={provisionName}
+                  onChange={(e) => setProvisionName(e.target.value)}
+                  disabled={provisioning}
+                  placeholder="Acme Corp — EMEA"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                />
+              </div>
+              <div>
+                <label
+                  htmlFor="prov-tenant"
+                  className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+                >
+                  Tenant ID{' '}
+                  <span className="font-normal normal-case text-gray-400">(optional)</span>
+                </label>
+                <input
+                  id="prov-tenant"
+                  type="text"
+                  value={provisionTenant}
+                  onChange={(e) => setProvisionTenant(e.target.value)}
+                  disabled={provisioning}
+                  placeholder="Only needed if the email maps to multiple tenants"
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                />
+              </div>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                onClick={() => setProvisionOpen(false)}
+                disabled={provisioning}
+                className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleProvision}
+                disabled={provisioning || !provisionEmail.trim() || !provisionName.trim()}
+                className="rounded-xl bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#312e81] disabled:opacity-50"
+              >
+                {provisioning ? 'Provisioning…' : 'Provision'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete confirmation modal */}
       {deleteTarget && (
@@ -225,12 +373,6 @@ export function AdminOrganizationsPage() {
                 {selected.industry && (
                   <p className="mt-1 text-sm text-gray-500">{selected.industry}</p>
                 )}
-                <p className="mt-1 text-xs text-gray-400">
-                  Invite:{' '}
-                  <code className="rounded bg-gray-100 px-1.5 py-0.5 text-[11px]">
-                    {selected.invite_code}
-                  </code>
-                </p>
 
                 {/* Usage breakdown */}
                 <div className="mt-5 border-t border-gray-100 pt-4">

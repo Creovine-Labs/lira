@@ -2,13 +2,9 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Variants } from 'framer-motion'
-import {
-  MailCheck,
-  MessageSquareText,
-  PlugZap,
-  Workflow,
-} from 'lucide-react'
+import { MailCheck, MessageSquareText, PlugZap, Workflow } from 'lucide-react'
 import { SEO } from '@/components/SEO'
+import { PublicLiraWidget } from '@/components/PublicLiraWidget'
 import { DemoEntryModal, MarketingFooter, MarketingNavbar } from '@/components/marketing'
 import {
   ArrowRight,
@@ -110,7 +106,7 @@ const services = [
 const faqs = [
   {
     q: 'What is Lira?',
-    a: 'Lira is an AI customer relationship agent for support teams. It answers questions, understands customer context, updates connected systems, and escalates complex issues with the history your team needs.',
+    a: 'Lira is an intelligent customer support layer for modern teams. It answers questions, understands customer context, updates connected systems, and escalates complex issues with the history your team needs.',
   },
   {
     q: 'How does Lira help build stronger customer relationships?',
@@ -182,7 +178,12 @@ const mobileSteps = [
 ]
 
 const heroWorkflowCards = [
-  { title: 'Refund processed', status: 'Order #179892', Icon: PlugZap, position: 'eh-flow-card-one' },
+  {
+    title: 'Refund processed',
+    status: 'Order #179892',
+    Icon: PlugZap,
+    position: 'eh-flow-card-one',
+  },
   {
     title: 'Customer notified',
     status: 'Email and SMS sent',
@@ -249,10 +250,7 @@ function ButtonLink({
 function Visual({ type }: { type: string }) {
   if (type === 'integrations') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-integrations"
-        variants={imageReveal}
-      >
+      <motion.div className="hx-feature-visual hx-visual-integrations" variants={imageReveal}>
         {[PlugZap, MessageSquareText, Workflow, MailCheck, UserCircleCheck].map((Icon, index) => (
           <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
             <Icon size={24} />
@@ -264,10 +262,7 @@ function Visual({ type }: { type: string }) {
 
   if (type === 'chat') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-chat"
-        variants={imageReveal}
-      >
+      <motion.div className="hx-feature-visual hx-visual-chat" variants={imageReveal}>
         <div className="hx-mini-message hx-mini-one" aria-label="Can you help me upgrade my plan?">
           <span className="hx-type-line hx-type-user">Can you help me upgrade my plan?</span>
         </div>
@@ -288,10 +283,7 @@ function Visual({ type }: { type: string }) {
 
   if (type === 'global') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-global"
-        variants={imageReveal}
-      >
+      <motion.div className="hx-feature-visual hx-visual-global" variants={imageReveal}>
         <GlobeHemisphereWest size={96} weight="duotone" />
         <span>EN</span>
         <span>FR</span>
@@ -303,10 +295,7 @@ function Visual({ type }: { type: string }) {
 
   if (type === 'setup') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-setup"
-        variants={imageReveal}
-      >
+      <motion.div className="hx-feature-visual hx-visual-setup" variants={imageReveal}>
         <div className="hx-setup-toolbar">
           <span />
           <span />
@@ -323,10 +312,7 @@ function Visual({ type }: { type: string }) {
   }
 
   return (
-    <motion.div
-      className="hx-feature-visual hx-visual-voice"
-      variants={imageReveal}
-    >
+    <motion.div className="hx-feature-visual hx-visual-voice" variants={imageReveal}>
       <div className="hx-voice-note hx-voice-user" aria-label="Customer voice note">
         <span>Customer voice note</span>
         <div className="hx-voice-row">
@@ -384,10 +370,7 @@ function SetupJourney() {
     <section className="hx-setup-section">
       <div className="hx-container">
         <div className="hx-setup-card">
-          <motion.div
-            className="hx-section-details hx-setup-copy"
-            variants={stagger}
-          >
+          <motion.div className="hx-section-details hx-setup-copy" variants={stagger}>
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Go from sign up</span>
               <br /> to live support in 3 steps
@@ -440,10 +423,7 @@ function WhyChooseSection() {
   return (
     <section className="hx-section hx-why-section">
       <div className="hx-container">
-        <motion.div
-          className="hx-section-details"
-          variants={stagger}
-        >
+        <motion.div className="hx-section-details" variants={stagger}>
           <motion.h2 className="hx-section-title" variants={fadeUp}>
             <span className="hx-gradient-text">Why choose Lira</span>
           </motion.h2>
@@ -453,10 +433,7 @@ function WhyChooseSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div
-          className="hx-why-grid"
-          variants={stagger}
-        >
+        <motion.div className="hx-why-grid" variants={stagger}>
           {whyChooseLira.map(({ icon: Icon, title, description }) => (
             <motion.article className="hx-why-card" key={title} variants={cardReveal}>
               <div className="hx-why-top">
@@ -491,10 +468,7 @@ function MobileAppSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div
-          className="hx-why-grid"
-          variants={stagger}
-        >
+        <motion.div className="hx-why-grid" variants={stagger}>
           {mobileSteps.map(({ step, title, description, icon: Icon }) => (
             <motion.article className="hx-why-card" key={step} variants={cardReveal}>
               <div className="hx-why-top">
@@ -1436,10 +1410,11 @@ export function LandingPageV4() {
   return (
     <div className="hx-page">
       <SEO
-        title="Lira - AI Customer Support That Remembers and Acts"
+        title="Lira - Intelligent Customer Support That Remembers and Acts"
         description="Lira helps teams resolve customer issues across chat, email, voice, and portal with customer memory, knowledge, workflow actions, and smart escalation."
         path="/v4"
       />
+      <PublicLiraWidget />
       <Styles />
       <MarketingNavbar variant="overlay" />
 
@@ -1499,9 +1474,8 @@ export function LandingPageV4() {
 
           <div className="eh-right">
             <p className="eh-body">
-              Lira works quietly behind every customer conversation — understanding context,
-              taking action across your tools, and resolving issues before they become work for
-              your team.
+              Lira works quietly behind every customer conversation — understanding context, taking
+              action across your tools, and resolving issues before they become work for your team.
             </p>
             <div className="eh-cta-row">
               <button
@@ -1544,10 +1518,7 @@ export function LandingPageV4() {
 
       <section id="features" className="hx-section">
         <div className="hx-container">
-          <motion.div
-            className="hx-section-details"
-            variants={stagger}
-          >
+          <motion.div className="hx-section-details" variants={stagger}>
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Everything You Need to</span>
               <br />
@@ -1609,10 +1580,7 @@ export function LandingPageV4() {
                 customer experience teams, Lira keeps the relationship context intact.
               </motion.p>
             </motion.div>
-            <motion.div
-              className="hx-service-list"
-              variants={stagger}
-            >
+            <motion.div className="hx-service-list" variants={stagger}>
               {services.map((service) => (
                 <motion.article
                   className="hx-service-item"
@@ -1672,10 +1640,7 @@ export function LandingPageV4() {
       </motion.section>
       */}
 
-      <motion.section
-        className="hx-faq-section"
-        variants={stagger}
-      >
+      <motion.section className="hx-faq-section" variants={stagger}>
         <div className="hx-container hx-faq-grid">
           <motion.div className="hx-faq-left" variants={fadeUp}>
             <h2 className="hx-section-title">
@@ -1699,10 +1664,7 @@ export function LandingPageV4() {
 
       <section id="blog" className="hx-section">
         <div className="hx-container hx-blog-grid">
-          <motion.div
-            className="hx-blog-left"
-            variants={stagger}
-          >
+          <motion.div className="hx-blog-left" variants={stagger}>
             <h2 className="hx-section-title">
               <span className="hx-gradient-text">Ideas for better</span>
               <br />
@@ -1712,10 +1674,7 @@ export function LandingPageV4() {
               Browse all blogs
             </ButtonLink>
           </motion.div>
-          <motion.div
-            className="hx-blog-list"
-            variants={stagger}
-          >
+          <motion.div className="hx-blog-list" variants={stagger}>
             {BLOG_POSTS.map((post) => (
               <motion.div key={post.slug} variants={cardReveal}>
                 <Link to={`/blog/${post.slug}`} className="hx-blog-card">
@@ -1733,10 +1692,7 @@ export function LandingPageV4() {
         </div>
       </section>
 
-      <motion.section
-        className="hx-cta"
-        variants={stagger}
-      >
+      <motion.section className="hx-cta" variants={stagger}>
         <div className="hx-container">
           <motion.div className="hx-cta-icon" variants={fadeUp}>
             <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
@@ -1758,10 +1714,7 @@ export function LandingPageV4() {
       </motion.section>
 
       <MarketingFooter />
-      <DemoEntryModal
-        open={demoEntryOpen}
-        onClose={() => setDemoEntryOpen(false)}
-      />
+      <DemoEntryModal open={demoEntryOpen} onClose={() => setDemoEntryOpen(false)} />
     </div>
   )
 }

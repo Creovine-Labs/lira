@@ -34,6 +34,10 @@ export function DemoSitePage() {
   // defeated the "real product dashboard" framing.
   useEffect(() => {
     if (!profile) {
+      if (window.location.hostname === 'demo.liraintelligence.com') {
+        window.location.replace('https://liraintelligence.com/')
+        return
+      }
       navigate('/', { replace: true })
     }
   }, [profile, navigate])
@@ -42,6 +46,10 @@ export function DemoSitePage() {
     clearDemoProfile()
     // Sign-out returns the visitor to the Lira landing page where they can
     // start a fresh demo (the entry modal is just one click away).
+    if (window.location.hostname === 'demo.liraintelligence.com') {
+      window.location.replace('https://liraintelligence.com/')
+      return
+    }
     navigate('/', { replace: true })
   }
 
@@ -65,5 +73,4 @@ export function DemoSitePage() {
   // No-profile flash render: shows for a tick until the redirect fires.
   // Kept minimal so SEO crawlers don't see the old marketing page either.
   return null
-
 }

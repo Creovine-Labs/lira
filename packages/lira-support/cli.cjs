@@ -153,9 +153,16 @@ function parseFlags(argv) {
 async function main() {
   const args = process.argv.slice(2)
   const subcommand = args[0] && !args[0].startsWith('--') ? args[0] : 'init'
+  if (subcommand === 'install-skill') {
+    await installClaudeCodeSkill()
+    closeRl()
+    return
+  }
   if (subcommand !== 'init') {
     log(`Unknown subcommand: ${subcommand}`)
-    log(`Usage:  npx @liraintelligence/support init [--org-id=org-xxxx] [--org-name="My Co"]`)
+    log(`Usage:`)
+    log(`  npx @liraintelligence/support init [--org-id=org-xxxx] [--org-name="My Co"]`)
+    log(`  npx @liraintelligence/support install-skill   # install the Claude Code skill`)
     process.exit(1)
   }
   const flags = parseFlags(args)
@@ -194,6 +201,43 @@ async function main() {
   await writeEnv(cwd, detected, orgId)
   printNextSteps(detected, orgName)
   closeRl()
+}
+
+/**
+ * Copies the bundled Claude Code skill to ~/.claude/skills/lira-install
+ * so users can run `/lira-install` in Claude Code and have it scaffold
+ * the integration without re-typing instructions.
+ */
+async function installClaudeCodeSkill() {
+  const os = require('node:os')
+  const skillSrcDir = path.join(__dirname, 'skills', 'lira-install')
+  if (!fs.existsSync(path.join(skillSrcDir, 'SKILL.md'))) {
+    log(`\n  Bundled skill not found at ${skillSrcDir}. Reinstall the package?`)
+    process.exit(1)
+  }
+  const homeDir = os.homedir()
+  const destDir = path.join(homeDir, '.claude', 'skills', 'lira-install')
+  log('')
+  log('  Installing Lira Claude Code skill')
+  log('  ──────────────────────────────────')
+  log(`  From: ${skillSrcDir}`)
+  log(`  To:   ${destDir}`)
+
+  if (fs.existsSync(destDir)) {
+    log(`  • destination exists — overwriting SKILL.md only`)
+  } else {
+    ensureDir(destDir)
+  }
+
+  const srcSkillFile = path.join(skillSrcDir, 'SKILL.md')
+  const destSkillFile = path.join(destDir, 'SKILL.md')
+  fs.copyFileSync(srcSkillFile, destSkillFile)
+  log(`  ✓ wrote ${destSkillFile}`)
+
+  log('')
+  log('  All set. In Claude Code, type:  /lira-install')
+  log('  The skill detects your framework, asks for your org id, and scaffolds the integration.')
+  log('')
 }
 
 main().catch((err) => {

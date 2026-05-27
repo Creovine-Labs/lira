@@ -3,6 +3,8 @@ import type {
   LiraActionHandler,
   LiraConfig,
   LiraContext,
+  LiraEventHandler,
+  LiraEventName,
   LiraSupportInstance,
   LiraTrackPayload,
   LiraVisitorIdentity,
@@ -17,6 +19,9 @@ export type {
   LiraClientOptions,
   LiraConfig,
   LiraContext,
+  LiraEventDetail,
+  LiraEventHandler,
+  LiraEventName,
   LiraRegisteredAction,
   LiraRenderMode,
   LiraSupportInstance,
@@ -34,6 +39,17 @@ export function init(config: LiraConfig) {
 
 export function identify(visitor: LiraVisitorIdentity) {
   return defaultClient.identify(visitor)
+}
+
+/**
+ * Clear the current visitor identity. Wipes their chat off this device and
+ * rotates the anonymous scope so the next visitor on this browser starts
+ * with a clean history. Wire this on your logout handler.
+ *
+ * Equivalent to `identify({ email: null, name: null, sig: null })`.
+ */
+export function logout() {
+  return defaultClient.logout()
 }
 
 export function setContext(context: LiraContext) {
@@ -67,6 +83,37 @@ export function unregisterAction(name: string) {
   return defaultClient.unregisterAction(name)
 }
 
+/** Programmatically open the chat (e.g. from a "Need help?" button). */
+export function open() {
+  return defaultClient.open()
+}
+
+/** Programmatically close the chat. */
+export function close() {
+  return defaultClient.close()
+}
+
+/** Flip between open and closed. */
+export function toggle() {
+  return defaultClient.toggle()
+}
+
+/**
+ * Open the chat with the composer prefilled. Useful for "Contact us
+ * about <feature>" links that should land the visitor mid-thought.
+ */
+export function showNewMessage(preloadText?: string) {
+  return defaultClient.showNewMessage(preloadText)
+}
+
+/**
+ * Subscribe to widget lifecycle events. Returns an unsubscribe function.
+ * Available events: 'open', 'close', 'unread_count', 'message'.
+ */
+export function on(event: LiraEventName, handler: LiraEventHandler) {
+  return defaultClient.on(event, handler)
+}
+
 export function destroy() {
   return defaultClient.destroy()
 }
@@ -75,8 +122,14 @@ export const LiraSupport = {
   load: loadLira,
   init,
   identify,
+  logout,
   setContext,
   track,
+  open,
+  close,
+  toggle,
+  showNewMessage,
+  on,
   mountWidget,
   mountSupportPage,
   registerAction,

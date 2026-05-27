@@ -21,6 +21,7 @@ import {
   InformationCircleIcon,
   ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
@@ -754,6 +755,43 @@ function SupportActivatePage() {
     `  data-greeting="${(greeting.trim() || 'Hi! How can we help you today?').replace(/"/g, '&quot;')}"\n` +
     '  data-position="bottom-right">\n' +
     '</script>'
+
+  // Snippets for wiring identified visitors (post-login).
+  // The widget secret is server-side only — never include it in client code.
+  const identifyClientCode =
+    '// Run this on your client AFTER the user logs in.\n' +
+    '// Call your own backend to get the signed email (sig).\n' +
+    "const { sig } = await fetch('/api/lira/sig', {\n" +
+    "  method: 'POST',\n" +
+    "  headers: { 'Content-Type': 'application/json' },\n" +
+    "  credentials: 'include',\n" +
+    '  body: JSON.stringify({ email: user.email }),\n' +
+    '}).then((r) => r.json())\n' +
+    '\n' +
+    'window.Lira?.identify({\n' +
+    '  email: user.email,\n' +
+    '  name:  user.name,\n' +
+    '  sig,\n' +
+    '})'
+
+  const identifyServerCode =
+    '// Node / Express — protect this route with your normal auth middleware.\n' +
+    "import crypto from 'crypto'\n" +
+    '\n' +
+    "app.post('/api/lira/sig', requireAuth, (req, res) => {\n" +
+    '  const email = req.user.email // trust the SESSION user, not the request body\n' +
+    '  const sig = crypto\n' +
+    "    .createHmac('sha256', process.env.LIRA_WIDGET_SECRET)\n" +
+    '    .update(email)\n' +
+    "    .digest('hex')\n" +
+    '  res.json({ sig })\n' +
+    '})'
+
+  const logoutClientCode =
+    '// Run this on your client when the user logs out.\n' +
+    '// It wipes their chat history off this device and rotates the\n' +
+    '// anonymous chat scope so the next visitor starts clean.\n' +
+    'window.Lira?.logout()'
   const fullPageSdkCode =
     '<div id="lira-support-root" style="height: 720px;"></div>\n' +
     '<script\n' +
@@ -1064,6 +1102,138 @@ function SupportActivatePage() {
                   backend is updated.
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Wire identified visitors — login + logout snippets */}
+          {chatEnabled && (
+            <div className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm space-y-4">
+              <div className="flex items-center gap-2">
+                <UserIcon className="h-4 w-4 text-gray-500" />
+                <p className="text-sm font-semibold text-gray-800">
+                  Wire logged-in users{' '}
+                  <span className="font-normal text-gray-400">(optional but recommended)</span>
+                </p>
+              </div>
+              <p className="text-xs text-gray-500">
+                If {currentOrg?.name ?? 'your customer'}&apos;s app has login, two short snippets
+                let Lira recognize each visitor by name + email, scope their chat history to their
+                account, and follow them across devices. Skip this and the pre-chat form will
+                collect name + email per session instead.
+              </p>
+
+              {/* Step 1: identify on the client */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3730a3] text-[10px] font-bold text-white">
+                    1
+                  </span>
+                  <p className="text-xs font-semibold text-gray-700">
+                    On your login success handler — identify the visitor
+                  </p>
+                </div>
+                <div className="relative">
+                  <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3 font-mono text-[11px] leading-relaxed text-emerald-300 whitespace-pre">
+                    {identifyClientCode}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(identifyClientCode)
+                      toast.success('Identify snippet copied!')
+                    }}
+                    className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                  >
+                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              {/* Step 2: signing endpoint on the server */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3730a3] text-[10px] font-bold text-white">
+                    2
+                  </span>
+                  <p className="text-xs font-semibold text-gray-700">
+                    On your backend — sign the email with the widget secret
+                  </p>
+                </div>
+                <div className="relative">
+                  <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3 font-mono text-[11px] leading-relaxed text-emerald-300 whitespace-pre">
+                    {identifyServerCode}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(identifyServerCode)
+                      toast.success('Server signing snippet copied!')
+                    }}
+                    className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                  >
+                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                    Copy
+                  </button>
+                </div>
+                <p className="text-[11px] text-gray-400">
+                  Python, Ruby, PHP, and Go examples are in the{' '}
+                  <a
+                    href="https://docs.liraintelligence.com/platform/customer-support/widget#computing-the-signature"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-[#3730a3] hover:text-[#312e81]"
+                  >
+                    widget docs
+                  </a>
+                  .
+                </p>
+              </div>
+
+              {/* Step 3: logout */}
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#3730a3] text-[10px] font-bold text-white">
+                    3
+                  </span>
+                  <p className="text-xs font-semibold text-gray-700">
+                    On your logout handler — clear the chat from this device
+                  </p>
+                </div>
+                <div className="relative">
+                  <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3 font-mono text-[11px] leading-relaxed text-emerald-300 whitespace-pre">
+                    {logoutClientCode}
+                  </pre>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(logoutClientCode)
+                      toast.success('Logout snippet copied!')
+                    }}
+                    className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
+                  >
+                    <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                    Copy
+                  </button>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-gray-400 border-t border-gray-100 pt-3">
+                Same snippets are available any time from{' '}
+                <strong className="font-medium text-gray-500">
+                  Settings → Support → Web SDK tab
+                </strong>{' '}
+                and at{' '}
+                <a
+                  href="https://docs.liraintelligence.com/platform/customer-support/widget#spas-post-load-identity-windowliraidentify"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-gray-500 hover:text-gray-900"
+                >
+                  docs.liraintelligence.com
+                </a>
+                .
+              </p>
             </div>
           )}
 

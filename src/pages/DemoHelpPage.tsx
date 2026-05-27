@@ -29,6 +29,10 @@ export function DemoHelpPage() {
 
   useEffect(() => {
     if (!profile) {
+      if (window.location.hostname === 'demo.liraintelligence.com') {
+        window.location.replace('https://liraintelligence.com/')
+        return
+      }
       navigate('/', { replace: true })
     }
   }, [profile, navigate])
@@ -39,6 +43,10 @@ export function DemoHelpPage() {
 
   const handleSignOut = () => {
     clearDemoProfile()
+    if (window.location.hostname === 'demo.liraintelligence.com') {
+      window.location.replace('https://liraintelligence.com/')
+      return
+    }
     navigate('/', { replace: true })
   }
 

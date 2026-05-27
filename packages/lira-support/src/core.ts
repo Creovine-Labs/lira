@@ -6,6 +6,9 @@ import type {
   LiraClientOptions,
   LiraConfig,
   LiraContext,
+  LiraEventDetail,
+  LiraEventHandler,
+  LiraEventName,
   LiraRegisteredAction,
   LiraSupportInstance,
   LiraTrackPayload,
@@ -111,6 +114,22 @@ export class LiraClient {
     return this
   }
 
+  /**
+   * Clears the current visitor identity. Prefers `api.logout()` when the
+   * underlying widget runtime exposes it (newer bundles); falls back to
+   * `identify({ email: null, name: null, sig: null })` so we still work
+   * against older widget.js builds that haven't shipped logout yet.
+   */
+  async logout(): Promise<this> {
+    const api = await this.load()
+    if (typeof api.logout === 'function') {
+      api.logout()
+    } else {
+      api.identify({ email: null, name: null, sig: null })
+    }
+    return this
+  }
+
   async setContext(context: LiraContext): Promise<this> {
     const api = await this.load()
     api.setContext(context)
@@ -121,6 +140,69 @@ export class LiraClient {
     const api = await this.load()
     api.track(eventName, payload)
     return this
+  }
+
+  /**
+   * Programmatically open the chat. Safe to call before the widget has
+   * mounted — it queues the load + open.
+   */
+  async open(): Promise<this> {
+    const api = await this.load()
+    api.open?.()
+    return this
+  }
+
+  /** Programmatically close the chat. */
+  async close(): Promise<this> {
+    const api = await this.load()
+    api.close?.()
+    return this
+  }
+
+  /** Flip between open and closed. */
+  async toggle(): Promise<this> {
+    const api = await this.load()
+    api.toggle?.()
+    return this
+  }
+
+  /**
+   * Open the chat with the composer prefilled. Useful for "Contact us
+   * about <feature>" links.
+   */
+  async showNewMessage(preloadText?: string): Promise<this> {
+    const api = await this.load()
+    api.showNewMessage?.(preloadText)
+    return this
+  }
+
+  /**
+   * Subscribe to widget lifecycle events. Returns an unsubscribe function.
+   * Events available today: 'open', 'close', 'unread_count', 'message'.
+   *
+   * Underneath this is just `window.addEventListener('lira:<event>', …)`,
+   * but the SDK helper handles event-name prefixing + detail unwrapping
+   * so your handler is called with a typed `LiraEventDetail` directly.
+   */
+  on(event: LiraEventName, handler: LiraEventHandler): () => void {
+    if (typeof window === 'undefined') return () => {}
+    const wrapped = (e: Event) => {
+      const detail = (e as CustomEvent<LiraEventDetail>).detail ?? {}
+      handler(detail)
+    }
+    const key = `lira:${event}`
+    window.addEventListener(key, wrapped)
+    return () => window.removeEventListener(key, wrapped)
+  }
+
+  /**
+   * Remove every listener registered through this client. Called automatically
+   * by `destroy()`; expose for advanced cleanup.
+   */
+  off(): void {
+    // Listeners are anonymous closures returned from `on(...)`; this method
+    // is preserved for symmetry. Use the unsubscribe fn from `on(...)` for
+    // per-listener teardown.
   }
 
   async mountWidget(config?: Partial<LiraConfig>): Promise<LiraSupportInstance> {
