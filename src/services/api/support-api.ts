@@ -800,6 +800,15 @@ export interface SupportTicketRecord {
   resolved_at?: string
 }
 
+export interface TicketAttachmentRecord {
+  id: string
+  name: string
+  content_type: string
+  size: number
+  s3_key: string
+  url?: string
+}
+
 export interface SupportTicketMessageRecord {
   message_id: string
   ticket_id: string
@@ -808,6 +817,7 @@ export interface SupportTicketMessageRecord {
   sender_user_id?: string
   sender_name?: string
   body: string
+  attachments?: TicketAttachmentRecord[]
   created_at: string
 }
 
@@ -830,13 +840,96 @@ export async function getTicketForOrg(
 export async function replyToTicket(
   orgId: string,
   ticketId: string,
-  body: string
+  body: string,
+  attachments?: TicketAttachmentRecord[]
 ): Promise<SupportTicketMessageRecord> {
   const data = await supportFetch<{ message: SupportTicketMessageRecord }>(
     `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/reply`,
-    { method: 'POST', body: JSON.stringify({ body }) }
+    { method: 'POST', body: JSON.stringify({ body, attachments }) }
   )
   return data.message
+}
+
+/** Operator: create a ticket manually from the dashboard. */
+export interface CreateManualTicketInput {
+  subject: string
+  details: string
+  priority?: 'low' | 'medium' | 'high' | 'urgent'
+  visitor_email?: string
+  visitor_name?: string
+  attachments?: TicketAttachmentRecord[]
+}
+
+export async function createManualTicket(
+  orgId: string,
+  input: CreateManualTicketInput
+): Promise<SupportTicketRecord> {
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`,
+    { method: 'POST', body: JSON.stringify(input) }
+  )
+  return data.ticket
+}
+
+/**
+ * Operator: upload a ticket attachment (multipart). Returns a descriptor to
+ * include in a create/reply call. Uses raw fetch — supportFetch forces a JSON
+ * content-type, which would break the multipart boundary.
+ */
+export async function uploadTicketAttachment(
+  orgId: string,
+  file: File
+): Promise<TicketAttachmentRecord> {
+  const token = credentials.getToken()
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(
+    `${env.VITE_API_URL}/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/attachments`,
+    {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }
+  )
+  if (!res.ok) {
+    let msg = res.statusText
+    try {
+      const j = (await res.json()) as Record<string, string>
+      msg = j['error'] ?? j['message'] ?? msg
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg)
+  }
+  const data = (await res.json()) as { attachment: TicketAttachmentRecord }
+  return data.attachment
+}
+
+/** Visitor: upload an attachment for their own ticket (public, email-gated). */
+export async function uploadVisitorTicketAttachment(
+  orgId: string,
+  ticketNumber: string,
+  email: string,
+  file: File
+): Promise<TicketAttachmentRecord> {
+  const form = new FormData()
+  form.append('file', file)
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/by-number/${encodeURIComponent(
+    ticketNumber
+  )}/attachments?org_id=${encodeURIComponent(orgId)}&email=${encodeURIComponent(email)}`
+  const res = await fetch(url, { method: 'POST', body: form })
+  if (!res.ok) {
+    let msg = res.statusText
+    try {
+      const j = (await res.json()) as Record<string, string>
+      msg = j['error'] ?? j['message'] ?? msg
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg)
+  }
+  const data = (await res.json()) as { attachment: TicketAttachmentRecord }
+  return data.attachment
 }
 
 /** Round-trip learning feedback captured at resolve time (§6.4). All optional. */

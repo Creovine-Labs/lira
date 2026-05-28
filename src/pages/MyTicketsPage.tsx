@@ -6,15 +6,21 @@ import {
   ArrowLeftIcon,
   CheckCircleIcon,
   ClockIcon,
+  PaperClipIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   listTicketsForVisitor,
   getTicketByNumber,
+  uploadVisitorTicketAttachment,
   type SupportTicketRecord,
   type SupportTicketMessageRecord,
+  type TicketAttachmentRecord,
 } from '@/services/api/support-api'
+
+const MAX_ATTACHMENT_MB = 10
 
 /**
  * "My Tickets" — the visitor-facing list + thread view for tickets the
@@ -200,7 +206,10 @@ export function MyTicketDetailPage() {
                   </span>
                 </div>
               )}
-              <div className="whitespace-pre-wrap">{m.body}</div>
+              {m.body && <div className="whitespace-pre-wrap">{m.body}</div>}
+              {m.attachments && m.attachments.length > 0 && (
+                <VisitorAttachmentList attachments={m.attachments} dark={m.sender === 'visitor'} />
+              )}
             </div>
           </div>
         ))}
@@ -235,10 +244,12 @@ function VisitorReplyForm({
 }) {
   const [body, setBody] = useState('')
   const [sending, setSending] = useState(false)
+  const [attachments, setAttachments] = useState<TicketAttachmentRecord[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const send = async () => {
     const text = body.trim()
-    if (!text) return
+    if (!text && attachments.length === 0) return
     setSending(true)
     try {
       const res = await fetch(
@@ -246,7 +257,11 @@ function VisitorReplyForm({
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ body: text, visitor_email: visitorEmail }),
+          body: JSON.stringify({
+            body: text,
+            visitor_email: visitorEmail,
+            attachments: attachments.length ? attachments : undefined,
+          }),
         }
       )
       if (!res.ok) {
@@ -256,10 +271,27 @@ function VisitorReplyForm({
       const data = (await res.json()) as { message: SupportTicketMessageRecord }
       onSent(data.message)
       setBody('')
+      setAttachments([])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Reply failed')
     } finally {
       setSending(false)
+    }
+  }
+
+  const handleFile = async (file: File) => {
+    if (file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+      toast.error(`File too large (max ${MAX_ATTACHMENT_MB} MB)`)
+      return
+    }
+    setUploading(true)
+    try {
+      const a = await uploadVisitorTicketAttachment(orgId, ticketNumber, visitorEmail, file)
+      setAttachments((prev) => [...prev, a])
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Upload failed')
+    } finally {
+      setUploading(false)
     }
   }
 
@@ -272,16 +304,94 @@ function VisitorReplyForm({
         placeholder="Add to this thread…"
         className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
       />
-      <div className="mt-2 flex justify-end">
+      {attachments.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {attachments.map((a) => (
+            <span
+              key={a.id}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"
+            >
+              <PaperClipIcon className="h-3 w-3" />
+              <span className="max-w-[140px] truncate">{a.name}</span>
+              <button
+                type="button"
+                onClick={() => setAttachments((prev) => prev.filter((x) => x.id !== a.id))}
+                className="ml-0.5 text-slate-400 hover:text-slate-700"
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="mt-2 flex items-center justify-between">
+        <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800">
+          <PaperClipIcon className="h-3.5 w-3.5" />
+          {uploading ? 'Uploading…' : 'Attach file'}
+          <input
+            type="file"
+            className="hidden"
+            disabled={uploading}
+            accept="image/*,application/pdf,.txt,.csv,.doc,.docx,.xls,.xlsx"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (file) void handleFile(file)
+            }}
+          />
+        </label>
         <button
           type="button"
           onClick={send}
-          disabled={sending || !body.trim()}
+          disabled={sending || uploading || (!body.trim() && attachments.length === 0)}
           className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {sending ? 'Sending…' : 'Send reply'}
         </button>
       </div>
+    </div>
+  )
+}
+
+function VisitorAttachmentList({
+  attachments,
+  dark,
+}: {
+  attachments: TicketAttachmentRecord[]
+  dark?: boolean
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {attachments.map((a) => {
+        if (a.content_type.startsWith('image/') && a.url) {
+          return (
+            <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer">
+              <img
+                src={a.url}
+                alt={a.name}
+                className="max-h-40 max-w-[200px] rounded-lg border border-black/10 object-cover"
+              />
+            </a>
+          )
+        }
+        return (
+          <a
+            key={a.id}
+            href={a.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={
+              'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium ' +
+              (dark
+                ? 'border-white/20 bg-white/10 text-white hover:bg-white/20'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100')
+            }
+          >
+            <PaperClipIcon className="h-3.5 w-3.5" />
+            <span className="max-w-[160px] truncate">{a.name}</span>
+          </a>
+        )
+      })}
     </div>
   )
 }

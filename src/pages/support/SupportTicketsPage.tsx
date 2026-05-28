@@ -7,6 +7,8 @@ import {
   ChatBubbleLeftRightIcon,
   ClockIcon,
   LightBulbIcon,
+  PaperClipIcon,
+  PlusIcon,
   SparklesIcon,
   TicketIcon,
   XMarkIcon,
@@ -19,8 +21,11 @@ import {
   replyToTicket,
   resolveTicket,
   regenerateHandoffBrief,
+  createManualTicket,
+  uploadTicketAttachment,
   type SupportTicketRecord,
   type SupportTicketMessageRecord,
+  type TicketAttachmentRecord,
   type ResolveTicketFeedback,
 } from '@/services/api/support-api'
 import { cn } from '@/lib'
@@ -48,6 +53,7 @@ export function SupportTicketsPage() {
   const [tickets, setTickets] = useState<SupportTicketRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<StatusFilter>('all')
+  const [showNew, setShowNew] = useState(false)
 
   const load = useCallback(async () => {
     if (!currentOrgId) return
@@ -92,13 +98,22 @@ export function SupportTicketsPage() {
   return (
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Tickets</h1>
-          <p className="mt-1 text-sm text-gray-400">
-            Human-handled threads. The AI keeps chatting in parallel — these are the questions it
-            couldn't answer alone.
-          </p>
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
+            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Tickets</h1>
+            <p className="mt-1 text-sm text-gray-400">
+              Human-handled threads. The AI keeps chatting in parallel — these are the questions it
+              couldn't answer alone.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowNew(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#020308] px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-gray-800"
+          >
+            <PlusIcon className="h-4 w-4" />
+            New ticket
+          </button>
         </div>
 
         <div className="mb-4 flex gap-1 rounded-xl border border-white/60 bg-white p-1 shadow-sm w-fit">
@@ -160,6 +175,17 @@ export function SupportTicketsPage() {
           </ul>
         )}
       </div>
+
+      {showNew && currentOrgId && (
+        <NewTicketModal
+          orgId={currentOrgId}
+          onClose={() => setShowNew(false)}
+          onCreated={(ticket) => {
+            setShowNew(false)
+            navigate(`/support/tickets/${ticket.ticket_id}`)
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -351,7 +377,10 @@ export function SupportTicketDetailPage() {
                     </span>
                   </div>
                 )}
-                <div className="whitespace-pre-wrap">{m.body}</div>
+                {m.body && <div className="whitespace-pre-wrap">{m.body}</div>}
+                {m.attachments && m.attachments.length > 0 && (
+                  <AttachmentList attachments={m.attachments} dark={m.sender === 'agent'} />
+                )}
               </div>
             </div>
           ))}
@@ -402,16 +431,24 @@ function AgentReplyForm({
   onSent: (msg: SupportTicketMessageRecord, newStatus?: SupportTicketRecord['status']) => void
 }) {
   const [sending, setSending] = useState(false)
+  const [attachments, setAttachments] = useState<TicketAttachmentRecord[]>([])
+  const [uploading, setUploading] = useState(false)
 
   const send = async () => {
     const text = body.trim()
-    if (!text) return
+    if (!text && attachments.length === 0) return
     setSending(true)
     try {
-      const msg = await replyToTicket(orgId, ticketId, text)
+      const msg = await replyToTicket(
+        orgId,
+        ticketId,
+        text,
+        attachments.length ? attachments : undefined
+      )
       // Server auto-transitions open → in_progress on first agent reply
       onSent(msg, 'in_progress')
       onBodyChange('')
+      setAttachments([])
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Reply failed')
     } finally {
@@ -428,17 +465,300 @@ function AgentReplyForm({
         placeholder="Reply to the visitor — they'll get an email."
         className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
       />
+      <AttachmentPicker
+        attachments={attachments}
+        uploading={uploading}
+        onUpload={async (file) => {
+          setUploading(true)
+          try {
+            const a = await uploadTicketAttachment(orgId, file)
+            setAttachments((prev) => [...prev, a])
+          } catch (err) {
+            toast.error(err instanceof Error ? err.message : 'Upload failed')
+          } finally {
+            setUploading(false)
+          }
+        }}
+        onRemove={(id) => setAttachments((prev) => prev.filter((a) => a.id !== id))}
+      />
       <div className="mt-2 flex items-center justify-between">
         <p className="text-[11px] text-gray-400">Visitor will be notified by email.</p>
         <button
           type="button"
           onClick={send}
-          disabled={sending || !body.trim()}
+          disabled={sending || uploading || (!body.trim() && attachments.length === 0)}
           className="rounded-lg bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
         >
           {sending ? 'Sending…' : 'Send reply'}
         </button>
       </div>
+    </div>
+  )
+}
+
+// ── Attachment UI (shared) ────────────────────────────────────────────────────
+
+const MAX_ATTACHMENT_MB = 10
+
+function AttachmentList({
+  attachments,
+  dark,
+}: {
+  attachments: TicketAttachmentRecord[]
+  dark?: boolean
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {attachments.map((a) => {
+        const isImage = a.content_type.startsWith('image/') && a.url
+        if (isImage) {
+          return (
+            <a key={a.id} href={a.url} target="_blank" rel="noopener noreferrer" className="block">
+              <img
+                src={a.url}
+                alt={a.name}
+                className="max-h-40 max-w-[200px] rounded-lg border border-black/10 object-cover"
+              />
+            </a>
+          )
+        }
+        return (
+          <a
+            key={a.id}
+            href={a.url ?? '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium',
+              dark
+                ? 'border-white/20 bg-white/10 text-white hover:bg-white/20'
+                : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
+            )}
+          >
+            <PaperClipIcon className="h-3.5 w-3.5" />
+            <span className="max-w-[160px] truncate">{a.name}</span>
+          </a>
+        )
+      })}
+    </div>
+  )
+}
+
+function AttachmentPicker({
+  attachments,
+  uploading,
+  onUpload,
+  onRemove,
+}: {
+  attachments: TicketAttachmentRecord[]
+  uploading: boolean
+  onUpload: (file: File) => void | Promise<void>
+  onRemove: (id: string) => void
+}) {
+  return (
+    <div className="mt-2">
+      {attachments.length > 0 && (
+        <div className="mb-2 flex flex-wrap gap-1.5">
+          {attachments.map((a) => (
+            <span
+              key={a.id}
+              className="inline-flex items-center gap-1 rounded-md border border-slate-200 bg-slate-50 px-2 py-1 text-[11px] text-slate-600"
+            >
+              <PaperClipIcon className="h-3 w-3" />
+              <span className="max-w-[140px] truncate">{a.name}</span>
+              <button
+                type="button"
+                onClick={() => onRemove(a.id)}
+                className="ml-0.5 text-slate-400 hover:text-slate-700"
+              >
+                <XMarkIcon className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <label className="inline-flex cursor-pointer items-center gap-1.5 text-[11px] font-semibold text-slate-500 hover:text-slate-800">
+        <PaperClipIcon className="h-3.5 w-3.5" />
+        {uploading ? 'Uploading…' : 'Attach file'}
+        <input
+          type="file"
+          className="hidden"
+          disabled={uploading}
+          accept="image/*,application/pdf,.txt,.csv,.doc,.docx,.xls,.xlsx"
+          onChange={(e) => {
+            const file = e.target.files?.[0]
+            e.target.value = ''
+            if (!file) return
+            if (file.size > MAX_ATTACHMENT_MB * 1024 * 1024) {
+              toast.error(`File too large (max ${MAX_ATTACHMENT_MB} MB)`)
+              return
+            }
+            void onUpload(file)
+          }}
+        />
+      </label>
+    </div>
+  )
+}
+
+// ── New ticket modal (operator) ───────────────────────────────────────────────
+
+function NewTicketModal({
+  orgId,
+  onClose,
+  onCreated,
+}: {
+  orgId: string
+  onClose: () => void
+  onCreated: (ticket: SupportTicketRecord) => void
+}) {
+  const [subject, setSubject] = useState('')
+  const [details, setDetails] = useState('')
+  const [priority, setPriority] = useState<SupportTicketRecord['priority']>('medium')
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [attachments, setAttachments] = useState<TicketAttachmentRecord[]>([])
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+
+  const submit = async () => {
+    if (!subject.trim() || !details.trim()) {
+      toast.error('Subject and details are required')
+      return
+    }
+    setSaving(true)
+    try {
+      const ticket = await createManualTicket(orgId, {
+        subject: subject.trim(),
+        details: details.trim(),
+        priority,
+        visitor_email: email.trim() || undefined,
+        visitor_name: name.trim() || undefined,
+        attachments: attachments.length ? attachments : undefined,
+      })
+      toast.success(`Ticket ${ticket.ticket_number ?? ''} created`)
+      onCreated(ticket)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create ticket')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-5 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-base font-bold text-gray-900">New ticket</h2>
+          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100">
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+        <p className="mb-4 text-xs text-gray-400">
+          Opens a ticket for your team. If you add a customer email, they'll be notified and can
+          reply by email.
+        </p>
+
+        <div className="space-y-3">
+          <Field label="Subject">
+            <input
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Short summary"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+            />
+          </Field>
+          <Field label="Details">
+            <textarea
+              value={details}
+              onChange={(e) => setDetails(e.target.value)}
+              rows={4}
+              placeholder="What's the issue?"
+              className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+            />
+          </Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Priority">
+              <select
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as SupportTicketRecord['priority'])}
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+              >
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </Field>
+            <Field label="Customer name (optional)">
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Jane Doe"
+                className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+              />
+            </Field>
+          </div>
+          <Field label="Customer email (optional)">
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="customer@example.com"
+              className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-slate-900 focus:bg-white"
+            />
+          </Field>
+          <AttachmentPicker
+            attachments={attachments}
+            uploading={uploading}
+            onUpload={async (file) => {
+              setUploading(true)
+              try {
+                const a = await uploadTicketAttachment(orgId, file)
+                setAttachments((prev) => [...prev, a])
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Upload failed')
+              } finally {
+                setUploading(false)
+              }
+            }}
+            onRemove={(id) => setAttachments((prev) => prev.filter((a) => a.id !== id))}
+          />
+        </div>
+
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="rounded-lg px-3 py-2 text-sm font-semibold text-gray-500 transition hover:bg-gray-100"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={submit}
+            disabled={saving || uploading || !subject.trim() || !details.trim()}
+            className="rounded-lg bg-[#020308] px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {saving ? 'Creating…' : 'Create ticket'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-gray-400">
+        {label}
+      </label>
+      {children}
     </div>
   )
 }
