@@ -19,24 +19,13 @@ import {
   XMarkIcon,
   ArrowRightIcon,
   InformationCircleIcon,
-  ArrowPathIcon,
   ArrowTopRightOnSquareIcon,
   UserIcon,
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import { cn } from '@/lib'
-import {
-  listKBEntries,
-  listDocuments,
-  listConnectedDocuments,
-  getCrawlStatus,
-  getOrganization,
-  type KBEntry,
-  type DocumentRecord,
-  type ConnectedSourceStatus,
-  type CrawlStatus,
-} from '@/services/api'
+import { listKBEntries, type KBEntry } from '@/services/api'
 import { rotateWidgetSecret } from '@/services/api/support-api'
 
 // Mirror backend slug logic so we can show a preview before activation
@@ -576,17 +565,19 @@ function ChatWidgetPreview({ greeting }: { greeting: string }) {
   )
 }
 
+// 4-step activation wizard. KB seeding is no longer a wizard step — it lives
+// at /org/knowledge as a multi-step async flow, and the dashboard widget
+// drives the visitor there post-activation as step 2 of the 5-step onboarding.
 const STEPS = [
   { key: 'email', label: 'Email Setup', icon: EnvelopeIcon },
   { key: 'chat', label: 'Channels', icon: ChatBubbleLeftEllipsisIcon },
   { key: 'integrations', label: 'Ticket Notifications', icon: EnvelopeIcon },
-  { key: 'knowledge', label: 'Seed Knowledge', icon: BookOpenIcon },
   { key: 'activate', label: 'Test & Activate', icon: RocketLaunchIcon },
 ] as const
 
 function SupportActivatePage() {
   const navigate = useNavigate()
-  const { currentOrgId, organizations, updateOrganization } = useOrgStore()
+  const { currentOrgId, organizations } = useOrgStore()
   const { userEmail } = useAuthStore()
   const { config, activateModule, updateConfig, loadConfig } = useSupportStore()
   const [currentStep, setCurrentStep] = useState<number>(0)
@@ -594,7 +585,11 @@ function SupportActivatePage() {
   const [showCustomModal, setShowCustomModal] = useState(false)
   const [modalInput, setModalInput] = useState('')
   const modalInputRef = useRef<HTMLInputElement>(null)
-  const [chatEnabled, setChatEnabled] = useState(false)
+  // Default ON: the Web SDK Runtime (chat widget + full-page SDK) IS the core
+  // support surface. Activating customer support without it leaves the widget
+  // unable to connect (the chat WS handshake requires chat_enabled). An org
+  // that genuinely wants email-only can toggle it off.
+  const [chatEnabled, setChatEnabled] = useState(true)
   const [greeting, setGreeting] = useState('Hi! How can we help you today?')
   const [portalEnabled, setPortalEnabled] = useState(false)
   const [portalSlug, setPortalSlug] = useState('')
@@ -610,18 +605,16 @@ function SupportActivatePage() {
   const [ccEmails, setCcEmails] = useState<string[]>([])
   const escalationEmailInitialized = useRef(false)
   // Enterprise gating — wire to real org plan when plans land. For now, off.
-  const isEnterprise = false
+  // Real Enterprise gate, resolved from the invite consumed at signup
+  // (see backend platformAuthService.getTenantPlanTier). Falls back to
+  // false while /me is still loading.
+  const planTier = useAuthStore((s) => s.planTier)
+  const isEnterprise = planTier === 'ENTERPRISE'
   const MAX_CC = 2
 
-  // Step 4 — knowledge base preview
+  // KB preview — used by the post-activation success screen handoff card
+  // to show "your KB has N pages indexed" or nudge them to seed it.
   const [kbEntries, setKbEntries] = useState<KBEntry[]>([])
-  const [kbDocuments, setKbDocuments] = useState<DocumentRecord[]>([])
-  const [connectedSources, setConnectedSources] = useState<{
-    google_drive: ConnectedSourceStatus
-    github: ConnectedSourceStatus
-  } | null>(null)
-  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus | null>(null)
-  const [kbLoading, setKbLoading] = useState(false)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
   const liraAddress =
@@ -650,28 +643,15 @@ function SupportActivatePage() {
     }
   }, [userEmail, config?.escalation_email, config?.escalation_cc_emails])
 
-  // Load KB data when step 4 (knowledge) becomes active
+  // Load KB page count when the visitor reaches the final wizard step, so the
+  // post-activation success screen can show an accurate "your KB has N pages
+  // indexed" line in the handoff card. Everything else (documents, connected
+  // sources, crawl status) was for the now-removed Knowledge wizard step.
   useEffect(() => {
-    if (currentStep === 3 && currentOrgId) {
-      // Freshen the org in the store so description is always up to date
-      getOrganization(currentOrgId)
-        .then((org) => updateOrganization(currentOrgId, { profile: org.profile }))
+    if (currentStep === STEPS.length - 1 && currentOrgId) {
+      listKBEntries(currentOrgId)
+        .then(setKbEntries)
         .catch(() => {})
-
-      setKbLoading(true)
-      Promise.allSettled([
-        listKBEntries(currentOrgId),
-        listDocuments(currentOrgId),
-        listConnectedDocuments(currentOrgId),
-        getCrawlStatus(currentOrgId),
-      ])
-        .then(([kbRes, docsRes, sourcesRes, crawlRes]) => {
-          if (kbRes.status === 'fulfilled') setKbEntries(kbRes.value)
-          if (docsRes.status === 'fulfilled') setKbDocuments(docsRes.value)
-          if (sourcesRes.status === 'fulfilled') setConnectedSources(sourcesRes.value.sources)
-          if (crawlRes.status === 'fulfilled') setCrawlStatus(crawlRes.value)
-        })
-        .finally(() => setKbLoading(false))
     }
   }, [currentStep, currentOrgId])
 
@@ -859,10 +839,51 @@ function SupportActivatePage() {
               You&apos;re live!
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Lira is now handling support for {currentOrg?.name ?? 'your organization'}. Start with
-              the full-page SDK for their own support route, then add the optional widget or hosted
-              fallback if needed.
+              Lira is now handling support for {currentOrg?.name ?? 'your organization'}. Two quick
+              next steps below — start with the Knowledge Base so Lira has something to answer with,
+              then drop the install snippet into your own app.
             </p>
+          </div>
+
+          {/* ── Next: seed the Knowledge Base ─────────────────────────
+              Teaching Lira about the product is the first thing to do after
+              activation (the AI is blind without grounding). We pushed this
+              out of the wizard because KB seeding is a multi-step async flow
+              that fits the dedicated /org/knowledge page much better than a
+              wizard step — but we don't want the user to forget it, so it's
+              prominent here. */}
+          <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-5 shadow-sm space-y-3">
+            <div className="flex items-start gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-200/80">
+                <BookOpenIcon className="h-5 w-5 text-amber-800" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-900">
+                  Next: teach Lira about your product
+                </p>
+                <p className="mt-1 text-xs text-amber-900/80 leading-relaxed">
+                  {kbEntries.length > 0
+                    ? `Your KB has ${kbEntries.length} page${kbEntries.length === 1 ? '' : 's'} indexed — add more web pages, documents, or connect sources to keep improving Lira's answers.`
+                    : 'Your KB is empty. Without grounding, Lira will hedge or escalate everything. Crawl your site, upload docs, or connect a source — most B2B products take 1–10 minutes.'}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => navigate('/org/knowledge?tab=web')}
+                className="rounded-lg bg-amber-700 px-3.5 py-2 text-xs font-semibold text-white transition hover:bg-amber-800"
+              >
+                Seed Knowledge Base →
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/support/tickets')}
+                className="rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-50"
+              >
+                I&apos;ll do it from the widget
+              </button>
+            </div>
           </div>
 
           {/* Support email */}
@@ -1444,11 +1465,15 @@ function SupportActivatePage() {
           {step.key === 'chat' && (
             <div className="space-y-5">
               <p className="text-sm text-gray-600">
-                Enable the web runtime that powers the full-page SDK and optional floating widget.
-                The hosted portal is available only as a no-code fallback.
+                Enable the web runtime that powers your full-page support page (Web SDK) and the
+                optional floating chat bubble. After activation, you&apos;ll get the install
+                snippet, widget secret, and per-framework guides on the success screen — no need to
+                copy anything from this step.
               </p>
 
-              {/* ── Web SDK card ────────────────────── */}
+              {/* ── Web SDK card — toggle + greeting only. Install snippets show up on
+                   the success screen after activation, where they have full context (secret,
+                   org id, framework picker). Showing them here was confusing. ── */}
               <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
                 <label
                   aria-label="Toggle chat widget"
@@ -1466,7 +1491,7 @@ function SupportActivatePage() {
                       <span className="text-sm font-medium text-gray-800">Web SDK Runtime</span>
                     </div>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Full-page support embed for your own /support route, plus optional widget
+                      Powers your full-page /support page + optional floating widget on every page
                     </p>
                   </div>
                 </label>
@@ -1489,214 +1514,187 @@ function SupportActivatePage() {
                         className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
                       />
                       <p className="mt-1 text-xs text-gray-400">
-                        Updates in the preview as you type
-                      </p>
-                    </div>
-
-                    {/* ── SDK code preview ──────────────────── */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold text-gray-500">
-                        Full-page support SDK snippet
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Paste this inside the customer&apos;s own support route, for example{' '}
-                        <code className="font-mono text-gray-500">/support</code>.
-                      </p>
-                      <div className="relative">
-                        <pre className="overflow-x-auto rounded-xl bg-gray-900 px-4 py-3.5 font-mono text-xs leading-relaxed text-emerald-300 whitespace-pre">
-                          {fullPageSdkCode}
-                        </pre>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            navigator.clipboard.writeText(fullPageSdkCode)
-                            toast.success('Copied!')
-                          }}
-                          className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-gray-700 px-2.5 py-1.5 text-[11px] font-semibold text-gray-300 transition hover:bg-gray-600"
-                        >
-                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
-                          Copy
-                        </button>
-                      </div>
-                      <p className="text-[11px] text-gray-400">
-                        To let Lira greet customers by name, generate an{' '}
-                        <strong className="font-medium text-gray-500">HMAC signature</strong>{' '}
-                        server-side and pass <code className="font-mono">data-email</code>,{' '}
-                        <code className="font-mono">data-name</code>, and{' '}
-                        <code className="font-mono">data-sig</code>. After activation, grab your{' '}
-                        <strong className="font-medium text-gray-500">widget secret</strong> from{' '}
-                        <strong className="font-medium text-gray-500">
-                          Settings → Support → Secret
-                        </strong>
-                        . The floating widget snippet is also available after activation.
+                        Updates in the preview as you type. You&apos;ll get the install snippet on
+                        the next screen after activation.
                       </p>
                     </div>
                   </div>
                 )}
               </div>
 
-              {/* ── Hosted portal fallback card ─────────────────── */}
-              <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-                <label
-                  aria-label="Toggle support portal"
-                  className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                >
-                  <input
-                    type="checkbox"
-                    checked={portalEnabled}
-                    onChange={(e) => setPortalEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-[#020308]"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
-                      <GlobeAltIcon className="h-4 w-4 text-gray-500" />
-                      <span className="text-sm font-medium text-gray-800">
-                        Hosted Portal Fallback
-                      </span>
+              {/* ── Hosted portal fallback removed from the activation wizard.
+                   The Web SDK is the primary integration; customers who really
+                   need a no-code fallback can enable it later from Settings →
+                   Support → Hosted. Keeping it out of the wizard keeps the
+                   activation flow focused and short. ── */}
+              {/* eslint-disable-next-line no-constant-binary-expression -- intentionally disabled; see comment above */}
+              {false && (
+                <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+                  <label
+                    aria-label="Toggle support portal"
+                    className="flex cursor-pointer items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={portalEnabled}
+                      onChange={(e) => setPortalEnabled(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-[#020308]"
+                    />
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <GlobeAltIcon className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-800">
+                          Hosted Portal Fallback
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Optional Lira-hosted URL for temporary no-code launches
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      Optional Lira-hosted URL for temporary no-code launches
-                    </p>
-                  </div>
-                </label>
+                  </label>
 
-                {portalEnabled && (
-                  <div className="border-t border-gray-100 px-4 py-3 space-y-3">
-                    {/* Portal URL — toggle between Default and Custom */}
-                    <div>
-                      <div className="mb-2 flex items-center justify-between">
-                        <span className="text-xs font-semibold text-gray-500">Portal URL</span>
-                        {/* Toggle pill */}
-                        <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 text-[11px] font-medium">
-                          <button
-                            type="button"
-                            onClick={() => setPortalCustomDomain('')}
-                            className={`rounded-md px-3 py-1 transition-colors ${
-                              !portalCustomDomain
-                                ? 'bg-white text-gray-800 shadow-sm'
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            Default
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setPortalCustomDomain((v) => v || ' ')}
-                            className={`flex items-center gap-1 rounded-md px-3 py-1 transition-colors ${
-                              portalCustomDomain
-                                ? 'bg-white text-gray-800 shadow-sm'
-                                : 'text-gray-400 hover:text-gray-600'
-                            }`}
-                          >
-                            Custom
-                          </button>
+                  {portalEnabled && (
+                    <div className="border-t border-gray-100 px-4 py-3 space-y-3">
+                      {/* Portal URL — toggle between Default and Custom */}
+                      <div>
+                        <div className="mb-2 flex items-center justify-between">
+                          <span className="text-xs font-semibold text-gray-500">Portal URL</span>
+                          {/* Toggle pill */}
+                          <div className="flex rounded-lg border border-gray-200 bg-gray-100 p-0.5 text-[11px] font-medium">
+                            <button
+                              type="button"
+                              onClick={() => setPortalCustomDomain('')}
+                              className={`rounded-md px-3 py-1 transition-colors ${
+                                !portalCustomDomain
+                                  ? 'bg-white text-gray-800 shadow-sm'
+                                  : 'text-gray-400 hover:text-gray-600'
+                              }`}
+                            >
+                              Default
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPortalCustomDomain((v) => v || ' ')}
+                              className={`flex items-center gap-1 rounded-md px-3 py-1 transition-colors ${
+                                portalCustomDomain
+                                  ? 'bg-white text-gray-800 shadow-sm'
+                                  : 'text-gray-400 hover:text-gray-600'
+                              }`}
+                            >
+                              Custom
+                            </button>
+                          </div>
+                        </div>
+
+                        {!portalCustomDomain ? (
+                          /* Default domain panel */
+                          <div className="flex items-center gap-0">
+                            <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-400">
+                              support.liraintelligence.com/
+                            </span>
+                            <input
+                              id="activate-portal-slug"
+                              type="text"
+                              value={portalSlug}
+                              onChange={(e) =>
+                                setPortalSlug(
+                                  e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')
+                                )
+                              }
+                              placeholder={portalSlugFinal}
+                              className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
+                            />
+                          </div>
+                        ) : (
+                          /* Custom domain panel */
+                          <div>
+                            <input
+                              id="activate-portal-custom-domain"
+                              type="text"
+                              value={portalCustomDomain.trim()}
+                              onChange={(e) =>
+                                setPortalCustomDomain(
+                                  e.target.value.toLowerCase().replace(/\s/g, '')
+                                )
+                              }
+                              placeholder="support.yourcompany.com"
+                              className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
+                            />
+                            <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
+                              Add a DNS CNAME from{' '}
+                              <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
+                                support.yourcompany.com
+                              </code>{' '}
+                              pointing to{' '}
+                              <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
+                                support.liraintelligence.com
+                              </code>
+                              , then enter your domain above. Your default URL still works — this
+                              adds an alias for the fallback page.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Portal preview mockup */}
+                      <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="flex gap-1">
+                            <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
+                            <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
+                          </div>
+                          <div className="flex-1 rounded-md bg-white px-3 py-1 text-[10px] text-gray-400 border border-gray-200 truncate">
+                            {portalUrl}
+                          </div>
+                        </div>
+                        <div className="rounded-lg bg-white border border-gray-200 p-4">
+                          <div className="h-8 w-48 rounded-md bg-[#020308]/10 mb-3" />
+                          <div className="text-center">
+                            <p className="text-sm font-semibold text-gray-700">
+                              How can we help you?
+                            </p>
+                            <p className="text-xs text-gray-400 mt-1">
+                              {greeting.trim() || 'Welcome to support'}
+                            </p>
+                          </div>
+                          <div className="mt-4 grid grid-cols-3 gap-2">
+                            <div className="rounded-lg border border-gray-200 p-2 text-center">
+                              <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
+                              <p className="text-[10px] text-gray-500">Submit Ticket</p>
+                            </div>
+                            <div className="rounded-lg border border-gray-200 p-2 text-center">
+                              <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
+                              <p className="text-[10px] text-gray-500">My Tickets</p>
+                            </div>
+                            <div className="rounded-lg border border-gray-200 p-2 text-center">
+                              <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
+                              <p className="text-[10px] text-gray-500">Live Chat</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
 
-                      {!portalCustomDomain ? (
-                        /* Default domain panel */
-                        <div className="flex items-center gap-0">
-                          <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2.5 text-xs text-gray-400">
-                            support.liraintelligence.com/
-                          </span>
-                          <input
-                            id="activate-portal-slug"
-                            type="text"
-                            value={portalSlug}
-                            onChange={(e) =>
-                              setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
-                            }
-                            placeholder={portalSlugFinal}
-                            className="flex-1 rounded-r-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
-                          />
-                        </div>
-                      ) : (
-                        /* Custom domain panel */
-                        <div>
-                          <input
-                            id="activate-portal-custom-domain"
-                            type="text"
-                            value={portalCustomDomain.trim()}
-                            onChange={(e) =>
-                              setPortalCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
-                            }
-                            placeholder="support.yourcompany.com"
-                            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-[#020308] focus:outline-none focus:ring-1 focus:ring-[#020308]"
-                          />
-                          <p className="mt-1.5 text-[11px] leading-relaxed text-gray-400">
-                            Add a DNS CNAME from{' '}
-                            <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
-                              support.yourcompany.com
-                            </code>{' '}
-                            pointing to{' '}
-                            <code className="rounded border border-gray-200 bg-gray-50 px-1 font-mono text-[10px]">
-                              support.liraintelligence.com
-                            </code>
-                            , then enter your domain above. Your default URL still works — this adds
-                            an alias for the fallback page.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Portal preview mockup */}
-                    <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                      <div className="mb-2 flex items-center gap-2">
-                        <div className="flex gap-1">
-                          <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                          <span className="h-2.5 w-2.5 rounded-full bg-yellow-400" />
-                          <span className="h-2.5 w-2.5 rounded-full bg-green-400" />
-                        </div>
-                        <div className="flex-1 rounded-md bg-white px-3 py-1 text-[10px] text-gray-400 border border-gray-200 truncate">
-                          {portalUrl}
-                        </div>
-                      </div>
-                      <div className="rounded-lg bg-white border border-gray-200 p-4">
-                        <div className="h-8 w-48 rounded-md bg-[#020308]/10 mb-3" />
-                        <div className="text-center">
-                          <p className="text-sm font-semibold text-gray-700">
-                            How can we help you?
-                          </p>
-                          <p className="text-xs text-gray-400 mt-1">
-                            {greeting.trim() || 'Welcome to support'}
-                          </p>
-                        </div>
-                        <div className="mt-4 grid grid-cols-3 gap-2">
-                          <div className="rounded-lg border border-gray-200 p-2 text-center">
-                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
-                            <p className="text-[10px] text-gray-500">Submit Ticket</p>
+                      {/* What's included */}
+                      <div className="space-y-1.5">
+                        <p className="text-xs font-semibold text-gray-500">What customers get:</p>
+                        {[
+                          'Temporary support page while SDK integration is pending',
+                          'Submit and track support tickets',
+                          'Live chat powered by the same Lira runtime',
+                          'Magic-link sign in, no passwords needed',
+                          'Brand colors and logo applied automatically',
+                        ].map((item) => (
+                          <div key={item} className="flex items-start gap-2">
+                            <CheckCircleIcon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-green-500" />
+                            <span className="text-xs text-gray-600">{item}</span>
                           </div>
-                          <div className="rounded-lg border border-gray-200 p-2 text-center">
-                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
-                            <p className="text-[10px] text-gray-500">My Tickets</p>
-                          </div>
-                          <div className="rounded-lg border border-gray-200 p-2 text-center">
-                            <div className="mx-auto mb-1 h-5 w-5 rounded-md bg-gray-50" />
-                            <p className="text-[10px] text-gray-500">Live Chat</p>
-                          </div>
-                        </div>
+                        ))}
                       </div>
                     </div>
-
-                    {/* What's included */}
-                    <div className="space-y-1.5">
-                      <p className="text-xs font-semibold text-gray-500">What customers get:</p>
-                      {[
-                        'Temporary support page while SDK integration is pending',
-                        'Submit and track support tickets',
-                        'Live chat powered by the same Lira runtime',
-                        'Magic-link sign in, no passwords needed',
-                        'Brand colors and logo applied automatically',
-                      ].map((item) => (
-                        <div key={item} className="flex items-start gap-2">
-                          <CheckCircleIcon className="h-3.5 w-3.5 mt-0.5 shrink-0 text-green-500" />
-                          <span className="text-xs text-gray-600">{item}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -1784,136 +1782,10 @@ function SupportActivatePage() {
             </div>
           )}
 
-          {step.key === 'knowledge' && (
-            <div className="space-y-4">
-              <p className="text-sm text-gray-600">
-                Seed knowledge base so Lira can answer customer questions accurately. Here's what
-                Lira currently knows about your organization.
-              </p>
-
-              {kbLoading ? (
-                <div className="flex items-center gap-2 py-3 text-sm text-gray-400">
-                  <ArrowPathIcon className="h-4 w-4 animate-spin" />
-                  Checking knowledge base…
-                </div>
-              ) : (
-                <div className="overflow-hidden rounded-xl border border-gray-200 divide-y divide-gray-100 text-sm">
-                  {/* Org description */}
-                  <div className="flex items-start gap-3 bg-white px-4 py-3">
-                    <span
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${currentOrg?.profile?.description ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium text-gray-800">Organization description</p>
-                      {currentOrg?.profile?.description ? (
-                        <p className="mt-0.5 truncate text-xs text-gray-500">
-                          {currentOrg.profile.description.length > 120
-                            ? currentOrg.profile.description.slice(0, 120) + '…'
-                            : currentOrg.profile.description}
-                        </p>
-                      ) : (
-                        <p className="mt-0.5 text-xs text-gray-400">Not added yet</p>
-                      )}
-                    </div>
-                    {currentOrg?.profile?.description && (
-                      <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-500" />
-                    )}
-                  </div>
-
-                  {/* Web pages */}
-                  <div className="flex items-start gap-3 bg-white px-4 py-3">
-                    <span
-                      className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${kbEntries.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
-                    />
-                    <div className="flex-1">
-                      <p className="font-medium text-gray-800">Website pages</p>
-                      <p className="mt-0.5 text-xs text-gray-500">
-                        {kbEntries.length > 0
-                          ? `${kbEntries.length} page${kbEntries.length === 1 ? '' : 's'} indexed${crawlStatus?.status === 'completed' ? ' · Crawl complete' : ''}`
-                          : crawlStatus?.status === 'crawling'
-                            ? 'Crawl in progress…'
-                            : 'No pages crawled yet'}
-                      </p>
-                    </div>
-                    {kbEntries.length > 0 && (
-                      <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-500" />
-                    )}
-                  </div>
-
-                  {/* Uploaded documents */}
-                  {(() => {
-                    const indexed = kbDocuments.filter((d) => d.status === 'indexed')
-                    return (
-                      <div className="flex items-start gap-3 bg-white px-4 py-3">
-                        <span
-                          className={`mt-1.5 h-2 w-2 shrink-0 rounded-full ${indexed.length > 0 ? 'bg-green-500' : 'bg-gray-300'}`}
-                        />
-                        <div className="flex-1">
-                          <p className="font-medium text-gray-800">Uploaded documents</p>
-                          <p className="mt-0.5 text-xs text-gray-500">
-                            {indexed.length > 0
-                              ? indexed
-                                  .slice(0, 3)
-                                  .map((d) => d.filename)
-                                  .join(', ') +
-                                (indexed.length > 3 ? ` +${indexed.length - 3} more` : '')
-                              : 'No documents uploaded yet'}
-                          </p>
-                        </div>
-                        {indexed.length > 0 && (
-                          <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-500" />
-                        )}
-                      </div>
-                    )
-                  })()}
-
-                  {/* GitHub */}
-                  {connectedSources?.github?.connected && (
-                    <div className="flex items-start gap-3 bg-white px-4 py-3">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">GitHub</p>
-                        <p className="mt-0.5 text-xs text-gray-500">
-                          {connectedSources.github.files.length} file
-                          {connectedSources.github.files.length === 1 ? '' : 's'} available
-                        </p>
-                      </div>
-                      <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-500" />
-                    </div>
-                  )}
-
-                  {/* Google Drive */}
-                  {connectedSources?.google_drive?.connected && (
-                    <div className="flex items-start gap-3 bg-white px-4 py-3">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-green-500" />
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-800">Google Drive</p>
-                        <p className="mt-0.5 text-xs text-gray-500">
-                          {connectedSources.google_drive.files.length} file
-                          {connectedSources.google_drive.files.length === 1 ? '' : 's'} available
-                        </p>
-                      </div>
-                      <CheckCircleIcon className="h-4 w-4 shrink-0 text-green-500" />
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center gap-3">
-                <button
-                  onClick={() => window.open('/org/knowledge', '_blank')}
-                  className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-700 transition hover:bg-gray-200"
-                >
-                  <BookOpenIcon className="h-4 w-4" />
-                  Add More Information
-                  <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
-                </button>
-              </div>
-              <p className="text-xs text-gray-400">
-                Opens in a new tab — your activation progress is saved here.
-              </p>
-            </div>
-          )}
+          {/* Knowledge step removed from the activation wizard — KB seeding lives
+              at /org/knowledge (a multi-step async flow with its own surface).
+              The post-activation success screen has a prominent handoff card
+              that pushes the visitor straight to /org/knowledge?tab=web. */}
 
           {step.key === 'activate' && (
             <div className="space-y-4">

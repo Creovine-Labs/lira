@@ -2183,6 +2183,9 @@ class LiraSupportWidget {
 
   private buildCardEl(msg: ChatMessage): HTMLElement {
     const card = msg.card!
+    if (card.kind === 'stepper' && card.steps && card.steps.length > 0) {
+      return this.buildStepperCardEl(card)
+    }
     const wrap = document.createElement('div')
     wrap.className = 'lira-card'
     if (card.title) {
@@ -2228,6 +2231,125 @@ class LiraSupportWidget {
       }
       wrap.appendChild(row)
     }
+    return wrap
+  }
+
+  /**
+   * Polished vertical stepper card. Used by lira_get_setup_progress to render
+   * the 5-step onboarding journey with status dots, sub-progress, and docs
+   * links per step. Visually distinct from a standard card.
+   */
+  private buildStepperCardEl(card: NonNullable<ChatMessage['card']>): HTMLElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'lira-stepper-card'
+
+    // ── Header: title + percent ring + badge ─────────────────────────
+    const header = document.createElement('div')
+    header.className = 'lira-stepper-header'
+
+    if (card.progress && card.progress.total > 0) {
+      const pct = Math.round((card.progress.done / card.progress.total) * 100)
+      const ring = document.createElement('div')
+      ring.className = 'lira-stepper-ring'
+      ring.style.background = `conic-gradient(#10b981 ${pct}%, #e5e7eb ${pct}% 100%)`
+      const inner = document.createElement('span')
+      inner.className = 'lira-stepper-ring-inner'
+      inner.textContent = `${pct}%`
+      ring.appendChild(inner)
+      header.appendChild(ring)
+    }
+
+    const headerText = document.createElement('div')
+    headerText.className = 'lira-stepper-header-text'
+    if (card.title) {
+      const t = document.createElement('div')
+      t.className = 'lira-stepper-title'
+      t.textContent = card.title
+      headerText.appendChild(t)
+    }
+    if (card.body) {
+      const sub = document.createElement('div')
+      sub.className = 'lira-stepper-subtitle'
+      sub.textContent = card.body
+      headerText.appendChild(sub)
+    }
+    header.appendChild(headerText)
+
+    if (card.badge) {
+      const b = document.createElement('span')
+      b.className = `lira-stepper-badge tone-${card.badge.tone ?? 'neutral'}`
+      b.textContent = card.badge.text
+      header.appendChild(b)
+    }
+    wrap.appendChild(header)
+
+    // ── Steps list ───────────────────────────────────────────────────
+    const list = document.createElement('ol')
+    list.className = 'lira-stepper-list'
+    for (const step of card.steps!) {
+      const li = document.createElement('li')
+      li.className = `lira-stepper-step status-${step.status}${step.optional ? ' optional' : ''}`
+
+      // Status dot with check / index
+      const dot = document.createElement('span')
+      dot.className = 'lira-stepper-dot'
+      if (step.status === 'done') {
+        dot.textContent = '✓'
+      } else if (step.status === 'active') {
+        dot.textContent = '●'
+      } else {
+        dot.textContent = ''
+      }
+      li.appendChild(dot)
+
+      // Content
+      const content = document.createElement('div')
+      content.className = 'lira-stepper-content'
+      const title = document.createElement('div')
+      title.className = 'lira-stepper-step-title'
+      title.textContent = step.title
+      if (step.optional) {
+        const tag = document.createElement('span')
+        tag.className = 'lira-stepper-optional'
+        tag.textContent = 'optional'
+        title.appendChild(tag)
+      }
+      content.appendChild(title)
+
+      if (step.description) {
+        const desc = document.createElement('div')
+        desc.className = 'lira-stepper-step-desc'
+        desc.textContent = step.description
+        content.appendChild(desc)
+      }
+
+      if (step.sub_progress && step.sub_progress.length > 0) {
+        const subUl = document.createElement('ul')
+        subUl.className = 'lira-stepper-sub'
+        for (const sp of step.sub_progress) {
+          const subLi = document.createElement('li')
+          subLi.className = `lira-stepper-sub-item${sp.done ? ' done' : ''}`
+          subLi.textContent = `${sp.done ? '✓' : '○'} ${sp.label}`
+          subUl.appendChild(subLi)
+        }
+        content.appendChild(subUl)
+      }
+
+      if (step.docs && step.status !== 'done') {
+        const link = document.createElement('a')
+        link.className = 'lira-stepper-docs'
+        link.href = step.docs
+        link.target = '_blank'
+        link.rel = 'noopener noreferrer'
+        link.textContent = 'View guide →'
+        content.appendChild(link)
+      }
+
+      li.appendChild(content)
+      list.appendChild(li)
+    }
+    wrap.appendChild(list)
+
     return wrap
   }
 
@@ -3077,6 +3199,40 @@ class LiraSupportWidget {
         this.render()
         break
 
+      case 'integration_warning': {
+        // Dev-facing diagnostic. NOT shown in the chat UI — logged to the
+        // browser console so the integrator's developer immediately sees the
+        // cause + fix without contacting Lira support. This is the "attribute
+        // misconfigurations to the integrator" principle in action.
+        const code = msg.code ?? 'INTEGRATION_WARNING'
+        const severity = msg.severity ?? 'warning'
+        const head = `[Lira] ⚠ ${code} — running degraded`
+        const body =
+          (msg.message ?? '') +
+          (msg.hint ? `\n\nFix: ${msg.hint}` : '') +
+          (msg.docs ? `\n\nDocs: ${msg.docs}` : '') +
+          (msg.context ? `\n\nContext: ${JSON.stringify(msg.context)}` : '') +
+          '\n\nThis is a configuration issue on YOUR side, not a Lira platform outage. The widget keeps working — just without verified identity / full context — until this is fixed.'
+        try {
+          if (severity === 'error') {
+            console.error(
+              `%c${head}%c\n${body}`,
+              'background:#fee2e2;color:#991b1b;padding:2px 6px;font-weight:600',
+              'color:#991b1b'
+            )
+          } else {
+            console.warn(
+              `%c${head}%c\n${body}`,
+              'background:#fef3c7;color:#92400e;padding:2px 6px;font-weight:600',
+              'color:#92400e'
+            )
+          }
+        } catch {
+          /* console may be stubbed in some envs */
+        }
+        break
+      }
+
       case 'welcome':
         if (this.startFreshDemoConversationIfNeeded(msg.status)) break
         // If localStorage had an old conversation but the server did not resume
@@ -3129,6 +3285,9 @@ class LiraSupportWidget {
             fields: msg.fields,
             badge: msg.badge,
             buttons: msg.buttons,
+            kind: msg.kind,
+            steps: msg.steps,
+            progress: msg.progress,
           },
         })
         if (this.view === 'launcher') {

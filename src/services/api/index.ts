@@ -672,6 +672,27 @@ export async function getMe(): Promise<{
   return apiFetch('/lira/v1/me')
 }
 
+/**
+ * Auth-layer profile fetch — returns the platform user record + the tenant's
+ * plan tier (resolved from the invite consumed at signup). Used by AppShell
+ * on mount to populate the auth store's planTier for Enterprise gates.
+ */
+export async function getAuthMe(): Promise<{
+  user: {
+    id: string
+    tenantId: string
+    email: string | null
+    name: string | null
+    role: string | null
+    accountId: string | null
+    emailVerified: boolean | null
+    createdAt: string
+    planTier: 'STARTER' | 'GROWTH' | 'ENTERPRISE'
+  }
+}> {
+  return apiFetch('/v1/auth/me')
+}
+
 export async function updateMyPicture(picture: string): Promise<void> {
   await apiFetch('/lira/v1/me/picture', {
     method: 'PUT',

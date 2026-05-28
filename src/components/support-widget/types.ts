@@ -97,6 +97,20 @@ export interface AgentCard {
   fields?: Array<{ label: string; value: string }>
   badge?: { text: string; tone?: 'success' | 'warn' | 'error' | 'neutral' }
   buttons?: Array<{ label: string; action: string; style?: 'primary' | 'secondary' | 'danger' }>
+  /** Card flavour — 'stepper' triggers the vertical stepper renderer. */
+  kind?: 'standard' | 'stepper'
+  /** Stepper steps. Renders status dots, descriptions, sub-progress, and docs links. */
+  steps?: Array<{
+    key: string
+    title: string
+    description?: string
+    status: 'done' | 'active' | 'pending'
+    sub_progress?: Array<{ label: string; done: boolean }>
+    docs?: string
+    optional?: boolean
+  }>
+  /** Overall stepper progress, e.g. { done: 2, total: 5 }. */
+  progress?: { done: number; total: number }
 }
 
 export interface AgentConfirm {
@@ -134,6 +148,7 @@ export interface IncomingWsMessage {
     | 'pin_required'
     | 'suggestions'
     | 'lira_action'
+    | 'integration_warning'
   body?: string
   conv_id?: string
   status?: string
@@ -145,6 +160,20 @@ export interface IncomingWsMessage {
   title?: string
   fields?: Array<{ label: string; value: string }>
   badge?: { text: string; tone?: 'success' | 'warn' | 'error' | 'neutral' }
+  /** Card flavour — 'stepper' renders steps[] as a polished vertical stepper. */
+  kind?: 'standard' | 'stepper'
+  /** Stepper steps with status + sub-progress. */
+  steps?: Array<{
+    key: string
+    title: string
+    description?: string
+    status: 'done' | 'active' | 'pending'
+    sub_progress?: Array<{ label: string; done: boolean }>
+    docs?: string
+    optional?: boolean
+  }>
+  /** Overall stepper progress, e.g. { done: 2, total: 5 }. */
+  progress?: { done: number; total: number }
   messages?: Array<{
     id: string
     role: ChatMessage['role']
@@ -178,6 +207,17 @@ export interface IncomingWsMessage {
   suggestions?: string[]
   /** For type: 'lira_action' — string value (e.g. URL to prefill into an input). */
   value?: string
+  // ── integration_warning fields ───────────────────────────────────────
+  /** Stable code, e.g. 'IDENTITY_SIGNATURE_MISMATCH'. */
+  code?: string
+  /** 'error' | 'warning' | 'info'. */
+  severity?: 'error' | 'warning' | 'info'
+  /** Human-readable description of the integration problem. */
+  message?: string
+  /** URL pointing the integrator's dev at the relevant troubleshooting doc. */
+  docs?: string
+  /** Echo-back fields useful for debugging (e.g. { email }). Never the secret/sig. */
+  context?: Record<string, unknown>
 }
 
 export interface OutgoingWsMessage {

@@ -821,6 +821,34 @@ export interface SupportTicketMessageRecord {
   created_at: string
 }
 
+// ── Integration Health ────────────────────────────────────────────────────
+
+export type IntegrationCheckSeverity = 'error' | 'warning' | 'info'
+
+export interface IntegrationCheck {
+  key: string
+  ok: boolean
+  label: string
+  detail: string
+  severity?: IntegrationCheckSeverity
+  fix?: string
+  docs?: string
+}
+
+export interface IntegrationHealthReport {
+  org_id: string
+  generated_at: string
+  ok: boolean
+  checks: IntegrationCheck[]
+  summary: string
+}
+
+export async function runIntegrationHealth(orgId: string): Promise<IntegrationHealthReport> {
+  return supportFetch<IntegrationHealthReport>(
+    `/lira/v1/support/integration-health/orgs/${encodeURIComponent(orgId)}`
+  )
+}
+
 export async function listTicketsForOrg(orgId: string): Promise<SupportTicketRecord[]> {
   const data = await supportFetch<{ tickets: SupportTicketRecord[] }>(
     `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`

@@ -43,6 +43,7 @@ import {
   listMyNotifications,
   listTasks,
   getOrgUsage,
+  getAuthMe,
   type TaskRecord,
 } from '@/services/api'
 import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/support-api'
@@ -836,6 +837,17 @@ function AppShell() {
       .catch(() => {})
       .finally(() => setOrgLoading(false))
   }, [token, setOrganizations])
+
+  // Resolve the tenant's plan tier (drives Enterprise-only gates like
+  // additional ticket-CC recipients). Fetched lazily on mount — defaults
+  // to STARTER until /me responds.
+  const setPlanTier = useAuthStore((s) => s.setPlanTier)
+  useEffect(() => {
+    if (!token) return
+    getAuthMe()
+      .then((res) => setPlanTier(res.user.planTier))
+      .catch(() => {})
+  }, [token, setPlanTier])
 
   const { badges, taskPending, taskInProgress } = useSidebarBadges()
   const { markMeetingsSeen, markSupportSeen } = useNotifStore()

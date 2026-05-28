@@ -889,7 +889,7 @@ function SupportSettingsSection() {
   ])
 
   const [activeTab, setActiveTab] = useState<
-    'widget' | 'secret' | 'channels' | 'portal' | 'behavior' | 'escalation' | 'mobile'
+    'widget' | 'secret' | 'channels' | 'portal' | 'behavior' | 'escalation' | 'mobile' | 'health'
   >('widget')
 
   // Show the "not activated" prompt for both null configs AND for the
@@ -916,6 +916,7 @@ function SupportSettingsSection() {
     { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
     { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
     { key: 'mobile' as const, label: 'Mobile', icon: DevicePhoneMobileIcon },
+    { key: 'health' as const, label: 'Health', icon: ShieldCheckIcon },
   ]
 
   const escapedGreeting = (greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '&quot;')
@@ -1210,6 +1211,9 @@ function SupportSettingsSection() {
       {/* ── Mobile tab ── placeholder. Native iOS/Android SDKs are on the
           roadmap; this tab exists today so customers see we have a plan. */}
       {activeTab === 'mobile' && <SupportMobileTab />}
+
+      {/* ── Health tab — run integration diagnostics on demand ── */}
+      {activeTab === 'health' && <SupportHealthTab orgId={currentOrgId!} />}
 
       {/* ── Channels tab ── */}
       {activeTab === 'channels' && (
@@ -2069,6 +2073,128 @@ function SupportMobileTab() {
         full-page Web SDK there. The hosted portal is only a fallback when you cannot ship that
         route yet.
       </p>
+    </div>
+  )
+}
+
+// ── Integration Health tab ───────────────────────────────────────────────────
+// Lets the operator run live diagnostics against their own org's support
+// integration — same checks Lira runs via lira_check_integration_health — and
+// see exactly which piece is misconfigured, with the fix inline.
+
+function SupportHealthTab({ orgId }: { orgId: string }) {
+  const [report, setReport] = useState<
+    import('@/services/api/support-api').IntegrationHealthReport | null
+  >(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const run = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const { runIntegrationHealth } = await import('@/services/api/support-api')
+      const r = await runIntegrationHealth(orgId)
+      setReport(r)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to run diagnostics')
+    } finally {
+      setLoading(false)
+    }
+  }, [orgId])
+
+  useEffect(() => {
+    void run()
+  }, [run])
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 space-y-1.5">
+        <p className="text-sm font-semibold text-blue-900">Integration Health</p>
+        <p className="text-xs text-blue-900/80 leading-relaxed">
+          Live diagnostics for your support integration. If something looks broken (silent widget,
+          identity not recognised, missing notifications), run this first — every failed check tells
+          you what's wrong AND how to fix it. Lira's own AI runs the same checks when customers ask
+          about widget issues, so you can also point them here.
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div>
+          {report && (
+            <p
+              className={cn('text-sm font-medium', report.ok ? 'text-emerald-700' : 'text-red-700')}
+            >
+              {report.summary}
+            </p>
+          )}
+          {report && (
+            <p className="text-[11px] text-gray-400">
+              Last run: {new Date(report.generated_at).toLocaleString()}
+            </p>
+          )}
+        </div>
+        <Button size="sm" onClick={run} disabled={loading} className="shrink-0">
+          {loading ? 'Running…' : 'Run diagnostics'}
+        </Button>
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+
+      {report && (
+        <ul className="space-y-2">
+          {report.checks.map((c) => (
+            <li
+              key={c.key}
+              className={cn(
+                'rounded-xl border px-4 py-3',
+                c.ok ? 'border-emerald-100 bg-emerald-50/40' : 'border-red-100 bg-red-50/60'
+              )}
+            >
+              <div className="flex items-start gap-2">
+                <span
+                  className={cn(
+                    'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold',
+                    c.ok ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'
+                  )}
+                >
+                  {c.ok ? '✓' : '!'}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p
+                    className={cn(
+                      'text-sm font-semibold',
+                      c.ok ? 'text-emerald-900' : 'text-red-900'
+                    )}
+                  >
+                    {c.label}
+                  </p>
+                  <p className="mt-0.5 text-xs text-gray-700">{c.detail}</p>
+                  {!c.ok && c.fix && (
+                    <p className="mt-1.5 text-xs text-gray-900">
+                      <span className="font-semibold">Fix:</span> {c.fix}
+                    </p>
+                  )}
+                  {!c.ok && c.docs && (
+                    <a
+                      href={c.docs}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-[#3730a3] hover:underline"
+                    >
+                      Troubleshooting docs →
+                    </a>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

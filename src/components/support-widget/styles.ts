@@ -1719,6 +1719,129 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-card-btn.danger { background: #ef4444; color: #fff; }
     .lira-card-btn.danger:hover { background: #dc2626; }
 
+    /* ── Generative UI: stepper card (onboarding progress) ──────────── */
+    .lira-stepper-card {
+      align-self: flex-start;
+      margin: 8px 0 8px 36px;
+      max-width: 88%;
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 16px;
+      font-family: inherit;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .lira-stepper-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .lira-stepper-ring {
+      width: 44px; height: 44px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      position: relative;
+    }
+    .lira-stepper-ring-inner {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: #111827;
+    }
+    .lira-stepper-header-text { flex: 1; min-width: 0; }
+    .lira-stepper-title {
+      font-size: 15px; font-weight: 700; color: #111827; line-height: 1.2;
+    }
+    .lira-stepper-subtitle {
+      margin-top: 3px;
+      font-size: 12.5px; color: #6b7280; line-height: 1.4;
+    }
+    .lira-stepper-badge {
+      flex-shrink: 0;
+      font-size: 10px; font-weight: 700;
+      padding: 3px 8px; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: 0.04em;
+    }
+    .lira-stepper-badge.tone-success { background: #ecfdf5; color: #047857; }
+    .lira-stepper-badge.tone-warn { background: #fef3c7; color: #92400e; }
+    .lira-stepper-badge.tone-error { background: #fef2f2; color: #b91c1c; }
+    .lira-stepper-badge.tone-neutral { background: #f3f4f6; color: #4b5563; }
+
+    .lira-stepper-list {
+      list-style: none; padding: 0; margin: 0;
+      position: relative;
+    }
+    /* Vertical connector line between dots */
+    .lira-stepper-list::before {
+      content: '';
+      position: absolute;
+      left: 11px; top: 12px; bottom: 12px;
+      width: 2px;
+      background: #e5e7eb;
+      z-index: 0;
+    }
+    .lira-stepper-step {
+      position: relative;
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 0;
+    }
+    .lira-stepper-dot {
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      background: #f3f4f6;
+      color: #9ca3af;
+      border: 2px solid #ffffff;
+      box-shadow: 0 0 0 1px #e5e7eb;
+    }
+    .lira-stepper-step.status-done .lira-stepper-dot {
+      background: #10b981; color: #ffffff; box-shadow: 0 0 0 1px #10b981;
+    }
+    .lira-stepper-step.status-active .lira-stepper-dot {
+      background: #3730a3; color: #ffffff; box-shadow: 0 0 0 1px #3730a3, 0 0 0 4px rgba(55,48,163,0.18);
+    }
+    .lira-stepper-content { flex: 1; min-width: 0; padding-top: 1px; }
+    .lira-stepper-step-title {
+      font-size: 13.5px; font-weight: 600; color: #111827;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .lira-stepper-step.status-done .lira-stepper-step-title { color: #4b5563; }
+    .lira-stepper-step.status-pending .lira-stepper-step-title { color: #6b7280; }
+    .lira-stepper-optional {
+      font-size: 9.5px; font-weight: 700;
+      padding: 2px 6px; border-radius: 999px;
+      background: #f3f4f6; color: #6b7280;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .lira-stepper-step-desc {
+      margin-top: 4px;
+      font-size: 12px; line-height: 1.5; color: #6b7280;
+    }
+    .lira-stepper-step.status-active .lira-stepper-step-desc { color: #4b5563; }
+    .lira-stepper-sub {
+      list-style: none; margin: 8px 0 0; padding: 0;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .lira-stepper-sub-item {
+      font-size: 11.5px; color: #9ca3af;
+    }
+    .lira-stepper-sub-item.done { color: #047857; }
+    .lira-stepper-docs {
+      display: inline-block;
+      margin-top: 8px;
+      font-size: 11.5px; font-weight: 600;
+      color: var(--lira-primary, #3730a3);
+      text-decoration: none;
+    }
+    .lira-stepper-docs:hover { text-decoration: underline; }
+
     /* ── Generative UI: confirm ─────────────────────────────── */
     .lira-confirm {
       align-self: flex-start;
