@@ -1640,10 +1640,10 @@ Every 3 days:
 
 **Signatures:**
 
-- Developer 1 (AI/ML Lead): ********\_******** Date: **\_\_\_**
-- Developer 2 (Backend Lead): ********\_******** Date: **\_\_\_**
-- Developer 3 (Frontend Lead): ********\_******** Date: **\_\_\_**
-- Developer 4 (DevOps Lead): ********\_******** Date: **\_\_\_**
+- Developer 1 (AI/ML Lead): **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- Developer 2 (Backend Lead): **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- Developer 3 (Frontend Lead): **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
+- Developer 4 (DevOps Lead): **\*\*\*\***\_**\*\*\*\*** Date: **\_\_\_**
 
 ---
 

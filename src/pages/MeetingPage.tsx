@@ -389,7 +389,9 @@ function AiCard({ status, aiName }: { status: AiStatus; aiName: string }) {
 
         <div className="min-w-0 flex-1">
           <p className="truncate text-base font-semibold">{aiName}</p>
-          <p className="text-xs text-slate-400">Lira Meeting Participant — say "{aiName}" to speak</p>
+          <p className="text-xs text-slate-400">
+            Lira Meeting Participant — say "{aiName}" to speak
+          </p>
         </div>
 
         {/* Status pill */}

@@ -108,8 +108,7 @@ export function TicketDetail({ config, ticketId, session, onSession }: TicketDet
 
   const lastMsg = ticket.messages[ticket.messages.length - 1]
   const hasNewReply =
-    lastMsg && (lastMsg.role === 'agent' || lastMsg.role === 'lira') &&
-    ticket.status !== 'resolved'
+    lastMsg && (lastMsg.role === 'agent' || lastMsg.role === 'lira') && ticket.status !== 'resolved'
 
   return (
     <div className="lp-page">
@@ -126,8 +125,17 @@ export function TicketDetail({ config, ticketId, session, onSession }: TicketDet
 
       {hasNewReply && (
         <div className="lp-new-reply-banner">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
           Support has replied — scroll down to see their message
         </div>

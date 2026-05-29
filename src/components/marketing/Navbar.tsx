@@ -93,18 +93,20 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
           ))}
         </ul>
 
-        <div className="hidden items-center gap-3 md:flex">
-          <NavCta to="/signup">Signup for free</NavCta>
+        <div className="hidden items-center gap-4 md:flex">
+          <Link to="/login" className={`text-sm font-semibold transition ${linkClass}`}>
+            Log in
+          </Link>
           {isOverlay && !scrolled ? (
             <NavCta to="/book-demo" subtle>
-              Book a demo
+              Speak to an expert
             </NavCta>
           ) : (
             <Link
               to="/book-demo"
               className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-gray-900 ring-1 ring-gray-200 transition hover:bg-gray-50"
             >
-              Book a demo
+              Speak to an expert
               <ArrowUpRight size={14} weight="bold" />
             </Link>
           )}
@@ -139,18 +141,18 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
           </div>
           <div className="mt-4 grid gap-2 border-t border-gray-200 pt-4">
             <Link
-              to="/signup"
-              className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold text-white"
-              onClick={() => setMobileOpen(false)}
-            >
-              Signup for free
-            </Link>
-            <Link
-              to="/book-demo"
+              to="/login"
               className="inline-flex justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-gray-200"
               onClick={() => setMobileOpen(false)}
             >
-              Book a demo
+              Log in
+            </Link>
+            <Link
+              to="/book-demo"
+              className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold text-white"
+              onClick={() => setMobileOpen(false)}
+            >
+              Speak to an expert
             </Link>
           </div>
         </div>

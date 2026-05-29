@@ -186,6 +186,84 @@ export function AdminDashboardPage() {
           <MiniChart data={data.signupTrend} />
         </div>
       </div>
+
+      {/* Attribution — "how did you hear about us" */}
+      <AttributionCard breakdown={data.attributionBreakdown ?? []} totalUsers={data.totalUsers} />
+    </div>
+  )
+}
+
+/**
+ * Renders the self-reported "how did you hear about us" breakdown as a
+ * simple horizontal bar chart. Counts come from the dashboard endpoint
+ * pre-grouped + sorted desc. `null` source = user skipped the question
+ * (or signed up before the field existed).
+ */
+function AttributionCard({
+  breakdown,
+  totalUsers,
+}: {
+  breakdown: { source: string | null; count: number }[]
+  totalUsers: number
+}) {
+  if (breakdown.length === 0) {
+    return null
+  }
+  const reported = breakdown.filter((row) => row.source !== null)
+  const skipped = breakdown.find((row) => row.source === null)?.count ?? 0
+  const maxCount = Math.max(...reported.map((row) => row.count), 1)
+
+  const labelMap: Record<string, string> = {
+    google: 'Google search',
+    linkedin: 'LinkedIn',
+    friend: 'Friend or colleague',
+    youtube: 'YouTube',
+    twitter: 'X / Twitter',
+    ai_tool: 'ChatGPT or another AI tool',
+    blog: 'Blog post or article',
+    podcast: 'Podcast',
+    event: 'Conference or event',
+    sales_outreach: 'Lira team reached out',
+    other: 'Other',
+  }
+
+  return (
+    <div className="mt-6 rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
+      <div className="flex items-end justify-between">
+        <div>
+          <h2 className="text-sm font-semibold text-gray-900">How users found us</h2>
+          <p className="mt-0.5 text-xs text-gray-400">
+            {reported.reduce((s, r) => s + r.count, 0)} of {totalUsers} answered
+            {skipped > 0 && ` · ${skipped} skipped`}
+          </p>
+        </div>
+      </div>
+      {reported.length === 0 ? (
+        <p className="mt-6 text-sm text-gray-400">
+          No one has answered yet. Data appears as new users complete onboarding.
+        </p>
+      ) : (
+        <div className="mt-4 space-y-2.5">
+          {reported.map((row) => {
+            const label = labelMap[row.source ?? ''] ?? row.source
+            const pct = (row.count / maxCount) * 100
+            return (
+              <div key={row.source ?? 'unknown'} className="flex items-center gap-3">
+                <div className="w-44 shrink-0 text-xs text-gray-600">{label}</div>
+                <div className="relative h-5 flex-1 overflow-hidden rounded-md bg-gray-100">
+                  <div
+                    className="h-full rounded-md bg-gradient-to-r from-[#3730a3] to-[#6366f1]"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+                <div className="w-8 shrink-0 text-right text-xs font-semibold text-gray-700">
+                  {row.count}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }

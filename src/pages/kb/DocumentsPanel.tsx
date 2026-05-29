@@ -192,7 +192,9 @@ function DocumentsPanel() {
       const title = noteTitle.trim() || 'Note'
       const md = noteTitle.trim() ? `# ${noteTitle.trim()}\n\n${noteBody.trim()}` : noteBody.trim()
       const blob = new Blob([md], { type: 'text/markdown' })
-      const file = new File([blob], `${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`, { type: 'text/markdown' })
+      const file = new File([blob], `${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`, {
+        type: 'text/markdown',
+      })
       const doc = await uploadDocument(currentOrgId, file)
       addDocument(doc)
       toast.success('Note saved and indexing')
@@ -265,14 +267,17 @@ function DocumentsPanel() {
 
       {/* Upload zone */}
       <div className="mb-5 rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
-
         {/* Write note toggle */}
         {noteOpen ? (
           <div className="mb-4">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-xs font-semibold text-gray-700">Write a note directly</p>
               <button
-                onClick={() => { setNoteOpen(false); setNoteTitle(''); setNoteBody('') }}
+                onClick={() => {
+                  setNoteOpen(false)
+                  setNoteTitle('')
+                  setNoteBody('')
+                }}
                 className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
               >
                 <XMarkIcon className="h-4 w-4" />
@@ -293,14 +298,21 @@ function DocumentsPanel() {
               className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20 resize-y"
             />
             <div className="mt-2 flex items-center justify-between gap-2">
-              <p className="text-xs text-gray-400">Saved as a Markdown file and indexed automatically.</p>
+              <p className="text-xs text-gray-400">
+                Saved as a Markdown file and indexed automatically.
+              </p>
               <button
                 onClick={handleSaveNote}
                 disabled={noteSaving || !noteBody.trim()}
                 className="flex items-center gap-1.5 rounded-xl bg-[#3730a3] px-4 py-2 text-xs font-semibold text-white transition hover:bg-[#312e81] disabled:cursor-not-allowed disabled:opacity-40"
               >
                 {noteSaving ? (
-                  <img src="/lira_black.png" alt="" className="h-3 w-3 animate-spin opacity-50" style={{ animationDuration: '1.2s' }} />
+                  <img
+                    src="/lira_black.png"
+                    alt=""
+                    className="h-3 w-3 animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
                 ) : (
                   <PencilSquareIcon className="h-3.5 w-3.5" />
                 )}

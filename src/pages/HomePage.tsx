@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Navigate, Link, useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { Navigate, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import {
   ArrowLeftIcon,
@@ -15,6 +15,7 @@ import {
   login as apiLogin,
   signup as apiSignup,
   googleLogin as apiGoogleLogin,
+  validatePlatformInvite,
   credentials,
   listOrganizations,
   sendOtp,
@@ -184,6 +185,9 @@ function AuthSparkle() {
 
 // ── Auth view types ───────────────────────────────────────────────────────────
 
+// 'landing' is now a sign-in screen — public self-serve signup is disabled.
+// 'signup' is only reachable when arriving via a concierge ?invite=XXX link
+// (or, in future, a per-employee /accept-invite token, which uses its own page).
 type AuthView = 'landing' | 'login' | 'signup'
 
 const AUTH_BACK: Partial<Record<AuthView, AuthView>> = {
@@ -195,6 +199,11 @@ const AUTH_LEFT_HEADINGS: Partial<Record<AuthView, string>> = {
   login: 'Welcome\nback!',
   signup: "Let's get\nstarted",
 }
+
+// Public marketing site where prospects can request an account
+// ("speak to an expert"). New accounts on Lira are issued by the team
+// after a sales conversation, not self-serve.
+const SPEAK_TO_TEAM_URL = 'https://liraintelligence.com'
 // ── Google icon ─────────────────────────────────────────────────────────────
 
 function GoogleIcon() {
@@ -231,7 +240,15 @@ function LoginForm({
   initialView?: AuthView
 }) {
   const { setCredentials } = useAuthStore()
-  const [authView, setAuthView] = useState<AuthView>(initialView ?? 'landing')
+  const [searchParams] = useSearchParams()
+  const inviteCode = searchParams.get('invite')?.trim() || null
+
+  // When an invite code is present we force the signup view and treat
+  // signup as gated. Without a code, signup is hidden — only login is
+  // reachable (public sign-up is disabled per concierge-onboarding model).
+  const [authView, setAuthView] = useState<AuthView>(
+    inviteCode ? 'signup' : (initialView ?? 'landing')
+  )
 
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -242,6 +259,45 @@ function LoginForm({
   const [errorAction, setErrorAction] = useState<
     { label: string; view: AuthView } | { label: string; href: string } | null
   >(null)
+
+  // Invite metadata — validated server-side (read-only). Shown as a banner
+  // above the signup form ("You're being invited to set up Lira for X").
+  const [inviteInfo, setInviteInfo] = useState<
+    | { state: 'loading' }
+    | { state: 'valid'; company: string | null; planTier: string }
+    | { state: 'invalid'; reason: string }
+    | null
+  >(inviteCode ? { state: 'loading' } : null)
+
+  useEffect(() => {
+    if (!inviteCode) return
+    let cancelled = false
+    void (async () => {
+      try {
+        const result = await validatePlatformInvite(inviteCode)
+        if (cancelled) return
+        if (result.valid) {
+          setInviteInfo({
+            state: 'valid',
+            company: result.prospectCompany,
+            planTier: result.planTier,
+          })
+          if (result.prospectEmail) setEmail(result.prospectEmail)
+        } else {
+          setInviteInfo({ state: 'invalid', reason: result.reason })
+        }
+      } catch {
+        if (!cancelled)
+          setInviteInfo({
+            state: 'invalid',
+            reason: 'Could not validate this invite — please try again later.',
+          })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [inviteCode])
 
   function showError(
     msg: string,
@@ -282,7 +338,7 @@ function LoginForm({
         // ignore decode errors
       }
 
-      const res = await apiGoogleLogin(response.credential)
+      const res = await apiGoogleLogin(response.credential, inviteCode ?? undefined)
       setCredentials(
         res.token,
         res.user.email,
@@ -362,7 +418,13 @@ function LoginForm({
     setError(null)
     setErrorAction(null)
     try {
-      const res = await apiSignup(name.trim(), email.trim(), password.trim())
+      const res = await apiSignup(
+        name.trim(),
+        email.trim(),
+        password.trim(),
+        undefined,
+        inviteCode ?? undefined
+      )
       setCredentials(
         res.token,
         res.user.email,
@@ -424,14 +486,20 @@ function LoginForm({
         {/* Scrollable content */}
         <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
           <div className="mx-auto w-full max-w-[420px]">
-            {/* ── Landing ── */}
+            {/* ── Landing ──
+                Sign-in screen for existing accounts. New accounts are issued
+                by the Lira team — there is no self-serve signup. Users who
+                land here without an account are directed to the marketing site
+                to speak with the team. */}
             {authView === 'landing' && (
               <div className="space-y-8">
                 <div>
                   <h1 className="text-3xl font-bold tracking-tight text-gray-900">
-                    Create your account
+                    Sign in to Lira
                   </h1>
-                  <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    Welcome back. Pick up where you left off.
+                  </p>
                 </div>
                 <div className="space-y-3">
                   {env.VITE_GOOGLE_LOGIN_CLIENT_ID && (
@@ -464,7 +532,7 @@ function LoginForm({
                     <div className="h-px flex-1 bg-gray-200" />
                   </div>
                   <button
-                    onClick={() => goTo('signup')}
+                    onClick={() => goTo('login')}
                     className="w-full rounded-lg border border-gray-300 px-4 py-2.5 text-center text-sm font-medium text-gray-700 transition hover:bg-gray-50 active:bg-gray-100"
                   >
                     Continue with email
@@ -520,13 +588,15 @@ function LoginForm({
                   </div>
                 )}
                 <p className="text-sm text-gray-500">
-                  Already have an account?{' '}
-                  <button
-                    onClick={() => goTo('login')}
+                  New to Lira?{' '}
+                  <a
+                    href={SPEAK_TO_TEAM_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                   >
-                    Sign in
-                  </button>
+                    Speak to our team →
+                  </a>
                 </p>
               </div>
             )}
@@ -668,13 +738,15 @@ function LoginForm({
                     )}
                   </form>
                   <p className="text-sm text-gray-500">
-                    Don&apos;t have an account?{' '}
-                    <button
-                      onClick={() => goTo('landing')}
+                    New to Lira?{' '}
+                    <a
+                      href={SPEAK_TO_TEAM_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
                       className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                     >
-                      Sign up
-                    </button>
+                      Speak to our team →
+                    </a>
                   </p>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
@@ -725,8 +797,39 @@ function LoginForm({
                   <h1 className="text-3xl font-bold tracking-tight text-gray-900">
                     Create your account
                   </h1>
-                  <p className="mt-2 text-sm text-gray-500">Get started with Lira — for free.</p>
+                  <p className="mt-2 text-sm text-gray-500">
+                    {inviteCode
+                      ? 'Finish setting up your Lira account using your invitation.'
+                      : 'Get started with Lira.'}
+                  </p>
                 </div>
+
+                {/* Invite banner — only when arriving via a /signup?invite=XXX link.
+                    Validates server-side. Hides the form on invalid codes so the
+                    user gets a clean error instead of a confusing rejection at submit. */}
+                {inviteCode && inviteInfo?.state === 'loading' && (
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                    Checking your invitation…
+                  </div>
+                )}
+                {inviteCode && inviteInfo?.state === 'valid' && (
+                  <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm">
+                    <div className="font-semibold text-emerald-800">
+                      You&apos;re invited to set up Lira
+                      {inviteInfo.company ? ` for ${inviteInfo.company}` : ''}.
+                    </div>
+                    <div className="mt-0.5 text-emerald-700">
+                      Plan: <strong>{inviteInfo.planTier}</strong>. Create your account below to
+                      land in your dashboard.
+                    </div>
+                  </div>
+                )}
+                {inviteCode && inviteInfo?.state === 'invalid' && (
+                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    <strong>This invitation isn&apos;t valid.</strong> {inviteInfo.reason}. Please
+                    contact the person who sent you the link.
+                  </div>
+                )}
                 <form
                   id="auth-signup-form"
                   onSubmit={handleSignup}
@@ -861,7 +964,8 @@ function LoginForm({
                       !name.trim() ||
                       !email.trim() ||
                       !password.trim() ||
-                      password.trim().length < 8
+                      password.trim().length < 8 ||
+                      (Boolean(inviteCode) && inviteInfo?.state !== 'valid')
                     }
                     className="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-gray-700 disabled:opacity-40"
                   >

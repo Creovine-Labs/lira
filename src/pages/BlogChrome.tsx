@@ -43,7 +43,7 @@ export function BlogStyles() {
       .bx-button-icon svg { transition: transform 0.24s ease; }
       .bx-button:hover .bx-button-icon svg, .bx-button:focus-visible .bx-button-icon svg { transform: translate(2px, -2px); }
       .bx-hero { position: relative; min-height: 560px; padding: 140px 0 92px; overflow: hidden; }
-      .bx-hero-bg { position: absolute; inset: 0; z-index: 0; background-image: linear-gradient(180deg, rgba(0,0,0,0.68), rgba(0,0,0,0.55)), linear-gradient(90deg, rgba(251,250,246,0.04), rgba(251,250,246,0.02)), url('/landing-v1/hero-2.jpg'); background-size: cover; background-position: center 34%; }
+      .bx-hero-bg { position: absolute; inset: 0; z-index: 0; background-image: linear-gradient(180deg, rgba(0,0,0,0.68), rgba(0,0,0,0.55)), linear-gradient(90deg, rgba(251,250,246,0.04), rgba(251,250,246,0.02)), url('/landing-v1/hero-2.webp'); background-size: cover; background-position: center 34%; }
       .bx-hero-bg::after { content: ''; position: absolute; inset: 0; background-image: linear-gradient(rgba(2,3,8,0.055) 1px, transparent 1px), linear-gradient(90deg, rgba(2,3,8,0.055) 1px, transparent 1px); background-size: 54px 54px; mask-image: linear-gradient(180deg, black 0%, black 62%, transparent 100%); }
       .bx-hero-inner { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) 340px; align-items: end; gap: 56px; }
       .bx-kicker { display: inline-flex; align-items: center; gap: 8px; margin-bottom: 22px; color: #ffffff; font-family: var(--font-sans); font-size: 12px; font-weight: 800; text-transform: uppercase; text-shadow: 0 2px 14px rgba(0,0,0,0.7); }
@@ -150,7 +150,7 @@ function BlogLogo({ dark = false }: { dark?: boolean }) {
         className="bx-logo-mark"
         style={dark ? { background: '#202527', borderColor: 'rgba(2,3,8,0.18)' } : undefined}
       >
-        <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
+        <img src="/lira_mark_white.webp" alt="" aria-hidden="true" />
       </span>
       <span>Lira</span>
     </Link>
@@ -193,8 +193,8 @@ export function BlogNav() {
           </Link>
         </nav>
         <div className="bx-nav-actions">
-          <BlogButton to="/signup">Signup for free</BlogButton>
-          <BlogButton to="/book-demo">Book a Demo</BlogButton>
+          <BlogButton to="/login">Log in</BlogButton>
+          <BlogButton to="/book-demo">Speak to an expert</BlogButton>
         </div>
         <button
           type="button"
@@ -227,11 +227,11 @@ export function BlogNav() {
               <Link to="/blog" onClick={() => setMobileOpen(false)}>
                 Blog
               </Link>
-              <Link to="/signup" onClick={() => setMobileOpen(false)}>
-                Signup for free
+              <Link to="/login" onClick={() => setMobileOpen(false)}>
+                Log in
               </Link>
               <Link to="/book-demo" onClick={() => setMobileOpen(false)}>
-                Book a Demo
+                Speak to an expert
               </Link>
             </motion.nav>
           )}

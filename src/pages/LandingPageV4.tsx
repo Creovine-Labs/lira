@@ -2,18 +2,14 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { Variants } from 'framer-motion'
-import {
-  MailCheck,
-  MessageSquareText,
-  PlugZap,
-  ShieldCheck as LucideShieldCheck,
-  Workflow,
-} from 'lucide-react'
+import { MailCheck, MessageSquareText, PlugZap, Workflow } from 'lucide-react'
 import { SEO } from '@/components/SEO'
-import { MarketingFooter, MarketingNavbar } from '@/components/marketing'
+import { PublicLiraWidget } from '@/components/PublicLiraWidget'
+import { DemoEntryModal, MarketingFooter, MarketingNavbar } from '@/components/marketing'
 import {
   ArrowRight,
   ArrowUpRight,
+  Play,
   Bank,
   BellRinging,
   Brain,
@@ -28,6 +24,7 @@ import {
   Package,
   RocketLaunch,
   Storefront,
+  UserCircleCheck,
 } from '@phosphor-icons/react'
 
 import { BLOG_POSTS } from './blogData'
@@ -51,13 +48,6 @@ const imageReveal: Variants = {
   hidden: { opacity: 1, scale: 1, y: 0 },
   show: { opacity: 1, scale: 1, y: 0, transition: { duration: 0.9, ease: [0.22, 1, 0.36, 1] } },
 }
-
-const viewport = { once: true, amount: 0.04 }
-
-const brandRows = [
-  ['Auralink', 'Metricly', 'Velora', 'Fluxbit', 'Taskly'],
-  ['Optima AI', 'Nexflow', 'Clarity', 'Orbitex', 'Synapse'],
-]
 
 const featureCards = [
   {
@@ -116,7 +106,7 @@ const services = [
 const faqs = [
   {
     q: 'What is Lira?',
-    a: 'Lira is an AI customer relationship agent for support teams. It answers questions, understands customer context, updates connected systems, and escalates complex issues with the history your team needs.',
+    a: 'Lira is an intelligent customer support layer for modern teams. It answers questions, understands customer context, updates connected systems, and escalates complex issues with the history your team needs.',
   },
   {
     q: 'How does Lira help build stronger customer relationships?',
@@ -187,6 +177,39 @@ const mobileSteps = [
   },
 ]
 
+const heroWorkflowCards = [
+  {
+    title: 'Refund processed',
+    status: 'Order #179892',
+    Icon: PlugZap,
+    position: 'eh-flow-card-one',
+  },
+  {
+    title: 'Customer notified',
+    status: 'Email and SMS sent',
+    Icon: MessageSquareText,
+    position: 'eh-flow-card-two',
+  },
+  {
+    title: 'Delivery rerouted',
+    status: 'Courier updated',
+    Icon: Workflow,
+    position: 'eh-flow-card-three',
+  },
+  {
+    title: 'Account unlocked',
+    status: 'Access restored',
+    Icon: UserCircleCheck,
+    position: 'eh-flow-card-four',
+  },
+  {
+    title: 'Ticket resolved',
+    status: 'SLA completed',
+    Icon: MailCheck,
+    position: 'eh-flow-card-five',
+  },
+]
+
 const setupSteps = [
   [
     '01',
@@ -224,47 +247,11 @@ function ButtonLink({
   )
 }
 
-function HeroGraphic() {
-  return (
-    <div className="hx-hero-card" aria-label="Interactive Lira product demo preview">
-      <div className="hx-hero-card-image">
-        <div className="hx-orbit hx-orbit-one" />
-        <div className="hx-orbit hx-orbit-two" />
-        <div className="hx-orbit hx-orbit-three" />
-        <div className="hx-core">
-          <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
-        </div>
-        <div className="hx-demo-flow" aria-hidden="true">
-          <span>Detect</span>
-          <i />
-          <span>Answer</span>
-          <i />
-          <span>Sync</span>
-        </div>
-        <div className="hx-chat-preview hx-chat-left">
-          <span>Customer context</span>
-          <strong>Renewal question detected</strong>
-        </div>
-        <div className="hx-chat-preview hx-chat-right">
-          <span>Lira followed up</span>
-          <strong>CRM and owner updated</strong>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function Visual({ type }: { type: string }) {
   if (type === 'integrations') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-integrations"
-        variants={imageReveal}
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
-      >
-        {[PlugZap, MessageSquareText, Workflow, MailCheck, LucideShieldCheck].map((Icon, index) => (
+      <motion.div className="hx-feature-visual hx-visual-integrations" variants={imageReveal}>
+        {[PlugZap, MessageSquareText, Workflow, MailCheck, UserCircleCheck].map((Icon, index) => (
           <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
             <Icon size={24} />
           </span>
@@ -275,13 +262,7 @@ function Visual({ type }: { type: string }) {
 
   if (type === 'chat') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-chat"
-        variants={imageReveal}
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
-      >
+      <motion.div className="hx-feature-visual hx-visual-chat" variants={imageReveal}>
         <div className="hx-mini-message hx-mini-one" aria-label="Can you help me upgrade my plan?">
           <span className="hx-type-line hx-type-user">Can you help me upgrade my plan?</span>
         </div>
@@ -302,13 +283,7 @@ function Visual({ type }: { type: string }) {
 
   if (type === 'global') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-global"
-        variants={imageReveal}
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
-      >
+      <motion.div className="hx-feature-visual hx-visual-global" variants={imageReveal}>
         <GlobeHemisphereWest size={96} weight="duotone" />
         <span>EN</span>
         <span>FR</span>
@@ -320,13 +295,7 @@ function Visual({ type }: { type: string }) {
 
   if (type === 'setup') {
     return (
-      <motion.div
-        className="hx-feature-visual hx-visual-setup"
-        variants={imageReveal}
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
-      >
+      <motion.div className="hx-feature-visual hx-visual-setup" variants={imageReveal}>
         <div className="hx-setup-toolbar">
           <span />
           <span />
@@ -343,13 +312,7 @@ function Visual({ type }: { type: string }) {
   }
 
   return (
-    <motion.div
-      className="hx-feature-visual hx-visual-voice"
-      variants={imageReveal}
-      initial="hidden"
-      whileInView="show"
-      viewport={viewport}
-    >
+    <motion.div className="hx-feature-visual hx-visual-voice" variants={imageReveal}>
       <div className="hx-voice-note hx-voice-user" aria-label="Customer voice note">
         <span>Customer voice note</span>
         <div className="hx-voice-row">
@@ -407,13 +370,7 @@ function SetupJourney() {
     <section className="hx-setup-section">
       <div className="hx-container">
         <div className="hx-setup-card">
-          <motion.div
-            className="hx-section-details hx-setup-copy"
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={viewport}
-          >
+          <motion.div className="hx-section-details hx-setup-copy" variants={stagger}>
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Go from sign up</span>
               <br /> to live support in 3 steps
@@ -466,13 +423,7 @@ function WhyChooseSection() {
   return (
     <section className="hx-section hx-why-section">
       <div className="hx-container">
-        <motion.div
-          className="hx-section-details"
-          variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={viewport}
-        >
+        <motion.div className="hx-section-details" variants={stagger}>
           <motion.h2 className="hx-section-title" variants={fadeUp}>
             <span className="hx-gradient-text">Why choose Lira</span>
           </motion.h2>
@@ -482,13 +433,7 @@ function WhyChooseSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div
-          className="hx-why-grid"
-          variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={viewport}
-        >
+        <motion.div className="hx-why-grid" variants={stagger}>
           {whyChooseLira.map(({ icon: Icon, title, description }) => (
             <motion.article className="hx-why-card" key={title} variants={cardReveal}>
               <div className="hx-why-top">
@@ -513,9 +458,6 @@ function MobileAppSection() {
         <motion.div
           style={{ textAlign: 'left', margin: '0 0 52px', alignItems: 'flex-start' }}
           variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={viewport}
         >
           <motion.h2 className="hx-section-title" variants={fadeUp}>
             <span className="hx-gradient-text">Mobile App Integration</span>
@@ -526,13 +468,7 @@ function MobileAppSection() {
           </motion.p>
         </motion.div>
 
-        <motion.div
-          className="hx-why-grid"
-          variants={stagger}
-          initial="hidden"
-          whileInView="show"
-          viewport={viewport}
-        >
+        <motion.div className="hx-why-grid" variants={stagger}>
           {mobileSteps.map(({ step, title, description, icon: Icon }) => (
             <motion.article className="hx-why-card" key={step} variants={cardReveal}>
               <div className="hx-why-top">
@@ -611,7 +547,7 @@ function Styles() {
       .hx-title, .hx-section-title, .hx-feature-body h3, .hx-blog-card h3 { overflow-wrap: anywhere; }
       .hx-container { width: 100%; max-width: 1120px; margin: 0 auto; padding: 0 40px; }
 
-      .hx-header { position: absolute; z-index: 777; inset: 14px 0 auto; pointer-events: none; }
+      .hx-header { position: absolute; z-index: 20; inset: 0 0 auto; pointer-events: none; }
       .hx-nav-shell {
         pointer-events: auto;
         display: flex;
@@ -927,24 +863,6 @@ function Styles() {
       .hx-header .hx-menu-link,
       .hx-header .hx-menu-link span,
       .hx-header .hx-menu-link svg { color: #ffffff; }
-      @keyframes hx-scroll-reveal { from { opacity: 0; transform: translateY(46px) scale(0.985); } to { opacity: 1; transform: translateY(0) scale(1); } }
-      @keyframes hx-image-reveal { from { opacity: 0; transform: translateY(18px) scale(1.04); } to { opacity: 1; transform: translateY(0) scale(1); } }
-
-      @supports (animation-timeline: view()) {
-        .hx-section-details,
-        .hx-feature-card,
-        .hx-service-item,
-        .hx-testimonial-card,
-        .hx-faq-item,
-        .hx-blog-card,
-        .hx-cta .hx-container,
-        .hx-footer-left,
-        .hx-footer-menu-inner,
-        .hx-footer-bottom { animation: hx-scroll-reveal both; animation-timeline: view(); animation-range: entry 0% cover 30%; }
-
-        .hx-feature-visual,
-        .hx-blog-thumb { animation: hx-image-reveal both; animation-timeline: view(); animation-range: entry 0% cover 24%; }
-      }
 
       @media (prefers-reduced-motion: reduce) {
         html { scroll-behavior: auto; }
@@ -1042,77 +960,565 @@ function Styles() {
         .hx-setup-note { grid-template-columns: 1fr; }
         .hx-footer-menu-inner { gap: 32px; }
       }
+
+      /* ═══════════════════════════════════════════════
+         EDITORIAL HERO
+         ═══════════════════════════════════════════════ */
+      .eh-hero {
+        position: relative;
+        width: 100%;
+        min-height: 100vh;
+        overflow: hidden;
+        background: #111;
+      }
+
+      /* Background image */
+      .eh-hero-bg-img {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center center;
+        z-index: 0;
+      }
+
+      /* Gradient overlays */
+      .eh-overlay {
+        position: absolute;
+        inset: 0;
+        z-index: 1;
+        pointer-events: none;
+      }
+      .eh-overlay-right {
+        background: linear-gradient(
+          to right,
+          rgba(0, 0, 0, 0) 25%,
+          rgba(0, 0, 0, 0.55) 52%,
+          rgba(0, 0, 0, 0.88) 100%
+        );
+      }
+      .eh-overlay-top {
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0.35) 0%,
+          rgba(0, 0, 0, 0) 20%
+        );
+      }
+      .eh-overlay-bottom {
+        background: linear-gradient(
+          to bottom,
+          rgba(0, 0, 0, 0) 60%,
+          rgba(0, 0, 0, 0.55) 100%
+        );
+      }
+
+      @keyframes ehHoloCardFloat {
+        0%, 100% { transform: translate3d(0, 0, 0); }
+        50% { transform: translate3d(0, -6px, 0); }
+      }
+      @keyframes ehHoloNodePulse {
+        0%, 100% {
+          transform: translate(-50%, -50%) scale(1);
+          box-shadow:
+            0 0 0 1px rgba(125, 211, 252, 0.16),
+            0 0 24px rgba(125, 211, 252, 0.44),
+            inset 0 1px 18px rgba(255, 255, 255, 0.25);
+        }
+        50% {
+          transform: translate(-50%, -50%) scale(1.045);
+          box-shadow:
+            0 0 0 1px rgba(125, 211, 252, 0.22),
+            0 0 34px rgba(125, 211, 252, 0.62),
+            inset 0 1px 22px rgba(255, 255, 255, 0.34);
+        }
+      }
+      @keyframes ehHoloLineFlow {
+        to { stroke-dashoffset: -28; }
+      }
+
+      .eh-holo-workflow {
+        position: absolute;
+        left: clamp(430px, 35vw, 520px);
+        top: clamp(140px, 18vh, 190px);
+        z-index: 7;
+        width: min(58vw, 820px);
+        height: 620px;
+        pointer-events: none;
+        opacity: 0.8;
+        filter: drop-shadow(0 22px 42px rgba(0, 0, 0, 0.28));
+      }
+      .eh-holo-lines {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+      }
+      .eh-holo-lines path {
+        fill: none;
+        stroke: rgba(219, 244, 255, 0.64);
+        stroke-width: 1;
+        stroke-linecap: round;
+        stroke-dasharray: 7 8;
+        animation: ehHoloLineFlow 4.8s linear infinite;
+        filter: drop-shadow(0 0 5px rgba(125, 211, 252, 0.45));
+      }
+      .eh-holo-node {
+        position: absolute;
+        left: 46%;
+        top: 35%;
+        width: 68px;
+        height: 68px;
+        transform: translate(-50%, -50%);
+        border-radius: 999px;
+        border: 1px solid rgba(255, 255, 255, 0.68);
+        background:
+          radial-gradient(circle at 48% 42%, rgba(255, 255, 255, 0.94), rgba(125, 211, 252, 0.44) 24%, rgba(15, 23, 42, 0.34) 64%),
+          rgba(255, 255, 255, 0.08);
+        box-shadow:
+          0 0 0 1px rgba(125, 211, 252, 0.18),
+          0 0 26px rgba(125, 211, 252, 0.54),
+          inset 0 1px 18px rgba(255, 255, 255, 0.28);
+        display: grid;
+        place-items: center;
+        animation: ehHoloNodePulse 3.8s ease-in-out infinite;
+      }
+      .eh-holo-node::before {
+        content: "";
+        position: absolute;
+        inset: 11px;
+        border-radius: inherit;
+        border: 1px solid rgba(255, 255, 255, 0.34);
+      }
+      .eh-holo-node span {
+        position: relative;
+        color: #ffffff;
+        font-size: 16px;
+        font-weight: 700;
+        letter-spacing: -0.08em;
+        text-shadow: 0 0 12px rgba(125, 211, 252, 0.9);
+      }
+      .eh-holo-mark {
+        position: relative;
+        width: 32px;
+        height: 32px;
+        object-fit: contain;
+        opacity: 0.92;
+        filter: drop-shadow(0 0 8px rgba(125, 211, 252, 0.85)) drop-shadow(0 0 2px rgba(255, 255, 255, 0.6));
+        mix-blend-mode: screen;
+      }
+      .eh-flow-card {
+        position: absolute;
+        width: 190px;
+        min-height: 58px;
+        display: grid;
+        grid-template-columns: 28px minmax(0, 1fr);
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        border-radius: 15px;
+        border: 1px solid rgba(255, 255, 255, 0.22);
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.22), rgba(15, 23, 42, 0.34));
+        box-shadow:
+          0 14px 34px rgba(0, 0, 0, 0.2),
+          inset 0 1px 0 rgba(255, 255, 255, 0.22);
+        animation: ehHoloCardFloat 5.6s ease-in-out infinite;
+        will-change: transform;
+        transform: translateZ(0);
+      }
+      .eh-flow-card-icon {
+        width: 30px;
+        height: 30px;
+        border-radius: 10px;
+        display: grid;
+        place-items: center;
+        color: rgba(255, 255, 255, 0.9);
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+      .eh-flow-card-copy {
+        min-width: 0;
+      }
+      .eh-flow-card-title {
+        display: block;
+        color: rgba(255, 255, 255, 0.94);
+        font-size: 12px;
+        font-weight: 650;
+        line-height: 1.25;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .eh-flow-card-status {
+        display: block;
+        margin-top: 3px;
+        padding-right: 60px;
+        color: rgba(255, 255, 255, 0.58);
+        font-size: 9px;
+        line-height: 1.25;
+        white-space: nowrap;
+      }
+      .eh-flow-badge {
+        position: absolute;
+        bottom: 9px;
+        right: 9px;
+        align-self: center;
+        border-radius: 999px;
+        padding: 4px 6px;
+        color: rgba(236, 253, 245, 0.94);
+        background: rgba(16, 185, 129, 0.22);
+        border: 1px solid rgba(110, 231, 183, 0.26);
+        font-size: 8px;
+        font-weight: 700;
+        line-height: 1;
+        box-shadow: 0 0 14px rgba(16, 185, 129, 0.16);
+      }
+      .eh-flow-card-one { left: 128px; top: 18px; animation-delay: -0.8s; }
+      .eh-flow-card-two { left: 30px; top: 112px; animation-delay: -2s; }
+      .eh-flow-card-three { left: 134px; top: 232px; animation-delay: -1.2s; }
+      .eh-flow-card-four { right: 92px; top: 74px; animation-delay: -2.8s; }
+      .eh-flow-card-five { right: 52px; top: 500px; animation-delay: -1.7s; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .eh-holo-node,
+        .eh-flow-card,
+        .eh-holo-lines path {
+          animation: none;
+        }
+      }
+
+      /* Split content grid */
+      .eh-content {
+        position: absolute;
+        inset: 0;
+        z-index: 10;
+        display: grid;
+        grid-template-columns: 55% 45%;
+        align-items: center;
+        padding: 100px 60px 160px 60px;
+      }
+      .eh-left {
+        align-self: flex-start;
+        padding-top: clamp(140px, 22vh, 220px);
+      }
+      .eh-headline {
+        margin: 0;
+        font-size: clamp(48px, 5.5vw, 82px);
+        font-weight: 700;
+        line-height: 1.05;
+        color: #ffffff;
+        letter-spacing: -0.02em;
+        max-width: 680px;
+        font-family: var(--font-sans);
+      }
+      .eh-headline em {
+        font-style: italic;
+        font-weight: 400;
+        font-family: Georgia, serif;
+      }
+
+      .eh-right {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        max-width: 440px;
+        margin-left: auto;
+        align-self: flex-start;
+        margin-top: clamp(220px, 32vh, 320px);
+      }
+      .eh-body {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, 0.82);
+        font-weight: 400;
+      }
+      .eh-cta-row {
+        display: flex;
+        flex-direction: row;
+        gap: 12px;
+        flex-wrap: nowrap;
+        align-items: center;
+      }
+      .eh-btn {
+        padding: 11px 22px;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 500;
+        border: none;
+        cursor: pointer;
+        font-family: var(--font-sans);
+        transition: transform 0.22s ease, box-shadow 0.22s ease, background 0.22s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        line-height: 1;
+        white-space: nowrap;
+      }
+      .eh-btn:hover {
+        transform: translateY(-1px);
+      }
+      a.eh-btn-primary,
+      .eh-btn-primary {
+        background: #ffffff;
+        color: #0a0a0a;
+      }
+      .eh-btn-primary:hover {
+        background: #f1f1f1;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.24);
+      }
+      a.eh-btn-secondary,
+      .eh-btn-secondary {
+        background: rgba(255, 255, 255, 0.18);
+        backdrop-filter: blur(10px);
+        color: #ffffff;
+        border: 1px solid rgba(255, 255, 255, 0.36);
+      }
+      .eh-btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.28);
+        color: #ffffff;
+      }
+
+      /* Social proof */
+      .eh-social {
+        position: absolute;
+        bottom: 90px;
+        left: 60px;
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .eh-avatar-row {
+        display: flex;
+      }
+      .eh-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.5);
+        margin-left: -8px;
+        object-fit: cover;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #ffffff, #e7e1d5);
+        color: #020308;
+        font-weight: 700;
+        font-size: 12px;
+      }
+      .eh-avatar:first-child {
+        margin-left: 0;
+      }
+      .eh-social-text {
+        margin: 0;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.75);
+        line-height: 1.5;
+        max-width: 220px;
+      }
+      .eh-social-em {
+        font-style: italic;
+        font-weight: 600;
+        color: #fff;
+        text-decoration: underline;
+      }
+      .eh-avatar-brand {
+        background: #ffffff;
+        padding: 0;
+      }
+      .eh-avatar-brand img {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        object-fit: contain;
+        padding: 5px;
+        background: #ffffff;
+      }
+
+      /* Logo strip */
+      .eh-logo-strip {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        padding: 16px 60px;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 40px;
+      }
+      .eh-logo-placeholder {
+        color: rgba(255, 255, 255, 0.4);
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      /* ─── Mobile ─── */
+      @media (max-width: 768px) {
+        .eh-holo-workflow {
+          display: none;
+        }
+        .eh-content {
+          grid-template-columns: 1fr;
+          padding: 90px 24px 180px 24px;
+        }
+        .eh-left {
+          padding-top: 0;
+          align-self: center;
+        }
+        .eh-headline {
+          font-size: clamp(36px, 9vw, 52px);
+        }
+        .eh-right {
+          margin-left: 0;
+          max-width: 100%;
+          margin-top: 0;
+          align-self: center;
+        }
+        .eh-cta-row {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .eh-social {
+          bottom: 130px;
+          left: 24px;
+        }
+        .eh-logo-strip {
+          padding: 14px 24px;
+          justify-content: center;
+          gap: 24px;
+        }
+        .eh-logo-strip span:nth-child(n + 5) {
+          display: none;
+        }
+      }
     `}</style>
   )
 }
 
 export function LandingPageV4() {
+  const [demoEntryOpen, setDemoEntryOpen] = useState(false)
   return (
     <div className="hx-page">
       <SEO
-        title="Lira - AI Customer Support That Remembers and Acts"
+        title="Lira - Intelligent Customer Support That Remembers and Acts"
         description="Lira helps teams resolve customer issues across chat, email, voice, and portal with customer memory, knowledge, workflow actions, and smart escalation."
         path="/v4"
       />
+      <PublicLiraWidget />
       <Styles />
       <MarketingNavbar variant="overlay" />
 
-      <motion.section className="hx-hero">
-        <motion.div className="hx-hero-bg" aria-hidden="true" />
-        <div className="hx-container">
-          <motion.div
-            className="hx-hero-overview"
-            variants={stagger}
-            initial="hidden"
-            animate="show"
-          >
-            <h1 className="hx-title">
-              <span className="hx-gradient-text">Next-gen AI customer support</span> for modern
-              teams
-            </h1>
-            <p>
-              Lira helps growing teams answer customers faster across chat, email, voice, and
-              portal, using your knowledge base, customer context, and smart handoffs when a human
-              touch is needed.
-            </p>
-            <div className="hx-hero-button">
-              <ButtonLink to="/signup" variant="secondary">
-                Signup for free
-              </ButtonLink>
-              <ButtonLink to="/book-demo">Book a Demo</ButtonLink>
+      {/* ───── EDITORIAL HERO ───── */}
+      <section className="eh-hero">
+        {/* Background photo */}
+        <picture>
+          <source srcSet="/landing-v1/hero-2.webp" type="image/webp" />
+          <img
+            src="/landing-v1/hero-2.jpg"
+            alt=""
+            className="eh-hero-bg-img"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
+
+        {/* Gradient overlays */}
+        <div className="eh-overlay eh-overlay-right" />
+        <div className="eh-overlay eh-overlay-top" />
+        <div className="eh-overlay eh-overlay-bottom" />
+
+        <div className="eh-holo-workflow" aria-hidden="true">
+          <svg className="eh-holo-lines" viewBox="0 0 820 620" preserveAspectRatio="none">
+            <path d="M377 215 C350 158 334 72 318 47" />
+            <path d="M377 215 C318 190 258 154 220 141" />
+            <path d="M377 215 C337 232 331 270 324 261" />
+            <path d="M377 215 C452 160 560 112 538 103" />
+            <path d="M377 215 C500 326 602 514 578 529" />
+          </svg>
+          <div className="eh-holo-node">
+            <img src="/lira_mark_white.webp" alt="" className="eh-holo-mark" />
+          </div>
+          {heroWorkflowCards.map(({ title, status, Icon, position }) => (
+            <div className={`eh-flow-card ${position}`} key={title}>
+              <span className="eh-flow-card-icon">
+                <Icon size={15} />
+              </span>
+              <span className="eh-flow-card-copy">
+                <span className="eh-flow-card-title">{title}</span>
+                <span className="eh-flow-card-status">{status}</span>
+              </span>
+              <span className="eh-flow-badge">Completed</span>
             </div>
-            <p className="hx-free-note">Start free. No credit card required.</p>
-          </motion.div>
-          <motion.div>
-            <motion.div variants={fadeUp} initial="hidden" animate="show">
-              <HeroGraphic />
-            </motion.div>
-          </motion.div>
-          <div className="hx-brand-marquee" aria-label="Trusted brands">
-            <div className="hx-brand-track">
-              {[...brandRows, ...brandRows].map((row, rowIndex) => (
-                <div className="hx-brand-row" key={rowIndex}>
-                  {row.map((brand) => (
-                    <span className="hx-brand-logo" key={`${rowIndex}-${brand}`}>
-                      {brand}
-                    </span>
-                  ))}
-                </div>
-              ))}
+          ))}
+        </div>
+
+        {/* Split content */}
+        <div className="eh-content">
+          <div className="eh-left">
+            <h1 className="eh-headline">
+              The Invisible
+              <br />
+              <em>Support</em> System
+            </h1>
+          </div>
+
+          <div className="eh-right">
+            <p className="eh-body">
+              Lira works quietly behind every customer conversation — understanding context, taking
+              action across your tools, and resolving issues before they become work for your team.
+            </p>
+            <div className="eh-cta-row">
+              <button
+                type="button"
+                onClick={() => setDemoEntryOpen(true)}
+                className="eh-btn eh-btn-secondary"
+              >
+                <Play size={14} weight="fill" />
+                Try the live demo
+              </button>
+              <Link to="/book-demo" className="eh-btn eh-btn-primary">
+                Speak to an expert
+                <ArrowUpRight size={14} weight="bold" />
+              </Link>
             </div>
           </div>
         </div>
-      </motion.section>
+
+        {/* Social proof */}
+        <div className="eh-social">
+          <div className="eh-avatar-row">
+            <span className="eh-avatar eh-avatar-brand" style={{ zIndex: 4 }} aria-hidden="true">
+              <img src="/participants/brands/googleapp.png" alt="" />
+            </span>
+            <span className="eh-avatar eh-avatar-brand" style={{ zIndex: 3 }} aria-hidden="true">
+              <img src="/participants/brands/lark.png" alt="" />
+            </span>
+            <span className="eh-avatar eh-avatar-brand" style={{ zIndex: 2 }} aria-hidden="true">
+              <img src="/participants/brands/magnific.avif" alt="" />
+            </span>
+            <span className="eh-avatar eh-avatar-brand" style={{ zIndex: 1 }} aria-hidden="true">
+              <img src="/participants/brands/navermybox.png" alt="" />
+            </span>
+          </div>
+          <p className="eh-social-text">
+            Trusted by <span className="eh-social-em">companies</span> scaling with AI
+          </p>
+        </div>
+      </section>
 
       <section id="features" className="hx-section">
         <div className="hx-container">
-          <motion.div
-            className="hx-section-details"
-            variants={stagger}
-            initial="hidden"
-            whileInView="show"
-            viewport={viewport}
-          >
+          <motion.div className="hx-section-details" variants={stagger}>
             <motion.h2 className="hx-section-title" variants={fadeUp}>
               <span className="hx-gradient-text">Everything You Need to</span>
               <br />
@@ -1135,9 +1541,6 @@ export function LandingPageV4() {
                     className="hx-feature-card"
                     key={feature.title}
                     variants={fadeUp}
-                    initial="hidden"
-                    whileInView="show"
-                    viewport={viewport}
                     tabIndex={0}
                   >
                     <Visual type={feature.visual} />
@@ -1166,9 +1569,6 @@ export function LandingPageV4() {
               className="hx-section-details"
               style={{ textAlign: 'left', margin: 0, alignItems: 'flex-start' }}
               variants={stagger}
-              initial="hidden"
-              whileInView="show"
-              viewport={viewport}
             >
               <motion.h2 className="hx-section-title" variants={fadeUp}>
                 <span className="hx-gradient-text">Built for Teams That</span>
@@ -1180,13 +1580,7 @@ export function LandingPageV4() {
                 customer experience teams, Lira keeps the relationship context intact.
               </motion.p>
             </motion.div>
-            <motion.div
-              className="hx-service-list"
-              variants={stagger}
-              initial="hidden"
-              whileInView="show"
-              viewport={viewport}
-            >
+            <motion.div className="hx-service-list" variants={stagger}>
               {services.map((service) => (
                 <motion.article
                   className="hx-service-item"
@@ -1211,9 +1605,6 @@ export function LandingPageV4() {
       {/* TODO: Restore when we have real customer testimonials
       <motion.section
         className="hx-testimonial"
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
         variants={stagger}
       >
         <div className="hx-container">
@@ -1249,13 +1640,7 @@ export function LandingPageV4() {
       </motion.section>
       */}
 
-      <motion.section
-        className="hx-faq-section"
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
-        variants={stagger}
-      >
+      <motion.section className="hx-faq-section" variants={stagger}>
         <div className="hx-container hx-faq-grid">
           <motion.div className="hx-faq-left" variants={fadeUp}>
             <h2 className="hx-section-title">
@@ -1279,13 +1664,7 @@ export function LandingPageV4() {
 
       <section id="blog" className="hx-section">
         <div className="hx-container hx-blog-grid">
-          <motion.div
-            className="hx-blog-left"
-            initial="hidden"
-            whileInView="show"
-            viewport={viewport}
-            variants={stagger}
-          >
+          <motion.div className="hx-blog-left" variants={stagger}>
             <h2 className="hx-section-title">
               <span className="hx-gradient-text">Ideas for better</span>
               <br />
@@ -1295,13 +1674,7 @@ export function LandingPageV4() {
               Browse all blogs
             </ButtonLink>
           </motion.div>
-          <motion.div
-            className="hx-blog-list"
-            initial="hidden"
-            whileInView="show"
-            viewport={viewport}
-            variants={stagger}
-          >
+          <motion.div className="hx-blog-list" variants={stagger}>
             {BLOG_POSTS.map((post) => (
               <motion.div key={post.slug} variants={cardReveal}>
                 <Link to={`/blog/${post.slug}`} className="hx-blog-card">
@@ -1319,13 +1692,7 @@ export function LandingPageV4() {
         </div>
       </section>
 
-      <motion.section
-        className="hx-cta"
-        initial="hidden"
-        whileInView="show"
-        viewport={viewport}
-        variants={stagger}
-      >
+      <motion.section className="hx-cta" variants={stagger}>
         <div className="hx-container">
           <motion.div className="hx-cta-icon" variants={fadeUp}>
             <img src="/lira_mark_white.png" alt="" aria-hidden="true" />
@@ -1341,12 +1708,13 @@ export function LandingPageV4() {
             <ButtonLink to="/signup" variant="secondary">
               Signup for free
             </ButtonLink>
-            <ButtonLink to="/book-demo">Book a Demo</ButtonLink>
+            <ButtonLink to="/book-demo">Speak to an expert</ButtonLink>
           </motion.div>
         </div>
       </motion.section>
 
       <MarketingFooter />
+      <DemoEntryModal open={demoEntryOpen} onClose={() => setDemoEntryOpen(false)} />
     </div>
   )
 }

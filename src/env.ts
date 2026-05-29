@@ -5,7 +5,11 @@ const envSchema = z.object({
   VITE_WS_URL: z.string().default('wss://api.creovine.com/lira/v1/ws'),
   VITE_GOOGLE_LOGIN_CLIENT_ID: z.string().default(''),
   VITE_DEMO_ORG_ID: z.string().default(''),
-  VITE_DEMO_WIDGET_SECRET: z.string().default('').transform((s) => s.replace(/\n$/, '')),
+  VITE_LIRA_PUBLIC_ORG_ID: z.string().default('org-6153b031-ef97-46a7-88d5-ce91427e2dd1'),
+  VITE_DEMO_WIDGET_SECRET: z
+    .string()
+    .default('')
+    .transform((s) => s.replace(/\n$/, '')),
   MODE: z.string().default('development'),
 })
 
@@ -15,6 +19,7 @@ export const env = envSchema.parse({
   VITE_GOOGLE_LOGIN_CLIENT_ID:
     import.meta.env.VITE_GOOGLE_LOGIN_CLIENT_ID ?? import.meta.env.VITE_GOOGLE_CLIENT_ID,
   VITE_DEMO_ORG_ID: import.meta.env.VITE_DEMO_ORG_ID,
-  VITE_DEMO_WIDGET_SECRET: import.meta.env.VITE_DEMO_WIDGET_SECRET,
+  VITE_LIRA_PUBLIC_ORG_ID: import.meta.env.VITE_LIRA_PUBLIC_ORG_ID,
+  VITE_DEMO_WIDGET_SECRET: import.meta.env.DEV ? import.meta.env.VITE_DEMO_WIDGET_SECRET : '',
   MODE: import.meta.env.MODE,
 })

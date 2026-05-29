@@ -106,7 +106,8 @@ export function MyTickets({ config, session, onSession }: MyTicketsProps) {
           {tickets.map((t) => {
             const lastMsg = t.messages[t.messages.length - 1]
             const hasNewReply =
-              lastMsg && (lastMsg.role === 'agent' || lastMsg.role === 'lira') &&
+              lastMsg &&
+              (lastMsg.role === 'agent' || lastMsg.role === 'lira') &&
               t.status !== 'resolved'
             return (
               <a
@@ -121,7 +122,11 @@ export function MyTickets({ config, session, onSession }: MyTicketsProps) {
                   </div>
                   <span className="lp-ticket-meta">
                     {timeAgo(t.updated_at)} · {t.channel}
-                    {hasNewReply && <span className="lp-unread-label" style={{ marginLeft: '8px' }}>New reply</span>}
+                    {hasNewReply && (
+                      <span className="lp-unread-label" style={{ marginLeft: '8px' }}>
+                        New reply
+                      </span>
+                    )}
                   </span>
                 </div>
                 <div className="lp-ticket-right">{statusBadge(t.status, accent)}</div>

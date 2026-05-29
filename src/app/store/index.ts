@@ -17,6 +17,12 @@ interface AuthSlice {
   userName: string | null
   userPicture: string | null
   userRole: string | null
+  /**
+   * The tenant's plan tier, resolved from the invite consumed at signup.
+   * Drives Enterprise-only feature gates (e.g. additional ticket CC recipients).
+   * Falls back to STARTER when /me hasn't loaded yet.
+   */
+  planTier: 'STARTER' | 'GROWTH' | 'ENTERPRISE' | null
   emailVerified: boolean | null
   setCredentials: (
     token: string,
@@ -31,6 +37,7 @@ interface AuthSlice {
   setUserPicture: (picture: string) => void
   setUserName: (name: string) => void
   setUserEmail: (email: string) => void
+  setPlanTier: (tier: 'STARTER' | 'GROWTH' | 'ENTERPRISE') => void
   clearCredentials: () => void
 }
 
@@ -43,6 +50,7 @@ export const useAuthStore = create<AuthSlice>()(
       userName: null,
       userPicture: null,
       userRole: null,
+      planTier: null,
       emailVerified: null,
       setCredentials: (token, email, name, picture, id, emailVerified, role) =>
         set({
@@ -58,6 +66,7 @@ export const useAuthStore = create<AuthSlice>()(
       setUserPicture: (picture) => set({ userPicture: picture }),
       setUserName: (name) => set({ userName: name }),
       setUserEmail: (email) => set({ userEmail: email }),
+      setPlanTier: (tier) => set({ planTier: tier }),
       clearCredentials: () =>
         set({
           token: null,
@@ -66,6 +75,7 @@ export const useAuthStore = create<AuthSlice>()(
           userName: null,
           userPicture: null,
           userRole: null,
+          planTier: null,
           emailVerified: null,
         }),
     }),

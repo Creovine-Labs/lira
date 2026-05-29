@@ -196,13 +196,24 @@ function OrgEmailPage() {
           </div>
           <div className="rounded-2xl border border-white/60 bg-white px-8 py-12 shadow-sm text-center">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100">
-              <svg className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75" />
+              <svg
+                className="h-6 w-6 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"
+                />
               </svg>
             </div>
             <h2 className="text-lg font-semibold text-gray-800">Email not configured yet</h2>
             <p className="mt-2 text-sm text-gray-500 max-w-sm mx-auto">
-              Email settings will be available once you activate the Customer Support module for this workspace.
+              Email settings will be available once you activate the Customer Support module for
+              this workspace.
             </p>
             <a
               href="/support/activate"
@@ -215,7 +226,6 @@ function OrgEmailPage() {
       </div>
     )
   }
-
 
   const isDirty =
     fromName !== (config?.from_name ?? '') ||

@@ -3,6 +3,30 @@ import { credentials } from './index'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+/** Handoff Layer (§6.2) — automatic escalation triggers, tunable per org. */
+export interface HandoffTriggersConfig {
+  sentiment_enabled?: boolean
+  repeated_failure_enabled?: boolean
+  repeated_failure_threshold?: number
+  vip_auto_enabled?: boolean
+  multi_turn_confusion_enabled?: boolean
+  multi_turn_confusion_threshold?: number
+  sla_pressure_enabled?: boolean
+  sla_pressure_minutes?: number
+}
+
+/** Built-in defaults — mirror HANDOFF_TRIGGER_DEFAULTS on the backend. */
+export const HANDOFF_TRIGGER_DEFAULTS: Required<HandoffTriggersConfig> = {
+  sentiment_enabled: true,
+  repeated_failure_enabled: true,
+  repeated_failure_threshold: 3,
+  vip_auto_enabled: true,
+  multi_turn_confusion_enabled: true,
+  multi_turn_confusion_threshold: 3,
+  sla_pressure_enabled: true,
+  sla_pressure_minutes: 30,
+}
+
 export interface SupportConfig {
   PK: string
   SK: string
@@ -31,6 +55,7 @@ export interface SupportConfig {
   escalation_slack_channel?: string
   escalation_linear_team?: string
   escalation_email?: string
+  escalation_cc_emails?: string[]
   greeting_message?: string
   sla_hours?: number
   widget_color?: string
@@ -42,6 +67,7 @@ export interface SupportConfig {
   ai_replies_this_month: number
   onboarding_completed: boolean
   onboarding_step: string
+  handoff_triggers?: HandoffTriggersConfig
   created_at: string
   updated_at: string
 }
@@ -725,4 +751,269 @@ export async function disableToolPack(orgId: string, packId: string): Promise<vo
     `/lira/v1/support/tool-packs/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(packId)}`,
     { method: 'DELETE' }
   )
+}
+
+// ── Support tickets (separate from conversations) ───────────────────────────
+
+/** Structured handoff brief (§6.3) — generated when a ticket is opened. */
+export interface HandoffBrief {
+  customer_summary: string
+  issue_summary: string
+  urgency: 'low' | 'medium' | 'high' | 'urgent'
+  what_agent_tried: string[]
+  what_human_needs_to_do: string
+  suggested_response: string
+  generated_at: string
+  model_used: string
+}
+
+/** Round-trip learning (§6.4) — captured when a human resolves a ticket. */
+export interface HandoffResolution {
+  ai_assessment?: 'correct' | 'partial' | 'wrong'
+  knowledge_gap?: boolean
+  gap_note?: string
+  outcome_note?: string
+  kb_draft_id?: string
+  resolved_by?: string
+  captured_at: string
+}
+
+export interface SupportTicketRecord {
+  ticket_id: string
+  ticket_number?: string
+  org_id: string
+  conv_id: string
+  visitor_email?: string
+  visitor_name?: string
+  source?: 'lira_onboarding' | 'customer_widget' | 'email' | 'voice' | 'manual'
+  subject: string
+  summary?: string
+  priority: 'low' | 'medium' | 'high' | 'urgent'
+  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+  assignee_user_id?: string
+  escalation_reason: string
+  handoff_trigger?: string
+  handoff_brief?: HandoffBrief
+  handoff_resolution?: HandoffResolution
+  created_at: string
+  updated_at: string
+  resolved_at?: string
+}
+
+export interface TicketAttachmentRecord {
+  id: string
+  name: string
+  content_type: string
+  size: number
+  s3_key: string
+  url?: string
+}
+
+export interface SupportTicketMessageRecord {
+  message_id: string
+  ticket_id: string
+  org_id: string
+  sender: 'visitor' | 'agent' | 'system'
+  sender_user_id?: string
+  sender_name?: string
+  body: string
+  attachments?: TicketAttachmentRecord[]
+  created_at: string
+}
+
+// ── Integration Health ────────────────────────────────────────────────────
+
+export type IntegrationCheckSeverity = 'error' | 'warning' | 'info'
+
+export interface IntegrationCheck {
+  key: string
+  ok: boolean
+  label: string
+  detail: string
+  severity?: IntegrationCheckSeverity
+  fix?: string
+  docs?: string
+}
+
+export interface IntegrationHealthReport {
+  org_id: string
+  generated_at: string
+  ok: boolean
+  checks: IntegrationCheck[]
+  summary: string
+}
+
+export async function runIntegrationHealth(orgId: string): Promise<IntegrationHealthReport> {
+  return supportFetch<IntegrationHealthReport>(
+    `/lira/v1/support/integration-health/orgs/${encodeURIComponent(orgId)}`
+  )
+}
+
+export async function listTicketsForOrg(orgId: string): Promise<SupportTicketRecord[]> {
+  const data = await supportFetch<{ tickets: SupportTicketRecord[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`
+  )
+  return data.tickets
+}
+
+export async function getTicketForOrg(
+  orgId: string,
+  ticketId: string
+): Promise<{ ticket: SupportTicketRecord; messages: SupportTicketMessageRecord[] }> {
+  return supportFetch(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}`
+  )
+}
+
+export async function replyToTicket(
+  orgId: string,
+  ticketId: string,
+  body: string,
+  attachments?: TicketAttachmentRecord[]
+): Promise<SupportTicketMessageRecord> {
+  const data = await supportFetch<{ message: SupportTicketMessageRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/reply`,
+    { method: 'POST', body: JSON.stringify({ body, attachments }) }
+  )
+  return data.message
+}
+
+/** Operator: create a ticket manually from the dashboard. */
+export interface CreateManualTicketInput {
+  subject: string
+  details: string
+  priority?: 'low' | 'medium' | 'high' | 'urgent'
+  visitor_email?: string
+  visitor_name?: string
+  attachments?: TicketAttachmentRecord[]
+}
+
+export async function createManualTicket(
+  orgId: string,
+  input: CreateManualTicketInput
+): Promise<SupportTicketRecord> {
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`,
+    { method: 'POST', body: JSON.stringify(input) }
+  )
+  return data.ticket
+}
+
+/**
+ * Operator: upload a ticket attachment (multipart). Returns a descriptor to
+ * include in a create/reply call. Uses raw fetch — supportFetch forces a JSON
+ * content-type, which would break the multipart boundary.
+ */
+export async function uploadTicketAttachment(
+  orgId: string,
+  file: File
+): Promise<TicketAttachmentRecord> {
+  const token = credentials.getToken()
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(
+    `${env.VITE_API_URL}/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/attachments`,
+    {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: form,
+    }
+  )
+  if (!res.ok) {
+    let msg = res.statusText
+    try {
+      const j = (await res.json()) as Record<string, string>
+      msg = j['error'] ?? j['message'] ?? msg
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg)
+  }
+  const data = (await res.json()) as { attachment: TicketAttachmentRecord }
+  return data.attachment
+}
+
+/** Visitor: upload an attachment for their own ticket (public, email-gated). */
+export async function uploadVisitorTicketAttachment(
+  orgId: string,
+  ticketNumber: string,
+  email: string,
+  file: File
+): Promise<TicketAttachmentRecord> {
+  const form = new FormData()
+  form.append('file', file)
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/by-number/${encodeURIComponent(
+    ticketNumber
+  )}/attachments?org_id=${encodeURIComponent(orgId)}&email=${encodeURIComponent(email)}`
+  const res = await fetch(url, { method: 'POST', body: form })
+  if (!res.ok) {
+    let msg = res.statusText
+    try {
+      const j = (await res.json()) as Record<string, string>
+      msg = j['error'] ?? j['message'] ?? msg
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg)
+  }
+  const data = (await res.json()) as { attachment: TicketAttachmentRecord }
+  return data.attachment
+}
+
+/** Round-trip learning feedback captured at resolve time (§6.4). All optional. */
+export interface ResolveTicketFeedback {
+  ai_assessment?: 'correct' | 'partial' | 'wrong'
+  knowledge_gap?: boolean
+  gap_note?: string
+  outcome_note?: string
+}
+
+export async function resolveTicket(
+  orgId: string,
+  ticketId: string,
+  feedback?: ResolveTicketFeedback
+): Promise<SupportTicketRecord> {
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/resolve`,
+    { method: 'POST', body: JSON.stringify(feedback ?? {}) }
+  )
+  return data.ticket
+}
+
+/** Regenerate the structured handoff brief for a ticket (§6.3). */
+export async function regenerateHandoffBrief(
+  orgId: string,
+  ticketId: string
+): Promise<HandoffBrief> {
+  const data = await supportFetch<{ brief: HandoffBrief }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/handoff-brief/regenerate`,
+    { method: 'POST' }
+  )
+  return data.brief
+}
+
+/** Visitor-facing: list tickets I opened (identity = email). No JWT auth. */
+export async function listTicketsForVisitor(
+  orgId: string,
+  visitorEmail: string
+): Promise<SupportTicketRecord[]> {
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/visitor/${encodeURIComponent(orgId)}/${encodeURIComponent(visitorEmail)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Failed to list tickets')
+  const data = (await res.json()) as { tickets: SupportTicketRecord[] }
+  return data.tickets
+}
+
+/** Visitor-facing: fetch a ticket by its human-readable number + thread. */
+export async function getTicketByNumber(
+  orgId: string,
+  ticketNumber: string
+): Promise<{ ticket: SupportTicketRecord; messages: SupportTicketMessageRecord[] }> {
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/by-number/${encodeURIComponent(ticketNumber)}?org_id=${encodeURIComponent(orgId)}`
+  const res = await fetch(url)
+  if (!res.ok) throw new Error('Ticket not found')
+  return (await res.json()) as {
+    ticket: SupportTicketRecord
+    messages: SupportTicketMessageRecord[]
+  }
 }

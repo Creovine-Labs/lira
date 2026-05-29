@@ -38,5 +38,9 @@ Disallow: /launch-demo
 Disallow: /login
 Disallow: /signup
 
+# Disallow public demo (sandbox; no SEO value; AI cost surface)
+Disallow: /demo
+Disallow: /demo/
+
 # Sitemap location
 Sitemap: https://liraintelligence.com/sitemap.xml

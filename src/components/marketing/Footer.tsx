@@ -8,7 +8,7 @@ const FOOTER_GROUPS = [
     links: [
       { label: 'Features', href: '/features' },
       { label: 'Careers', href: '/careers' },
-      { label: 'Book a Demo', href: '/book-demo' },
+      { label: 'Speak to an expert', href: '/book-demo' },
       { label: 'Contact', href: '/contact' },
     ],
   },
@@ -113,7 +113,7 @@ export function MarketingFooter() {
 
         <div className="mt-12 flex flex-col gap-3 border-t border-gray-200 pt-6 text-xs text-gray-400 sm:flex-row sm:items-center sm:justify-between">
           <span>© 2026 Lira. All rights reserved.</span>
-          <span>AI customer support that remembers, routes, and follows through.</span>
+          <span>Intelligent customer support that remembers, routes, and follows through.</span>
         </div>
       </div>
     </footer>

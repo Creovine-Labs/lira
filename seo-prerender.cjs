@@ -14,7 +14,7 @@ const path = require('path')
 
 const DIST = path.join(__dirname, 'dist')
 const BASE_URL = 'https://liraintelligence.com'
-const SITE_NAME = 'Lira AI'
+const SITE_NAME = 'Lira'
 const DEFAULT_IMAGE = `${BASE_URL}/lira_black_with_white_backgound.png`
 
 // ── Route SEO definitions ────────────────────────────────────────────────────
@@ -22,11 +22,11 @@ const DEFAULT_IMAGE = `${BASE_URL}/lira_black_with_white_backgound.png`
 const ROUTES = [
   {
     path: '/',
-    title: 'Lira - AI Customer Support That Remembers and Acts',
+    title: 'Lira - Intelligent Customer Support That Remembers and Acts',
     description:
-      'Lira helps teams resolve customer issues across chat, email, voice, and portal with customer memory, knowledge, workflow actions, and smart escalation.',
+      'Lira helps teams resolve customer issues across chat, email, voice, and embedded support pages with customer memory, knowledge, workflow actions, and smart escalation.',
     keywords:
-      'AI customer support, customer support automation, AI support agent, support portal, support knowledge base, voice support AI, customer context, support workflows, Lira',
+      'intelligent customer support, customer support automation, support workflow automation, embedded support page, support knowledge base, customer context, support workflows, Lira',
   },
   {
     path: '/products/sales',
@@ -38,11 +38,11 @@ const ROUTES = [
   },
   {
     path: '/products/customer-support',
-    title: 'AI Customer Support - Voice Agent Grounded in Your Knowledge Base',
+    title: 'Intelligent Customer Support - Grounded in Your Knowledge Base',
     description:
-      'Lira AI handles inbound customer support calls 24/7 with a voice agent grounded in your documentation. Smart escalation, post-call summaries, and knowledge base gap identification.',
+      'Lira handles customer support conversations with responses grounded in your documentation. Smart escalation, post-call summaries, and knowledge base gap identification.',
     keywords:
-      'AI customer support, customer support automation, AI voice agent, knowledge base AI, support chatbot, AI phone support, automated support, help desk AI, AI call center',
+      'intelligent customer support, customer support automation, knowledge base support, support chatbot, automated support, help desk automation, support operations',
   },
   {
     path: '/resources',
@@ -70,11 +70,11 @@ const ROUTES = [
   },
   {
     path: '/features',
-    title: 'Features - AI Customer Support for Modern Teams',
+    title: 'Features - Intelligent Customer Support for Modern Teams',
     description:
-      'Explore Lira features for AI customer support across chat, email, voice, portal, knowledge, integrations, and workflow actions.',
+      'Explore Lira features for intelligent customer support across chat, email, voice, embedded support pages, knowledge, integrations, and workflow actions.',
     keywords:
-      'AI customer support features, support automation software, support portal, support knowledge base, voice AI support',
+      'intelligent customer support features, support automation software, embedded support page, support knowledge base, support workflows',
   },
   {
     path: '/about',

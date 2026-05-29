@@ -325,9 +325,11 @@ function SourceFileGrid({
 
       {pdfCount > 0 && (
         <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] text-amber-800">
-          <span className="font-semibold">{pdfCount} PDF{pdfCount !== 1 ? 's' : ''} skipped.</span>{' '}
-          Lira doesn’t index PDFs — they’re often image-based and produce poor-quality text.
-          Export them to Google Docs or DOCX and re-import, or paste the content into a note.
+          <span className="font-semibold">
+            {pdfCount} PDF{pdfCount !== 1 ? 's' : ''} skipped.
+          </span>{' '}
+          Lira doesn’t index PDFs — they’re often image-based and produce poor-quality text. Export
+          them to Google Docs or DOCX and re-import, or paste the content into a note.
         </div>
       )}
 
@@ -406,7 +408,10 @@ function SourceFileGrid({
                       Imported
                     </span>
                   ) : fileIsPdf ? (
-                    <span className="text-[10px] font-semibold text-amber-600" title="Lira doesn’t index PDFs">
+                    <span
+                      className="text-[10px] font-semibold text-amber-600"
+                      title="Lira doesn’t index PDFs"
+                    >
                       Not supported
                     </span>
                   ) : isImporting ? (

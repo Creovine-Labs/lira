@@ -149,7 +149,7 @@ export function AboutPage() {
               style={{ width: 56, height: 56, margin: '0 auto 18px' }}
             >
               <img
-                src="/lira_mark_white.png"
+                src="/lira_mark_white.webp"
                 alt=""
                 aria-hidden="true"
                 style={{ width: 34, height: 26, objectFit: 'contain' }}
@@ -161,7 +161,7 @@ export function AboutPage() {
               escalate, and follow through.
             </p>
             <div style={{ marginTop: 28 }}>
-              <BlogButton to="/book-demo">Book a Demo</BlogButton>
+              <BlogButton to="/book-demo">Speak to an expert</BlogButton>
             </div>
           </section>
         </div>

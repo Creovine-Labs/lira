@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { NavLink, Navigate, Outlet, useNavigate, useLocation } from 'react-router-dom'
-import { SlidersHorizontal } from '@phosphor-icons/react'
+// SlidersHorizontal removed alongside the support 'Configuration' nav item.
 import {
   ArrowRightOnRectangleIcon,
   Bars3Icon,
@@ -22,6 +22,7 @@ import {
   PuzzlePieceIcon,
   ShieldCheckIcon,
   Squares2X2Icon,
+  TicketIcon,
   UserIcon,
   UsersIcon,
   XMarkIcon,
@@ -42,12 +43,15 @@ import {
   listMyNotifications,
   listTasks,
   getOrgUsage,
+  getAuthMe,
   type TaskRecord,
 } from '@/services/api'
 import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/support-api'
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
+import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
 import { cn } from '@/lib'
+import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
 // ── Sidebar badge helper ──────────────────────────────────────────────────────
 function NavBadge({ count }: { count: number }) {
@@ -145,12 +149,19 @@ const NAV_CORE: NavEntry[] = [
 ]
 
 const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
-  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Inbox' },
+  { to: '/support/tickets', icon: TicketIcon, label: 'Tickets' },
   { to: '/support/customers', icon: UsersIcon, label: 'Customers' },
   { to: '/support/actions', icon: ClipboardDocumentListIcon, label: 'Actions' },
   { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
   { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
-  { to: '/support/configuration', icon: SlidersHorizontal, label: 'Configuration' },
+  // "Chat history" (previously "Inbox") demoted below Analytics — it's now
+  // a QA/audit surface for reviewing what Lira told customers, not the
+  // primary operator work queue. Tickets are the operator's daily queue.
+  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Chat history' },
+  // 'Configuration' sidebar item removed 2026-05-24 — its content
+  // (widget secret + identified-visitor docs + mobile placeholder) was
+  // consolidated into /settings → Support sub-tabs (Secret + Mobile).
+  // The /support/configuration route now redirects to /settings.
 ]
 
 const SUPPORT_NAV_INACTIVE: NavLeaf = {
@@ -174,6 +185,55 @@ const NAV_WORKSPACE: NavGroup = {
 
 const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
 
+// ── Contact-team modal (gates self-serve new-org creation) ───────────────────
+// New organizations are provisioned by the Lira team after a sales conversation
+// (payment plan + limits configured server-side, then a signup link is issued).
+// This modal replaces the old in-app "New organization" wizard entry point.
+function ContactToCreateOrgModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  if (!open) return null
+  return (
+    <div
+      className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#3730a3]/10">
+            <BuildingOffice2Icon className="h-5 w-5 text-[#3730a3]" />
+          </div>
+          <div className="flex-1">
+            <h2 className="text-lg font-bold text-gray-900">Need another organization?</h2>
+            <p className="mt-1.5 text-sm leading-relaxed text-gray-600">
+              New organizations on Lira are provisioned by our team so we can scope your plan, usage
+              limits, and rollout to your business needs. Reach out and we'll get you set up with a
+              fresh signup link.
+            </p>
+          </div>
+        </div>
+        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 transition hover:text-gray-900"
+          >
+            Close
+          </button>
+          <a
+            href="mailto:team@liraintelligence.com?subject=New%20organization%20request"
+            className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81]"
+          >
+            <EnvelopeIcon className="h-4 w-4" />
+            Contact the Lira team
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ── Org switcher dropdown ──────────────────────────────────────────────────────
 function OrgSwitcher() {
   const navigate = useNavigate()
@@ -183,6 +243,7 @@ function OrgSwitcher() {
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
+  const [contactOpen, setContactOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -270,7 +331,7 @@ function OrgSwitcher() {
             <button
               onClick={() => {
                 setOpen(false)
-                navigate('/onboarding')
+                setContactOpen(true)
               }}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
             >
@@ -280,6 +341,7 @@ function OrgSwitcher() {
           </div>
         )}
       </div>
+      <ContactToCreateOrgModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   )
 }
@@ -293,6 +355,7 @@ function TopbarOrgSwitcher() {
   const clearTasks = useTaskStore((s) => s.clear)
   const [open, setOpen] = useState(false)
   const [switching, setSwitching] = useState<string | null>(null)
+  const [contactOpen, setContactOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -382,7 +445,7 @@ function TopbarOrgSwitcher() {
             <button
               onClick={() => {
                 setOpen(false)
-                navigate('/onboarding')
+                setContactOpen(true)
               }}
               className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-600 transition hover:bg-gray-50"
             >
@@ -392,6 +455,7 @@ function TopbarOrgSwitcher() {
           </div>
         )}
       </div>
+      <ContactToCreateOrgModal open={contactOpen} onClose={() => setContactOpen(false)} />
     </>
   )
 }
@@ -458,6 +522,16 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
           >
             <UserIcon className="h-4 w-4 text-gray-400" />
             My Profile
+          </button>
+          <button
+            onClick={() => {
+              setOpen(false)
+              navigate('/tickets')
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50"
+          >
+            <TicketIcon className="h-4 w-4 text-gray-400" />
+            My Tickets
           </button>
           {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
             <button
@@ -764,6 +838,17 @@ function AppShell() {
       .finally(() => setOrgLoading(false))
   }, [token, setOrganizations])
 
+  // Resolve the tenant's plan tier (drives Enterprise-only gates like
+  // additional ticket-CC recipients). Fetched lazily on mount — defaults
+  // to STARTER until /me responds.
+  const setPlanTier = useAuthStore((s) => s.setPlanTier)
+  useEffect(() => {
+    if (!token) return
+    getAuthMe()
+      .then((res) => setPlanTier(res.user.planTier))
+      .catch(() => {})
+  }, [token, setPlanTier])
+
   const { badges, taskPending, taskInProgress } = useSidebarBadges()
   const { markMeetingsSeen, markSupportSeen } = useNotifStore()
   const setSummary = useUsageStore((s) => s.setSummary)
@@ -816,6 +901,7 @@ function AppShell() {
   function handleSignOut() {
     clearCredentials()
     clear()
+    resetLiraWidgetSession()
     navigate('/', { replace: true })
   }
 
@@ -864,6 +950,11 @@ function AppShell() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-white">
+      {/* Lira's own onboarding widget — greets the user by name and
+          walks them through setup. Lives at shell level so it persists
+          across page navigation. Renders nothing if the backend isn't
+          configured for it (LIRA_INTERNAL_ORG_ID env var missing). */}
+      <LiraOnboardingWidget />
       {/* ── Mobile drawer overlay ── */}
       {sidebarOpen && (
         <>

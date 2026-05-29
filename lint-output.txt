@@ -1,0 +1,66 @@
+﻿
+> lira-frontend@0.0.0 lint
+> eslint .
+
+
+C:\Users\PC\Desktop\lira-landing-page\src\components\marketing\DemoCallModal.tsx
+  165:30  warning  The ref value 'audioRef.current' will likely have changed by the time this effect cleanup function runs. If this ref points to a node rendered by React, copy 'audioRef.current' to a variable inside the effect, and use that variable in the cleanup function  react-hooks/exhaustive-deps
+
+C:\Users\PC\Desktop\lira-landing-page\src\components\marketing\DemoNimbusDashboard.tsx
+  1:10  warning  'useEffect' is defined but never used. Allowed unused vars must match /^_/u  @typescript-eslint/no-unused-vars
+
+C:\Users\PC\Desktop\lira-landing-page\src\components\settings\CalendarSyncSection.tsx
+  52:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+  73:16  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\PC\Desktop\lira-landing-page\src\components\shell\AppShell.tsx
+  195:5  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  195:5  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  199:7  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  199:7  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  899:6  warning  React Hook useEffect has a missing dependency: 'navEntries'. Either include it or remove the dependency array                                                                                      react-hooks/exhaustive-deps
+
+C:\Users\PC\Desktop\lira-landing-page\src\components\support-widget\pipecat-transport.ts
+   61:5   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+   68:5   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+   95:7   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+   98:7   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  102:7   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  201:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  209:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  226:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  231:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  303:11  warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  419:5   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  444:7   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+  462:9   warning  Unused eslint-disable directive (no problems were reported from 'no-console')
+
+C:\Users\PC\Desktop\lira-landing-page\src\pages\IntegrationsPage.tsx
+  162:16  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+C:\Users\PC\Desktop\lira-landing-page\src\pages\OrgTaskDetailPage.tsx
+  150:6  warning  React Hook useCallback has missing dependencies: 'notifEntries' and 'removeNotif'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+  164:6  warning  React Hook useEffect has a missing dependency: 'task'. Either include it or remove the dependency array                                react-hooks/exhaustive-deps
+
+C:\Users\PC\Desktop\lira-landing-page\src\pages\support\SupportActivatePage.tsx
+  714:6  warning  React Hook useCallback has missing dependencies: 'loadConfig' and 'portalSlugFinal'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+C:\Users\PC\Desktop\lira-landing-page\src\pages\support\SupportProactivePage.tsx
+  181:5  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  181:5  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  344:5  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  344:5  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+C:\Users\PC\Desktop\lira-landing-page\src\pages\support\SupportTicketsPage.tsx
+  649:5  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  649:5  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  653:7  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  653:7  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  980:5  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  980:5  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+  984:7  warning  Visible, non-interactive elements with click handlers must have at least one keyboard listener                                                                                                     jsx-a11y/click-events-have-key-events
+  984:7  warning  Avoid non-native interactive elements. If using native HTML is not possible, add an appropriate role and support for tabbing, mouse, keyboard, and touch inputs to an interactive content element  jsx-a11y/no-static-element-interactions
+
+✖ 38 problems (0 errors, 38 warnings)
+  0 errors and 13 warnings potentially fixable with the `--fix` option.
+

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   CheckCircleIcon,
   LinkIcon,
   ChevronDownIcon,
   XMarkIcon,
-  ClipboardDocumentIcon,
-  ClipboardDocumentCheckIcon,
   MagnifyingGlassIcon,
   DocumentTextIcon,
   FolderIcon,
@@ -544,75 +543,6 @@ function LinearCard({ orgId, onStatusChange }: LinearCardProps) {
 
 // ── Member Mapping Panel ──────────────────────────────────────────────────────
 
-function InviteModal({ org, onClose }: { org: Organization; onClose: () => void }) {
-  const [copied, setCopied] = useState(false)
-
-  const handleCopy = () => {
-    navigator.clipboard.writeText(org.invite_code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
-      role="button"
-      tabIndex={0}
-      onClick={onClose}
-      onKeyDown={(e) => e.key === 'Escape' && onClose()}
-    >
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" />
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
-      <div
-        className="relative w-full max-w-sm bg-white rounded-2xl shadow-xl p-6"
-        role="dialog"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h3 className="font-semibold text-gray-900">Invite to {org.name}</h3>
-            <p className="text-xs text-gray-500 mt-0.5">
-              Share this code with your team member. Once they join Lira, they'll appear here.
-            </p>
-          </div>
-          <button
-            onClick={onClose}
-            className="ml-4 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <XMarkIcon className="h-5 w-5" />
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-          <code className="flex-1 font-mono text-sm font-semibold tracking-widest text-gray-900 select-all">
-            {org.invite_code}
-          </code>
-          <button
-            onClick={handleCopy}
-            className="shrink-0 text-gray-400 hover:text-gray-700 transition-colors"
-            title="Copy code"
-          >
-            {copied ? (
-              <ClipboardDocumentCheckIcon className="h-5 w-5 text-emerald-500" />
-            ) : (
-              <ClipboardDocumentIcon className="h-5 w-5" />
-            )}
-          </button>
-        </div>
-
-        {copied && (
-          <p className="text-xs text-emerald-600 mt-2 text-center">Copied to clipboard!</p>
-        )}
-
-        <p className="text-[11px] text-gray-400 mt-4 text-center">
-          The member enters this code on the Lira join page to join your org.
-        </p>
-      </div>
-    </div>
-  )
-}
-
 function MemberMappingPanel({ orgId }: { orgId: string }) {
   const [liraMembers, setLiraMembers] = useState<OrgMembership[]>([])
   const [linearMembers, setLinearMembers] = useState<LinearMember[]>([])
@@ -621,7 +551,7 @@ function MemberMappingPanel({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true)
   const [savingFor, setSavingFor] = useState<string | null>(null)
   const [selections, setSelections] = useState<Record<string, string>>({})
-  const [showInviteModal, setShowInviteModal] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function load() {
@@ -714,9 +644,6 @@ function MemberMappingPanel({ orgId }: { orgId: string }) {
 
   return (
     <>
-      {showInviteModal && org && (
-        <InviteModal org={org} onClose={() => setShowInviteModal(false)} />
-      )}
       <div className="space-y-3">
         {unmappedCount > 0 && (
           <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
@@ -828,7 +755,7 @@ function MemberMappingPanel({ orgId }: { orgId: string }) {
                 not yet on Lira
               </p>
               <button
-                onClick={() => setShowInviteModal(true)}
+                onClick={() => navigate('/org/members')}
                 className="shrink-0 text-xs font-semibold text-gray-900 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors ml-4"
               >
                 + Invite to Lira
@@ -1202,7 +1129,7 @@ function SlackMemberMappingPanel({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState(true)
   const [savingFor, setSavingFor] = useState<string | null>(null)
   const [selections, setSelections] = useState<Record<string, string>>({})
-  const [showInviteModal, setShowInviteModal] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function load() {
@@ -1291,9 +1218,6 @@ function SlackMemberMappingPanel({ orgId }: { orgId: string }) {
 
   return (
     <>
-      {showInviteModal && org && (
-        <InviteModal org={org} onClose={() => setShowInviteModal(false)} />
-      )}
       <div className="space-y-3">
         {unmappedCount > 0 && (
           <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
@@ -1407,7 +1331,7 @@ function SlackMemberMappingPanel({ orgId }: { orgId: string }) {
                 not yet on Lira
               </p>
               <button
-                onClick={() => setShowInviteModal(true)}
+                onClick={() => navigate('/org/members')}
                 className="shrink-0 text-xs font-semibold text-gray-900 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors ml-4"
               >
                 + Invite to Lira
@@ -1835,7 +1759,7 @@ function TeamsMemberMappingPanel({ orgId, teamId }: { orgId: string; teamId: str
   const [loading, setLoading] = useState(true)
   const [savingFor, setSavingFor] = useState<string | null>(null)
   const [selections, setSelections] = useState<Record<string, string>>({})
-  const [showInviteModal, setShowInviteModal] = useState(false)
+  const navigate = useNavigate()
 
   useEffect(() => {
     async function load() {
@@ -1924,9 +1848,6 @@ function TeamsMemberMappingPanel({ orgId, teamId }: { orgId: string; teamId: str
 
   return (
     <>
-      {showInviteModal && org && (
-        <InviteModal org={org} onClose={() => setShowInviteModal(false)} />
-      )}
       <div className="space-y-3">
         {unmappedCount > 0 && (
           <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2.5">
@@ -2038,7 +1959,7 @@ function TeamsMemberMappingPanel({ orgId, teamId }: { orgId: string; teamId: str
                 not yet on Lira
               </p>
               <button
-                onClick={() => setShowInviteModal(true)}
+                onClick={() => navigate('/org/members')}
                 className="shrink-0 text-xs font-semibold text-gray-900 bg-white border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors ml-4"
               >
                 + Invite to Lira

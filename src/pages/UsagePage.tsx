@@ -71,9 +71,7 @@ export function UsagePage() {
     <div className="mx-auto max-w-3xl px-6 py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Usage</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Track your organization&apos;s feature usage.
-        </p>
+        <p className="text-sm text-gray-500 mt-1">Track your organization&apos;s feature usage.</p>
       </div>
 
       <div className="space-y-5">

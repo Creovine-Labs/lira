@@ -1033,7 +1033,7 @@ GET  /v1/support/audit-log             — retrieve audit trail (admin only)
 
 **SDKs (roadmap):**
 
-- `npm install @lira/support` (Node.js / TypeScript)
+- `npm install @liraintelligence/support` (Node.js / TypeScript)
 - `pip install lira-support` (Python)
 - Full OpenAPI spec at `api.lira.ai/docs`
 

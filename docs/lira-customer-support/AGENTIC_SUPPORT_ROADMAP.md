@@ -20,19 +20,19 @@ Verified by reading the codebase directly, not assumed.
 
 ### Backend (Node/Fastify, `creovine-api/src/services/`)
 
-| File | What it actually does | Status |
-| ---- | ---- | ---- |
-| `lira-support-chat.service.ts` | WebSocket chat handler, RAG lookup, intent classification, force-escalation, streaming reply | ✅ Production |
-| `lira-support-reply.service.ts` | One-shot LLM reply generation (GPT-4o) with KB context injection | ✅ Production |
-| `lira-support-classifier.service.ts` | Intent classification (billing, tech, account, etc.) | ✅ Production |
-| `lira-support-escalation.service.ts` | Hand-off to email/Slack when Lira can't answer | ✅ Production |
-| `lira-support-customer.service.ts` | Customer profile lookup by email/visitor ID, CRM sync scaffolding | ⚠️ Scaffolded, not wired into chat |
-| `lira-support-action.service.ts` | Action planner/executor for `crm_lookup`, `crm_update`, `ticket_create`, `slack_notify`, `email_followup` | ⚠️ Exists but **not invoked from the chat reply loop** |
-| `lira-support-proactive.service.ts` | Outbound trigger engine (event → reach out via email/voice) | ⚠️ Scaffolded |
-| `lira-support-autoresolve.service.ts` | Auto-resolution logic | ⚠️ Scaffolded |
-| `lira-support-learning.service.ts` | Self-learning from escalations | ⚠️ Scaffolded |
-| `lira-support-csat.service.ts` / `-analytics.service.ts` / `-summary.service.ts` | Metrics, summaries, CSAT | Mixed |
-| `lira-crawl.service.ts` + `lira-doc-chunk.service.ts` + `lira-vector-search.service.ts` | KB ingestion & hybrid search (Qdrant + keyword boost) | ✅ Production |
+| File                                                                                    | What it actually does                                                                                     | Status                                                 |
+| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ |
+| `lira-support-chat.service.ts`                                                          | WebSocket chat handler, RAG lookup, intent classification, force-escalation, streaming reply              | ✅ Production                                          |
+| `lira-support-reply.service.ts`                                                         | One-shot LLM reply generation (GPT-4o) with KB context injection                                          | ✅ Production                                          |
+| `lira-support-classifier.service.ts`                                                    | Intent classification (billing, tech, account, etc.)                                                      | ✅ Production                                          |
+| `lira-support-escalation.service.ts`                                                    | Hand-off to email/Slack when Lira can't answer                                                            | ✅ Production                                          |
+| `lira-support-customer.service.ts`                                                      | Customer profile lookup by email/visitor ID, CRM sync scaffolding                                         | ⚠️ Scaffolded, not wired into chat                     |
+| `lira-support-action.service.ts`                                                        | Action planner/executor for `crm_lookup`, `crm_update`, `ticket_create`, `slack_notify`, `email_followup` | ⚠️ Exists but **not invoked from the chat reply loop** |
+| `lira-support-proactive.service.ts`                                                     | Outbound trigger engine (event → reach out via email/voice)                                               | ⚠️ Scaffolded                                          |
+| `lira-support-autoresolve.service.ts`                                                   | Auto-resolution logic                                                                                     | ⚠️ Scaffolded                                          |
+| `lira-support-learning.service.ts`                                                      | Self-learning from escalations                                                                            | ⚠️ Scaffolded                                          |
+| `lira-support-csat.service.ts` / `-analytics.service.ts` / `-summary.service.ts`        | Metrics, summaries, CSAT                                                                                  | Mixed                                                  |
+| `lira-crawl.service.ts` + `lira-doc-chunk.service.ts` + `lira-vector-search.service.ts` | KB ingestion & hybrid search (Qdrant + keyword boost)                                                     | ✅ Production                                          |
 
 ### Widget (`lira_ai/src/components/support-widget/`)
 
@@ -64,6 +64,7 @@ message → classify intent → force-escalate? → RAG search → single GPT-4o
 ### Chatwoot (OSS — [chatwoot/chatwoot](https://github.com/chatwoot/chatwoot), 28.8k ★, Ruby/Rails)
 
 What we can learn:
+
 - Captain AI agent is still essentially RAG + reply, same limitation as us
 - Strong on **omnichannel inbox** (email, WhatsApp, Instagram, SMS, Telegram) — we do chat only
 - Strong on **operations**: labels, assignments, macros, canned responses, teams, SLAs, business hours, auto-responders, agent capacity — this is what support leaders buy, not just AI
@@ -75,6 +76,7 @@ What they don't have: agentic tool-calling. We can leapfrog.
 ### Botpress (OSS — [botpress/botpress](https://github.com/botpress/botpress), 14.6k ★, TypeScript)
 
 What we can learn:
+
 - **Integration SDK** — every third-party becomes a versioned, typed, deployable package (HubSpot, Slack, Trello, Shopify…). Registry-driven. Their CLI ships an integration in one file pair (`integration.definition.ts` + `src/index.ts`).
 - Human-in-the-loop (HITL) was recently added as a first-class plugin — agent yields to a human, human replies, agent resumes
 - "LLMz" (their agent runtime) is open-sourced — tool-calling with typed schemas
@@ -106,12 +108,12 @@ Failed. Instructive: they tried to auto-generate tools from Swagger/OpenAPI with
 
 The user's three concrete examples map cleanly to missing primitives:
 
-| User scenario | Primitive we're missing | Why today's RAG loop can't do it |
-| ---- | ---- | ---- |
-| "Can Lira confirm the user's info after sign-in?" | **Authenticated visitor context in the reply pipeline** | `visitorEmail` + `visitorSig` arrive at the socket but don't get resolved to a `CustomerProfile` and injected into the prompt |
-| "Can Lira say 'I can see your subscription, let me help you cancel it'?" | **Tool-calling runtime + org-provided tool registry + confirmation gates** | Reply is one text-gen call. No way for the model to call `getSubscription()` / `cancelSubscription()`. |
-| "Can Lira help when someone doesn't understand the navigation?" | **Generative UI + optional co-browse pointer** | Widget only renders text. No card/button/pointer message type. |
-| "Can Lira actively solve payment issues while on chat?" | **Durable multi-step agent loop (plan → confirm → execute → verify → reply)** | No state machine. One-shot reply. |
+| User scenario                                                            | Primitive we're missing                                                       | Why today's RAG loop can't do it                                                                                              |
+| ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| "Can Lira confirm the user's info after sign-in?"                        | **Authenticated visitor context in the reply pipeline**                       | `visitorEmail` + `visitorSig` arrive at the socket but don't get resolved to a `CustomerProfile` and injected into the prompt |
+| "Can Lira say 'I can see your subscription, let me help you cancel it'?" | **Tool-calling runtime + org-provided tool registry + confirmation gates**    | Reply is one text-gen call. No way for the model to call `getSubscription()` / `cancelSubscription()`.                        |
+| "Can Lira help when someone doesn't understand the navigation?"          | **Generative UI + optional co-browse pointer**                                | Widget only renders text. No card/button/pointer message type.                                                                |
+| "Can Lira actively solve payment issues while on chat?"                  | **Durable multi-step agent loop (plan → confirm → execute → verify → reply)** | No state machine. One-shot reply.                                                                                             |
 
 ---
 
@@ -298,14 +300,14 @@ Nova Sonic’s `promptStart.toolConfiguration` already accepts a `tools[]` array
 
 Good news: we're not starting from zero.
 
-| Existing file | Becomes |
-| ---- | ---- |
-| `lira-support-action.service.ts` | Inner tool executor of the agent loop (already has `crm_lookup`, `crm_update`, `ticket_create`, `slack_notify`, `email_followup`) |
-| `lira-support-customer.service.ts` | Identity gate; `get_customer_profile` built-in tool |
-| `lira-support-proactive.service.ts` | Outbound agent (same agent loop, different entry point) |
-| `lira-support-autoresolve.service.ts` | Wrapper that runs the agent loop headlessly for inbound emails |
-| `lira-support-learning.service.ts` | Tool-gap detector (point 13 above) |
-| `lira-support-reply.service.ts` | Becomes the text-only fallback path; agent loop is the default |
+| Existing file                         | Becomes                                                                                                                           |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `lira-support-action.service.ts`      | Inner tool executor of the agent loop (already has `crm_lookup`, `crm_update`, `ticket_create`, `slack_notify`, `email_followup`) |
+| `lira-support-customer.service.ts`    | Identity gate; `get_customer_profile` built-in tool                                                                               |
+| `lira-support-proactive.service.ts`   | Outbound agent (same agent loop, different entry point)                                                                           |
+| `lira-support-autoresolve.service.ts` | Wrapper that runs the agent loop headlessly for inbound emails                                                                    |
+| `lira-support-learning.service.ts`    | Tool-gap detector (point 13 above)                                                                                                |
+| `lira-support-reply.service.ts`       | Becomes the text-only fallback path; agent loop is the default                                                                    |
 
 The bad news: none of these are wired into `lira-support-chat.service.ts`'s live loop. That's the integration work.
 
@@ -339,4 +341,3 @@ The product spec (§6) promises outcome-based pricing. That is only defensible o
 ## 12. Summary — the one-line thesis
 
 > We have a well-built RAG support widget. Every OSS alternative has the same thing. The moat — and the reason B2B customers pay $5k/mo to Intercom instead of self-hosting Chatwoot — is **tool-calling with verified customer context, confirmation gates, and outcome tracking**. Build that next. Everything else is polish.
-

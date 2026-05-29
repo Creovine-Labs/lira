@@ -11,13 +11,19 @@ import {
   CheckCircleIcon,
   CodeBracketIcon,
   DevicePhoneMobileIcon,
+  BoltIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
-import { getSupportConfig, rotateWidgetSecret } from '@/services/api/support-api'
+import {
+  getSupportConfig,
+  rotateWidgetSecret,
+  updateSupportConfig,
+  HANDOFF_TRIGGER_DEFAULTS,
+} from '@/services/api/support-api'
 import { getMobilePushStatus } from '@/services/api'
-import type { SupportConfig } from '@/services/api/support-api'
+import type { SupportConfig, HandoffTriggersConfig } from '@/services/api/support-api'
 
 // ── Copy button helper ────────────────────────────────────────────────────────
 
@@ -220,6 +226,200 @@ async function registerPushToken() {
 }`
 }
 
+// ── Toggle switch ────────────────────────────────────────────────────────────
+
+function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition ${checked ? 'bg-[#020308]' : 'bg-gray-200'}`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition ${checked ? 'translate-x-4' : 'translate-x-0.5'}`}
+      />
+    </button>
+  )
+}
+
+// ── Handoff triggers (§6.2) ────────────────────────────────────────────────────
+
+function HandoffTriggersSection({
+  orgId,
+  initial,
+}: {
+  orgId: string
+  initial: HandoffTriggersConfig | undefined
+}) {
+  // Merge stored config over the built-in defaults so every field has a value.
+  const merged = (): Required<HandoffTriggersConfig> => ({
+    ...HANDOFF_TRIGGER_DEFAULTS,
+    ...(initial ?? {}),
+  })
+  const [draft, setDraft] = useState<Required<HandoffTriggersConfig>>(merged)
+  const [saved, setSaved] = useState<Required<HandoffTriggersConfig>>(merged)
+  const [saving, setSaving] = useState(false)
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+
+  const set = <K extends keyof HandoffTriggersConfig>(
+    key: K,
+    value: Required<HandoffTriggersConfig>[K]
+  ) => setDraft((d) => ({ ...d, [key]: value }))
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateSupportConfig(orgId, { handoff_triggers: draft })
+      setSaved(draft)
+      toast.success('Handoff triggers saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const resetDefaults = () => setDraft({ ...HANDOFF_TRIGGER_DEFAULTS })
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <BoltIcon className="h-4 w-4 text-[#020308]" />
+          <h2 className="font-semibold text-gray-900 text-sm">Automatic handoff triggers</h2>
+        </div>
+        <p className="mt-0.5 text-xs text-gray-400">
+          When any of these fire, Lira opens a ticket for your team. The AI keeps chatting in
+          parallel — these never silence it.
+        </p>
+      </div>
+
+      <div className="divide-y divide-gray-100">
+        <TriggerRow
+          title="VIP customer"
+          desc="A VIP or enterprise customer asks anything beyond a greeting."
+          checked={draft.vip_auto_enabled}
+          onChange={(v) => set('vip_auto_enabled', v)}
+        />
+        <TriggerRow
+          title="Negative sentiment"
+          desc="The customer turns frustrated or urgent after their first message."
+          checked={draft.sentiment_enabled}
+          onChange={(v) => set('sentiment_enabled', v)}
+        />
+        <TriggerRow
+          title="Repeated failure"
+          desc="The customer keeps coming back and the AI isn't closing it out."
+          checked={draft.repeated_failure_enabled}
+          onChange={(v) => set('repeated_failure_enabled', v)}
+          threshold={{
+            value: draft.repeated_failure_threshold,
+            onChange: (n) => set('repeated_failure_threshold', n),
+            suffix: 'messages',
+            min: 2,
+            max: 20,
+          }}
+        />
+        <TriggerRow
+          title="Going in circles"
+          desc="The same question gets rephrased without the AI making progress."
+          checked={draft.multi_turn_confusion_enabled}
+          onChange={(v) => set('multi_turn_confusion_enabled', v)}
+          threshold={{
+            value: draft.multi_turn_confusion_threshold,
+            onChange: (n) => set('multi_turn_confusion_threshold', n),
+            suffix: 'similar messages',
+            min: 2,
+            max: 20,
+          }}
+        />
+        <TriggerRow
+          title="SLA pressure"
+          desc="A conversation stays open and unresolved past the time window."
+          checked={draft.sla_pressure_enabled}
+          onChange={(v) => set('sla_pressure_enabled', v)}
+          threshold={{
+            value: draft.sla_pressure_minutes,
+            onChange: (n) => set('sla_pressure_minutes', n),
+            suffix: 'minutes',
+            min: 1,
+            max: 10080,
+          }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 px-5 py-3 bg-gray-50/60 border-t border-gray-100">
+        <button
+          onClick={resetDefaults}
+          className="text-xs font-medium text-gray-400 hover:text-gray-600"
+        >
+          Reset to defaults
+        </button>
+        <button
+          onClick={save}
+          disabled={!dirty || saving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#020308] px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function TriggerRow({
+  title,
+  desc,
+  checked,
+  onChange,
+  threshold,
+}: {
+  title: string
+  desc: string
+  checked: boolean
+  onChange: (v: boolean) => void
+  threshold?: {
+    value: number
+    onChange: (n: number) => void
+    suffix: string
+    min: number
+    max: number
+  }
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-5 py-3.5">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-gray-800">{title}</p>
+        <p className="mt-0.5 text-xs text-gray-400">{desc}</p>
+        {threshold && checked && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="text-[11px] text-gray-400">Fires after</span>
+            <input
+              type="number"
+              min={threshold.min}
+              max={threshold.max}
+              value={threshold.value}
+              onChange={(e) => {
+                const n = Number(e.target.value)
+                if (!Number.isNaN(n))
+                  threshold.onChange(Math.min(threshold.max, Math.max(threshold.min, n)))
+              }}
+              className="w-16 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-800 outline-none focus:border-gray-900 focus:bg-white"
+            />
+            <span className="text-[11px] text-gray-400">{threshold.suffix}</span>
+          </div>
+        )}
+      </div>
+      <div className="pt-0.5">
+        <Toggle checked={checked} onChange={onChange} />
+      </div>
+    </div>
+  )
+}
+
 // ── Main panel ─────────────────────────────────────────────────────────────────
 
 export function SupportSettingsPanel() {
@@ -406,6 +606,9 @@ export function SupportSettingsPanel() {
           </li>
         </ol>
       </div>
+
+      {/* ── Handoff triggers ──────────────────────────────────────────────── */}
+      <HandoffTriggersSection orgId={orgId} initial={config?.handoff_triggers} />
 
       {/* ── Mobile App integration ────────────────────────────────────────── */}
       <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">

@@ -176,7 +176,7 @@ export function FeaturesPage() {
               handoff into one AI support layer your team can launch quickly.
             </p>
             <div style={{ marginTop: 30 }}>
-              <BlogButton to="/book-demo">Book a Demo</BlogButton>
+              <BlogButton to="/book-demo">Speak to an expert</BlogButton>
             </div>
           </div>
         </div>
@@ -340,7 +340,7 @@ export function FeaturesPage() {
               step in without asking everyone to start over.
             </p>
             <div style={{ marginTop: 28 }}>
-              <BlogButton to="/book-demo">Book a Demo</BlogButton>
+              <BlogButton to="/book-demo">Speak to an expert</BlogButton>
             </div>
           </section>
         </div>

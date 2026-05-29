@@ -46,7 +46,7 @@ export function ContactPage() {
           ))}
         </div>
         <section className="bx-container" style={{ marginTop: 42, textAlign: 'center' }}>
-          <BlogButton to="/book-demo">Book a Demo</BlogButton>
+          <BlogButton to="/book-demo">Speak to an expert</BlogButton>
         </section>
       </main>
     </BlogShell>

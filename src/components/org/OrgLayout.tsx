@@ -20,13 +20,14 @@ function OrgLayout() {
           </div>
           <p className="text-sm font-medium text-gray-900">No organization yet</p>
           <p className="mt-1 text-sm text-gray-500">
-            Create or join an organization to access this section.
+            You need an organization to access this section. If you signed up through an invitation,
+            finish onboarding to set up your workspace.
           </p>
           <button
             onClick={() => navigate('/onboarding')}
             className="mt-4 rounded-xl bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-violet-500"
           >
-            Get started
+            Continue onboarding
           </button>
         </div>
       </div>

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'sonner'
@@ -28,6 +28,7 @@ import {
   ProductCustomerSupportPage,
   PricingPage,
   DemoSitePage,
+  DemoHelpPage,
   ResourcesPage,
   TutorialsPage,
   DocsHubPage,
@@ -49,6 +50,9 @@ import {
   VerifyEmailPage,
   ForgotPasswordPage,
   ResetPasswordPage,
+  AcceptInvitePage,
+  MyTicketsPage,
+  MyTicketDetailPage,
 } from '@/pages'
 import {
   AdminShell,
@@ -56,7 +60,9 @@ import {
   AdminUsersPage,
   AdminOrganizationsPage,
   AdminEmailPage,
+  AdminDemoOpsPage,
   AdminManagementPage,
+  AdminInvitesPage,
 } from '@/pages/admin'
 import {
   SupportActivatePage,
@@ -68,13 +74,17 @@ import {
   SupportActionsPage,
   SupportProactivePage,
   SupportAnalyticsPage,
-  SupportSettingsPage,
+  SupportTicketsPage,
+  SupportTicketDetailPage,
+  // SupportSettingsPage removed 2026-05-24 — content consolidated into
+  // /settings → Support. The /support/configuration route now redirects.
 } from '@/pages/support'
 import { OrgLayout } from '@/components/org'
 import { AppShell } from '@/components/shell'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { credentials } from '@/services/api'
 import { env } from '@/env'
+import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
 /** Listens for JWT expiry events dispatched by apiFetch and forces re-login. */
 function AuthExpiryGuard() {
@@ -87,6 +97,7 @@ function AuthExpiryGuard() {
       credentials.clear()
       clearCredentials()
       clearOrgStore()
+      resetLiraWidgetSession()
       navigate('/', { replace: true })
     }
     window.addEventListener('lira:auth-expired', handler)
@@ -96,9 +107,41 @@ function AuthExpiryGuard() {
   return null
 }
 
+function RootRoute() {
+  const token = useAuthStore((s) => s.token)
+  const [authHydrated, setAuthHydrated] = useState(useAuthStore.persist.hasHydrated())
+
+  useEffect(() => {
+    if (authHydrated) return
+    return useAuthStore.persist.onFinishHydration(() => setAuthHydrated(true))
+  }, [authHydrated])
+
+  if (!authHydrated) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <img
+          src="/lira_black.png"
+          alt="Loading"
+          className="h-8 w-8 animate-spin opacity-60"
+          style={{ animationDuration: '1.2s' }}
+        />
+      </div>
+    )
+  }
+
+  if (token) return <Navigate to="/dashboard" replace />
+
+  return <LandingPageV4 />
+}
+
 function App() {
-  // demo subdomain — render Nimbus demo page directly, bypassing the main router
+  // demo subdomain — render the Nimbus demo directly, bypassing the main router.
+  // Two paths supported: / (widget mode) and /help (full support page mode).
   if (window.location.hostname === 'demo.liraintelligence.com') {
+    const path = window.location.pathname
+    if (path === '/help' || path === '/help/') {
+      return <DemoHelpPage />
+    }
     return <DemoSitePage />
   }
 
@@ -106,7 +149,7 @@ function App() {
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
       <Routes>
         {/* Public routes — no shell */}
-        <Route path="/" element={<LandingPageV4 />} />
+        <Route path="/" element={<RootRoute />} />
         <Route path="/v3" element={<LandingPageV3 />} />
         <Route path="/v4" element={<LandingPageV4 />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
@@ -115,12 +158,14 @@ function App() {
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/launch-demo" element={<LaunchDemoPage />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />
+        <Route path="/demo/help" element={<DemoHelpPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/docs" element={<DocsHubPage />} />
         <Route path="/docs/:slug" element={<DocArticlePage />} />
@@ -143,6 +188,8 @@ function App() {
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>
           <Route path="/profile" element={<MemberProfilePage />} />
+          <Route path="/tickets" element={<MyTicketsPage />} />
+          <Route path="/tickets/:ticketNumber" element={<MyTicketDetailPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/meeting" element={<MeetingPage />} />
           <Route path="/meetings" element={<MeetingsPage />} />
@@ -165,13 +212,18 @@ function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
           </Route>
-          <Route path="/support" element={<Navigate to="/support/inbox" replace />} />
+          <Route path="/support" element={<Navigate to="/support/tickets" replace />} />
+          <Route path="/support/tickets" element={<SupportTicketsPage />} />
+          <Route path="/support/tickets/:ticketId" element={<SupportTicketDetailPage />} />
           <Route path="/support/inbox" element={<SupportInboxPage />} />
           <Route path="/support/customers" element={<SupportCustomersPage />} />
           <Route path="/support/actions" element={<SupportActionsPage />} />
           <Route path="/support/proactive" element={<SupportProactivePage />} />
           <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
-          <Route path="/support/configuration" element={<SupportSettingsPage />} />
+          {/* /support/configuration was consolidated into /settings → Support
+              sub-tabs (Secret + Mobile). Keep the route as a redirect so any
+              bookmarks / agent links still work. */}
+          <Route path="/support/configuration" element={<Navigate to="/settings" replace />} />
           <Route path="/support/activate" element={<SupportActivatePage />} />
           <Route path="/support/inbox/:id" element={<SupportConversationPage />} />
           <Route path="/support/notifications" element={<SupportNotificationsPage />} />
@@ -185,6 +237,8 @@ function App() {
           <Route path="users" element={<AdminUsersPage />} />
           <Route path="organizations" element={<AdminOrganizationsPage />} />
           <Route path="email" element={<AdminEmailPage />} />
+          <Route path="demo-ops" element={<AdminDemoOpsPage />} />
+          <Route path="invites" element={<AdminInvitesPage />} />
           <Route path="admins" element={<AdminManagementPage />} />
         </Route>
 
