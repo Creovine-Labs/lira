@@ -144,14 +144,33 @@ function SupportInboxPanel() {
     loadStats(currentOrgId)
   }, [currentOrgId, loadConversations, loadStats])
 
-  // Real-time poll: refresh conversation list + stats every 2s
+  // Visibility-aware polling per SUPPORT_TICKETING_API.md §7:
+  //   • 5s while the tab is focused — feels real-time without spamming
+  //   • 30s when backgrounded — keep the list warm without burning quota
+  // Previously this ran at 2s flat regardless of visibility (too hot, and
+  // the doc explicitly calls for 5–10s).
   useEffect(() => {
     if (!currentOrgId) return
-    const id = setInterval(() => {
+    let intervalId: number | null = null
+    const tick = () => {
       loadConversations(currentOrgId, statusFilter ?? undefined, { background: true })
       loadStats(currentOrgId)
-    }, 2000)
-    return () => clearInterval(id)
+    }
+    const start = () => {
+      if (intervalId !== null) window.clearInterval(intervalId)
+      const ms = document.visibilityState === 'visible' ? 5000 : 30000
+      intervalId = window.setInterval(tick, ms)
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') tick()
+      start()
+    }
+    start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      if (intervalId !== null) window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [currentOrgId, statusFilter, loadConversations, loadStats])
 
   // Redirect to activate if not activated or no config exists

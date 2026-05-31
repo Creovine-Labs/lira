@@ -140,13 +140,29 @@ function SupportConversationPage() {
     loadConversation(currentOrgId, convId)
   }, [currentOrgId, convId, loadConversation])
 
+  // Visibility-aware polling per SUPPORT_TICKETING_API.md §7:
+  //   • 3s while focused (operator is on the conversation, expecting live)
+  //   • 30s when backgrounded
+  // Skip entirely once the conversation is resolved — no new messages.
   useEffect(() => {
     if (!currentOrgId || !convId) return
     if (conv?.status === 'resolved') return
-    const id = setInterval(() => {
-      loadConversation(currentOrgId, convId)
-    }, 2000)
-    return () => clearInterval(id)
+    let intervalId: number | null = null
+    const start = () => {
+      if (intervalId !== null) window.clearInterval(intervalId)
+      const ms = document.visibilityState === 'visible' ? 3000 : 30000
+      intervalId = window.setInterval(() => loadConversation(currentOrgId, convId), ms)
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') loadConversation(currentOrgId, convId)
+      start()
+    }
+    start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      if (intervalId !== null) window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [currentOrgId, convId, conv?.status, loadConversation])
 
   const handleSendReply = useCallback(async () => {

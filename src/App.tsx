@@ -64,6 +64,7 @@ import {
   AdminManagementPage,
   AdminInvitesPage,
 } from '@/pages/admin'
+import { PortalAccessPage, PortalTicketsPage, PortalTicketDetailPage } from '@/pages/portal'
 import {
   SupportActivatePage,
   SupportConversationPage,
@@ -74,6 +75,10 @@ import {
   SupportActionsPage,
   SupportProactivePage,
   SupportAnalyticsPage,
+  SupportOutboxPage,
+  SupportPortalPage,
+  SupportQueuesPage,
+  SupportSlaPoliciesPage,
   SupportTicketsPage,
   SupportTicketDetailPage,
   // SupportSettingsPage removed 2026-05-24 — content consolidated into
@@ -185,6 +190,32 @@ function App() {
         <Route path="/acceptable-use" element={<AcceptableUsePolicyPage />} />
         <Route path="/security" element={<SecurityPage />} />
 
+        {/*
+         * Customer-facing ticket portal — two auth modes share the same UI.
+         *
+         *   /portal/:orgId/*    magic-link (Phase 4 §2.1–2.5). Customer
+         *                       enters their email, gets a magic link,
+         *                       lands on /tickets?access_token=…
+         *
+         *   /verified/:orgId/*  embedded-SDK (Phase 4 §2.6). The SDK opens
+         *                       /verified/:orgId/tickets?email=…&sig=… or
+         *                       /verified/:orgId/tickets/:number?email=…&sig=…
+         *                       The HMAC sig is computed by the host SDK;
+         *                       the FE just persists what the URL provides.
+         *
+         * Both paths render the same components — `usePortalSession` in
+         * PortalChrome detects the mode via the path prefix and routes the
+         * API calls under /public/ vs /verified/ accordingly.
+         */}
+        <Route path="/portal/:orgId/access" element={<PortalAccessPage />} />
+        <Route path="/portal/:orgId/tickets" element={<PortalTicketsPage />} />
+        <Route path="/portal/:orgId/tickets/:ticketNumber" element={<PortalTicketDetailPage />} />
+        <Route path="/portal/:orgId" element={<Navigate to="access" replace />} />
+
+        <Route path="/verified/:orgId/tickets" element={<PortalTicketsPage />} />
+        <Route path="/verified/:orgId/tickets/:ticketNumber" element={<PortalTicketDetailPage />} />
+        <Route path="/verified/:orgId" element={<Navigate to="tickets" replace />} />
+
         {/* Authenticated routes — wrapped in AppShell (sidebar + topbar) */}
         <Route element={<AppShell />}>
           <Route path="/profile" element={<MemberProfilePage />} />
@@ -220,6 +251,10 @@ function App() {
           <Route path="/support/actions" element={<SupportActionsPage />} />
           <Route path="/support/proactive" element={<SupportProactivePage />} />
           <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
+          <Route path="/support/portal" element={<SupportPortalPage />} />
+          <Route path="/support/queues" element={<SupportQueuesPage />} />
+          <Route path="/support/sla-policies" element={<SupportSlaPoliciesPage />} />
+          <Route path="/support/integrations/outbox" element={<SupportOutboxPage />} />
           {/* /support/configuration was consolidated into /settings → Support
               sub-tabs (Secret + Mobile). Keep the route as a redirect so any
               bookmarks / agent links still work. */}

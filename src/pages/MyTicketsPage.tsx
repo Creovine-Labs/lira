@@ -396,21 +396,34 @@ function VisitorAttachmentList({
   )
 }
 
+// Legacy badge — kept here so the operator-side MyTicketsPage (still wired to
+// the deprecated `/visitor/*` endpoints) renders correctly. Will be deleted
+// alongside MyTicketsPage when the customer portal supersedes it.
+const LEGACY_STATUS_MAP: Partial<
+  Record<SupportTicketRecord['status'], { cls: string; label: string; Icon: typeof ClockIcon }>
+> = {
+  open: { cls: 'bg-sky-50 text-sky-700', label: 'Open', Icon: ClockIcon },
+  in_progress: {
+    cls: 'bg-sky-50 text-sky-700',
+    label: 'In progress',
+    Icon: ChatBubbleLeftRightIcon,
+  },
+  pending: { cls: 'bg-amber-50 text-amber-800', label: 'Pending', Icon: ClockIcon },
+  on_hold: { cls: 'bg-slate-100 text-slate-700', label: 'On hold', Icon: ClockIcon },
+  escalated: {
+    cls: 'bg-orange-50 text-orange-700',
+    label: 'Escalated',
+    Icon: ChatBubbleLeftRightIcon,
+  },
+  resolved: { cls: 'bg-emerald-50 text-emerald-700', label: 'Resolved', Icon: CheckCircleIcon },
+  closed: { cls: 'bg-slate-100 text-slate-600', label: 'Closed', Icon: CheckCircleIcon },
+  merged: { cls: 'bg-slate-50 text-slate-500', label: 'Merged', Icon: CheckCircleIcon },
+  snoozed: { cls: 'bg-slate-50 text-slate-500', label: 'Snoozed', Icon: ClockIcon },
+}
+
 function StatusBadge({ status }: { status: SupportTicketRecord['status'] }) {
-  const map: Record<
-    SupportTicketRecord['status'],
-    { cls: string; label: string; Icon: typeof ClockIcon }
-  > = {
-    open: { cls: 'bg-amber-50 text-amber-700', label: 'Open', Icon: ClockIcon },
-    in_progress: {
-      cls: 'bg-blue-50 text-blue-700',
-      label: 'In progress',
-      Icon: ChatBubbleLeftRightIcon,
-    },
-    resolved: { cls: 'bg-emerald-50 text-emerald-700', label: 'Resolved', Icon: CheckCircleIcon },
-    closed: { cls: 'bg-slate-100 text-slate-600', label: 'Closed', Icon: CheckCircleIcon },
-  }
-  const { cls, label, Icon } = map[status]
+  const entry = LEGACY_STATUS_MAP[status] ?? LEGACY_STATUS_MAP.open!
+  const { cls, label, Icon } = entry
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}
