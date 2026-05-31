@@ -62,6 +62,16 @@ export function getWidgetStyles(primaryColor: string): string {
       height: 28px;
       fill: white;
     }
+    /* The launcher logo is rendered as an img (raster), not an inline SVG, so
+       the fill:white rule above does not reach it. Force any image-based logo
+       to render white via a tone-mapping filter so it always contrasts with
+       the dark launcher, regardless of what colour the source logo file is. */
+    .lira-launcher img {
+      width: 28px;
+      height: 28px;
+      object-fit: contain;
+      filter: brightness(0) invert(1);
+    }
     .lira-unread-badge {
       position: absolute;
       top: -3px;
@@ -226,6 +236,11 @@ export function getWidgetStyles(primaryColor: string): string {
       display: inline-block;
       flex-shrink: 0;
     }
+    /* Subtle amber variant — surfaces in the chat-list subtitle when the
+       last server fetch failed and the visitor is looking at a cached list. */
+    .lira-online-dot.lira-online-dot-offline {
+      background: #f59e0b;
+    }
     .lira-header-actions {
       display: flex;
       align-items: center;
@@ -372,189 +387,127 @@ export function getWidgetStyles(primaryColor: string): string {
        gradient backdrop, breathing rings around the avatar, staggered
        fade-ins for each piece of copy, CTA arrow that slides on hover. */
 
+    /* Editorial hero. No animated rings, no decorative glow, no fake
+       "online" pill. Single column of restrained type with the avatar
+       sitting on a plain surface — reads as deliberate rather than
+       AI-template-y. The .lira-hero-inner wrapper caps the line length
+       so the headline + subtitle don't sprawl on wider panels. */
     .lira-hero {
       position: relative;
       flex: 1;
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 28px 28px 18px;
-      text-align: center;
-      gap: 6px;
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 28%, rgba(99, 102, 241, 0.10) 0%, rgba(99, 102, 241, 0) 70%),
-        linear-gradient(180deg, #fafbff 0%, #ffffff 70%);
-      overflow: hidden;
-    }
-
-    /* Decorative animated glow behind the avatar. */
-    .lira-hero-glow {
-      position: absolute;
-      top: 18%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 220px;
-      height: 220px;
-      pointer-events: none;
-      background: radial-gradient(circle at center, rgba(99, 102, 241, 0.22) 0%, rgba(99, 102, 241, 0) 65%);
-      filter: blur(10px);
-      animation: lira-hero-glow 6s ease-in-out infinite;
-    }
-    @keyframes lira-hero-glow {
-      0%, 100% { opacity: 0.7; transform: translateX(-50%) scale(1); }
-      50%      { opacity: 1;   transform: translateX(-50%) scale(1.08); }
-    }
-
-    /* Avatar with two breathing rings around it. */
-    .lira-hero-avatar-wrap {
-      position: relative;
-      width: 80px;
-      height: 80px;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 1;
-      animation: lira-hero-fade-up 520ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    .lira-hero-ring {
-      position: absolute;
-      top: 50%; left: 50%;
-      width: 100%;
-      height: 100%;
-      border-radius: 50%;
-      border: 1.5px solid ${primaryColor};
-      transform: translate(-50%, -50%);
-      opacity: 0;
-      animation: lira-hero-ring 2.6s ease-out infinite;
-    }
-    .lira-hero-ring-1 { animation-delay: 0s; }
-    .lira-hero-ring-2 { animation-delay: 1.3s; }
-    @keyframes lira-hero-ring {
-      0%   { transform: translate(-50%, -50%) scale(0.85); opacity: 0.6; }
-      60%  { opacity: 0.18; }
-      100% { transform: translate(-50%, -50%) scale(1.55); opacity: 0; }
-    }
-    .lira-hero-avatar {
-      position: relative;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
+      padding: 28px 22px;
       background: #ffffff;
+      overflow: hidden;
+    }
+    .lira-hero-inner {
+      width: 100%;
+      max-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      text-align: left;
+      gap: 0;
+      animation: lira-hero-fade-up 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    }
+
+    .lira-hero-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: #0f172a;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.9) inset,
-        0 10px 28px -10px rgba(15, 23, 42, 0.35),
-        0 2px 6px -2px rgba(15, 23, 42, 0.2);
+      margin-bottom: 18px;
     }
     .lira-hero-avatar img {
       width: 100%;
       height: 100%;
       object-fit: contain;
-      border-radius: 50%;
+      border-radius: 12px;
+      /* Lira logo ships as dark glyph; on the dark-slate tile it'd be
+         invisible. Invert to white so it reads on this background — same
+         trick we use for the launcher bubble. */
+      filter: brightness(0) invert(1);
     }
 
-    .lira-hero-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
+    .lira-hero-eyebrow {
       font-size: 11px;
-      font-weight: 600;
-      color: #475569;
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
-      border-radius: 999px;
-      padding: 4px 10px 4px 8px;
-      margin-bottom: 10px;
-      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-      animation: lira-hero-fade-up 520ms 80ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
-    }
-    .lira-hero-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #22c55e;
-      box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55);
-      animation: lira-hero-dot-pulse 2s ease-out infinite;
-    }
-    @keyframes lira-hero-dot-pulse {
-      0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.55); }
-      80%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-      100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #94a3b8;
+      margin-bottom: 8px;
     }
 
     .lira-hero-title {
-      font-size: 24px;
+      font-size: 26px;
+      line-height: 1.15;
       font-weight: 700;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.024em;
       color: #0f172a;
-      margin: 0;
-      animation: lira-hero-fade-up 520ms 140ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      margin: 0 0 10px;
     }
     .lira-hero-subtitle {
-      font-size: 13.5px;
+      font-size: 14px;
       line-height: 1.55;
-      color: #64748b;
-      margin: 6px 0 18px;
-      max-width: 296px;
-      animation: lira-hero-fade-up 520ms 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      color: #475569;
+      margin: 0 0 22px;
     }
 
+    .lira-hero-ctas {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
     .lira-hero-cta {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      background: linear-gradient(180deg, color-mix(in srgb, ${primaryColor} 92%, #ffffff 8%) 0%, ${primaryColor} 100%);
+      background: #0f172a;
       color: #ffffff;
-      border: none;
-      border-radius: 14px;
-      padding: 13px 22px;
-      font-size: 14px;
+      border: 1px solid #0f172a;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 13.5px;
       font-weight: 600;
       font-family: inherit;
       cursor: pointer;
-      width: 100%;
-      max-width: 280px;
-      transition: transform 0.14s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.18s ease, opacity 0.15s ease;
-      box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.12) inset,
-        0 8px 20px -8px rgba(15, 23, 42, 0.35),
-        0 1px 3px rgba(15, 23, 42, 0.16);
-      animation: lira-hero-fade-up 520ms 300ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+      transition: background 0.14s ease, border-color 0.14s ease, transform 0.1s ease;
     }
     .lira-hero-cta:hover {
-      transform: translateY(-1px);
-      box-shadow:
-        0 1px 0 rgba(255, 255, 255, 0.15) inset,
-        0 14px 28px -10px rgba(15, 23, 42, 0.45),
-        0 2px 6px rgba(15, 23, 42, 0.22);
-    }
-    .lira-hero-cta:hover .lira-hero-cta-arrow {
-      transform: translateX(3px);
+      background: #1e293b;
+      border-color: #1e293b;
     }
     .lira-hero-cta:active {
-      transform: translateY(0) scale(0.985);
+      transform: translateY(1px);
     }
-    .lira-hero-cta-arrow {
-      width: 16px;
-      height: 16px;
-      transition: transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+    .lira-hero-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #ffffff;
+      color: #0f172a;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 13.5px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: background 0.14s ease, border-color 0.14s ease;
     }
-
-    .lira-hero-hint {
-      font-size: 11.5px;
-      color: #94a3b8;
-      margin: 12px 0 0;
-      animation: lira-hero-fade-up 520ms 380ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    .lira-hero-secondary:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
     }
 
     @keyframes lira-hero-fade-up {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
 
@@ -599,114 +552,113 @@ export function getWidgetStyles(primaryColor: string): string {
       to   { opacity: 1; transform: translateY(0); }
     }
 
-    /* Public site home surface */
+    /* ── Widget home tab ──────────────────────────────────────────────────
+       Three templates picked per-org via home_template in support config:
+         .lira-home               → 'default' (refreshed clean hero + cards)
+         .lira-home.lira-home-minimal → no hero; greeting + list of buttons
+         .lira-home.lira-home-branded → large banner image above the content
+       The teal/amber radial-glow backdrop + animated rings/orbits/glow
+       around the logo were dropped because they read as generic "AI widget"
+       chrome. The default now leans editorial — closer to the landing page. */
     .lira-home {
       flex: 1;
       overflow-y: auto;
-      background:
-        radial-gradient(ellipse 72% 44% at 50% 6%, rgba(45,212,191,0.16) 0%, rgba(45,212,191,0) 70%),
-        radial-gradient(ellipse 54% 40% at 8% 92%, rgba(245,158,11,0.09) 0%, rgba(245,158,11,0) 72%),
-        linear-gradient(180deg, #fbfcff 0%, #f8fafc 58%, #ffffff 100%);
+      background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
       padding: 22px 18px 12px;
       animation: lira-home-fade-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
+    /* Onboarding home variant — used by the Lira admin-dashboard embed
+       (autoOpenFirstVisit=true). Replaces the marketing-style hero+cards
+       with the setup-guidance hero (avatar + welcome + "Guide me through
+       setup" + "Start a conversation"). Pulls back the padding so the hero
+       can flex to fill the available height like it does in the chat view. */
+    .lira-home.lira-home-onboarding {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      background: #ffffff;
+    }
+    .lira-home.lira-home-onboarding .lira-hero {
+      flex: 1;
+    }
     .lira-home-hero {
       position: relative;
-      border: 1px solid rgba(226,232,240,0.95);
-      border-radius: 20px;
-      background:
-        linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(255,255,255,0.9) 100%);
-      padding: 82px 20px 19px;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      background: #ffffff;
+      padding: 24px 20px 20px;
       text-align: center;
       overflow: hidden;
-      box-shadow:
-        0 22px 50px rgba(15,23,42,0.1),
-        0 1px 0 rgba(255,255,255,0.95) inset;
+      box-shadow: 0 1px 2px rgba(15,23,42,0.04);
     }
-    .lira-home-hero::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background:
-        linear-gradient(135deg, rgba(20,184,166,0.12), rgba(255,255,255,0) 34%),
-        linear-gradient(225deg, rgba(15,23,42,0.07), rgba(255,255,255,0) 36%);
+    /* Branded banner — large image area above the hero content. Optional;
+       only renders when home_banner_url is set. */
+    .lira-home-banner {
+      position: relative;
+      width: 100%;
+      height: 132px;
+      border-radius: 16px;
+      overflow: hidden;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, ${primaryColor}, ${primaryColor});
+      box-shadow: 0 1px 2px rgba(15,23,42,0.06);
     }
-    .lira-home-glow {
-      position: absolute;
-      top: -72px;
-      left: 50%;
-      width: 270px;
-      height: 270px;
-      pointer-events: none;
-      background:
-        radial-gradient(circle at center, rgba(20,184,166,0.18) 0%, rgba(15,23,42,0.08) 34%, rgba(15,23,42,0) 66%);
-      filter: blur(9px);
-      transform: translateX(-50%);
-      animation: lira-home-glow 6s ease-in-out infinite;
+    .lira-home-banner img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    /* Minimal — drop the hero card entirely, tighten everything. */
+    .lira-home.lira-home-minimal {
+      padding: 18px 16px 10px;
+      background: #ffffff;
+    }
+    .lira-home.lira-home-minimal .lira-home-hero {
+      border: none;
+      background: transparent;
+      padding: 8px 4px 14px;
+      text-align: left;
+      box-shadow: none;
+    }
+    .lira-home.lira-home-minimal .lira-home-title {
+      font-size: 17px;
+      margin-bottom: 4px;
+    }
+    .lira-home.lira-home-minimal .lira-home-subtitle {
+      font-size: 12.5px;
+      margin-bottom: 10px;
+    }
+    /* The animated rings + orbits + glow that used to sit around the logo
+       were removed because they read as generic "AI chat widget" chrome.
+       The classes are kept as no-op stubs so any legacy rendered markup
+       degrades cleanly without breaking layout. */
+    .lira-home-glow,
+    .lira-home-ring,
+    .lira-home-orbit {
+      display: none;
     }
     .lira-home-logo-wrap {
       position: relative;
-      z-index: 2;
-      width: 86px;
-      height: 86px;
-      margin: 0 auto -58px;
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 12px;
       display: flex;
       align-items: center;
       justify-content: center;
       animation: lira-home-rise 480ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
-    .lira-home-ring {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 78px;
-      height: 78px;
-      border-radius: 999px;
-      border: 1.5px solid rgba(15,23,42,0.22);
-      transform: translate(-50%, -50%);
-      opacity: 0;
-      animation: lira-home-ring 2.8s ease-out infinite;
-    }
-    .lira-home-ring-2 {
-      animation-delay: 1.4s;
-    }
-    .lira-home-orbit {
-      position: absolute;
-      width: 7px;
-      height: 7px;
-      border-radius: 999px;
-      background: #14b8a6;
-      box-shadow: 0 0 0 5px rgba(20,184,166,0.12);
-    }
-    .lira-home-orbit-1 {
-      top: 10px;
-      right: 14px;
-      animation: lira-home-float-a 4.8s ease-in-out infinite;
-    }
-    .lira-home-orbit-2 {
-      left: 12px;
-      bottom: 15px;
-      width: 5px;
-      height: 5px;
-      background: #64748b;
-      box-shadow: 0 0 0 5px rgba(100,116,139,0.1);
-      animation: lira-home-float-b 5.4s ease-in-out infinite;
-    }
     .lira-home-logo {
       position: relative;
-      width: 58px;
-      height: 58px;
-      border-radius: 19px;
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       background: #ffffff;
       border: 1px solid #e2e8f0;
       display: flex;
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      box-shadow:
-        0 18px 36px rgba(15,23,42,0.16),
-        0 1px 0 rgba(255,255,255,0.95) inset;
     }
     .lira-home-logo img {
       width: 100%;
@@ -876,6 +828,231 @@ export function getWidgetStyles(primaryColor: string): string {
     @keyframes lira-home-float-b {
       0%, 100% { transform: translate3d(0, 0, 0); }
       50%      { transform: translate3d(6px, -5px, 0); }
+    }
+
+    /* Conversation list */
+    .lira-conversation-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 14px;
+      background:
+        radial-gradient(ellipse 70% 36% at 50% 0%, rgba(20,184,166,0.08), rgba(20,184,166,0) 72%),
+        linear-gradient(180deg, #fbfcff 0%, #ffffff 100%);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .lira-conversation-item-wrap {
+      position: relative;
+      display: flex;
+      align-items: stretch;
+      width: 100%;
+    }
+    .lira-conversation-item {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid rgba(226,232,240,0.95);
+      border-radius: 15px;
+      background: rgba(255,255,255,0.96);
+      padding: 10px;
+      padding-right: 38px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: inherit;
+      text-align: left;
+      cursor: pointer;
+      transition: border-color 0.14s ease, box-shadow 0.14s ease, transform 0.14s ease;
+    }
+    .lira-conversation-item:hover,
+    .lira-conversation-item.active {
+      border-color: rgba(100,116,139,0.45);
+      box-shadow: 0 10px 22px rgba(15,23,42,0.07);
+      transform: translateY(-1px);
+    }
+    /* The hide affordance sits inside the row at the right. Always-on
+       prominent: a soft slate icon at full opacity so it's obvious without
+       requiring hover (which doesn't exist on touch). Brightens to red on
+       hover/focus/active so the destructive intent is clear before tap.
+       Clicking it should NOT open the conversation — stopPropagation in JS
+       keeps the two tap targets independent. */
+    .lira-conversation-hide {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      border: 1px solid rgba(148,163,184,0.35);
+      background: rgba(255,255,255,0.7);
+      color: #64748b;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+    }
+    .lira-conversation-hide svg {
+      width: 15px;
+      height: 15px;
+    }
+    .lira-conversation-hide:hover,
+    .lira-conversation-hide:focus-visible,
+    .lira-conversation-hide:active {
+      color: #ef4444;
+      background: rgba(254,226,226,0.95);
+      border-color: rgba(239,68,68,0.55);
+      outline: none;
+    }
+    /* Inline confirm replaces the row's contents in place. Two-button layout
+       (Cancel ghost / Remove destructive) sized to match the row height so
+       the list doesn't jump. */
+    .lira-conversation-item-wrap-confirm {
+      border: 1px solid rgba(239,68,68,0.35);
+      border-radius: 15px;
+      background: rgba(254,242,242,0.65);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .lira-conversation-confirm-copy {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+    }
+    .lira-conversation-confirm-title {
+      color: #0f172a;
+      font-size: 12.5px;
+      font-weight: 800;
+    }
+    .lira-conversation-confirm-body {
+      color: #64748b;
+      font-size: 11.5px;
+      line-height: 1.3;
+    }
+    .lira-conversation-confirm-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex: 0 0 auto;
+    }
+    .lira-conversation-confirm-cancel,
+    .lira-conversation-confirm-remove {
+      border-radius: 9px;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 7px 11px;
+      cursor: pointer;
+      transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
+    }
+    .lira-conversation-confirm-cancel {
+      border: 1px solid rgba(148,163,184,0.5);
+      background: #fff;
+      color: #475569;
+    }
+    .lira-conversation-confirm-cancel:hover {
+      border-color: rgba(100,116,139,0.7);
+      background: #f8fafc;
+    }
+    .lira-conversation-confirm-remove {
+      border: 1px solid #ef4444;
+      background: #ef4444;
+      color: #fff;
+    }
+    .lira-conversation-confirm-remove:hover {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+    .lira-conversation-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 13px;
+      background: #0f172a;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex: 0 0 auto;
+      font-size: 13px;
+      font-weight: 850;
+    }
+    .lira-conversation-copy {
+      min-width: 0;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .lira-conversation-topline {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .lira-conversation-title {
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #0f172a;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .lira-conversation-time {
+      color: #94a3b8;
+      font-size: 10.5px;
+      font-weight: 700;
+      flex: 0 0 auto;
+    }
+    .lira-conversation-preview {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: #64748b;
+      font-size: 12px;
+      line-height: 1.35;
+    }
+    .lira-conversation-empty {
+      margin: auto 0;
+      text-align: center;
+      padding: 24px 12px;
+      color: #64748b;
+    }
+    .lira-conversation-empty-icon {
+      width: 52px;
+      height: 52px;
+      margin: 0 auto 12px;
+      border-radius: 18px;
+      background: #0f172a;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 16px 30px rgba(15,23,42,0.16);
+    }
+    .lira-conversation-empty-icon svg {
+      width: 24px;
+      height: 24px;
+      fill: currentColor;
+    }
+    .lira-conversation-empty-title {
+      color: #0f172a;
+      font-size: 14px;
+      font-weight: 850;
+      margin-bottom: 4px;
+    }
+    .lira-conversation-empty-body {
+      font-size: 12px;
+      line-height: 1.5;
+      margin: 0 auto 14px;
+      max-width: 260px;
     }
 
     /* Message row — avatar + body */

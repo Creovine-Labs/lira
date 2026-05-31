@@ -26,18 +26,24 @@ export class WidgetSocket {
   private closed = false
   private visitorId: string
   private forceNewCase: boolean
+  private convId?: string | null
+  private homeCardId?: string | null
   private pendingMessages: OutgoingWsMessage[] = []
 
   constructor(
     config: WidgetConfig,
     visitorId: string,
     forceNewCase: boolean,
+    convId: string | null | undefined,
     onMessage: MessageHandler,
-    onStatus: StatusHandler
+    onStatus: StatusHandler,
+    homeCardId?: string | null
   ) {
     this.config = config
     this.visitorId = visitorId
     this.forceNewCase = forceNewCase
+    this.convId = convId
+    this.homeCardId = homeCardId
     this.onMessage = onMessage
     this.onStatus = onStatus
   }
@@ -50,9 +56,17 @@ export class WidgetSocket {
     if (this.config.visitorEmail) params.set('email', this.config.visitorEmail)
     if (this.config.visitorName) params.set('name', this.config.visitorName)
     if (this.config.visitorSig) params.set('sig', this.config.visitorSig)
+    if (this.convId && !this.forceNewCase) params.set('convId', this.convId)
     if (this.forceNewCase) {
       params.set('newCase', '1')
       this.forceNewCase = false
+    }
+    // One-shot: a home-card id is only meaningful when creating a new
+    // conversation. We clear after sending so reconnects to the same
+    // conversation don't re-stamp the card id on every reattach.
+    if (this.homeCardId) {
+      params.set('homeCardId', this.homeCardId)
+      this.homeCardId = null
     }
 
     const url = `${WS_BASE}/ws/${this.config.orgId}?${params.toString()}`

@@ -17,6 +17,14 @@ export interface WidgetConfig {
   greeting?: string
   orgName?: string
   logoUrl?: string
+  /** Visual template for the widget home tab. */
+  homeTemplate?: 'default' | 'minimal' | 'branded'
+  /** Banner image rendered above the home content when homeTemplate === 'branded'. */
+  homeBannerUrl?: string
+  homeLogoUrl?: string
+  homeTitle?: string
+  homeSubtitle?: string
+  homeCards?: WidgetHomeCard[]
   voiceEnabled?: boolean
   preChatFormEnabled?: boolean
   preChatFormFields?: string[]
@@ -54,6 +62,16 @@ export interface WidgetConfig {
    * web visitors who didn't ask for chat.
    */
   autoOpenFirstVisit?: boolean
+}
+
+export interface WidgetHomeCard {
+  /** Stable card identity. Survives prompt/title renames so re-clicking a
+   *  card after an admin edits its copy still reopens the same conversation. */
+  id?: string
+  title: string
+  body?: string
+  prompt: string
+  icon?: string
 }
 
 export interface ChatMessage {
@@ -252,4 +270,4 @@ export interface OutgoingWsMessage {
   data?: Record<string, unknown>
 }
 
-export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat' | 'csat'
+export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat-list' | 'chat' | 'csat'

@@ -12,6 +12,10 @@ import {
   CodeBracketIcon,
   DevicePhoneMobileIcon,
   BoltIcon,
+  PlusIcon,
+  TrashIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import { useOrgStore } from '@/app/store'
@@ -429,6 +433,7 @@ export function SupportSettingsPanel() {
   const [activeSnippet, setActiveSnippet] = useState<'anonymous' | 'identified'>('identified')
   const [mobileSnippetLang, setMobileSnippetLang] = useState<'flutter' | 'reactnative'>('flutter')
   const [mobileTokenCount, setMobileTokenCount] = useState<number | null>(null)
+  const [savingHome, setSavingHome] = useState(false)
 
   const loadConfig = useCallback(async () => {
     if (!currentOrgId) return
@@ -475,6 +480,139 @@ export function SupportSettingsPanel() {
   const flutterSnippet = buildFlutterSnippet(orgId, portalSlug)
   const reactNativeSnippet = buildReactNativeSnippet(orgId, portalSlug)
   const activeMobileSnippet = mobileSnippetLang === 'flutter' ? flutterSnippet : reactNativeSnippet
+  const homeCards =
+    config?.home_cards && config.home_cards.length > 0
+      ? config.home_cards
+      : [
+          {
+            icon: '01',
+            title: 'Ask a product question',
+            body: 'Get answers from your knowledge base.',
+            prompt: 'I have a product question.',
+          },
+          {
+            icon: '02',
+            title: 'Get account help',
+            body: 'Billing, login, subscription, and setup support.',
+            prompt: 'I need help with my account.',
+          },
+          {
+            icon: '03',
+            title: 'Talk to support',
+            body: 'Create a ticket when Lira needs your team.',
+            prompt: 'I want to talk to support.',
+          },
+        ]
+
+  const updateHomeField = (patch: Partial<SupportConfig>) => {
+    setConfig((prev) => (prev ? { ...prev, ...patch } : prev))
+  }
+
+  const updateHomeCard = (index: number, patch: Partial<(typeof homeCards)[number]>) => {
+    const next = homeCards.map((card, i) => (i === index ? { ...card, ...patch } : card))
+    updateHomeField({ home_cards: next })
+  }
+
+  // Seed an "Add" with a common-question template the admin can adopt or
+  // overwrite. Cycles through these so successive Adds give different starts
+  // instead of always landing on the same generic placeholder. Icons are
+  // clean numeric badges by default; admins can swap them for emojis/letters
+  // via the icon field if they want — we just don't ship emoji defaults.
+  const cardTemplates: Array<{ title: string; body: string; prompt: string }> = [
+    { title: 'About us', body: 'Get a quick overview.', prompt: 'Tell me about your company.' },
+    { title: 'Pricing', body: 'See plans and pricing.', prompt: 'How does pricing work?' },
+    {
+      title: 'How does it work?',
+      body: 'A short walkthrough.',
+      prompt: 'How does your product work?',
+    },
+    {
+      title: 'Account help',
+      body: 'Login, billing, settings.',
+      prompt: 'I need help with my account.',
+    },
+    {
+      title: 'Talk to a teammate',
+      body: 'Loop in a human.',
+      prompt: 'I want to talk to a real person.',
+    },
+    {
+      title: 'See what it can do',
+      body: 'Capabilities + use cases.',
+      prompt: 'What can you help me with?',
+    },
+  ]
+
+  const addHomeCard = () => {
+    const seed = cardTemplates[homeCards.length % cardTemplates.length]
+    updateHomeField({
+      home_cards: [
+        ...homeCards,
+        {
+          // Generate a stable id up-front so the card can survive renames.
+          id:
+            typeof crypto !== 'undefined' && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+          // Default to a clean numeric badge (01, 02, …); admin can replace.
+          icon: String(homeCards.length + 1).padStart(2, '0'),
+          title: seed.title,
+          body: seed.body,
+          prompt: seed.prompt,
+        },
+      ],
+    })
+  }
+
+  const removeHomeCard = (index: number) => {
+    updateHomeField({ home_cards: homeCards.filter((_, i) => i !== index) })
+  }
+
+  // Re-order quick-start cards. Order matters visually (first card carries
+  // the most weight) so admins can tune which prompt the visitor sees first.
+  const moveHomeCard = (index: number, direction: -1 | 1) => {
+    const target = index + direction
+    if (target < 0 || target >= homeCards.length) return
+    const next = [...homeCards]
+    ;[next[index], next[target]] = [next[target], next[index]]
+    updateHomeField({ home_cards: next })
+  }
+
+  const saveHomeSurface = async () => {
+    if (!config) return
+    setSavingHome(true)
+    try {
+      const payload = {
+        home_template: config.home_template ?? 'default',
+        home_banner_url: config.home_banner_url ?? '',
+        home_logo_url: config.home_logo_url ?? '',
+        home_title: config.home_title ?? '',
+        home_subtitle: config.home_subtitle ?? '',
+        home_cards: homeCards.map((card) => ({
+          // Preserve existing ids; mint one for any card that doesn't have one
+          // (e.g. an admin pasted from another source or imported a legacy
+          // config). The backend will also backfill, but minting client-side
+          // means the field is reflected immediately in local state.
+          id:
+            card.id?.trim() ||
+            (typeof crypto !== 'undefined' && crypto.randomUUID
+              ? crypto.randomUUID()
+              : `card-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`),
+          icon: card.icon?.trim() || '',
+          title: card.title.trim(),
+          body: card.body?.trim() || '',
+          prompt: card.prompt.trim(),
+        })),
+      }
+      const updated = await updateSupportConfig(orgId, payload)
+      setConfig(updated)
+      toast.success('Widget home screen saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save home screen')
+    } finally {
+      setSavingHome(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -526,6 +664,206 @@ export function SupportSettingsPanel() {
           </pre>
           <div className="absolute top-2.5 right-2.5">
             <CopyButton text={activeSnippet === 'anonymous' ? anonSnippet : idSnippet} />
+          </div>
+        </div>
+      </div>
+
+      {/* ── Widget home screen ───────────────────────────────────────────── */}
+      <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="font-semibold text-gray-900 text-sm">Widget home screen</h2>
+          <p className="mt-0.5 text-xs text-gray-400">
+            Customize the Home tab shown in every Lira widget, dashboard embed, and full-page SDK
+            surface.
+          </p>
+        </div>
+        {/* Template picker — three styles for the widget home tab. */}
+        <div className="px-5 py-4 border-b border-gray-100">
+          <p className="mb-2 text-xs font-semibold text-gray-600">Home template</p>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                {
+                  value: 'default',
+                  label: 'Default',
+                  desc: 'Logo, headline, cards.',
+                },
+                {
+                  value: 'minimal',
+                  label: 'Minimal',
+                  desc: 'No big hero — just a list.',
+                },
+                {
+                  value: 'branded',
+                  label: 'Branded',
+                  desc: 'Large banner image on top.',
+                },
+              ] as const
+            ).map((opt) => {
+              const active = (config?.home_template ?? 'default') === opt.value
+              return (
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => updateHomeField({ home_template: opt.value })}
+                  className={`rounded-xl border px-3 py-2.5 text-left transition ${
+                    active
+                      ? 'border-[#020308] bg-[#020308] text-white shadow-sm'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-400'
+                  }`}
+                >
+                  <p className="text-xs font-bold">{opt.label}</p>
+                  <p className={`mt-0.5 text-[11px] ${active ? 'text-white/70' : 'text-gray-400'}`}>
+                    {opt.desc}
+                  </p>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div className="grid gap-4 px-5 py-4 md:grid-cols-2">
+          {/* Branded template only — the cover image at the top of the home. */}
+          {(config?.home_template ?? 'default') === 'branded' && (
+            <label className="space-y-1.5 md:col-span-2">
+              <span className="text-xs font-semibold text-gray-600">Banner image URL</span>
+              <input
+                value={config?.home_banner_url ?? ''}
+                onChange={(e) => updateHomeField({ home_banner_url: e.target.value })}
+                placeholder="https://...  (PNG/JPG — appears above the title)"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-gray-900 focus:bg-white"
+              />
+            </label>
+          )}
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold text-gray-600">Logo URL</span>
+            <input
+              value={config?.home_logo_url ?? ''}
+              onChange={(e) => updateHomeField({ home_logo_url: e.target.value })}
+              placeholder="https://..."
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-gray-900 focus:bg-white"
+            />
+          </label>
+          <label className="space-y-1.5">
+            <span className="text-xs font-semibold text-gray-600">Headline</span>
+            <input
+              value={config?.home_title ?? ''}
+              onChange={(e) => updateHomeField({ home_title: e.target.value })}
+              placeholder="How can we help?"
+              className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-gray-900 focus:bg-white"
+            />
+          </label>
+          <label className="space-y-1.5 md:col-span-2">
+            <span className="text-xs font-semibold text-gray-600">Intro copy</span>
+            <textarea
+              value={config?.home_subtitle ?? ''}
+              onChange={(e) => updateHomeField({ home_subtitle: e.target.value })}
+              placeholder="Start with a common question or open a new conversation."
+              rows={2}
+              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm outline-none transition focus:border-gray-900 focus:bg-white"
+            />
+          </label>
+        </div>
+
+        <div className="border-t border-gray-100 px-5 py-4">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold text-gray-700">Quick-start buttons</p>
+              <p className="text-[11px] text-gray-400">
+                Each button starts its own conversation. Re-clicking the same button reopens that
+                thread. Add up to 12.
+              </p>
+            </div>
+            <button
+              onClick={addHomeCard}
+              disabled={homeCards.length >= 12}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <PlusIcon className="h-3.5 w-3.5" />
+              Add
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            {homeCards.map((card, index) => (
+              // Stable key by id so React preserves input focus across
+              // reordering. Falls back to index for legacy cards.
+              <div
+                key={card.id ?? `idx-${index}`}
+                className="rounded-xl border border-gray-200 bg-gray-50 p-3"
+              >
+                <div className="grid gap-2 md:grid-cols-[72px_1fr]">
+                  <input
+                    value={card.icon ?? ''}
+                    onChange={(e) => updateHomeCard(index, { icon: e.target.value })}
+                    placeholder="01"
+                    className="rounded-lg border border-gray-200 bg-white px-2 py-2 text-sm outline-none focus:border-gray-900"
+                  />
+                  <input
+                    value={card.title}
+                    onChange={(e) => updateHomeCard(index, { title: e.target.value })}
+                    placeholder="Button title"
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-900"
+                  />
+                  <input
+                    value={card.body ?? ''}
+                    onChange={(e) => updateHomeCard(index, { body: e.target.value })}
+                    placeholder="Short description"
+                    className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-900 md:col-span-2"
+                  />
+                  <textarea
+                    value={card.prompt}
+                    onChange={(e) => updateHomeCard(index, { prompt: e.target.value })}
+                    placeholder="Prompt sent when clicked"
+                    rows={2}
+                    className="resize-none rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none focus:border-gray-900 md:col-span-2"
+                  />
+                </div>
+                <p className="mt-1 text-[10px] text-gray-400">
+                  Icon: a short number, emoji, or 1–2 letters (e.g. 01, 💡, AI).
+                </p>
+                <div className="mt-2 flex items-center justify-between">
+                  <div className="inline-flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => moveHomeCard(index, -1)}
+                      disabled={index === 0}
+                      aria-label="Move card up"
+                      className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-1.5 py-1 text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronUpIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => moveHomeCard(index, 1)}
+                      disabled={index === homeCards.length - 1}
+                      aria-label="Move card down"
+                      className="inline-flex items-center rounded-lg border border-gray-200 bg-white px-1.5 py-1 text-gray-500 transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <ChevronDownIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                  <button
+                    onClick={() => removeHomeCard(index)}
+                    disabled={homeCards.length <= 1}
+                    className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-semibold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={saveHomeSurface}
+              disabled={savingHome}
+              className="inline-flex items-center rounded-lg bg-[#020308] px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+            >
+              {savingHome ? 'Saving…' : 'Save home screen'}
+            </button>
           </div>
         </div>
       </div>

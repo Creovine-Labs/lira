@@ -242,6 +242,24 @@ inside `#nimbus-support-root` via `window.Lira.mountSupportPage(...)`.
 
 ---
 
+## 7B. Widget Home + multi-conversation messenger
+
+This validates the new messenger model shared by floating widgets, dashboard
+embeds, and full-page SDK embeds.
+
+| #    | Action                                                              | Expected                                                                                                              | ✅  |
+| ---- | ------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --- |
+| 7B.1 | Open any Lira widget                                                | Widget opens to **Home** with bottom navigation: Home + Chat                                                          | ☐   |
+| 7B.2 | Click **Chat**                                                      | Opens a conversation list, not a thread directly                                                                      | ☐   |
+| 7B.3 | Click **+ New**                                                     | Opens a fresh blank conversation thread                                                                               | ☐   |
+| 7B.4 | Go back to Home and click a quick-start card                        | Starts a new conversation and sends that card's prompt                                                                | ☐   |
+| 7B.5 | Go back Home and click a different quick-start card                 | Starts a separate conversation                                                                                        | ☐   |
+| 7B.6 | Click the first quick-start card again                              | Reopens the existing thread for that card, does not resend the prompt                                                 | ☐   |
+| 7B.7 | In Settings → Support, edit Home logo/title/subtitle/cards and save | Widget config endpoint returns `home_logo_url`, `home_title`, `home_subtitle`, `home_cards`; widget reflects the edit | ☐   |
+| 7B.8 | On dashboard onboarding widget, open first-visit hero               | Shows both **Guide me through setup** and **Start a conversation**                                                    | ☐   |
+
+---
+
 ## 8. KB fallback (simulate Qdrant down)
 
 | #   | Action                                                            | Expected                                                    | ✅  |
