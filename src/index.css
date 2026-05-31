@@ -212,3 +212,27 @@
     @apply rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 no-underline transition hover:border-gray-300 hover:text-gray-950;
   }
 }
+
+/* ── Customer portal animations ───────────────────────────────────────────
+ * Used by the portal ticket list to highlight rows that arrived since the
+ * last poll. Subtle slide-fade-in, then settles. Keeps polling feel "live"
+ * without jumpy full re-renders.
+ */
+@keyframes portal-row-in {
+  0% {
+    opacity: 0;
+    transform: translateY(-6px);
+    background-color: rgba(2, 3, 8, 0.04);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0);
+    background-color: rgba(2, 3, 8, 0.04);
+  }
+  100% {
+    background-color: #ffffff;
+  }
+}
+.animate-portal-row-in {
+  animation: portal-row-in 1.2s ease-out;
+}

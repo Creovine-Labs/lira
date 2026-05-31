@@ -16,7 +16,11 @@ import {
   EnvelopeIcon,
   ExclamationTriangleIcon,
   FolderOpenIcon,
+  GlobeAltIcon,
+  InboxArrowDownIcon,
   MicrophoneIcon,
+  QueueListIcon,
+  ShieldExclamationIcon,
   PlusIcon,
   ChartBarIcon,
   PuzzlePieceIcon,
@@ -50,6 +54,7 @@ import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/s
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
+import { AvailabilityToggle } from '@/components/shell/AvailabilityToggle'
 import { cn } from '@/lib'
 import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
@@ -154,6 +159,20 @@ const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
   { to: '/support/actions', icon: ClipboardDocumentListIcon, label: 'Actions' },
   { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
   { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
+  // "Customer portal" is the management surface for the public /portal/:orgId
+  // pages (Phase 4). Sits below Analytics — operators visit rarely (to share
+  // the URL or preview the customer experience) so it doesn't deserve top
+  // billing, but it must be discoverable.
+  { to: '/support/portal', icon: GlobeAltIcon, label: 'Customer portal' },
+  // Queues + SLA policies are admin/config surfaces (Phase 4 §1.2). Live
+  // under the rarely-touched stack with portal/outbox. Operators visit
+  // once to set up, then rarely.
+  { to: '/support/queues', icon: QueueListIcon, label: 'Queues' },
+  { to: '/support/sla-policies', icon: ShieldExclamationIcon, label: 'SLA policies' },
+  // "Outbox" is the Phase 6 integration-delivery log (Slack / Linear /
+  // webhook back-channels). Rarely visited — only when an integration is
+  // misbehaving — so it sits just under Portal in the rarely-touched stack.
+  { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Outbox' },
   // "Chat history" (previously "Inbox") demoted below Analytics — it's now
   // a QA/audit surface for reviewing what Lira told customers, not the
   // primary operator work queue. Tickets are the operator's daily queue.
@@ -1346,8 +1365,9 @@ function AppShell() {
             <TopbarOrgSwitcher />
           </div>
 
-          {/* Right — notifications + user */}
-          <div className="flex items-center gap-1">
+          {/* Right — availability + notifications + user */}
+          <div className="flex items-center gap-2">
+            <AvailabilityToggle />
             <NotificationBell />
             <UserMenu onSignOut={handleSignOut} />
           </div>

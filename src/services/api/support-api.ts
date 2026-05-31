@@ -789,7 +789,22 @@ export interface SupportTicketRecord {
   subject: string
   summary?: string
   priority: 'low' | 'medium' | 'high' | 'urgent'
-  status: 'open' | 'in_progress' | 'resolved' | 'closed'
+  /**
+   * Full sanitized status union per SUPPORT_TICKETING_API.md §7. Originally
+   * narrowed to four — widened 2026-05-31 once the backend started returning
+   * `pending`, `on_hold`, `escalated`, `merged`, and `snoozed` from the
+   * lifecycle endpoints.
+   */
+  status:
+    | 'open'
+    | 'in_progress'
+    | 'pending'
+    | 'on_hold'
+    | 'escalated'
+    | 'resolved'
+    | 'closed'
+    | 'merged'
+    | 'snoozed'
   assignee_user_id?: string
   escalation_reason: string
   handoff_trigger?: string
@@ -990,6 +1005,550 @@ export async function regenerateHandoffBrief(
     { method: 'POST' }
   )
   return data.brief
+}
+
+/**
+ * Phase 5 §1.1 — email the customer a CSAT survey. Available on resolved
+ * tickets that don't already have a CSAT response. The backend handles
+ * idempotency: re-firing is safe (no-op).
+ */
+export async function requestCsat(orgId: string, ticketId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/request-csat`,
+    { method: 'POST' }
+  )
+}
+
+// ── Phase 6: Integration outbox + external links ─────────────────────────
+
+export type OutboxProvider = 'slack' | 'linear' | 'webhook'
+export type OutboxStatus = 'pending' | 'in_flight' | 'completed' | 'failed' | 'dead'
+
+export interface OutboxItem {
+  item_id: string
+  ticket_id: string
+  provider: OutboxProvider
+  event_type: string
+  status: OutboxStatus
+  attempt_count: number
+  max_attempts: number
+  next_attempt_at?: string
+  last_attempted_at?: string
+  last_error?: string
+  external_id?: string
+  external_url?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface ExternalLink {
+  id?: string
+  ticket_id?: string
+  provider: OutboxProvider
+  external_id: string
+  external_url: string
+  created_at?: string
+}
+
+export interface DrainStats {
+  drained: number
+  succeeded: number
+  failed: number
+}
+
+/** §4.1 — list outbox items, optionally filtered by status. */
+export async function listIntegrationOutbox(
+  orgId: string,
+  status?: OutboxStatus
+): Promise<OutboxItem[]> {
+  const qs = status ? `?status=${encodeURIComponent(status)}` : ''
+  const data = await supportFetch<{ items: OutboxItem[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/integration-outbox${qs}`
+  )
+  return data.items
+}
+
+/** §4.2 — bump a failed/dead item back to pending; worker picks it up next pass. */
+export async function retryOutboxItem(orgId: string, itemId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/integration-outbox/${encodeURIComponent(itemId)}/retry`,
+    { method: 'POST' }
+  )
+}
+
+/** §4.3 — synchronously drain all due items. Admin escape hatch. */
+export async function drainOutbox(orgId: string): Promise<DrainStats> {
+  return supportFetch<DrainStats>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/integration-outbox/drain`,
+    { method: 'POST' }
+  )
+}
+
+/** §4.4 — list external system back-pointers for a ticket. */
+export async function listExternalLinks(orgId: string, ticketId: string): Promise<ExternalLink[]> {
+  const data = await supportFetch<{ links: ExternalLink[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/external-links`
+  )
+  return data.links
+}
+
+/** §4.4 — manually record an external link (operator paste). */
+export async function createExternalLink(
+  orgId: string,
+  ticketId: string,
+  payload: { provider: OutboxProvider; external_id: string; external_url: string }
+): Promise<ExternalLink> {
+  const data = await supportFetch<{ link: ExternalLink }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/external-links`,
+    { method: 'POST', body: JSON.stringify(payload) }
+  )
+  return data.link
+}
+
+/** §4.5 — force a sync of one ticket to one provider. Enqueues, doesn't block. */
+export async function forceSyncTicket(
+  orgId: string,
+  ticketId: string,
+  provider: OutboxProvider
+): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/sync/${encodeURIComponent(provider)}`,
+    { method: 'POST' }
+  )
+}
+
+// ── Phase 7: Analytics + audit export ────────────────────────────────────
+
+export interface TicketAnalyticsOverview {
+  overview: {
+    total: number
+    open: number
+    in_progress: number
+    pending: number
+    on_hold: number
+    escalated: number
+    resolved: number
+    closed: number
+    unassigned: number
+    by_priority: { low: number; medium: number; high: number; urgent: number }
+    by_queue: Record<string, number>
+  }
+  learning: {
+    ai_to_ticket_conversion: number
+    reopen_rate: number
+    csat_average: number
+    csat_negative_count: number
+  }
+}
+
+export interface TicketSlaMetrics {
+  total_with_first_response: number
+  total_resolved: number
+  hit_rate: number
+  breach_count: number
+  at_risk_count: number
+  avg_first_response_minutes: number
+  avg_resolution_minutes: number
+}
+
+export interface CategoryMetric {
+  category: string
+  count: number
+  resolved: number
+  escalated: number
+  reopen_count: number
+}
+
+export interface RootCauseRow {
+  category: string
+  dedupe_key: string
+  count: number
+  sample_subjects: string[]
+  last_seen_at: string
+}
+
+export interface CategoryAnalytics {
+  categories: CategoryMetric[]
+  root_causes: RootCauseRow[]
+}
+
+export interface AgentMetric {
+  user_id: string
+  user_name: string
+  open_count: number
+  resolved_count: number
+  avg_resolution_minutes: number
+}
+
+/** §5.1 — backlog overview + learning metrics. */
+export async function getTicketAnalyticsOverview(orgId: string): Promise<TicketAnalyticsOverview> {
+  return supportFetch<TicketAnalyticsOverview>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/analytics/tickets`
+  )
+}
+
+/** §5.2 — SLA hit-rate + averages. */
+export async function getTicketAnalyticsSla(orgId: string): Promise<TicketSlaMetrics> {
+  return supportFetch<TicketSlaMetrics>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/analytics/tickets/sla`
+  )
+}
+
+/** §5.3 — category counts + dedupe-key root causes. */
+export async function getTicketAnalyticsCategories(orgId: string): Promise<CategoryAnalytics> {
+  return supportFetch<CategoryAnalytics>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/analytics/tickets/categories`
+  )
+}
+
+/** §5.4 — per-agent open/resolved counts + avg resolution time. */
+export async function getTicketAnalyticsAgents(orgId: string): Promise<{ agents: AgentMetric[] }> {
+  return supportFetch<{ agents: AgentMetric[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/analytics/tickets/agents`
+  )
+}
+
+/**
+ * §5.5 — download the immutable event timeline for a ticket as JSON or CSV.
+ * Backend sets `Content-Disposition: attachment`; we just trigger the
+ * download via a synthetic anchor click. Returns the resolved filename
+ * for toast feedback.
+ */
+export async function downloadTicketAudit(
+  orgId: string,
+  ticketId: string,
+  format: 'json' | 'csv'
+): Promise<string> {
+  const token = credentials.getToken()
+  const url = `${env.VITE_API_URL}/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/audit-export?ticket_id=${encodeURIComponent(ticketId)}&format=${format}`
+  const res = await fetch(url, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error(`Audit export failed (${res.status})`)
+
+  // Backend sets Content-Disposition with the canonical filename; pull it
+  // out so the toast confirms exactly what landed on the user's disk.
+  const disp = res.headers.get('content-disposition') ?? ''
+  const match = /filename="?([^";]+)"?/i.exec(disp)
+  const filename = match?.[1] ?? `ticket-audit-${ticketId}.${format}`
+
+  const blob = await res.blob()
+  const blobUrl = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = blobUrl
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(blobUrl)
+  return filename
+}
+
+// ── Phase 4–5 lifecycle transitions (§1.1) ───────────────────────────────
+//
+// Each helper hits a discrete POST endpoint and returns the updated ticket.
+// The `setStatus` PATCH exists as a catch-all but most flows want the
+// semantic endpoint (the POSTs trigger side effects like emails, the bare
+// status PATCH does not).
+
+function ticketActionUrl(orgId: string, ticketId: string, action: string): string {
+  return `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/${action}`
+}
+
+async function postTicketAction(
+  orgId: string,
+  ticketId: string,
+  action: string,
+  body?: unknown
+): Promise<SupportTicketRecord> {
+  const init: RequestInit = { method: 'POST' }
+  if (body !== undefined) init.body = JSON.stringify(body)
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    ticketActionUrl(orgId, ticketId, action),
+    init
+  )
+  return data.ticket
+}
+
+export async function markTicketPending(
+  orgId: string,
+  ticketId: string
+): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'pending')
+}
+
+export async function markTicketOnHold(
+  orgId: string,
+  ticketId: string,
+  reason?: string
+): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'on-hold', reason ? { reason } : undefined)
+}
+
+export async function reopenTicket(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'reopen')
+}
+
+export async function closeTicket(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'close')
+}
+
+export async function classifyTicket(
+  orgId: string,
+  ticketId: string
+): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'classify')
+}
+
+export async function routeTicket(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'route')
+}
+
+export type EscalationTier = 'tier_2' | 'tier_3' | 'tier_4' | 'queue' | 'user'
+
+export interface EscalateTicketPayload {
+  tier: EscalationTier
+  reason?: string
+  to_user_id?: string
+  to_queue_id?: string
+}
+
+export async function escalateTicket(
+  orgId: string,
+  ticketId: string,
+  payload: EscalateTicketPayload
+): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'escalate', payload)
+}
+
+export async function ackEscalation(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
+  return postTicketAction(orgId, ticketId, 'escalation/ack')
+}
+
+// PATCH helpers — semantic property updates.
+
+async function patchTicketProperty<T extends Record<string, unknown>>(
+  orgId: string,
+  ticketId: string,
+  property: 'status' | 'priority' | 'category' | 'queue' | 'assign',
+  body: T
+): Promise<SupportTicketRecord> {
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    ticketActionUrl(orgId, ticketId, property),
+    { method: 'PATCH', body: JSON.stringify(body) }
+  )
+  return data.ticket
+}
+
+export async function setTicketStatus(
+  orgId: string,
+  ticketId: string,
+  status: SupportTicketRecord['status']
+): Promise<SupportTicketRecord> {
+  return patchTicketProperty(orgId, ticketId, 'status', { status })
+}
+
+export async function setTicketPriority(
+  orgId: string,
+  ticketId: string,
+  priority: SupportTicketRecord['priority']
+): Promise<SupportTicketRecord> {
+  return patchTicketProperty(orgId, ticketId, 'priority', { priority })
+}
+
+export async function setTicketCategory(
+  orgId: string,
+  ticketId: string,
+  category: string
+): Promise<SupportTicketRecord> {
+  return patchTicketProperty(orgId, ticketId, 'category', { category })
+}
+
+export async function setTicketQueue(
+  orgId: string,
+  ticketId: string,
+  queueId: string | null
+): Promise<SupportTicketRecord> {
+  return patchTicketProperty(orgId, ticketId, 'queue', { queue_id: queueId })
+}
+
+export async function assignTicket(
+  orgId: string,
+  ticketId: string,
+  userId: string | null
+): Promise<SupportTicketRecord> {
+  return patchTicketProperty(orgId, ticketId, 'assign', { assignee_user_id: userId })
+}
+
+// ── Queues CRUD (§1.2) ───────────────────────────────────────────────────
+
+export type QueueAssignmentMode = 'round_robin' | 'least_loaded' | 'manual'
+
+export interface SupportQueue {
+  queue_id: string
+  org_id: string
+  name: string
+  description?: string
+  assignment_mode: QueueAssignmentMode
+  member_user_ids: string[]
+  created_at: string
+  updated_at: string
+}
+
+export type QueueCreatePayload = {
+  name: string
+  description?: string
+  assignment_mode: QueueAssignmentMode
+  member_user_ids: string[]
+}
+
+export type QueueUpdatePayload = Partial<QueueCreatePayload>
+
+const QUEUES_BASE = (orgId: string) =>
+  `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/queues`
+
+export async function listQueues(orgId: string): Promise<SupportQueue[]> {
+  const data = await supportFetch<{ queues: SupportQueue[] }>(QUEUES_BASE(orgId))
+  return data.queues
+}
+
+export async function createQueue(
+  orgId: string,
+  payload: QueueCreatePayload
+): Promise<SupportQueue> {
+  const data = await supportFetch<{ queue: SupportQueue }>(QUEUES_BASE(orgId), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return data.queue
+}
+
+export async function updateQueue(
+  orgId: string,
+  queueId: string,
+  payload: QueueUpdatePayload
+): Promise<SupportQueue> {
+  const data = await supportFetch<{ queue: SupportQueue }>(
+    `${QUEUES_BASE(orgId)}/${encodeURIComponent(queueId)}`,
+    { method: 'PATCH', body: JSON.stringify(payload) }
+  )
+  return data.queue
+}
+
+export async function deleteQueue(orgId: string, queueId: string): Promise<void> {
+  await supportFetch<void>(`${QUEUES_BASE(orgId)}/${encodeURIComponent(queueId)}`, {
+    method: 'DELETE',
+  })
+}
+
+// ── SLA policies CRUD (§1.2) ─────────────────────────────────────────────
+
+export interface SupportSlaPolicy {
+  sla_policy_id: string
+  org_id: string
+  name: string
+  description?: string
+  first_response_minutes: number
+  resolution_minutes: number
+  business_hours_only: boolean
+  applies_to_priorities?: SupportTicketRecord['priority'][]
+  applies_to_categories?: string[]
+  created_at: string
+  updated_at: string
+}
+
+export type SlaPolicyCreatePayload = {
+  name: string
+  description?: string
+  first_response_minutes: number
+  resolution_minutes: number
+  business_hours_only: boolean
+  applies_to_priorities?: SupportTicketRecord['priority'][]
+  applies_to_categories?: string[]
+}
+
+export type SlaPolicyUpdatePayload = Partial<SlaPolicyCreatePayload>
+
+const SLA_BASE = (orgId: string) =>
+  `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/sla-policies`
+
+export async function listSlaPolicies(orgId: string): Promise<SupportSlaPolicy[]> {
+  const data = await supportFetch<{ policies: SupportSlaPolicy[] }>(SLA_BASE(orgId))
+  return data.policies
+}
+
+export async function createSlaPolicy(
+  orgId: string,
+  payload: SlaPolicyCreatePayload
+): Promise<SupportSlaPolicy> {
+  const data = await supportFetch<{ policy: SupportSlaPolicy }>(SLA_BASE(orgId), {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return data.policy
+}
+
+export async function updateSlaPolicy(
+  orgId: string,
+  policyId: string,
+  payload: SlaPolicyUpdatePayload
+): Promise<SupportSlaPolicy> {
+  const data = await supportFetch<{ policy: SupportSlaPolicy }>(
+    `${SLA_BASE(orgId)}/${encodeURIComponent(policyId)}`,
+    { method: 'PATCH', body: JSON.stringify(payload) }
+  )
+  return data.policy
+}
+
+export async function deleteSlaPolicy(orgId: string, policyId: string): Promise<void> {
+  await supportFetch<void>(`${SLA_BASE(orgId)}/${encodeURIComponent(policyId)}`, {
+    method: 'DELETE',
+  })
+}
+
+// ── Agent availability (§1.2) ────────────────────────────────────────────
+
+export type AgentAvailability = 'available' | 'away' | 'offline'
+
+export interface AgentAvailabilityRecord {
+  user_id: string
+  user_name?: string
+  email?: string
+  availability: AgentAvailability
+  updated_at?: string
+}
+
+export async function listAgentAvailability(orgId: string): Promise<AgentAvailabilityRecord[]> {
+  const data = await supportFetch<{ agents: AgentAvailabilityRecord[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/agents/availability`
+  )
+  return data.agents
+}
+
+export async function updateMyAvailability(
+  orgId: string,
+  availability: AgentAvailability
+): Promise<AgentAvailabilityRecord> {
+  const data = await supportFetch<{ agent: AgentAvailabilityRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/agents/me/availability`,
+    { method: 'PATCH', body: JSON.stringify({ availability }) }
+  )
+  return data.agent
+}
+
+// ── Ticket categories (§1.2) ─────────────────────────────────────────────
+
+export interface TicketCategoryRecord {
+  category: string
+  label: string
+  description?: string
+}
+
+export async function listTicketCategories(orgId: string): Promise<TicketCategoryRecord[]> {
+  const data = await supportFetch<{ categories: TicketCategoryRecord[] }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/categories`
+  )
+  return data.categories
 }
 
 /** Visitor-facing: list tickets I opened (identity = email). No JWT auth. */

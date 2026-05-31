@@ -1,15 +1,20 @@
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
+  ArrowDownTrayIcon,
   ArrowLeftIcon,
   ArrowPathIcon,
+  ArrowTopRightOnSquareIcon,
   CheckCircleIcon,
   ChatBubbleLeftRightIcon,
   ClockIcon,
+  EnvelopeIcon,
+  LinkIcon,
   LightBulbIcon,
   PaperClipIcon,
   PlusIcon,
   SparklesIcon,
+  StarIcon,
   TicketIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline'
@@ -21,13 +26,36 @@ import {
   replyToTicket,
   resolveTicket,
   regenerateHandoffBrief,
+  requestCsat,
   createManualTicket,
   uploadTicketAttachment,
+  listExternalLinks,
+  createExternalLink,
+  forceSyncTicket,
+  downloadTicketAudit,
+  markTicketPending,
+  markTicketOnHold,
+  reopenTicket,
+  closeTicket,
+  classifyTicket,
+  routeTicket,
+  ackEscalation,
+  setTicketPriority,
+  setTicketCategory,
+  setTicketQueue,
+  assignTicket,
+  listQueues,
+  listTicketCategories,
   type SupportTicketRecord,
   type SupportTicketMessageRecord,
   type TicketAttachmentRecord,
   type ResolveTicketFeedback,
+  type ExternalLink,
+  type OutboxProvider,
+  type SupportQueue,
+  type TicketCategoryRecord,
 } from '@/services/api/support-api'
+import { SlaPill } from './SlaPill'
 import { cn } from '@/lib'
 
 /**
@@ -43,6 +71,9 @@ const STATUS_TABS: { value: StatusFilter; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'open', label: 'Open' },
   { value: 'in_progress', label: 'In progress' },
+  { value: 'pending', label: 'Pending' },
+  { value: 'on_hold', label: 'On hold' },
+  { value: 'escalated', label: 'Escalated' },
   { value: 'resolved', label: 'Resolved' },
   { value: 'closed', label: 'Closed' },
 ]
@@ -54,6 +85,9 @@ export function SupportTicketsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<StatusFilter>('all')
   const [showNew, setShowNew] = useState(false)
+  // Capture once at mount so the SLA pill computation stays pure across
+  // renders (react-hooks/purity disallows Date.now() during render).
+  const [nowSnapshot] = useState(() => Date.now())
 
   const load = useCallback(async () => {
     if (!currentOrgId) return
@@ -87,8 +121,32 @@ export function SupportTicketsPage() {
     const subset = filter === 'all' ? tickets : tickets.filter((t) => t.status === filter)
     return [...subset].sort((a, b) => {
       // Active first (open > in_progress > resolved > closed), then newest
-      const rank = (s: SupportTicketRecord['status']) =>
-        s === 'open' ? 0 : s === 'in_progress' ? 1 : s === 'resolved' ? 2 : 3
+      // Sort order: most-actionable first. Escalated/pending need attention
+      // sooner than passively-open tickets; terminal states drift to the
+      // bottom in the order resolved → closed → merged/snoozed.
+      const rank = (s: SupportTicketRecord['status']): number => {
+        switch (s) {
+          case 'escalated':
+            return 0
+          case 'pending':
+            return 1
+          case 'open':
+            return 2
+          case 'in_progress':
+            return 3
+          case 'on_hold':
+            return 4
+          case 'resolved':
+            return 5
+          case 'closed':
+            return 6
+          case 'merged':
+          case 'snoozed':
+            return 7
+          default:
+            return 8
+        }
+      }
       const r = rank(a.status) - rank(b.status)
       if (r !== 0) return r
       return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
@@ -157,8 +215,12 @@ export function SupportTicketsPage() {
                     </code>
                     <StatusBadge status={t.status} />
                     {t.priority !== 'medium' && <PriorityChip priority={t.priority} />}
-                    <span className="ml-auto text-[11px] text-gray-400">
-                      {new Date(t.updated_at).toLocaleDateString()}
+                    <SlaPill ticket={t} now={nowSnapshot} compact />
+                    <span
+                      className="ml-auto text-[11px] text-gray-400"
+                      title={new Date(t.updated_at).toLocaleString()}
+                    >
+                      {relativeTimeShort(t.updated_at, nowSnapshot)}
                     </span>
                   </div>
                   <p className="mt-1.5 text-sm font-semibold text-gray-900">{t.subject}</p>
@@ -203,6 +265,11 @@ export function SupportTicketDetailPage() {
   const [replyDraft, setReplyDraft] = useState('')
   const [showResolveModal, setShowResolveModal] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
+  const [csatRequesting, setCsatRequesting] = useState(false)
+  // Tracks whether the operator already fired Request CSAT this session.
+  // The backend is idempotent so re-sending is safe, but a quiet "Sent"
+  // state confirms the action without forcing them to dig through email.
+  const [csatRequested, setCsatRequested] = useState(false)
 
   const load = useCallback(async () => {
     if (!currentOrgId || !ticketId) return
@@ -257,6 +324,49 @@ export function SupportTicketDetailPage() {
     }
   }
 
+  const handleRequestCsat = async () => {
+    if (!currentOrgId || !ticket) return
+    setCsatRequesting(true)
+    try {
+      await requestCsat(currentOrgId, ticket.ticket_id)
+      setCsatRequested(true)
+      toast.success(`CSAT survey emailed to ${ticket.visitor_email ?? 'the customer'}`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send CSAT survey')
+    } finally {
+      setCsatRequesting(false)
+    }
+  }
+
+  // Lifecycle action runner — shared optimistic-update + rollback flow for
+  // all the discrete POST endpoints (pending/on-hold/reopen/close/classify/
+  // route/escalation-ack). The acting prop disables the bar while one is
+  // in flight.
+  const [actingLifecycle, setActingLifecycle] = useState<string | null>(null)
+  const runLifecycle = useCallback(
+    async (
+      label: string,
+      action: (orgId: string, ticketId: string) => Promise<SupportTicketRecord>,
+      successMessage?: string
+    ) => {
+      if (!currentOrgId || !ticket) return
+      setActingLifecycle(label)
+      try {
+        const updated = await action(currentOrgId, ticket.ticket_id)
+        setTicket(updated)
+        toast.success(successMessage ?? `${label} done`)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : `${label} failed`)
+      } finally {
+        setActingLifecycle(null)
+      }
+    },
+    [currentOrgId, ticket]
+  )
+
+  // `now` captured at mount so the SLA pill stays pure across renders.
+  const [now] = useState(() => Date.now())
+
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
@@ -294,12 +404,13 @@ export function SupportTicketDetailPage() {
         </button>
 
         <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             <code className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] text-slate-700">
               {ticketNumber}
             </code>
             <StatusBadge status={ticket.status} />
             {ticket.priority !== 'medium' && <PriorityChip priority={ticket.priority} />}
+            <SlaPill ticket={ticket} now={now} />
             {!isClosed && (
               <button
                 onClick={() => setShowResolveModal(true)}
@@ -325,17 +436,88 @@ export function SupportTicketDetailPage() {
               <span className="font-semibold text-gray-700">Source:</span>{' '}
               {ticket.source ?? 'unknown'}
             </div>
-            <div>
+            <div title={new Date(ticket.created_at).toLocaleString()}>
               <span className="font-semibold text-gray-700">Opened:</span>{' '}
-              {new Date(ticket.created_at).toLocaleString()}
+              {relativeTimeShort(ticket.created_at, now)}
             </div>
             {ticket.resolved_at && (
-              <div>
+              <div title={new Date(ticket.resolved_at).toLocaleString()}>
                 <span className="font-semibold text-gray-700">Resolved:</span>{' '}
-                {new Date(ticket.resolved_at).toLocaleString()}
+                {relativeTimeShort(ticket.resolved_at, now)}
               </div>
             )}
           </div>
+
+          {currentOrgId && (
+            <TicketPropertyControls
+              orgId={currentOrgId}
+              ticket={ticket}
+              onTicketUpdate={(t) => setTicket(t)}
+            />
+          )}
+
+          <LifecycleBar
+            ticket={ticket}
+            acting={actingLifecycle}
+            disabled={!currentOrgId}
+            onMarkPending={() =>
+              currentOrgId && runLifecycle('pending', markTicketPending, 'Marked pending')
+            }
+            onMarkOnHold={() =>
+              currentOrgId && runLifecycle('on-hold', markTicketOnHold, 'Put on hold')
+            }
+            onReopen={() => currentOrgId && runLifecycle('reopen', reopenTicket, 'Ticket reopened')}
+            onClose={() => currentOrgId && runLifecycle('close', closeTicket, 'Ticket closed')}
+            onClassify={() =>
+              currentOrgId && runLifecycle('classify', classifyTicket, 'AI re-classified')
+            }
+            onRoute={() => currentOrgId && runLifecycle('route', routeTicket, 'Re-routed to queue')}
+            onAckEscalation={() =>
+              currentOrgId &&
+              runLifecycle('ack-escalation', ackEscalation, 'Escalation acknowledged')
+            }
+          />
+
+          {ticket.status === 'resolved' && (
+            <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-3">
+              <div className="flex items-center gap-1.5 text-[11px] text-gray-500">
+                <StarIcon className="h-3.5 w-3.5 text-amber-500" />
+                Customer satisfaction
+              </div>
+              <button
+                type="button"
+                onClick={handleRequestCsat}
+                disabled={csatRequesting || csatRequested}
+                className={cn(
+                  'inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[11px] font-semibold transition',
+                  csatRequested
+                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/15'
+                    : 'border border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50',
+                  csatRequesting && 'cursor-wait opacity-70'
+                )}
+                title={
+                  ticket.visitor_email
+                    ? `Email a 5-star CSAT survey to ${ticket.visitor_email}`
+                    : 'Email a CSAT survey to the customer'
+                }
+              >
+                {csatRequested ? (
+                  <>
+                    <CheckCircleIcon className="h-3.5 w-3.5" />
+                    Survey sent
+                  </>
+                ) : (
+                  <>
+                    <EnvelopeIcon className="h-3.5 w-3.5" />
+                    {csatRequesting ? 'Sending…' : 'Request CSAT'}
+                  </>
+                )}
+              </button>
+              <span className="text-[11px] text-gray-400">
+                Customer rates 1–5 stars. Backend deduplicates on re-send.
+              </span>
+            </div>
+          )}
         </div>
 
         <HandoffBriefCard
@@ -347,6 +529,8 @@ export function SupportTicketDetailPage() {
             toast.success('Suggested reply loaded — edit before sending')
           }}
         />
+
+        {currentOrgId && <IntegrationsPanel orgId={currentOrgId} ticketId={ticket.ticket_id} />}
 
         <div className="space-y-3">
           {messages.map((m) => (
@@ -372,8 +556,11 @@ export function SupportTicketDetailPage() {
                 {m.sender !== 'system' && (
                   <div className="mb-0.5 text-[11px] font-semibold text-slate-500">
                     {m.sender === 'agent' ? (m.sender_name ?? 'You') : (m.sender_name ?? 'Visitor')}
-                    <span className="ml-2 font-normal text-slate-400">
-                      {new Date(m.created_at).toLocaleString()}
+                    <span
+                      className="ml-2 font-normal text-slate-400"
+                      title={new Date(m.created_at).toLocaleString()}
+                    >
+                      {relativeTimeShort(m.created_at, now)}
                     </span>
                   </div>
                 )}
@@ -763,21 +950,38 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   )
 }
 
+// Aligned with the cross-cutting status palette in SUPPORT_TICKETING_API.md
+// §7. Identical color choices to the portal StatusBadge — operators and
+// customers see the same colors per status, only the icon row differs.
 function StatusBadge({ status }: { status: SupportTicketRecord['status'] }) {
   const map: Record<
     SupportTicketRecord['status'],
     { cls: string; label: string; Icon: typeof ClockIcon }
   > = {
-    open: { cls: 'bg-amber-50 text-amber-700', label: 'Open', Icon: ClockIcon },
+    open: { cls: 'bg-sky-50 text-sky-700', label: 'Open', Icon: ClockIcon },
     in_progress: {
-      cls: 'bg-blue-50 text-blue-700',
+      cls: 'bg-sky-50 text-sky-700',
       label: 'In progress',
       Icon: ChatBubbleLeftRightIcon,
     },
-    resolved: { cls: 'bg-emerald-50 text-emerald-700', label: 'Resolved', Icon: CheckCircleIcon },
+    pending: { cls: 'bg-amber-50 text-amber-800', label: 'Pending', Icon: ClockIcon },
+    on_hold: { cls: 'bg-slate-100 text-slate-700', label: 'On hold', Icon: ClockIcon },
+    escalated: {
+      cls: 'bg-orange-50 text-orange-700',
+      label: 'Escalated',
+      Icon: ChatBubbleLeftRightIcon,
+    },
+    resolved: {
+      cls: 'bg-emerald-50 text-emerald-700',
+      label: 'Resolved',
+      Icon: CheckCircleIcon,
+    },
     closed: { cls: 'bg-slate-100 text-slate-600', label: 'Closed', Icon: CheckCircleIcon },
+    merged: { cls: 'bg-slate-50 text-slate-500', label: 'Merged', Icon: CheckCircleIcon },
+    snoozed: { cls: 'bg-slate-50 text-slate-500', label: 'Snoozed', Icon: ClockIcon },
   }
-  const { cls, label, Icon } = map[status]
+  const entry = map[status] ?? map.open
+  const { cls, label, Icon } = entry
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${cls}`}
@@ -1078,4 +1282,593 @@ function ResolveModal({
       </div>
     </div>
   )
+}
+
+// ── Integrations panel (Phase 6 §4.4 + §4.5 + Phase 7 §5.5) ──────────────
+//
+// Three operator surfaces glued into one card on the ticket detail:
+//   • External links — list of Slack/Linear/webhook back-pointers + manual
+//     add form (operator pasted a Linear URL after a side-conversation).
+//   • Force sync — small button group, one per provider. Enqueues a fresh
+//     delivery (useful after fixing a Slack channel id or Linear team).
+//   • Audit export — JSON / CSV download of the immutable event timeline.
+
+const PROVIDER_OPTIONS: { value: OutboxProvider; label: string }[] = [
+  { value: 'slack', label: 'Slack' },
+  { value: 'linear', label: 'Linear' },
+  { value: 'webhook', label: 'Webhook' },
+]
+
+function IntegrationsPanel({ orgId, ticketId }: { orgId: string; ticketId: string }) {
+  const [links, setLinks] = useState<ExternalLink[]>([])
+  const [loadingLinks, setLoadingLinks] = useState(true)
+  const [adding, setAdding] = useState(false)
+  const [syncing, setSyncing] = useState<OutboxProvider | null>(null)
+  const [exporting, setExporting] = useState<'json' | 'csv' | null>(null)
+
+  const loadLinks = useCallback(async () => {
+    setLoadingLinks(true)
+    try {
+      const next = await listExternalLinks(orgId, ticketId)
+      setLinks(next)
+    } catch {
+      // External links are non-critical — fail quietly. The empty-state copy
+      // covers both "none yet" and "couldn't load".
+      setLinks([])
+    } finally {
+      setLoadingLinks(false)
+    }
+  }, [orgId, ticketId])
+
+  useEffect(() => {
+    void loadLinks()
+  }, [loadLinks])
+
+  const handleSync = useCallback(
+    async (provider: OutboxProvider) => {
+      setSyncing(provider)
+      try {
+        await forceSyncTicket(orgId, ticketId, provider)
+        toast.success(`Sync to ${provider} queued`)
+        // External links may show up after the worker drains — poll once.
+        window.setTimeout(() => void loadLinks(), 1500)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : `Failed to sync to ${provider}`)
+      } finally {
+        setSyncing(null)
+      }
+    },
+    [orgId, ticketId, loadLinks]
+  )
+
+  const handleExport = useCallback(
+    async (format: 'json' | 'csv') => {
+      setExporting(format)
+      try {
+        const filename = await downloadTicketAudit(orgId, ticketId, format)
+        toast.success(`Downloaded ${filename}`)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Audit export failed')
+      } finally {
+        setExporting(null)
+      }
+    },
+    [orgId, ticketId]
+  )
+
+  return (
+    <div className="rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
+      <div className="mb-3 flex items-center gap-2">
+        <LinkIcon className="h-4 w-4 text-gray-500" />
+        <h2 className="text-sm font-semibold text-gray-900">Integrations &amp; audit</h2>
+      </div>
+
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+            External links
+          </p>
+          <button
+            type="button"
+            onClick={() => setAdding((a) => !a)}
+            className="text-[11px] font-semibold text-[#020308] underline-offset-2 hover:underline"
+          >
+            {adding ? 'Cancel' : '+ Add link'}
+          </button>
+        </div>
+
+        {loadingLinks ? (
+          <div className="h-6 w-32 animate-pulse rounded bg-gray-100" />
+        ) : links.length === 0 ? (
+          <p className="text-[12px] text-gray-400">
+            No external links yet. Force-sync below, or paste one manually.
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {links.map((l, idx) => (
+              <li
+                key={`${l.provider}-${l.external_id}-${idx}`}
+                className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/60 px-2.5 py-1.5"
+              >
+                <ProviderBadgeInline provider={l.provider} />
+                <code className="flex-1 truncate font-mono text-[11px] text-gray-600">
+                  {l.external_id}
+                </code>
+                <a
+                  href={l.external_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#020308] hover:underline"
+                >
+                  Open
+                  <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                </a>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {adding && (
+          <AddExternalLinkForm
+            onSubmit={async (payload) => {
+              try {
+                const created = await createExternalLink(orgId, ticketId, payload)
+                setLinks((prev) => [...prev, created])
+                setAdding(false)
+                toast.success('Link added')
+              } catch (err) {
+                toast.error(err instanceof Error ? err.message : 'Failed to add link')
+              }
+            }}
+            onCancel={() => setAdding(false)}
+          />
+        )}
+      </div>
+
+      <div className="mt-4 border-t border-gray-100 pt-3">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-gray-400">
+          Force sync
+        </p>
+        <div className="flex flex-wrap gap-1.5">
+          {PROVIDER_OPTIONS.map((p) => (
+            <button
+              key={p.value}
+              type="button"
+              onClick={() => handleSync(p.value)}
+              disabled={syncing !== null}
+              className={cn(
+                'inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900',
+                syncing === p.value && 'cursor-wait opacity-70'
+              )}
+            >
+              <ArrowPathIcon
+                className={cn('h-3 w-3', syncing === p.value && 'animate-spin')}
+                aria-hidden
+              />
+              Sync to {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-4 border-t border-gray-100 pt-3">
+        <div className="flex items-center justify-between gap-2">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
+              Audit export
+            </p>
+            <p className="mt-0.5 text-[11px] text-gray-500">
+              Immutable event timeline. Use for compliance reviews and post-incident analysis.
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {(['json', 'csv'] as const).map((format) => (
+              <button
+                key={format}
+                type="button"
+                onClick={() => handleExport(format)}
+                disabled={exporting !== null}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold uppercase text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900',
+                  exporting === format && 'cursor-wait opacity-70'
+                )}
+              >
+                <ArrowDownTrayIcon className="h-3 w-3" aria-hidden />
+                {exporting === format ? '…' : format}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function AddExternalLinkForm({
+  onSubmit,
+  onCancel,
+}: {
+  onSubmit: (payload: {
+    provider: OutboxProvider
+    external_id: string
+    external_url: string
+  }) => Promise<void>
+  onCancel: () => void
+}) {
+  const [provider, setProvider] = useState<OutboxProvider>('linear')
+  const [externalId, setExternalId] = useState('')
+  const [externalUrl, setExternalUrl] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (!externalId.trim() || !externalUrl.trim()) return
+        setSubmitting(true)
+        try {
+          await onSubmit({
+            provider,
+            external_id: externalId.trim(),
+            external_url: externalUrl.trim(),
+          })
+        } finally {
+          setSubmitting(false)
+        }
+      }}
+      className="mt-2 space-y-2 rounded-lg border border-gray-200 bg-gray-50/60 p-3"
+    >
+      <div className="grid grid-cols-[100px_1fr] gap-2">
+        <select
+          value={provider}
+          onChange={(e) => setProvider(e.target.value as OutboxProvider)}
+          className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none"
+        >
+          {PROVIDER_OPTIONS.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={externalId}
+          onChange={(e) => setExternalId(e.target.value)}
+          placeholder={
+            provider === 'linear' ? 'LIR-1234' : provider === 'slack' ? '1716895200.000123' : 'id'
+          }
+          className="rounded-md border border-gray-200 bg-white px-2 py-1 font-mono text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none"
+        />
+      </div>
+      <input
+        value={externalUrl}
+        onChange={(e) => setExternalUrl(e.target.value)}
+        placeholder="https://…"
+        type="url"
+        className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none"
+      />
+      <div className="flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-[11px] text-gray-500 hover:text-gray-800"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={submitting || !externalId.trim() || !externalUrl.trim()}
+          className="rounded-md bg-[#020308] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60"
+        >
+          {submitting ? 'Adding…' : 'Add link'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+const PROVIDER_INLINE_COLOR: Record<OutboxProvider, string> = {
+  slack: 'bg-[#4A154B]/10 text-[#4A154B]',
+  linear: 'bg-[#5E6AD2]/10 text-[#5E6AD2]',
+  webhook: 'bg-gray-100 text-gray-700',
+}
+
+function ProviderBadgeInline({ provider }: { provider: OutboxProvider }) {
+  return (
+    <span
+      className={cn(
+        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+        PROVIDER_INLINE_COLOR[provider]
+      )}
+    >
+      {provider}
+    </span>
+  )
+}
+
+// ── Lifecycle action bar (§1.1) ──────────────────────────────────────────
+//
+// Discrete POST-driven status transitions. Each button only renders when
+// the destination transition is *useful* from the current state — e.g. no
+// "Reopen" on a ticket that isn't already terminal, no "Mark pending" if
+// it's already pending.
+//
+// We deliberately don't render an "Escalate" button here because escalation
+// requires a target (tier/queue/user) and deserves its own modal — that
+// belongs in a follow-up. The "Ack escalation" button does appear when the
+// ticket is already escalated so the on-call can clear the flag.
+
+function LifecycleBar({
+  ticket,
+  acting,
+  disabled,
+  onMarkPending,
+  onMarkOnHold,
+  onReopen,
+  onClose,
+  onClassify,
+  onRoute,
+  onAckEscalation,
+}: {
+  ticket: SupportTicketRecord
+  acting: string | null
+  disabled?: boolean
+  onMarkPending: () => void
+  onMarkOnHold: () => void
+  onReopen: () => void
+  onClose: () => void
+  onClassify: () => void
+  onRoute: () => void
+  onAckEscalation: () => void
+}) {
+  const s = ticket.status as string
+  const isActive = s === 'open' || s === 'in_progress'
+  const isTerminal = s === 'resolved' || s === 'closed' || s === 'merged'
+
+  const actions: { key: string; label: string; show: boolean; onClick: () => void }[] = [
+    { key: 'pending', label: 'Mark pending', show: isActive, onClick: onMarkPending },
+    { key: 'on-hold', label: 'Put on hold', show: isActive, onClick: onMarkOnHold },
+    { key: 'reopen', label: 'Reopen', show: s === 'resolved' || s === 'closed', onClick: onReopen },
+    {
+      key: 'close',
+      label: 'Close',
+      show: s === 'resolved' || s === 'pending' || s === 'on_hold',
+      onClick: onClose,
+    },
+    { key: 'classify', label: 'Re-classify', show: !isTerminal, onClick: onClassify },
+    { key: 'route', label: 'Re-route', show: !isTerminal, onClick: onRoute },
+    {
+      key: 'ack-escalation',
+      label: 'Ack escalation',
+      show: s === 'escalated',
+      onClick: onAckEscalation,
+    },
+  ].filter((a) => a.show)
+
+  if (actions.length === 0) return null
+
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-gray-100 pt-3">
+      <span className="mr-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+        Actions
+      </span>
+      {actions.map((a) => (
+        <button
+          key={a.key}
+          type="button"
+          onClick={a.onClick}
+          disabled={disabled || acting !== null}
+          className={cn(
+            'inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900',
+            acting === a.key && 'cursor-wait opacity-70'
+          )}
+        >
+          {acting === a.key ? '…' : a.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+// ── Inline PATCH controls (priority / category / queue / assignee) ───────
+//
+// Compact <select> row that PATCHes on change. Each control is optimistic
+// — the new value renders immediately, then the server-acknowledged ticket
+// replaces it on success or rolls back on failure.
+
+function TicketPropertyControls({
+  orgId,
+  ticket,
+  onTicketUpdate,
+}: {
+  orgId: string
+  ticket: SupportTicketRecord
+  onTicketUpdate: (t: SupportTicketRecord) => void
+}) {
+  const [queues, setQueues] = useState<SupportQueue[]>([])
+  const [categories, setCategories] = useState<TicketCategoryRecord[]>([])
+  const [busy, setBusy] = useState<string | null>(null)
+
+  useEffect(() => {
+    listQueues(orgId)
+      .then(setQueues)
+      .catch(() => setQueues([]))
+    listTicketCategories(orgId)
+      .then(setCategories)
+      .catch(() => setCategories([]))
+  }, [orgId])
+
+  const wrap = useCallback(
+    async <T,>(label: string, op: () => Promise<T>, after: (t: T) => void) => {
+      setBusy(label)
+      try {
+        const res = await op()
+        after(res)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : `Failed to update ${label}`)
+      } finally {
+        setBusy(null)
+      }
+    },
+    []
+  )
+
+  const selectClass =
+    'rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none disabled:opacity-50'
+
+  // The current ticket type narrows the assignee union — we can't pull org
+  // members from a single endpoint yet, so the assign control is a free-text
+  // user-id input for now (consistent with the way handoff-brief surfaces it).
+  const currentCategory = (ticket as SupportTicketRecord & { category?: string }).category ?? ''
+
+  return (
+    <div className="mt-3 grid grid-cols-1 gap-2 border-t border-gray-100 pt-3 sm:grid-cols-2 lg:grid-cols-4">
+      <PropertyField label="Priority">
+        <select
+          value={ticket.priority}
+          disabled={busy !== null}
+          onChange={(e) =>
+            void wrap(
+              'priority',
+              () =>
+                setTicketPriority(
+                  orgId,
+                  ticket.ticket_id,
+                  e.target.value as SupportTicketRecord['priority']
+                ),
+              onTicketUpdate
+            )
+          }
+          className={selectClass}
+        >
+          {(['low', 'medium', 'high', 'urgent'] as const).map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </PropertyField>
+
+      <PropertyField label="Category">
+        <select
+          value={currentCategory}
+          disabled={busy !== null}
+          onChange={(e) =>
+            void wrap(
+              'category',
+              () => setTicketCategory(orgId, ticket.ticket_id, e.target.value),
+              onTicketUpdate
+            )
+          }
+          className={selectClass}
+        >
+          {currentCategory === '' && <option value="">(none)</option>}
+          {categories.length === 0 && currentCategory !== '' && (
+            <option value={currentCategory}>{currentCategory}</option>
+          )}
+          {categories.map((c) => (
+            <option key={c.category} value={c.category}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </PropertyField>
+
+      <PropertyField label="Queue">
+        <select
+          value={(ticket as SupportTicketRecord & { queue_id?: string }).queue_id ?? ''}
+          disabled={busy !== null}
+          onChange={(e) =>
+            void wrap(
+              'queue',
+              () => setTicketQueue(orgId, ticket.ticket_id, e.target.value || null),
+              onTicketUpdate
+            )
+          }
+          className={selectClass}
+        >
+          <option value="">(unrouted)</option>
+          {queues.map((q) => (
+            <option key={q.queue_id} value={q.queue_id}>
+              {q.name}
+            </option>
+          ))}
+        </select>
+      </PropertyField>
+
+      <PropertyField label="Assignee">
+        <AssigneeInput
+          value={ticket.assignee_user_id ?? ''}
+          disabled={busy !== null}
+          onCommit={(userId) =>
+            void wrap(
+              'assignee',
+              () => assignTicket(orgId, ticket.ticket_id, userId || null),
+              onTicketUpdate
+            )
+          }
+        />
+      </PropertyField>
+    </div>
+  )
+}
+
+function PropertyField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="flex flex-col gap-0.5">
+      <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function AssigneeInput({
+  value,
+  disabled,
+  onCommit,
+}: {
+  value: string
+  disabled?: boolean
+  onCommit: (userId: string) => void
+}) {
+  // Mirror prop into local state so the user can type without parent re-
+  // sync. Use the "store previous render" pattern instead of a setState-in-
+  // effect (React-recommended, satisfies react-hooks/set-state-in-effect).
+  // https://react.dev/reference/react/useState#storing-information-from-previous-renders
+  const [local, setLocal] = useState(value)
+  const [prevValue, setPrevValue] = useState(value)
+  if (value !== prevValue) {
+    setPrevValue(value)
+    setLocal(value)
+  }
+  return (
+    <input
+      type="text"
+      value={local}
+      placeholder="user-id"
+      disabled={disabled}
+      onChange={(e) => setLocal(e.target.value)}
+      onBlur={() => {
+        if (local !== value) onCommit(local.trim())
+      }}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
+      }}
+      className="rounded-md border border-gray-200 bg-white px-2 py-1 font-mono text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none disabled:opacity-50"
+    />
+  )
+}
+
+// Tiny relative-time helper for the operator surface (§11 — "no raw ISO").
+// Tooltips still carry the absolute timestamp; visible text is relative,
+// e.g. "23m", "1h 12m", "yesterday", or a short date past 14 days.
+function relativeTimeShort(iso: string, now: number): string {
+  const t = new Date(iso).getTime()
+  if (!Number.isFinite(t)) return ''
+  const diff = now - t
+  const abs = Math.abs(diff)
+  if (abs < 45_000) return 'just now'
+  if (abs < 3_600_000) return `${Math.round(abs / 60_000)}m ago`
+  if (abs < 86_400_000) return `${Math.round(abs / 3_600_000)}h ago`
+  if (abs < 7 * 86_400_000) return `${Math.round(abs / 86_400_000)}d ago`
+  return new Date(iso).toLocaleDateString()
 }
