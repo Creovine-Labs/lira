@@ -46,8 +46,12 @@ import {
   assignTicket,
   listQueues,
   listTicketCategories,
+  addTicketSubtask,
+  updateTicketSubtask,
+  deleteTicketSubtask,
   type SupportTicketRecord,
   type SupportTicketMessageRecord,
+  type SupportTicketSubtask,
   type TicketAttachmentRecord,
   type ResolveTicketFeedback,
   type ExternalLink,
@@ -230,6 +234,12 @@ export function SupportTicketsPage() {
                   </p>
                   {t.summary && (
                     <p className="mt-1 line-clamp-1 text-xs text-gray-400">{t.summary}</p>
+                  )}
+                  {t.subtasks && t.subtasks.length > 0 && (
+                    <p className="mt-1 text-[11px] font-medium text-gray-500">
+                      {t.subtasks.filter((s) => s.status === 'done').length}/{t.subtasks.length}{' '}
+                      sub-tasks done
+                    </p>
                   )}
                 </button>
               </li>
@@ -529,6 +539,20 @@ export function SupportTicketDetailPage() {
             toast.success('Suggested reply loaded — edit before sending')
           }}
         />
+
+        {currentOrgId && (
+          <SubtasksPanel
+            orgId={currentOrgId}
+            ticketId={ticket.ticket_id}
+            subtasks={ticket.subtasks ?? []}
+            onChange={(next) => {
+              // Optimistically reflect the change in the in-memory ticket so
+              // toggles + adds + deletes feel instant; the next list refresh
+              // will overwrite anyway.
+              setTicket((prev) => (prev ? { ...prev, subtasks: next } : prev))
+            }}
+          />
+        )}
 
         {currentOrgId && <IntegrationsPanel orgId={currentOrgId} ticketId={ticket.ticket_id} />}
 
@@ -1871,4 +1895,209 @@ function relativeTimeShort(iso: string, now: number): string {
   if (abs < 86_400_000) return `${Math.round(abs / 3_600_000)}h ago`
   if (abs < 7 * 86_400_000) return `${Math.round(abs / 86_400_000)}d ago`
   return new Date(iso).toLocaleDateString()
+}
+
+// ── Subtasks panel ─────────────────────────────────────────────────────────
+// Operator-defined checklist on a complex ticket. Optimistic updates because
+// each interaction is a single short field update — round-tripping to the
+// server before reflecting would feel janky for what is effectively a
+// to-do list. We revert on error and toast.
+
+function SubtasksPanel({
+  orgId,
+  ticketId,
+  subtasks,
+  onChange,
+}: {
+  orgId: string
+  ticketId: string
+  subtasks: SupportTicketSubtask[]
+  onChange: (next: SupportTicketSubtask[]) => void
+}) {
+  const [draft, setDraft] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [busyId, setBusyId] = useState<string | null>(null)
+
+  const total = subtasks.length
+  const done = subtasks.filter((s) => s.status === 'done').length
+  const allDone = total > 0 && done === total
+
+  const handleAdd = async () => {
+    const label = draft.trim()
+    if (!label || adding) return
+    setAdding(true)
+    // Optimistic placeholder so the input clears immediately
+    const tempId = `temp_${Date.now()}`
+    const optimistic: SupportTicketSubtask = {
+      id: tempId,
+      label,
+      status: 'todo',
+      created_at: new Date().toISOString(),
+    }
+    const before = subtasks
+    onChange([...before, optimistic])
+    setDraft('')
+    try {
+      const real = await addTicketSubtask(orgId, ticketId, label)
+      onChange([...before, real])
+    } catch (err) {
+      onChange(before)
+      toast.error(err instanceof Error ? err.message : 'Could not add sub-task')
+    } finally {
+      setAdding(false)
+    }
+  }
+
+  const handleToggle = async (s: SupportTicketSubtask) => {
+    if (busyId) return
+    setBusyId(s.id)
+    const nextStatus: 'todo' | 'done' = s.status === 'done' ? 'todo' : 'done'
+    const before = subtasks
+    onChange(before.map((x) => (x.id === s.id ? { ...x, status: nextStatus } : x)))
+    try {
+      const updated = await updateTicketSubtask(orgId, ticketId, s.id, { status: nextStatus })
+      onChange(before.map((x) => (x.id === s.id ? updated : x)))
+    } catch (err) {
+      onChange(before)
+      toast.error(err instanceof Error ? err.message : 'Could not update sub-task')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const handleDelete = async (s: SupportTicketSubtask) => {
+    if (busyId) return
+    setBusyId(s.id)
+    const before = subtasks
+    onChange(before.filter((x) => x.id !== s.id))
+    try {
+      await deleteTicketSubtask(orgId, ticketId, s.id)
+    } catch (err) {
+      onChange(before)
+      toast.error(err instanceof Error ? err.message : 'Could not delete sub-task')
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  return (
+    <section className="rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
+      <header className="mb-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm font-bold text-gray-900">Sub-tasks</h3>
+          {total > 0 && (
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[10px] font-semibold',
+                allDone ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-600'
+              )}
+            >
+              {done}/{total} done
+            </span>
+          )}
+        </div>
+        <span className="text-[11px] text-gray-400">
+          Break the work into trackable steps — they don&apos;t affect status, just the team.
+        </span>
+      </header>
+
+      {total === 0 && (
+        <p className="mb-3 text-[12px] text-gray-400">
+          No sub-tasks yet. Add the first step below.
+        </p>
+      )}
+
+      {total > 0 && (
+        <ul className="mb-3 space-y-1">
+          {subtasks.map((s) => (
+            <li
+              key={s.id}
+              className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-gray-50"
+            >
+              <button
+                type="button"
+                onClick={() => handleToggle(s)}
+                disabled={busyId === s.id}
+                aria-label={s.status === 'done' ? 'Mark as not done' : 'Mark as done'}
+                className={cn(
+                  'flex h-4 w-4 shrink-0 items-center justify-center rounded border transition',
+                  s.status === 'done'
+                    ? 'border-[#020308] bg-[#020308] text-white'
+                    : 'border-gray-300 bg-white hover:border-[#020308]',
+                  busyId === s.id && 'opacity-50'
+                )}
+              >
+                {s.status === 'done' && (
+                  <svg viewBox="0 0 12 12" fill="none" className="h-3 w-3">
+                    <path
+                      d="M2 6L5 9L10 3"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                )}
+              </button>
+              <p
+                className={cn(
+                  'flex-1 text-[13px]',
+                  s.status === 'done' ? 'text-gray-400 line-through' : 'text-gray-700'
+                )}
+              >
+                {s.label}
+              </p>
+              {s.status === 'done' && s.done_by_name && (
+                <span className="text-[10px] text-gray-400">{s.done_by_name}</span>
+              )}
+              <button
+                type="button"
+                onClick={() => handleDelete(s)}
+                disabled={busyId === s.id}
+                aria-label="Delete sub-task"
+                className="opacity-0 transition group-hover:opacity-100 disabled:opacity-30"
+              >
+                <svg
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  className="h-3.5 w-3.5 text-gray-400 hover:text-rose-600"
+                >
+                  <path
+                    d="M4 4L12 12M12 4L4 12"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="flex items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              void handleAdd()
+            }
+          }}
+          placeholder={total === 0 ? 'e.g. Wait for vendor reply' : 'Add another step'}
+          maxLength={500}
+          className="flex-1 rounded-md border border-gray-200 bg-white px-2 py-1.5 text-[13px] text-gray-700 focus:border-[#020308] focus:outline-none"
+        />
+        <button
+          type="button"
+          onClick={() => void handleAdd()}
+          disabled={!draft.trim() || adding}
+          className="rounded-md bg-[#020308] px-3 py-1.5 text-[12px] font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50"
+        >
+          Add
+        </button>
+      </div>
+    </section>
+  )
 }

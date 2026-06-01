@@ -961,9 +961,21 @@ export interface SupportTicketRecord {
   handoff_trigger?: string
   handoff_brief?: HandoffBrief
   handoff_resolution?: HandoffResolution
+  subtasks?: SupportTicketSubtask[]
   created_at: string
   updated_at: string
   resolved_at?: string
+}
+
+export interface SupportTicketSubtask {
+  id: string
+  label: string
+  status: 'todo' | 'done'
+  done_at?: string
+  done_by?: string
+  done_by_name?: string
+  created_at: string
+  created_by?: string
 }
 
 export interface TicketAttachmentRecord {
@@ -1442,6 +1454,59 @@ export async function reopenTicket(orgId: string, ticketId: string): Promise<Sup
 
 export async function closeTicket(orgId: string, ticketId: string): Promise<SupportTicketRecord> {
   return postTicketAction(orgId, ticketId, 'close')
+}
+
+// ── Subtasks (per-ticket operator checklist) ───────────────────────────────
+
+const SUBTASKS_BASE = (orgId: string, ticketId: string) =>
+  `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/subtasks`
+
+export async function addTicketSubtask(
+  orgId: string,
+  ticketId: string,
+  label: string
+): Promise<SupportTicketSubtask> {
+  const data = await supportFetch<{ subtask: SupportTicketSubtask }>(
+    SUBTASKS_BASE(orgId, ticketId),
+    { method: 'POST', body: JSON.stringify({ label }) }
+  )
+  return data.subtask
+}
+
+export async function updateTicketSubtask(
+  orgId: string,
+  ticketId: string,
+  subtaskId: string,
+  patch: { label?: string; status?: 'todo' | 'done' }
+): Promise<SupportTicketSubtask> {
+  const data = await supportFetch<{ subtask: SupportTicketSubtask }>(
+    `${SUBTASKS_BASE(orgId, ticketId)}/${encodeURIComponent(subtaskId)}`,
+    { method: 'PATCH', body: JSON.stringify(patch) }
+  )
+  return data.subtask
+}
+
+export async function deleteTicketSubtask(
+  orgId: string,
+  ticketId: string,
+  subtaskId: string
+): Promise<void> {
+  await supportFetch<{ ok: true }>(
+    `${SUBTASKS_BASE(orgId, ticketId)}/${encodeURIComponent(subtaskId)}`,
+    { method: 'DELETE' }
+  )
+}
+
+export async function reorderTicketSubtasks(
+  orgId: string,
+  ticketId: string,
+  orderedIds: string[]
+): Promise<SupportTicketSubtask[]> {
+  const data = await supportFetch<{ subtasks: SupportTicketSubtask[] }>(
+    `${SUBTASKS_BASE(orgId, ticketId)}/reorder`,
+    { method: 'PATCH', body: JSON.stringify({ ordered_ids: orderedIds }) }
+  )
+  return data.subtasks
 }
 
 export async function classifyTicket(
