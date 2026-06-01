@@ -20,25 +20,52 @@ import {
   type QueueAssignmentMode,
   type QueueCreatePayload,
   type SupportQueue,
+  type TicketCategoryKey,
 } from '@/services/api/support-api'
 import { cn } from '@/lib'
 
 const ASSIGNMENT_MODES: { value: QueueAssignmentMode; label: string; hint: string }[] = [
+  {
+    value: 'manual_pick',
+    label: 'Manual pick',
+    hint: 'No auto-assign — teammates pull tickets from the queue when they have capacity.',
+  },
+  {
+    value: 'supervisor_assign',
+    label: 'Supervisor assign',
+    hint: 'A queue supervisor reviews + assigns each incoming ticket.',
+  },
   {
     value: 'round_robin',
     label: 'Round robin',
     hint: 'Assigns sequentially across the queue members.',
   },
   {
-    value: 'least_loaded',
-    label: 'Least loaded',
-    hint: 'Assigns to whoever has the fewest open tickets.',
+    value: 'least_busy',
+    label: 'Least busy',
+    hint: 'Assigns to whoever has the fewest open tickets right now.',
   },
   {
-    value: 'manual',
-    label: 'Manual',
-    hint: 'No auto-assign — the team picks up tickets from the queue.',
+    value: 'skills_based',
+    label: 'Skills-based',
+    hint: 'Matches the ticket category to the agent skills declared in availability.',
   },
+  {
+    value: 'preferred_agent',
+    label: 'Preferred agent',
+    hint: 'Routes a returning customer back to the agent who last helped them.',
+  },
+]
+
+const TICKET_CATEGORIES: { value: TicketCategoryKey; label: string }[] = [
+  { value: 'billing_payments', label: 'Billing & payments' },
+  { value: 'account_access', label: 'Account access' },
+  { value: 'technical_issue', label: 'Technical issue' },
+  { value: 'compliance_fraud', label: 'Compliance / fraud' },
+  { value: 'product_enquiry', label: 'Product enquiry' },
+  { value: 'complaint', label: 'Complaint' },
+  { value: 'sdk_integration', label: 'SDK / integration' },
+  { value: 'other', label: 'Other' },
 ]
 
 function SupportQueuesPage() {
@@ -48,7 +75,13 @@ function SupportQueuesPage() {
   const [selectedId, setSelectedId] = useState<string | 'new' | null>(null)
 
   const load = useCallback(async () => {
-    if (!currentOrgId) return
+    // No org yet (e.g. mount race with the org-store hydration) → bail but
+    // unblock the loading spinner so the page renders an empty state instead
+    // of spinning forever.
+    if (!currentOrgId) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       setQueues(await listQueues(currentOrgId))
@@ -183,10 +216,21 @@ function QueueList({
               {q.description && (
                 <p className="mt-1 line-clamp-2 text-xs text-gray-500">{q.description}</p>
               )}
-              <p className="mt-1.5 inline-flex items-center gap-1 text-[11px] text-gray-400">
-                <UsersIcon className="h-3 w-3" />
-                {q.member_user_ids.length} member{q.member_user_ids.length === 1 ? '' : 's'}
-              </p>
+              <div className="mt-1.5 flex items-center justify-between gap-2">
+                <p className="inline-flex items-center gap-1 text-[11px] text-gray-400">
+                  <UsersIcon className="h-3 w-3" />
+                  {q.members.length} member{q.members.length === 1 ? '' : 's'}
+                </p>
+                {q.categories.length > 0 && (
+                  <p className="truncate text-[10px] uppercase tracking-wide text-gray-300">
+                    {q.categories
+                      .slice(0, 2)
+                      .map((c) => c.replace('_', ' '))
+                      .join(' · ')}
+                    {q.categories.length > 2 ? ` +${q.categories.length - 2}` : ''}
+                  </p>
+                )}
+              </div>
             </button>
           </li>
         )
@@ -208,9 +252,10 @@ function QueueEditor({ orgId, mode, queue, onSaved, onDeleted, onCancel }: Queue
   const [name, setName] = useState(queue?.name ?? '')
   const [description, setDescription] = useState(queue?.description ?? '')
   const [assignmentMode, setAssignmentMode] = useState<QueueAssignmentMode>(
-    queue?.assignment_mode ?? 'round_robin'
+    queue?.assignment_mode ?? 'manual_pick'
   )
-  const [members, setMembers] = useState<string[]>(queue?.member_user_ids ?? [])
+  const [members, setMembers] = useState<string[]>(queue?.members ?? [])
+  const [categories, setCategories] = useState<TicketCategoryKey[]>(queue?.categories ?? [])
   const [newMember, setNewMember] = useState('')
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
@@ -231,7 +276,8 @@ function QueueEditor({ orgId, mode, queue, onSaved, onDeleted, onCancel }: Queue
       name: name.trim(),
       description: description.trim() || undefined,
       assignment_mode: assignmentMode,
-      member_user_ids: members,
+      members,
+      categories,
     }
     if (!payload.name) {
       toast.error('Queue needs a name.')
@@ -300,6 +346,35 @@ function QueueEditor({ orgId, mode, queue, onSaved, onDeleted, onCancel }: Queue
             placeholder="Anything from invoice questions to refunds."
             className="w-full resize-none rounded-md border border-gray-200 bg-white px-2 py-1.5 text-[13px] text-gray-900 focus:border-[#020308] focus:outline-none"
           />
+        </Field>
+        <Field
+          label="Categories"
+          hint="Tickets the classifier tags with any of these are routed here automatically. Leave empty for an operator-only queue."
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {TICKET_CATEGORIES.map((c) => {
+              const on = categories.includes(c.value)
+              return (
+                <button
+                  key={c.value}
+                  type="button"
+                  onClick={() =>
+                    setCategories((prev) =>
+                      on ? prev.filter((x) => x !== c.value) : [...prev, c.value]
+                    )
+                  }
+                  className={cn(
+                    'rounded-md border px-2 py-0.5 text-[11px] font-medium transition',
+                    on
+                      ? 'border-[#020308] bg-[#020308] text-white'
+                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                  )}
+                >
+                  {c.label}
+                </button>
+              )
+            })}
+          </div>
         </Field>
         <Field label="Assignment mode">
           <select

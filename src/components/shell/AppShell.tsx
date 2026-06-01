@@ -39,14 +39,12 @@ import {
   useTaskStore,
   useNotifStore,
   useBotStore,
-  useUsageStore,
 } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import {
   listOrganizations,
   listMyNotifications,
   listTasks,
-  getOrgUsage,
   getAuthMe,
   type TaskRecord,
 } from '@/services/api'
@@ -197,7 +195,6 @@ const NAV_WORKSPACE: NavGroup = {
     { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
     { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
     { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
-    { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
     { to: '/org/members', icon: UsersIcon, label: 'Members' },
   ],
 }
@@ -870,7 +867,6 @@ function AppShell() {
 
   const { badges, taskPending, taskInProgress } = useSidebarBadges()
   const { markMeetingsSeen, markSupportSeen } = useNotifStore()
-  const setSummary = useUsageStore((s) => s.setSummary)
   const supportConfig = useSupportStore((s) => s.config)
   const loadSupportConfig = useSupportStore((s) => s.loadConfig)
 
@@ -891,13 +887,6 @@ function AppShell() {
     [supportActivated]
   )
 
-  // Fetch usage summary when org changes
-  useEffect(() => {
-    if (!currentOrgId) return
-    getOrgUsage(currentOrgId)
-      .then(setSummary)
-      .catch(() => {})
-  }, [currentOrgId, setSummary])
   const location = useLocation()
 
   // Clear sidebar badge when user navigates to the relevant section

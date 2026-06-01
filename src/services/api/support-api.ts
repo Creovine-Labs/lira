@@ -68,8 +68,24 @@ export interface SupportConfig {
   onboarding_completed: boolean
   onboarding_step: string
   handoff_triggers?: HandoffTriggersConfig
+  /** Widget/portal home surface customization (Settings → Support → Home). */
+  home_template?: string
+  home_banner_url?: string
+  home_logo_url?: string
+  home_title?: string
+  home_subtitle?: string
+  home_cards?: SupportHomeCard[]
   created_at: string
   updated_at: string
+}
+
+export interface SupportHomeCard {
+  /** Minted client-side on save; older records and template seeds may omit it. */
+  id?: string
+  icon: string
+  title: string
+  body: string
+  prompt: string
 }
 
 export type CustomerTier = 'standard' | 'vip' | 'enterprise'
@@ -206,6 +222,88 @@ export interface ActionLog {
   created_at: string
   executed_at?: string
 }
+
+export type AgentActionRunStatus =
+  | 'requested'
+  | 'blocked'
+  | 'pending_approval'
+  | 'approved'
+  | 'running'
+  | 'succeeded'
+  | 'failed'
+  | 'cancelled'
+
+export interface AgentActionRun {
+  run_id: string
+  org_id: string
+  conv_id?: string
+  visitor_id?: string
+  customer_id?: string
+  visitor_email?: string
+  ticket_id?: string
+  capability_name: string
+  capability_kind: 'resource' | 'action'
+  risk:
+    | 'read_public'
+    | 'read_private'
+    | 'safe_write'
+    | 'customer_confirm'
+    | 'step_up'
+    | 'admin_approve'
+    | 'human_only'
+  status: AgentActionRunStatus
+  auth_scope?: string
+  policy_decision?: Record<string, unknown>
+  input_summary?: Record<string, unknown>
+  output_summary?: Record<string, unknown>
+  error?: string
+  estimated_tokens_in?: number
+  estimated_tokens_out?: number
+  estimated_model_cost_usd?: number
+  requested_at: string
+  approved_at?: string
+  started_at?: string
+  completed_at?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface AgentCapabilityConfig {
+  capability_id: string
+  org_id: string
+  name: string
+  display_name?: string
+  description: string
+  kind: 'resource' | 'action'
+  source: 'server_side' | 'sdk' | 'built_in' | 'connector'
+  enabled: boolean
+  auth_scope: 'public' | 'verified_visitor' | 'verified_customer'
+  risk:
+    | 'read_public'
+    | 'read_private'
+    | 'safe_write'
+    | 'customer_confirm'
+    | 'step_up'
+    | 'admin_approve'
+    | 'human_only'
+  input_schema?: Record<string, unknown>
+  output_schema?: Record<string, unknown>
+  executable?: boolean
+  created_by_user_id?: string
+  created_at: string
+  updated_at: string
+}
+
+export type UpsertAgentCapabilityInput = Pick<
+  AgentCapabilityConfig,
+  'name' | 'description' | 'kind' | 'auth_scope' | 'risk'
+> &
+  Partial<
+    Pick<
+      AgentCapabilityConfig,
+      'capability_id' | 'display_name' | 'source' | 'enabled' | 'input_schema' | 'output_schema'
+    >
+  >
 
 export interface KBDraft {
   draft_id: string
@@ -536,6 +634,59 @@ export async function rejectAction(orgId: string, actionId: string): Promise<voi
   await supportFetch<void>(
     `/lira/v1/support/actions/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(actionId)}/reject`,
     { method: 'POST' }
+  )
+}
+
+export async function listAgentActionRuns(
+  orgId: string,
+  filters: {
+    status?: AgentActionRunStatus | ''
+    capability?: string
+    from?: string
+    to?: string
+    limit?: number
+  } = {}
+): Promise<AgentActionRun[]> {
+  const params = new URLSearchParams()
+  if (filters.status) params.set('status', filters.status)
+  if (filters.capability) params.set('capability', filters.capability)
+  if (filters.from) params.set('from', filters.from)
+  if (filters.to) params.set('to', filters.to)
+  if (filters.limit) params.set('limit', String(filters.limit))
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  const data = await supportFetch<{ action_runs: AgentActionRun[] }>(
+    `/lira/v1/support/actions/orgs/${encodeURIComponent(orgId)}/agent-runs${qs}`
+  )
+  return data.action_runs
+}
+
+export async function listAgentCapabilities(orgId: string): Promise<AgentCapabilityConfig[]> {
+  const data = await supportFetch<{ capabilities: AgentCapabilityConfig[] }>(
+    `/lira/v1/support/agent-runtime/orgs/${encodeURIComponent(orgId)}/capabilities`
+  )
+  return data.capabilities
+}
+
+export async function upsertAgentCapability(
+  orgId: string,
+  input: UpsertAgentCapabilityInput
+): Promise<AgentCapabilityConfig> {
+  const data = await supportFetch<{ capability: AgentCapabilityConfig }>(
+    `/lira/v1/support/agent-runtime/orgs/${encodeURIComponent(orgId)}/capabilities`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(input),
+    }
+  )
+  return data.capability
+}
+
+export async function deleteAgentCapability(orgId: string, capabilityId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/agent-runtime/orgs/${encodeURIComponent(orgId)}/capabilities/${encodeURIComponent(
+      capabilityId
+    )}`,
+    { method: 'DELETE' }
   )
 }
 
@@ -1382,24 +1533,56 @@ export async function assignTicket(
 
 // ── Queues CRUD (§1.2) ───────────────────────────────────────────────────
 
-export type QueueAssignmentMode = 'round_robin' | 'least_loaded' | 'manual'
+/**
+ * Mirrors the backend `QueueAssignmentMode` union (lira-support.models.ts).
+ * `least_busy` was previously misnamed `least_loaded` here; `manual` was
+ * `manual_pick`. The richer set (supervisor_assign / skills_based /
+ * preferred_agent) covers Phase 3B advanced modes — fine if the UI just
+ * displays them by name even before round-robin/least-busy are wired up
+ * on the routing side.
+ */
+export type QueueAssignmentMode =
+  | 'manual_pick'
+  | 'supervisor_assign'
+  | 'round_robin'
+  | 'least_busy'
+  | 'skills_based'
+  | 'preferred_agent'
+
+export type TicketCategoryKey =
+  | 'billing_payments'
+  | 'account_access'
+  | 'technical_issue'
+  | 'compliance_fraud'
+  | 'product_enquiry'
+  | 'complaint'
+  | 'sdk_integration'
+  | 'other'
 
 export interface SupportQueue {
   queue_id: string
   org_id: string
   name: string
   description?: string
+  categories: TicketCategoryKey[]
+  members: string[]
   assignment_mode: QueueAssignmentMode
-  member_user_ids: string[]
+  max_depth?: number
+  overflow_queue_id?: string
+  is_default?: boolean
   created_at: string
   updated_at: string
 }
 
 export type QueueCreatePayload = {
+  queue_id?: string
   name: string
   description?: string
-  assignment_mode: QueueAssignmentMode
-  member_user_ids: string[]
+  categories?: TicketCategoryKey[]
+  members?: string[]
+  assignment_mode?: QueueAssignmentMode
+  max_depth?: number
+  overflow_queue_id?: string
 }
 
 export type QueueUpdatePayload = Partial<QueueCreatePayload>

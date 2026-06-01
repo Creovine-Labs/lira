@@ -166,6 +166,8 @@ export interface IncomingWsMessage {
     | 'pin_required'
     | 'suggestions'
     | 'lira_action'
+    | 'lira_resource'
+    | 'host_capability_request'
     | 'integration_warning'
   body?: string
   conv_id?: string
@@ -249,6 +251,9 @@ export interface OutgoingWsMessage {
     | 'pin_response'
     | 'pin_cancel'
     | 'customer_action_result'
+    | 'customer_resource_result'
+    | 'sdk_capabilities_register'
+    | 'host_capability_result'
   body?: string
   name?: string
   email?: string
@@ -268,6 +273,19 @@ export interface OutgoingWsMessage {
   ok?: boolean
   message?: string
   data?: Record<string, unknown>
+  /** customer_resource_result — outcome of an SDK-registered host resource read. */
+  resourceName?: string
+  /**
+   * sdk_capabilities_register — host-registered resources / actions sent
+   * to the backend so the agent can see them as Tools for this session.
+   */
+  resources?: Array<Record<string, unknown>>
+  actions?: Array<Record<string, unknown>>
+  /**
+   * host_capability_result — reply to a backend-initiated
+   * host_capability_request. Correlates via `request_id`.
+   */
+  request_id?: string
 }
 
 export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat-list' | 'chat' | 'csat'
