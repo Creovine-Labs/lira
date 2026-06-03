@@ -321,7 +321,22 @@ export function SupportTicketsPage() {
         setTickets((prev) => prev.map((t) => (t.ticket_id === ticketId ? updated : t)))
       } catch (err) {
         setTickets(snapshot)
-        toast.error(err instanceof Error ? err.message : 'Failed to move ticket')
+        const msg = err instanceof Error ? err.message : ''
+        if (status === 'in_progress') {
+          // No backend endpoint exists for this transition yet (see note in the
+          // move handler). Be explicit instead of surfacing a raw "Failed to fetch".
+          toast.error(
+            '“In progress” can’t be set by drag yet — it needs a backend endpoint. ' +
+              'For now it’s set automatically when you reply to the ticket.'
+          )
+        } else if (/failed to fetch/i.test(msg)) {
+          toast.error(
+            `Couldn’t reach the server to move this ticket to “${status.replace(/_/g, ' ')}”. ` +
+              'That endpoint may not be deployed yet.'
+          )
+        } else {
+          toast.error(msg || 'Failed to move ticket')
+        }
       }
     },
     [currentOrgId, tickets, nowSnapshot]
