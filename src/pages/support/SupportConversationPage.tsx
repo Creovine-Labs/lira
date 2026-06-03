@@ -32,10 +32,10 @@ const STATUS_TONES: Record<
 > = {
   open: {
     label: 'Open',
-    badge: 'border-blue-200 bg-blue-50 text-blue-700',
-    dot: 'bg-blue-500',
-    panel: 'border-blue-100 bg-blue-50/60',
-    text: 'text-blue-700',
+    badge: 'border-indigo-200 bg-indigo-50 text-indigo-700',
+    dot: 'bg-indigo-500',
+    panel: 'border-indigo-100 bg-indigo-50/60',
+    text: 'text-indigo-700',
   },
   pending: {
     label: 'Pending',
@@ -46,10 +46,10 @@ const STATUS_TONES: Record<
   },
   escalated: {
     label: 'Human takeover',
-    badge: 'border-red-200 bg-red-50 text-red-700',
-    dot: 'bg-red-500',
-    panel: 'border-red-100 bg-red-50/70',
-    text: 'text-red-700',
+    badge: 'border-rose-200 bg-rose-50 text-rose-700',
+    dot: 'bg-rose-500',
+    panel: 'border-rose-100 bg-rose-50/70',
+    text: 'text-rose-700',
   },
   resolved: {
     label: 'Resolved',
@@ -322,7 +322,9 @@ function SupportConversationPage() {
           <div className="flex min-w-0 items-start gap-3">
             <button
               type="button"
-              onClick={() => navigate(isFromNotifications ? '/support/notifications' : '/support')}
+              onClick={() =>
+                navigate(isFromNotifications ? '/support/notifications' : '/support/inbox')
+              }
               className="mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 shadow-sm transition hover:border-gray-300 hover:text-gray-900"
               aria-label="Back to support inbox"
             >
@@ -684,7 +686,7 @@ function TimelineMessage({
             'rounded-full border px-3 py-1 text-center text-[11px] font-bold uppercase tracking-wide',
             isResolved
               ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-              : 'border-blue-200 bg-blue-50 text-blue-700'
+              : 'border-indigo-200 bg-indigo-50 text-indigo-700'
           )}
           title={formatLongDateTime(message.timestamp)}
         >

@@ -154,6 +154,10 @@ const NAV_CORE: NavEntry[] = [
 ]
 
 const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
+  // The operator inbox leads the stack — it's the daily driver: a 3-pane
+  // workspace for reading, composing, and triaging every customer
+  // conversation. Tickets sit right under it as the escalation queue.
+  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Inbox' },
   { to: '/support/tickets', icon: TicketIcon, label: 'Tickets' },
   { to: '/support/customers', icon: UsersIcon, label: 'Customers' },
   { to: '/support/actions', icon: ClipboardDocumentListIcon, label: 'Actions' },
@@ -172,11 +176,7 @@ const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
   // "Outbox" is the Phase 6 integration-delivery log (Slack / Linear /
   // webhook back-channels). Rarely visited — only when an integration is
   // misbehaving — so it sits just under Portal in the rarely-touched stack.
-  { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Outbox' },
-  // "Chat history" (previously "Inbox") demoted below Analytics — it's now
-  // a QA/audit surface for reviewing what Lira told customers, not the
-  // primary operator work queue. Tickets are the operator's daily queue.
-  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Chat history' },
+  { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Outreach' },
   // 'Configuration' sidebar item removed 2026-05-24 — its content
   // (widget secret + identified-visitor docs + mobile placeholder) was
   // consolidated into /settings → Support sub-tabs (Secret + Mobile).

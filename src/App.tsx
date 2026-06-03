@@ -243,7 +243,7 @@ function App() {
             <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
           </Route>
-          <Route path="/support" element={<Navigate to="/support/tickets" replace />} />
+          <Route path="/support" element={<Navigate to="/support/inbox" replace />} />
           <Route path="/support/tickets" element={<SupportTicketsPage />} />
           <Route path="/support/tickets/:ticketId" element={<SupportTicketDetailPage />} />
           <Route path="/support/inbox" element={<SupportInboxPage />} />

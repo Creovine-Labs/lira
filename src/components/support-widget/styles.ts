@@ -141,19 +141,47 @@ export function getWidgetStyles(primaryColor: string): string {
       box-shadow: none;
     }
 
-    @media (max-width: 440px) {
+    @media (max-width: 480px) {
+      /* Keep the launcher clear of notches / home indicators. */
+      .lira-launcher.bottom-right {
+        right: max(16px, env(safe-area-inset-right));
+        bottom: max(16px, env(safe-area-inset-bottom));
+      }
+      .lira-launcher.bottom-left {
+        left: max(16px, env(safe-area-inset-left));
+        bottom: max(16px, env(safe-area-inset-bottom));
+      }
+
+      /* On phones the floating panel becomes a full-screen sheet so the
+         on-screen keyboard doesn't squash the conversation. Uses dvh so the
+         mobile browser's collapsing URL bar doesn't clip the input. */
       .lira-chat-window {
-        width: calc(100vw - 16px);
-        height: calc(100vh - 100px);
-        bottom: 84px;
-        right: 8px;
-        left: 8px;
-        border-radius: 14px;
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        inset: 0;
+        border-radius: 0;
+      }
+      .lira-chat-window.bottom-right,
+      .lira-chat-window.bottom-left {
+        top: 0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+      }
+      /* Respect safe areas for notch + home indicator. */
+      .lira-header {
+        padding-top: max(14px, env(safe-area-inset-top));
+      }
+      .lira-input-area {
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
       }
       .lira-chat-window.lira-fullscreen {
         width: 100%;
         height: 100%;
-        min-height: 600px;
+        min-height: 100%;
         inset: auto;
         border-radius: 0;
       }

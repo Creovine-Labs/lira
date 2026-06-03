@@ -21,8 +21,10 @@ import {
   CheckCircleIcon,
   ClockIcon,
   ExclamationTriangleIcon,
+  InboxArrowDownIcon,
   PauseCircleIcon,
   PlayCircleIcon,
+  Squares2X2Icon,
   XCircleIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
@@ -36,15 +38,31 @@ import {
   type OutboxProvider,
 } from '@/services/api/support-api'
 import { cn } from '@/lib'
+import { Pill, type PillTone } from './Pill'
 
-const STATUS_FILTERS: { value: OutboxStatus | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'pending', label: 'Pending' },
-  { value: 'in_flight', label: 'In flight' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'failed', label: 'Failed' },
-  { value: 'dead', label: 'Dead' },
+const STATUS_FILTERS: {
+  value: OutboxStatus | 'all'
+  label: string
+  Icon: typeof ClockIcon
+}[] = [
+  { value: 'all', label: 'All', Icon: Squares2X2Icon },
+  { value: 'pending', label: 'Pending', Icon: ClockIcon },
+  { value: 'in_flight', label: 'In flight', Icon: PlayCircleIcon },
+  { value: 'completed', label: 'Completed', Icon: CheckCircleIcon },
+  { value: 'failed', label: 'Failed', Icon: ExclamationTriangleIcon },
+  { value: 'dead', label: 'Dead', Icon: XCircleIcon },
 ]
+
+const OUTBOX_STATUS_META: Record<
+  OutboxStatus,
+  { tone: PillTone; label: string; Icon: typeof ClockIcon }
+> = {
+  pending: { tone: 'neutral', label: 'Pending', Icon: ClockIcon },
+  in_flight: { tone: 'brand', label: 'In flight', Icon: PlayCircleIcon },
+  completed: { tone: 'success', label: 'Completed', Icon: CheckCircleIcon },
+  failed: { tone: 'danger', label: 'Failed', Icon: ExclamationTriangleIcon },
+  dead: { tone: 'neutral', label: 'Dead', Icon: XCircleIcon },
+}
 
 const COMPLETED_HIDE_AFTER_MS = 7 * 24 * 60 * 60 * 1000
 
@@ -159,73 +177,67 @@ function SupportOutboxPage() {
     }
   }, [currentOrgId, draining, load])
 
+  const activeLabel = STATUS_FILTERS.find((f) => f.value === filter)?.label ?? 'All'
+
   return (
-    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
-      <div className="mx-auto max-w-5xl">
-        <header className="mb-5 flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Integrations
-            </p>
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
-              Delivery outbox
-            </h1>
-            <p className="mt-1 max-w-xl text-sm text-gray-500">
-              Every outbound message to Slack, Linear, and webhooks queues here. Retries are
-              automatic — this surface is for inspecting the trail when something goes wrong.
-            </p>
-          </div>
+    <div className="flex h-full overflow-hidden bg-[#ebebeb]">
+      {/* ── Left rail: delivery-status views ─────────────────────────── */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
+        <div className="flex items-center gap-2 px-4 pb-2 pt-4">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#020308] text-white">
+            <InboxArrowDownIcon className="h-4 w-4" />
+          </span>
+          <h1 className="text-sm font-bold tracking-tight text-gray-900">Outreach</h1>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
+          <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Delivery status
+          </p>
+          {STATUS_FILTERS.map((v) => {
+            const count = v.value === 'all' ? items.length : counts[v.value]
+            const active = filter === v.value
+            return (
+              <button
+                key={v.value}
+                onClick={() => setFilter(v.value)}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] font-medium transition',
+                  active ? 'bg-[#020308] text-white' : 'text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                <v.Icon
+                  className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-gray-400')}
+                />
+                <span className="flex-1 truncate text-left">{v.label}</span>
+                {count > 0 && (
+                  <span
+                    className={cn(
+                      'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
+                      active ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                    )}
+                  >
+                    {count}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="space-y-2 border-t border-gray-100 p-3">
           <button
             type="button"
             onClick={handleDrain}
             disabled={draining}
             title="Synchronously drain all due items. Use sparingly — the background worker handles normal traffic."
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900 disabled:cursor-wait disabled:opacity-60'
-            )}
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg bg-[#020308] px-3 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-wait disabled:opacity-60"
           >
             <BoltIcon className="h-4 w-4" />
             {draining ? 'Draining…' : 'Drain now'}
           </button>
-        </header>
-
-        {lastDrain && (
-          <div className="mb-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-800">
-            Last drain: <strong>{lastDrain.stats.drained}</strong> items touched ·{' '}
-            <strong>{lastDrain.stats.succeeded}</strong> succeeded ·{' '}
-            <strong>{lastDrain.stats.failed}</strong> failed
-          </div>
-        )}
-
-        <div className="mb-4 flex flex-wrap items-center gap-2">
-          <div className="flex gap-1 rounded-xl border border-white/60 bg-white p-1 shadow-sm">
-            {STATUS_FILTERS.map((tab) => {
-              const count = tab.value === 'all' ? items.length : counts[tab.value]
-              return (
-                <button
-                  key={tab.value}
-                  onClick={() => setFilter(tab.value)}
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition',
-                    filter === tab.value
-                      ? 'bg-[#020308] text-white'
-                      : 'text-gray-500 hover:bg-gray-50'
-                  )}
-                >
-                  {tab.label}
-                  <span
-                    className={cn(
-                      'rounded px-1.5 py-0.5 text-[10px] font-bold',
-                      filter === tab.value ? 'bg-white/15 text-white' : 'bg-gray-100 text-gray-500'
-                    )}
-                  >
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-          <label className="ml-1 inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-gray-500">
+          <label className="flex cursor-pointer items-center gap-1.5 px-1 text-[11px] text-gray-500">
             <input
               type="checkbox"
               checked={showOldCompleted}
@@ -235,26 +247,75 @@ function SupportOutboxPage() {
             Show completed &gt; 7 days
           </label>
         </div>
+      </aside>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
+      {/* ── Main: toolbar + table ────────────────────────────────────── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-2.5">
+          <div className="flex items-center gap-3">
+            <div className="flex items-baseline gap-2">
+              <h2 className="text-base font-bold text-gray-900">{activeLabel}</h2>
+              <span className="text-xs font-medium text-gray-400">{visible.length}</span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDrain}
+              disabled={draining}
+              className="ml-auto inline-flex items-center gap-1.5 rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-wait disabled:opacity-60 lg:hidden"
+            >
+              <BoltIcon className="h-4 w-4" />
+              {draining ? 'Draining…' : 'Drain'}
+            </button>
           </div>
-        ) : visible.length === 0 ? (
-          <EmptyState
-            hasAnyItems={items.length > 0}
-            filter={filter}
-            onClearFilter={() => setFilter('all')}
-          />
-        ) : (
-          <OutboxTable
-            items={visible}
-            retrying={retrying}
-            now={now}
-            onRetry={handleRetry}
-            onOpenTicket={(id) => navigate(`/support/tickets/${id}`)}
-          />
-        )}
+
+          {/* Mobile-only horizontal status selector (rail hidden under lg) */}
+          <div className="mt-2 flex gap-1 overflow-x-auto pb-0.5 lg:hidden">
+            {STATUS_FILTERS.map((v) => (
+              <button
+                key={v.value}
+                onClick={() => setFilter(v.value)}
+                className={cn(
+                  'shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition',
+                  filter === v.value ? 'bg-[#020308] text-white' : 'bg-gray-100 text-gray-500'
+                )}
+              >
+                {v.label}
+              </button>
+            ))}
+          </div>
+
+          {lastDrain && (
+            <div className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-[12px] text-emerald-800">
+              Last drain: <strong>{lastDrain.stats.drained}</strong> items touched ·{' '}
+              <strong>{lastDrain.stats.succeeded}</strong> succeeded ·{' '}
+              <strong>{lastDrain.stats.failed}</strong> failed
+            </div>
+          )}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">
+          {loading ? (
+            <div className="flex h-full items-center justify-center">
+              <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
+            </div>
+          ) : visible.length === 0 ? (
+            <EmptyState
+              hasAnyItems={items.length > 0}
+              filter={filter}
+              onClearFilter={() => setFilter('all')}
+            />
+          ) : (
+            <div className="mx-auto max-w-6xl">
+              <OutboxTable
+                items={visible}
+                retrying={retrying}
+                now={now}
+                onRetry={handleRetry}
+                onOpenTicket={(id) => navigate(`/support/tickets/${id}`)}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   )
@@ -390,45 +451,12 @@ function OutboxRow({
 
 // ── Status / provider badges ─────────────────────────────────────────────
 
-const STATUS_STYLE: Record<
-  OutboxStatus,
-  { cls: string; label: string; Icon: typeof CheckCircleIcon }
-> = {
-  pending: { cls: 'bg-sky-50 text-sky-700 ring-sky-600/15', label: 'Pending', Icon: ClockIcon },
-  in_flight: {
-    cls: 'bg-indigo-50 text-indigo-700 ring-indigo-600/15',
-    label: 'In flight',
-    Icon: PlayCircleIcon,
-  },
-  completed: {
-    cls: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
-    label: 'Completed',
-    Icon: CheckCircleIcon,
-  },
-  failed: {
-    cls: 'bg-rose-50 text-rose-700 ring-rose-600/15',
-    label: 'Failed',
-    Icon: ExclamationTriangleIcon,
-  },
-  dead: {
-    cls: 'bg-slate-100 text-slate-700 ring-slate-600/15',
-    label: 'Dead',
-    Icon: XCircleIcon,
-  },
-}
-
 function OutboxStatusBadge({ status }: { status: OutboxStatus }) {
-  const { cls, label, Icon } = STATUS_STYLE[status]
+  const { tone, label, Icon } = OUTBOX_STATUS_META[status]
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1 ring-inset',
-        cls
-      )}
-    >
-      <Icon className="h-3 w-3" aria-hidden />
+    <Pill tone={tone} Icon={Icon}>
       {label}
-    </span>
+    </Pill>
   )
 }
 
@@ -466,7 +494,7 @@ function EmptyState({
     return (
       <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-16 shadow-sm">
         <PauseCircleIcon className="mb-3 h-9 w-9 text-gray-300" />
-        <p className="text-sm font-semibold text-gray-500">Outbox is empty</p>
+        <p className="text-sm font-semibold text-gray-500">Outreach is empty</p>
         <p className="mt-1 max-w-md text-center text-xs text-gray-400">
           No outbound integrations have fired yet. Once you connect Slack, Linear, or a webhook,
           delivery attempts will show up here.

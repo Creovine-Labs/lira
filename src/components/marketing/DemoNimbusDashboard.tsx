@@ -544,6 +544,36 @@ export function DemoNimbusDashboard({ profile, onSignOut }: DemoNimbusDashboardP
         </div>
       </header>
 
+      {/* ── Mobile nav ──────────────────────────────────────────────────
+          The sidebar and top-nav are both hidden under 760px, so this
+          horizontally-scrollable bar is the only way to move between sections
+          on a phone. Hidden on desktop via CSS. */}
+      <nav className="ndb-mobile-nav" aria-label="Sections">
+        {(
+          [
+            { name: 'Dashboard', icon: '📊' },
+            { name: 'Invoices', icon: '📄' },
+            { name: 'Expenses', icon: '💳' },
+            { name: 'Reports', icon: '📈' },
+            { name: 'Customers', icon: '👥' },
+            { name: 'Integrations', icon: '🔌' },
+            { name: 'Settings', icon: '⚙️' },
+          ] as { name: NavItem; icon: string }[]
+        ).map((item) => (
+          <button
+            key={item.name}
+            type="button"
+            className={`ndb-mobile-link ${activeNav === item.name ? 'is-active' : ''}`}
+            onClick={() => setActiveNav(item.name)}
+          >
+            <span className="ndb-mobile-icon" aria-hidden="true">
+              {item.icon}
+            </span>
+            {item.name}
+          </button>
+        ))}
+      </nav>
+
       {/* ── Body ────────────────────────────────────────────────────────── */}
       <div className="ndb-body">
         <aside className="ndb-sidebar" aria-label="Secondary">
@@ -2297,6 +2327,43 @@ function Styles() {
       .ndb-user-menu-signout { color: #b91c1c; }
       .ndb-user-menu-signout:hover { background: rgba(185, 28, 28, 0.08); color: #991b1b; }
 
+      /* Mobile nav — hidden on desktop, revealed under 760px (see media query) */
+      .ndb-mobile-nav {
+        display: none;
+        gap: 6px;
+        padding: 10px 14px;
+        background: #ffffff;
+        border-bottom: 1px solid rgba(2, 3, 8, 0.08);
+        overflow-x: auto;
+        scrollbar-width: none;
+        position: sticky;
+        top: 61px;
+        z-index: 19;
+      }
+      .ndb-mobile-nav::-webkit-scrollbar { display: none; }
+      .ndb-mobile-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        flex: 0 0 auto;
+        padding: 7px 13px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 500;
+        color: rgba(2, 3, 8, 0.65);
+        background: rgba(2, 3, 8, 0.04);
+        border: 0;
+        border-radius: 999px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .ndb-mobile-link.is-active {
+        background: #020308;
+        color: #ffffff;
+        font-weight: 600;
+      }
+      .ndb-mobile-icon { font-size: 14px; }
+
       /* Body */
       .ndb-body {
         display: grid;
@@ -3375,6 +3442,8 @@ function Styles() {
         .ndb-body { grid-template-columns: 1fr; }
         .ndb-sidebar { display: none; }
         .ndb-top-nav { display: none; }
+        .ndb-mobile-nav { display: flex; }
+        .ndb-topbar { gap: 12px; padding: 12px 16px; }
         .ndb-main { padding: 22px 18px 48px; }
         .ndb-user-name { display: none; }
         .ndb-table-head, .ndb-table-row {
@@ -3398,6 +3467,15 @@ function Styles() {
         .ndb-modal-foot .ndb-primary-btn,
         .ndb-modal-foot .ndb-secondary-btn { width: 100%; }
         .ndb-form-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 480px) {
+        .ndb-kpis { grid-template-columns: 1fr; }
+        .ndb-greeting h1 { font-size: 22px; }
+        .ndb-main { padding: 18px 14px 44px; }
+        .ndb-banner-inner { gap: 8px; }
+        .ndb-user-btn { padding: 4px; }
+        .ndb-toolbar-right .ndb-search { width: 100%; }
+        .ndb-toolbar-right .ndb-primary-btn { width: 100%; }
       }
     `}</style>
   )
