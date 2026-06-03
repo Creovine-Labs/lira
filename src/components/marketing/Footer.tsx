@@ -26,6 +26,7 @@ const FOOTER_GROUPS = [
     links: [
       { label: 'Privacy', href: '/privacy' },
       { label: 'Terms', href: '/terms' },
+      { label: 'Refund', href: '/refund' },
       { label: 'Cookies', href: '/cookies' },
       { label: 'Acceptable Use', href: '/acceptable-use' },
     ],

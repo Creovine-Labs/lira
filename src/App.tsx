@@ -44,6 +44,7 @@ import {
   TermsOfServicePage,
   CookiePolicyPage,
   AcceptableUsePolicyPage,
+  RefundPolicyPage,
   SecurityPage,
   LaunchDemoPage,
   VerifyEmailPage,
@@ -187,6 +188,7 @@ function App() {
         <Route path="/terms" element={<TermsOfServicePage />} />
         <Route path="/cookies" element={<CookiePolicyPage />} />
         <Route path="/acceptable-use" element={<AcceptableUsePolicyPage />} />
+        <Route path="/refund" element={<RefundPolicyPage />} />
         <Route path="/security" element={<SecurityPage />} />
 
         {/*
