@@ -2,14 +2,14 @@ import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
-const LAST_UPDATED = 'March 25, 2026'
+const LAST_UPDATED = 'June 3, 2026'
 
 export function AcceptableUsePolicyPage() {
   return (
     <MarketingLayout>
       <SEO
         title="Acceptable Use Policy"
-        description="Lira AI Acceptable Use Policy. Understand the rules and guidelines for using our AI-powered meeting, interview, sales coaching, and customer support platform."
+        description="Lira Acceptable Use Policy. The rules and guidelines for using Lira, the AI customer-support agent by Creovine Ltd."
         keywords="Lira AI acceptable use, usage policy, platform rules"
         path="/acceptable-use"
       />
@@ -38,27 +38,25 @@ export function AcceptableUsePolicyPage() {
 
           {/* 2 */}
           <h2>2. Permitted Uses</h2>
-          <p>
-            The Service is designed to be used for lawful business and productivity purposes,
-            including:
-          </p>
+          <p>The Service is intended for lawful business customer-support purposes, including:</p>
           <ul>
             <li>
-              Recording and transcribing meetings where all participants have been informed and
-              consent to recording, as required by applicable law.
-            </li>
-            <li>Managing organizational knowledge, documents, tasks, and team workflows.</li>
-            <li>
-              Using AI-powered features for meeting summaries, action item extraction, sales
-              coaching, interview management, and customer support analysis.
+              Deploying the Lira agent on your own websites and channels to answer your customers'
+              questions, grounded in a knowledge base you are authorized to use.
             </li>
             <li>
-              Connecting authorized third-party integrations (Linear, Slack, Microsoft Teams, Google
-              Calendar/Drive, GitHub, Greenhouse, HubSpot, Salesforce) to extend workflow
-              automation.
+              Capturing and qualifying leads from conversations and delivering them to your own
+              email, CRM, or webhook.
             </li>
-            <li>Managing hiring pipelines, interview processes, and candidate evaluation.</li>
-            <li>Sending and managing organizational email communications.</li>
+            <li>
+              Triaging, escalating, and resolving customer conversations using the inbox and
+              ticketing tools, including handoff to your human team.
+            </li>
+            <li>
+              Connecting authorized integrations (such as WhatsApp / Meta, HubSpot, Salesforce,
+              Slack, Linear, and webhooks) to deliver leads and sync support data.
+            </li>
+            <li>Reviewing analytics about questions asked, leads captured, and resolutions.</li>
           </ul>
 
           {/* 3 */}
@@ -73,8 +71,8 @@ export function AcceptableUsePolicyPage() {
               Violate any applicable local, state, national, or international law or regulation.
             </li>
             <li>
-              Record meetings or conversations without the knowledge and consent of all participants
-              where required by law (including two-party consent jurisdictions).
+              Collect or process personal data of your end users through the Service without the
+              notices and consents required by applicable law (see Section 4).
             </li>
             <li>
               Engage in, promote, or facilitate fraud, identity theft, phishing, or any other
@@ -131,19 +129,21 @@ export function AcceptableUsePolicyPage() {
           <h3>3.4 Abuse of AI Features</h3>
           <ul>
             <li>
-              Use AI-generated outputs (transcripts, summaries, coaching suggestions) as the sole
-              basis for making legally consequential decisions about individuals (e.g., hiring,
-              termination, legal proceedings) without human review.
+              Rely on AI-generated responses as the sole basis for legally or similarly significant
+              decisions about individuals without appropriate human review.
             </li>
             <li>
-              Deliberately attempt to manipulate, deceive, or extract training data from the AI
-              systems.
+              Configure or prompt the agent to mislead your end users about who they are dealing
+              with, or to provide false, deceptive, or harmful information.
             </li>
             <li>
-              Use the Service's AI features to generate content that impersonates real individuals
-              or creates deepfakes.
+              Deliberately attempt to manipulate, jailbreak, or extract training data or system
+              prompts from the AI systems.
             </li>
-            <li>Use AI features to generate harmful, misleading, or deceptive content.</li>
+            <li>
+              Use the Service to impersonate real individuals, create deepfakes, or generate
+              harmful, misleading, or deceptive content.
+            </li>
           </ul>
 
           <h3>3.5 Integration Misuse</h3>
@@ -182,31 +182,32 @@ export function AcceptableUsePolicyPage() {
           </ul>
 
           {/* 4 */}
-          <h2>4. Meeting Recording Compliance</h2>
+          <h2>4. End-User Notice &amp; Consent</h2>
           <p>
-            The Service includes meeting recording and transcription features. You are solely
-            responsible for compliance with all applicable recording consent laws. Many
-            jurisdictions require the consent of all parties to a conversation before recording.
-            Specifically:
+            Because Lira interacts with <strong>your</strong> customers and end users on your
+            behalf, you are responsible for handling their data lawfully. In particular, you must:
           </p>
           <ul>
             <li>
-              <strong>One-party consent jurisdictions:</strong> At minimum, one participant in the
-              conversation must consent to the recording (you, the user, typically satisfy this).
+              Make it clear to end users that they may be interacting with an automated AI agent;
             </li>
             <li>
-              <strong>Two-party / all-party consent jurisdictions:</strong> All participants must be
-              informed and consent to the recording before it begins. This includes jurisdictions
-              such as California, Illinois, and several EU member states.
+              Provide any privacy notices and obtain any consents required by applicable law (such
+              as the GDPR, UK GDPR, and US state privacy laws) before collecting or processing their
+              personal data through the Service;
             </li>
             <li>
-              <strong>International calls:</strong> If your meeting includes participants from
-              multiple jurisdictions, you must comply with the most restrictive applicable law.
+              Only collect data through the agent that you have a lawful basis to collect, and
+              honour your end users' privacy rights;
+            </li>
+            <li>
+              Where your conversations include people from multiple jurisdictions, comply with the
+              most protective applicable law.
             </li>
           </ul>
           <p>
-            We strongly recommend that you inform all meeting participants that the meeting is being
-            recorded and obtain their consent before using any recording or transcription features.
+            For personal data the Service processes on your behalf, you are the controller and we
+            act as your processor. See our <Link to="/privacy">Privacy Policy</Link> for details.
           </p>
 
           {/* 5 */}
@@ -229,7 +230,8 @@ export function AcceptableUsePolicyPage() {
           <p>If you become aware of any violation of this AUP, please report it immediately to:</p>
           <ul>
             <li>
-              <strong>Email:</strong> <a href="mailto:abuse@creovine.com">abuse@creovine.com</a>
+              <strong>Email:</strong>{' '}
+              <a href="mailto:abuse@liraintelligence.com">abuse@liraintelligence.com</a>
             </li>
           </ul>
           <p>

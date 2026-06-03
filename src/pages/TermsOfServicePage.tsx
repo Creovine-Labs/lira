@@ -2,15 +2,15 @@ import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
-const LAST_UPDATED = 'March 25, 2026'
+const LAST_UPDATED = 'June 3, 2026'
 
 export function TermsOfServicePage() {
   return (
     <MarketingLayout>
       <SEO
         title="Terms of Service"
-        description="Read the Lira AI Terms of Service. Understand your rights and obligations when using our AI meeting participant, sales coaching, and customer support platform."
-        keywords="Lira AI terms of service, terms and conditions, user agreement"
+        description="Read the Lira Terms of Service. Understand your rights and obligations when using Lira, the AI customer-support agent by Creovine Ltd — website widget, knowledge base, lead capture, and human handoff."
+        keywords="Lira terms of service, Creovine Ltd terms, AI customer support terms and conditions, user agreement"
         path="/terms"
       />
       <div className="legal-page">
@@ -26,17 +26,19 @@ export function TermsOfServicePage() {
           <h2>1. Acceptance of Terms</h2>
           <p>
             These Terms of Service ("<strong>Terms</strong>") constitute a legally binding agreement
-            between you ("<strong>you</strong>" or "<strong>User</strong>") and Creovine Ltd ("
+            between you ("<strong>you</strong>" or "<strong>Customer</strong>") and Creovine Ltd ("
             <strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>", or "
-            <strong>our</strong>"), governing your access to and use of the Lira AI platform,
-            available at <strong>liraintelligence.com</strong>, and all related services, features,
-            content, and applications (collectively, the "<strong>Service</strong>").
+            <strong>our</strong>"), governing your access to and use of <strong>Lira</strong>, our
+            AI customer-support agent available at <strong>liraintelligence.com</strong>, together
+            with its widget, dashboard, APIs, and related services (collectively, the "
+            <strong>Service</strong>").
           </p>
           <p>
             By creating an account, accessing, or using the Service, you confirm that you have read,
             understood, and agree to be bound by these Terms, our{' '}
             <Link to="/privacy">Privacy Policy</Link>, our{' '}
-            <Link to="/acceptable-use">Acceptable Use Policy</Link>, and our{' '}
+            <Link to="/acceptable-use">Acceptable Use Policy</Link>, our{' '}
+            <Link to="/refund">Refund Policy</Link>, and our{' '}
             <Link to="/cookies">Cookie Policy</Link> (collectively, the "<strong>Agreement</strong>
             "). If you do not agree to any part of this Agreement, you must not use the Service.
           </p>
@@ -48,188 +50,227 @@ export function TermsOfServicePage() {
 
           {/* 2 */}
           <h2>2. Description of the Service</h2>
-          <p>Lira AI is an AI-powered productivity and collaboration platform that provides:</p>
+          <p>
+            Lira is an AI customer-support agent that businesses deploy on their websites and
+            channels to assist their customers. Depending on your plan, the Service includes:
+          </p>
           <ul>
             <li>
-              <strong>AI Meeting Assistant:</strong> Real-time meeting transcription, AI-generated
-              summaries, action item extraction, and conversation intelligence.
+              <strong>AI support agent:</strong> a website chat widget that answers customer
+              questions 24/7 in multiple languages, grounded in the knowledge base you provide.
             </li>
             <li>
-              <strong>Organization Workspace:</strong> Shared workspace for teams including
-              knowledge base management, document storage, task management, member management, email
-              integration, and webhook configuration.
+              <strong>Lead capture &amp; qualification:</strong> collecting and qualifying leads
+              from conversations and delivering them to your email, CRM, or webhook.
             </li>
             <li>
-              <strong>AI-Powered Sales Tools:</strong> Real-time sales coaching, objection handling,
-              competitive intelligence, and deal analysis during sales calls.
+              <strong>Human handoff &amp; operator tools:</strong> escalation to your team, a shared
+              inbox, and a ticketing system for conversations that need a person.
             </li>
             <li>
-              <strong>AI Customer Support:</strong> Intelligent customer support conversation
-              analysis, sentiment tracking, and resolution assistance.
+              <strong>WhatsApp:</strong> handoff to WhatsApp and, on eligible plans, operating the
+              agent inside WhatsApp via the WhatsApp Business API.
             </li>
             <li>
-              <strong>Third-Party Integrations:</strong> Native connections with Linear, Slack,
-              Microsoft Teams, Google Calendar, Google Drive, GitHub, Greenhouse, HubSpot, and
-              Salesforce to synchronize data and extend functionality across your existing tools.
+              <strong>Analytics:</strong> dashboards showing questions asked, leads captured, and
+              resolution metrics.
+            </li>
+            <li>
+              <strong>Integrations:</strong> optional connections to tools such as WhatsApp (Meta),
+              HubSpot, Salesforce, Slack, Linear, and webhooks to deliver leads and sync support
+              data.
             </li>
           </ul>
+          <p>
+            Features and usage limits vary by plan. Current plans and inclusions are described on
+            our <Link to="/pricing">Pricing</Link> page. We may add, change, or remove features over
+            time.
+          </p>
 
           {/* 3 */}
           <h2>3. Account Registration and Security</h2>
           <h3>3.1 Eligibility</h3>
           <p>
-            You must be at least 16 years of age to use the Service. By registering, you represent
-            and warrant that you meet this age requirement and that all registration information you
-            provide is truthful, accurate, and complete.
+            The Service is intended for businesses. You must be at least 16 years of age and able to
+            form a binding contract to use it. By registering, you represent that the information
+            you provide is truthful, accurate, and complete.
           </p>
           <h3>3.2 Account Credentials</h3>
           <p>
             You may create an account using your email address and a password, or by authenticating
-            through Google OAuth. You are solely responsible for maintaining the confidentiality of
-            your account credentials and for all activities that occur under your account.
+            through a supported single sign-on provider. You are responsible for maintaining the
+            confidentiality of your account credentials and for all activity under your account.
           </p>
           <h3>3.3 Account Security</h3>
           <p>
-            You agree to notify us immediately at{' '}
-            <a href="mailto:security@creovine.com">security@creovine.com</a> if you become aware of
-            any unauthorized use of your account or any other breach of security. We are not liable
-            for any loss or damage arising from unauthorized use of your account.
+            Notify us immediately at{' '}
+            <a href="mailto:security@liraintelligence.com">security@liraintelligence.com</a> if you
+            become aware of any unauthorized use of your account or any other breach of security. We
+            are not liable for loss arising from unauthorized use of your account caused by your
+            failure to keep your credentials secure.
           </p>
 
           {/* 4 */}
-          <h2>4. Organizations and Teams</h2>
+          <h2>4. Workspaces and Team Members</h2>
           <p>
-            Users can create or join organizations within the Service. The organization
-            administrator ("<strong>Admin</strong>") has control over the organization's settings,
-            members, integrations, and data. By joining an organization, you acknowledge that:
+            You may create or join a workspace (organization) within the Service. The workspace
+            administrator ("<strong>Admin</strong>") controls the workspace's settings, members,
+            integrations, and data. By joining a workspace, you acknowledge that:
           </p>
           <ul>
             <li>
-              The organization Admin may access and manage data within the organization workspace,
-              including meeting recordings, transcripts, tasks, and documents.
+              The Admin and authorized members may access and manage data within the workspace —
+              including customer conversations, tickets, customer profiles, knowledge-base content,
+              and analytics.
             </li>
             <li>
-              The Admin may connect or disconnect third-party integrations that process data on
-              behalf of all organization members.
+              The Admin may connect or disconnect integrations that process data on behalf of the
+              workspace.
             </li>
             <li>
-              The Admin may remove you from the organization, which may result in loss of access to
-              organization data.
+              The Admin may add or remove members and assign roles, which may change or remove your
+              access to workspace data.
             </li>
           </ul>
 
           {/* 5 */}
-          <h2>5. Third-Party Integrations</h2>
-          <h3>5.1 Authorization</h3>
+          <h2>5. Your Responsibilities as a Customer</h2>
           <p>
-            The Service allows you to connect third-party platforms including Linear, Slack,
-            Microsoft Teams, Google (Calendar & Drive), GitHub, Greenhouse, HubSpot, and Salesforce.
-            When you authorize an integration, you grant us permission to access data from that
-            third-party service as described in our <Link to="/privacy">Privacy Policy</Link>.
+            Because Lira interacts with <strong>your</strong> customers and end users on your
+            behalf, you are responsible for:
           </p>
-          <h3>5.2 Third-Party Terms</h3>
+          <ul>
+            <li>
+              Providing your end users with any notices and obtaining any consents required by law
+              for the collection and processing of their data through the Service;
+            </li>
+            <li>
+              Ensuring you have the rights to upload your knowledge-base content and to deploy the
+              Service on the websites and channels where you use it;
+            </li>
+            <li>
+              Configuring the Service (including data retention, escalation, and integrations)
+              appropriately for your use case;
+            </li>
+            <li>
+              Reviewing and supervising the agent's behaviour and any automated actions you enable.
+            </li>
+          </ul>
           <p>
-            Your use of each third-party integration is also subject to that service's own terms of
-            service and privacy policy. We do not control and are not responsible for the practices
-            of third-party platforms. It is your responsibility to review and comply with the terms
-            of each platform you connect.
-          </p>
-          <h3>5.3 OAuth and Credentials</h3>
-          <p>
-            All integrations use OAuth 2.0 authentication. We never store your passwords for
-            third-party services. We store encrypted OAuth tokens that can be revoked at any time by
-            disconnecting the integration from your organization settings.
-          </p>
-          <h3>5.4 Data Handling</h3>
-          <p>
-            Data retrieved from third-party integrations is processed in accordance with our{' '}
-            <Link to="/privacy">Privacy Policy</Link>. Integration data is cached temporarily to
-            provide the Service and is not retained beyond what is necessary for the features you
-            have enabled.
+            For personal data that the Service processes on your behalf, you are the data controller
+            and we act as your processor under our <Link to="/privacy">Privacy Policy</Link> and
+            Data Processing Agreement.
           </p>
 
           {/* 6 */}
-          <h2>6. User Content and Data</h2>
-          <h3>6.1 Your Content</h3>
+          <h2>6. Third-Party Integrations</h2>
+          <h3>6.1 Authorization</h3>
           <p>
-            You retain all ownership rights in content you submit, upload, or create through the
-            Service ("<strong>User Content</strong>"), including meeting recordings, transcripts,
-            documents, knowledge base entries, and task data.
+            The Service lets you connect third-party platforms such as WhatsApp (Meta), HubSpot,
+            Salesforce, Slack, Linear, and webhook endpoints. When you authorize an integration, you
+            grant us permission to access and exchange data with that service as needed to provide
+            the features you enable, as described in our <Link to="/privacy">Privacy Policy</Link>.
           </p>
-          <h3>6.2 License to Us</h3>
+          <h3>6.2 Third-Party Terms</h3>
           <p>
-            By submitting User Content, you grant Creovine a worldwide, non-exclusive, royalty-free
-            license to use, process, store, and display your User Content solely to the extent
-            necessary to provide, maintain, and improve the Service. This license terminates when
-            you delete your User Content or your account.
+            Your use of each integration is also subject to that provider's own terms and privacy
+            policy. We do not control and are not responsible for third-party platforms — including
+            any fees they charge. The <strong>WhatsApp Business API</strong>, for example, carries
+            per-conversation charges set by Meta that are billed in addition to your plan. It is
+            your responsibility to review and comply with the terms of each platform you connect.
           </p>
-          <h3>6.3 AI Processing</h3>
+          <h3>6.3 Credentials</h3>
           <p>
-            The Service uses artificial intelligence and machine learning technologies to process
-            your meeting recordings, generate transcripts, produce summaries, extract action items,
-            and provide real-time coaching. By using these features, you consent to this AI
-            processing. We do <strong>not</strong> use your User Content to train general-purpose AI
-            models available to other customers.
-          </p>
-          <h3>6.4 Responsibility for Content</h3>
-          <p>
-            You are solely responsible for your User Content and for ensuring that you have the
-            necessary rights and consents to submit such content to the Service. You represent that
-            your User Content does not violate any applicable law, infringe any third-party rights,
-            or violate our <Link to="/acceptable-use">Acceptable Use Policy</Link>.
+            Integrations use industry-standard authentication. We store encrypted access tokens that
+            you can revoke at any time by disconnecting the integration from your workspace
+            settings.
           </p>
 
           {/* 7 */}
-          <h2>7. Acceptable Use</h2>
+          <h2>7. Customer Content and Data</h2>
+          <h3>7.1 Your Content</h3>
           <p>
-            Your use of the Service is subject to our{' '}
-            <Link to="/acceptable-use">Acceptable Use Policy</Link>, which is incorporated into
-            these Terms by reference. Violations of the Acceptable Use Policy may result in
-            suspension or termination of your account.
+            You retain all ownership rights in the content you submit, upload, or generate through
+            the Service ("<strong>Customer Content</strong>") — including knowledge-base materials,
+            conversation transcripts, captured leads, and customer records.
+          </p>
+          <h3>7.2 License to Us</h3>
+          <p>
+            You grant Creovine a worldwide, non-exclusive, royalty-free license to host, process,
+            store, transmit, and display your Customer Content solely to provide, secure, maintain,
+            and support the Service. This license ends when you delete the relevant Customer Content
+            or your account, subject to legal retention requirements.
+          </p>
+          <h3>7.3 AI Processing</h3>
+          <p>
+            The Service uses artificial intelligence, including third-party large language models,
+            to generate responses grounded in your knowledge base, understand and route
+            conversations, capture and qualify leads, and produce analytics. By using these features
+            you consent to this processing. We do <strong>not</strong> use your Customer Content or
+            your end users' conversation data to train general-purpose AI models, and our AI
+            providers are contractually prohibited from doing so. See our{' '}
+            <Link to="/privacy">Privacy Policy</Link> for details.
+          </p>
+          <h3>7.4 Responsibility for Content</h3>
+          <p>
+            You are solely responsible for your Customer Content and for ensuring you have the
+            necessary rights and consents to submit it. You represent that your Customer Content
+            does not violate any law, infringe any third-party rights, or violate our{' '}
+            <Link to="/acceptable-use">Acceptable Use Policy</Link>.
           </p>
 
           {/* 8 */}
-          <h2>8. Fees and Payment</h2>
-          <h3>8.1 Free and Paid Plans</h3>
+          <h2>8. Acceptable Use</h2>
           <p>
-            Certain features of the Service are available at no charge. Premium features may require
-            a paid subscription. Pricing, plan details, and billing terms will be presented to you
-            before you subscribe to any paid plan.
-          </p>
-          <h3>8.2 Billing</h3>
-          <p>
-            Paid subscriptions are billed in advance on a monthly or annual basis. You authorize us
-            to charge the payment method you provide for all applicable fees. All fees are
-            non-refundable except as required by applicable law or as expressly stated in a specific
-            plan offering.
-          </p>
-          <h3>8.3 Changes to Pricing</h3>
-          <p>
-            We reserve the right to change our pricing at any time. If we change the pricing for
-            your current plan, we will provide you with at least 30 days' notice before the change
-            takes effect. Your continued use after the price change constitutes acceptance.
+            Your use of the Service is subject to our{' '}
+            <Link to="/acceptable-use">Acceptable Use Policy</Link>, which is incorporated into
+            these Terms by reference. Violations may result in suspension or termination of your
+            account.
           </p>
 
           {/* 9 */}
-          <h2>9. Intellectual Property</h2>
-          <h3>9.1 Our Property</h3>
+          <h2>9. Plans, Fees, and Payment</h2>
+          <h3>9.1 Free Trial and Paid Plans</h3>
           <p>
-            The Service, including its design, code, features, branding, logos, documentation, and
-            all AI models, is the exclusive property of Creovine Ltd and is protected by copyright,
-            trademark, and other intellectual property laws. Nothing in these Terms grants you any
-            right, title, or interest in the Service except for the limited right to use it as
-            described herein.
+            New accounts may start with a free trial. After the trial, continued use requires a paid
+            subscription. Plan features, usage limits, and prices are presented on our{' '}
+            <Link to="/pricing">Pricing</Link> page and at checkout before you subscribe.
           </p>
-          <h3>9.2 Feedback</h3>
+          <h3>9.2 Billing &amp; Merchant of Record</h3>
           <p>
-            If you provide us with suggestions, ideas, or feedback about the Service ("
-            <strong>Feedback</strong>"), you grant us a perpetual, irrevocable, worldwide,
-            royalty-free license to use, modify, and incorporate such Feedback into the Service
-            without any obligation to you.
+            Subscriptions are billed in advance on a monthly or annual basis and renew automatically
+            until cancelled. Payments are processed by <strong>Paddle.com</strong>, our authorized
+            reseller and Merchant of Record; your purchase is also subject to Paddle's terms.
+            Refunds and cancellations are governed by our <Link to="/refund">Refund Policy</Link>.
+            Third-party usage fees (such as WhatsApp Business API charges) are billed in addition to
+            your plan.
+          </p>
+          <h3>9.3 Changes to Pricing</h3>
+          <p>
+            We may change our pricing. If we change the price of your current plan, we will give you
+            at least 30 days' notice before the change takes effect on your next billing cycle. Your
+            continued use after the change constitutes acceptance.
           </p>
 
           {/* 10 */}
-          <h2>10. Disclaimers</h2>
+          <h2>10. Intellectual Property</h2>
+          <h3>10.1 Our Property</h3>
+          <p>
+            The Service — including its design, code, features, branding, logos, documentation, and
+            AI systems — is the exclusive property of Creovine Ltd and is protected by copyright,
+            trademark, and other intellectual property laws. Except for the limited right to use the
+            Service as described in these Terms, nothing grants you any right, title, or interest in
+            the Service.
+          </p>
+          <h3>10.2 Feedback</h3>
+          <p>
+            If you provide suggestions or feedback about the Service ("<strong>Feedback</strong>"),
+            you grant us a perpetual, irrevocable, worldwide, royalty-free license to use and
+            incorporate that Feedback into the Service without obligation to you.
+          </p>
+
+          {/* 11 */}
+          <h2>11. Disclaimers</h2>
           <p>
             THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND,
             WHETHER EXPRESS, IMPLIED, OR STATUTORY. TO THE FULLEST EXTENT PERMITTED BY LAW, WE
@@ -239,27 +280,28 @@ export function TermsOfServicePage() {
           <p>Without limiting the foregoing:</p>
           <ul>
             <li>
-              AI-generated content (transcripts, summaries, action items, coaching suggestions) is
-              provided for informational purposes only and may contain errors. You should not rely
-              solely on AI outputs for critical business decisions.
+              AI-generated responses may be inaccurate or incomplete. The Service is a support
+              assistant, and you should not rely on its outputs as professional, legal, financial,
+              or other specialized advice. You are responsible for supervising the agent and the
+              automated actions you enable.
             </li>
             <li>
               We do not guarantee that the Service will be uninterrupted, error-free, or free of
               harmful components.
             </li>
             <li>
-              We are not responsible for the accuracy, reliability, or availability of third-party
-              integrations.
+              We are not responsible for the accuracy, reliability, availability, or fees of
+              third-party integrations.
             </li>
           </ul>
 
-          {/* 11 */}
-          <h2>11. Limitation of Liability</h2>
+          {/* 12 */}
+          <h2>12. Limitation of Liability</h2>
           <p>
             TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL CREOVINE, ITS
             OFFICERS, DIRECTORS, EMPLOYEES, AGENTS, OR AFFILIATES BE LIABLE FOR ANY INDIRECT,
-            INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING BUT NOT LIMITED TO
-            LOSS OF PROFITS, DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:
+            INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS,
+            DATA, USE, GOODWILL, OR OTHER INTANGIBLE LOSSES, RESULTING FROM:
           </p>
           <ul>
             <li>Your use of or inability to use the Service;</li>
@@ -274,114 +316,117 @@ export function TermsOfServicePage() {
             TWELVE (12) MONTHS PRECEDING THE CLAIM, OR (B) ONE HUNDRED U.S. DOLLARS (US$100).
           </p>
 
-          {/* 12 */}
-          <h2>12. Indemnification</h2>
+          {/* 13 */}
+          <h2>13. Indemnification</h2>
           <p>
             You agree to indemnify, defend, and hold harmless Creovine and its officers, directors,
             employees, and agents from and against any claims, liabilities, damages, losses, and
-            expenses (including reasonable attorneys' fees) arising out of or in any way connected
-            with: (a) your access to or use of the Service; (b) your User Content; (c) your
-            violation of these Terms; or (d) your violation of any third-party rights.
-          </p>
-
-          {/* 13 */}
-          <h2>13. Suspension and Termination</h2>
-          <h3>13.1 By You</h3>
-          <p>
-            You may terminate your account at any time by contacting us at{' '}
-            <a href="mailto:support@creovine.com">support@creovine.com</a> or through the account
-            settings. Upon termination, your right to use the Service will cease immediately.
-          </p>
-          <h3>13.2 By Us</h3>
-          <p>
-            We may suspend or terminate your account and access to the Service at our sole
-            discretion, with or without notice, for conduct that we determine violates these Terms,
-            our Acceptable Use Policy, or is harmful to other users, us, or third parties.
-          </p>
-          <h3>13.3 Effect of Termination</h3>
-          <p>
-            Upon termination, all licenses granted to you under these Terms will immediately cease.
-            We will retain or delete your data in accordance with our{' '}
-            <Link to="/privacy">Privacy Policy</Link>. Sections 6.2 (License to Us), 9 (Intellectual
-            Property), 10 (Disclaimers), 11 (Limitation of Liability), 12 (Indemnification), and 15
-            (Governing Law) shall survive termination.
+            expenses (including reasonable legal fees) arising out of or connected with: (a) your
+            access to or use of the Service; (b) your Customer Content; (c) your interactions with
+            your own end users through the Service; (d) your violation of these Terms; or (e) your
+            violation of any third-party rights.
           </p>
 
           {/* 14 */}
-          <h2>14. Changes to These Terms</h2>
+          <h2>14. Suspension and Termination</h2>
+          <h3>14.1 By You</h3>
           <p>
-            We reserve the right to modify these Terms at any time. When we make material changes,
-            we will update the "Last updated" date at the top of this page and notify you by email
-            or prominent notice within the Service at least 30 days before the changes take effect.
-            Your continued use of the Service after the effective date of any modification
-            constitutes acceptance of the revised Terms.
+            You may cancel your subscription or terminate your account at any time through your
+            workspace settings or by contacting{' '}
+            <a href="mailto:support@liraintelligence.com">support@liraintelligence.com</a>.
+            Cancellation takes effect as described in our <Link to="/refund">Refund Policy</Link>.
+          </p>
+          <h3>14.2 By Us</h3>
+          <p>
+            We may suspend or terminate your account and access to the Service, with or without
+            notice, for conduct that we reasonably determine violates these Terms or our Acceptable
+            Use Policy, or that is harmful to other users, us, or third parties.
+          </p>
+          <h3>14.3 Effect of Termination</h3>
+          <p>
+            Upon termination, all licenses granted to you under these Terms cease. We will retain or
+            delete your data in accordance with our <Link to="/privacy">Privacy Policy</Link>.
+            Sections 7.2 (License to Us), 10 (Intellectual Property), 11 (Disclaimers), 12
+            (Limitation of Liability), 13 (Indemnification), and 16 (Governing Law) survive
+            termination.
           </p>
 
           {/* 15 */}
-          <h2>15. Governing Law and Dispute Resolution</h2>
+          <h2>15. Changes to These Terms</h2>
           <p>
-            These Terms shall be governed by and construed in accordance with the laws of the State
-            of Delaware, United States, without regard to its conflict of law provisions.
-          </p>
-          <p>
-            Any dispute arising out of or relating to these Terms or the Service shall first be
-            resolved through good-faith negotiation. If the dispute cannot be resolved within 30
-            days of written notice, either party may submit the dispute to binding arbitration under
-            the rules of the American Arbitration Association (AAA). The arbitration shall be
-            conducted in English.
-          </p>
-          <p>
-            You agree that any arbitration shall be conducted on an individual basis and not as a
-            class action. You waive any right to participate in a class action lawsuit or class-wide
-            arbitration against Creovine.
+            We may modify these Terms from time to time. When we make material changes, we will
+            update the "Last updated" date and notify you by email or in-Service notice at least 30
+            days before the changes take effect. Your continued use after the effective date
+            constitutes acceptance of the revised Terms.
           </p>
 
           {/* 16 */}
-          <h2>16. General Provisions</h2>
+          <h2>16. Governing Law and Dispute Resolution</h2>
+          <p>
+            These Terms are governed by the laws of <strong>[England and Wales]</strong> (or such
+            other jurisdiction in which Creovine Ltd is established), without regard to
+            conflict-of-law rules. The courts of that jurisdiction shall have exclusive jurisdiction
+            over any dispute, except that either party may seek injunctive relief in any competent
+            court.
+          </p>
+          <p>
+            Before commencing proceedings, the parties will attempt in good faith to resolve any
+            dispute through negotiation. Where permitted by applicable law, you agree that disputes
+            will be resolved on an individual basis and you waive any right to participate in a
+            class action.
+          </p>
+
+          {/* 17 */}
+          <h2>17. General Provisions</h2>
           <ul>
             <li>
               <strong>Entire Agreement:</strong> These Terms, together with the Privacy Policy,
-              Cookie Policy, and Acceptable Use Policy, constitute the entire agreement between you
-              and Creovine regarding the Service.
+              Refund Policy, Cookie Policy, and Acceptable Use Policy, constitute the entire
+              agreement between you and Creovine regarding the Service.
             </li>
             <li>
-              <strong>Severability:</strong> If any provision of these Terms is found to be
-              unenforceable, the remaining provisions shall continue in full force and effect.
+              <strong>Severability:</strong> If any provision is found unenforceable, the remaining
+              provisions continue in full force and effect.
             </li>
             <li>
-              <strong>Waiver:</strong> Our failure to enforce any right or provision of these Terms
-              shall not constitute a waiver of that right or provision.
+              <strong>Waiver:</strong> Our failure to enforce any right or provision is not a waiver
+              of that right or provision.
             </li>
             <li>
               <strong>Assignment:</strong> You may not assign your rights under these Terms without
               our prior written consent. We may assign our rights without restriction.
             </li>
             <li>
-              <strong>Force Majeure:</strong> We shall not be liable for any delay or failure to
-              perform resulting from causes beyond our reasonable control, including natural
-              disasters, acts of government, or service provider outages.
+              <strong>Force Majeure:</strong> We are not liable for any delay or failure to perform
+              caused by events beyond our reasonable control, including natural disasters, acts of
+              government, or service-provider outages.
             </li>
           </ul>
 
-          {/* 17 */}
-          <h2>17. Contact Us</h2>
+          {/* 18 */}
+          <h2>18. Contact Us</h2>
           <p>If you have questions about these Terms, please contact us:</p>
           <ul>
             <li>
-              <strong>Email:</strong> <a href="mailto:legal@creovine.com">legal@creovine.com</a>
+              <strong>Legal:</strong>{' '}
+              <a href="mailto:legal@liraintelligence.com">legal@liraintelligence.com</a>
             </li>
             <li>
               <strong>Support:</strong>{' '}
-              <a href="mailto:support@creovine.com">support@creovine.com</a>
+              <a href="mailto:support@liraintelligence.com">support@liraintelligence.com</a>
             </li>
             <li>
-              <strong>Mailing Address:</strong> Creovine Ltd, Attn: Legal Team
+              <strong>Company:</strong> Creovine Ltd
+            </li>
+            <li>
+              <strong>Registered address:</strong> [Creovine Ltd registered address]
             </li>
           </ul>
 
           {/* Related links */}
           <div className="legal-link-row">
             <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/refund">Refund Policy</Link>
             <Link to="/cookies">Cookie Policy</Link>
             <Link to="/acceptable-use">Acceptable Use Policy</Link>
             <Link to="/security">Security</Link>
