@@ -26,7 +26,7 @@ export function TermsOfServicePage() {
           <h2>1. Acceptance of Terms</h2>
           <p>
             These Terms of Service ("<strong>Terms</strong>") constitute a legally binding agreement
-            between you ("<strong>you</strong>" or "<strong>User</strong>") and Creovine Inc. ("
+            between you ("<strong>you</strong>" or "<strong>User</strong>") and Creovine Ltd ("
             <strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>", or "
             <strong>our</strong>"), governing your access to and use of the Lira AI platform,
             available at <strong>liraintelligence.com</strong>, and all related services, features,
@@ -215,7 +215,7 @@ export function TermsOfServicePage() {
           <h3>9.1 Our Property</h3>
           <p>
             The Service, including its design, code, features, branding, logos, documentation, and
-            all AI models, is the exclusive property of Creovine Inc. and is protected by copyright,
+            all AI models, is the exclusive property of Creovine Ltd and is protected by copyright,
             trademark, and other intellectual property laws. Nothing in these Terms grants you any
             right, title, or interest in the Service except for the limited right to use it as
             described herein.
@@ -375,7 +375,7 @@ export function TermsOfServicePage() {
               <a href="mailto:support@creovine.com">support@creovine.com</a>
             </li>
             <li>
-              <strong>Mailing Address:</strong> Creovine Inc., Attn: Legal Team
+              <strong>Mailing Address:</strong> Creovine Ltd, Attn: Legal Team
             </li>
           </ul>
 

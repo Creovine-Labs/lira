@@ -1,16 +1,24 @@
-import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
-const LAST_UPDATED = 'May 20, 2026'
+const LAST_UPDATED = 'June 3, 2026'
 
+/**
+ * Privacy Policy for Creovine Ltd (the "Lira" platform).
+ *
+ * Structured to align with GDPR (EU + UK), CCPA/CPRA, and AI-specific
+ * transparency expectations: controller-vs-processor scope, AI/sub-processor
+ * disclosure, model-training stance, automated-decision + human-review rights,
+ * retention, and data-subject rights. Company-specific details marked with
+ * [brackets] should be confirmed by Creovine Ltd before publishing.
+ */
 export function PrivacyPolicyPage() {
   return (
     <MarketingLayout>
       <SEO
         title="Privacy Policy"
-        description="Learn how Lira AI collects, uses, and protects your personal information. Read our full privacy policy covering data collection, storage, third-party sharing, and your privacy rights."
-        keywords="Lira AI privacy policy, data privacy, personal data protection, GDPR, privacy rights"
+        description="How Creovine Ltd (Lira) collects, uses, shares, and protects personal data. Covers our role as controller and processor, AI processing and sub-processors, international transfers, retention, and your rights under GDPR, UK GDPR, and CCPA."
+        keywords="Lira privacy policy, Creovine Ltd privacy, AI chatbot data privacy, GDPR, CCPA, data processor, sub-processors, automated decision-making"
         path="/privacy"
       />
       <div className="legal-page">
@@ -25,425 +33,353 @@ export function PrivacyPolicyPage() {
           {/* 1 */}
           <h2>1. Introduction</h2>
           <p>
-            Creovine Inc. ("<strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>
-            ", or "<strong>our</strong>") operates the Lira AI platform located at{' '}
-            <strong>liraintelligence.com</strong> and its associated services (collectively, the "
-            <strong>Service</strong>"). This Privacy Policy describes how we collect, use, disclose,
-            and protect your personal information when you access or use our Service.
+            Creovine Ltd ("<strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>",
+            or "<strong>our</strong>") provides <strong>Lira</strong>, an AI customer-support agent
+            that businesses embed on their websites and channels to answer customer questions,
+            capture and qualify leads, and hand off to human teams. Lira is available at{' '}
+            <strong>liraintelligence.com</strong> together with its widget, dashboard, APIs, and
+            related services (collectively, the "<strong>Service</strong>").
           </p>
           <p>
-            By creating an account or using the Service, you acknowledge that you have read,
-            understood, and agree to the practices described in this Privacy Policy. If you do not
-            agree, please do not use the Service.
+            This Privacy Policy explains what personal data we process, why, who we share it with,
+            and the rights you have. It applies to our websites, the Lira dashboard, the chat widget
+            and integrations, and anyone whose data we process in connection with the Service. By
+            using the Service you acknowledge the practices described here. If you do not agree,
+            please do not use the Service.
           </p>
 
           {/* 2 */}
-          <h2>2. Information We Collect</h2>
-
-          <h3>2.1 Information You Provide Directly</h3>
-          <ul>
-            <li>
-              <strong>Account Registration:</strong> When you create an account, we collect your
-              full name, email address, and password (stored as a salted cryptographic hash). If you
-              register via Google OAuth, we receive your name, email, and profile picture from
-              Google.
-            </li>
-            <li>
-              <strong>Organization Data:</strong> When you create or join an organization, we
-              collect the organization name, team member details, roles, and organizational
-              preferences you provide.
-            </li>
-            <li>
-              <strong>Meeting & Conversation Data:</strong> Audio recordings, transcripts,
-              AI-generated summaries, action items, notes, and any content you create within the
-              Service.
-            </li>
-            <li>
-              <strong>Knowledge Base & Documents:</strong> Files, documents, and other materials you
-              upload or create within your organization workspace.
-            </li>
-            <li>
-              <strong>Communications:</strong> If you contact us for support or feedback, we collect
-              the contents of those communications.
-            </li>
-          </ul>
-
-          <h3>2.2 Information Collected Through Integrations</h3>
+          <h2>2. Our Role: Controller and Processor</h2>
           <p>
-            When you connect third-party services to Lira AI, we access and process data from those
-            services on your behalf. Specifically:
+            Because of how Lira works, our role under data-protection law depends on the data in
+            question:
           </p>
           <ul>
             <li>
-              <strong>Linear:</strong> Project issues, tasks, labels, team members, and workflow
-              states for your connected Linear workspace.
+              <strong>We are the "controller"</strong> for personal data of our business customers
+              and website visitors that we collect for our own purposes — for example, account
+              registration, billing, marketing, and operating our website.
             </li>
             <li>
-              <strong>Slack:</strong> Channel lists, message content in connected channels, and user
-              directory information necessary to route AI-generated summaries and action items.
-            </li>
-            <li>
-              <strong>Microsoft Teams:</strong> Channel lists, conversation threads, and user
-              profiles within your connected Teams tenant, used for delivering meeting insights and
-              action items.
-            </li>
-            <li>
-              <strong>Google Calendar & Google Drive:</strong> Calendar event details (title,
-              attendees, time, description), and document metadata and content from Google Drive
-              files you explicitly share with the Service.
-            </li>
-            <li>
-              <strong>GitHub:</strong> Repository metadata, issues, pull requests, and contributor
-              information for repositories you authorize Lira AI to access.
-            </li>
-            <li>
-              <strong>Greenhouse:</strong> Job postings, candidate profiles, interview schedules,
-              scorecards, and hiring pipeline data for your connected Greenhouse account.
-            </li>
-            <li>
-              <strong>HubSpot:</strong> CRM contacts, companies, deals, tickets, and engagement data
-              from your connected HubSpot portal.
-            </li>
-            <li>
-              <strong>Salesforce:</strong> Contacts, accounts, opportunities, leads, and user
-              profiles from your connected Salesforce organization.
+              <strong>We are a "processor"</strong> for the personal data contained in conversations
+              and leads that the Service handles on behalf of a business customer (the controller).
+              When a visitor chats with Lira on a customer's website, that customer decides why and
+              how the data is used; we process it under their instructions and our Data Processing
+              Agreement ("<strong>DPA</strong>"). For that data, the business customer's own privacy
+              notice governs, and requests should be directed to them — though we will assist as
+              required (see Section 11).
             </li>
           </ul>
-          <p>
-            We only access data that is necessary to provide the features you have enabled. You can
-            disconnect any integration at any time from your organization's integrations settings,
-            which will immediately revoke our access to that service.
-          </p>
-
-          <h3>2.3 Information Collected Automatically</h3>
-          <ul>
-            <li>
-              <strong>Usage Data:</strong> Pages visited, features used, timestamps, session
-              duration, and interaction patterns within the Service.
-            </li>
-            <li>
-              <strong>Device & Browser Data:</strong> IP address, browser type and version,
-              operating system, device type, screen resolution, and language preferences.
-            </li>
-            <li>
-              <strong>Cookies & Similar Technologies:</strong> We use essential cookies for
-              authentication and session management, and optional analytics cookies to understand
-              how the Service is used. See our <Link to="/cookies">Cookie Policy</Link> for details.
-            </li>
-          </ul>
-
-          <h3>2.4 Public Demo Site</h3>
-          <p>
-            We operate a public, no-login demo of our AI customer support agent at{' '}
-            <strong>demo.liraintelligence.com</strong> (also reachable at{' '}
-            <strong>liraintelligence.com/demo</strong>). The demo includes a fictional company
-            called "Nimbus" used solely to give visitors a realistic context for trying the product.
-            When you use the demo, we process the following on a pseudonymous basis to prevent abuse
-            and manage usage limits — not to identify you personally:
-          </p>
-          <ul>
-            <li>
-              <strong>Anonymous session token:</strong> a randomly generated identifier stored in an
-              HttpOnly cookie (and a mirror in localStorage for UX). Retention: up to 12 months
-              (sliding window, reset on visit).
-            </li>
-            <li>
-              <strong>Hashed IP address:</strong> your IP address is hashed with a daily-rotating
-              salt server-side and used only for IP-level rate limiting. We do not store your raw
-              IP. Retention: 24 hours rolling.
-            </li>
-            <li>
-              <strong>Browser fingerprint signal:</strong> a low-entropy signal (roughly 16 bits;
-              combining user agent, time zone, screen size, and a canvas hash) used solely to detect
-              quota-bypass attempts. Not joined to any marketing or analytics graph. Retention: 24
-              hours rolling.
-            </li>
-            <li>
-              <strong>Conversation transcripts:</strong> the messages you and the AI exchange in the
-              demo are stored keyed to the anonymous session token (never to your hashed IP at the
-              row level) for the purposes of product analytics, prompt iteration, and abuse review.
-              Any content that appears to be real personal data (e.g., what looks like an SSN,
-              credit card number, or similar) is automatically redacted before storage. Retention:
-              30 days, then deleted.
-            </li>
-            <li>
-              <strong>Optional test profile:</strong> if you choose to create a test profile inside
-              the demo (a synthetic Nimbus customer with a first name, plan tier, and optional
-              notes), that profile is stored against your anonymous session token only, flagged as
-              synthetic, and never joined to any production customer record. Retention: 24 hours.
-            </li>
-            <li>
-              <strong>Captured email (only if you explicitly provide it):</strong> if you give us
-              your email through the demo's "Speak to an expert" flow, we treat that as a standard
-              business contact under Sections 2.1 and 3 of this policy. We do not retroactively link
-              your captured email to demo conversations that took place before you provided it.
-            </li>
-          </ul>
-          <p>
-            The legal basis for processing these signals is our legitimate interest in preventing
-            abuse, controlling cost, and ensuring the demo remains usable for all visitors. We do
-            not use these signals for advertising or to build a marketing profile of you. EU and UK
-            visitors can request information about, or deletion of, data we hold by emailing{' '}
-            <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>. Note
-            that records collected before you identify yourself (anonymous-session-keyed) cannot be
-            located on request — that is a deliberate privacy feature, not a limitation.
-          </p>
-          <p>
-            The demo is a sandbox.{' '}
-            <strong>
-              Do not enter real account credentials, real banking details, real medical information,
-              or any other real personal data into the demo
-            </strong>{' '}
-            — it is monitored, logged, and not a private channel. If you have a real support
-            question for your company's deployment of Lira, please use your organization's own
-            support flow, not the public demo.
-          </p>
 
           {/* 3 */}
-          <h2>3. How We Use Your Information</h2>
-          <p>We use the information we collect to:</p>
+          <h2>3. Information We Collect</h2>
+
+          <h3>3.1 Account &amp; business information</h3>
+          <p>When you create or manage a Lira account, we collect:</p>
           <ul>
+            <li>Identity and contact details — name, work email, company name, and job role;</li>
+            <li>Account credentials and authentication data (including via single sign-on);</li>
+            <li>Plan, billing, and transaction records (see Section 3.5);</li>
+            <li>Support requests, feedback, and communications you send us.</li>
+          </ul>
+
+          <h3>3.2 Content you provide</h3>
+          <p>
+            To configure Lira you may upload or connect a <strong>knowledge base</strong> — help
+            articles, FAQs, documents, website content, product information, and similar materials
+            ("<strong>Customer Content</strong>"). This may contain personal data if you choose to
+            include it. We process Customer Content to power the Service on your behalf.
+          </p>
+
+          <h3>3.3 Conversation &amp; lead data</h3>
+          <p>
+            When the Service interacts with your end users (website visitors, WhatsApp users, etc.),
+            it may process:
+          </p>
+          <ul>
+            <li>Messages and chat transcripts, including anything the visitor chooses to type;</li>
             <li>
-              <strong>Provide and operate the Service:</strong> Process meeting recordings, generate
-              transcripts and AI-powered summaries, manage your organization workspace, and deliver
-              integration features.
+              Lead and contact details captured during a conversation — such as name, email,
+              phone/WhatsApp number, company, and the visitor's stated needs;
             </li>
             <li>
-              <strong>Authenticate and secure your account:</strong> Verify your identity, manage
-              sessions, prevent fraud, and protect against unauthorized access.
+              Conversation metadata — language, detected intent, sentiment, satisfaction (CSAT)
+              ratings, timestamps, and the outcome of the conversation;
             </li>
             <li>
-              <strong>Improve and develop the Service:</strong> Analyze usage patterns to identify
-              bugs, improve performance, and develop new features.
-            </li>
-            <li>
-              <strong>Communicate with you:</strong> Send transactional emails (account
-              verification, password resets), service updates, and respond to support requests.
-            </li>
-            <li>
-              <strong>Ensure legal compliance:</strong> Comply with applicable laws, regulations,
-              and legal processes.
+              Where applicable, identifiers a customer passes to us to recognise a known user.
             </li>
           </ul>
           <p>
-            We do <strong>not</strong> sell your personal information to third parties. We do{' '}
-            <strong>not</strong> use your meeting recordings, transcripts, or organizational data to
-            train general-purpose AI models.
+            We process this data as a <strong>processor</strong> on behalf of the business customer
+            who deployed Lira (Section 2).
+          </p>
+
+          <h3>3.4 Usage, device &amp; log data</h3>
+          <p>
+            We automatically collect technical information when you use our websites or dashboard,
+            including IP address, browser and device type, operating system, pages viewed, referring
+            URLs, approximate location derived from IP, and diagnostic logs. This helps us secure,
+            maintain, and improve the Service.
+          </p>
+
+          <h3>3.5 Payment information</h3>
+          <p>
+            Payments are processed by <strong>Paddle.com</strong>, our authorised reseller and
+            Merchant of Record. Paddle collects and processes your payment details under its own
+            privacy policy; we receive limited billing information (such as plan, amount, country,
+            and the last four digits / card type) and do not store full card numbers.
+          </p>
+
+          <h3>3.6 Cookies &amp; similar technologies</h3>
+          <p>
+            We and our providers use cookies and similar technologies for authentication,
+            preferences, analytics, and (with consent where required) marketing. See our{' '}
+            <a href="/cookies">Cookie Policy</a> for details and how to manage them.
           </p>
 
           {/* 4 */}
-          <h2>4. How We Share Your Information</h2>
-          <p>We may share your information in the following circumstances:</p>
+          <h2>4. How We Use Personal Data</h2>
+          <p>As a controller, we use personal data to:</p>
           <ul>
+            <li>Provide, operate, secure, and maintain the Service and your account;</li>
+            <li>Generate AI responses and deliver the features you enable (Section 5);</li>
+            <li>Process payments, manage subscriptions, and prevent fraud;</li>
+            <li>Provide customer support and respond to your requests;</li>
+            <li>Send service, security, and (where permitted) marketing communications;</li>
             <li>
-              <strong>With your organization members:</strong> Data within an organization workspace
-              is accessible to other members of that organization based on their role and
-              permissions.
+              Produce aggregated, de-identified analytics to understand and improve the Service;
             </li>
-            <li>
-              <strong>With third-party service providers:</strong> We use trusted service providers
-              for hosting (cloud infrastructure), email delivery, error monitoring, and analytics.
-              These providers process data on our behalf under strict contractual obligations.
-            </li>
-            <li>
-              <strong>With connected integrations:</strong> When you authorize an integration, data
-              flows between the Service and the connected third-party platform as necessary to
-              provide the integrated functionality.
-            </li>
-            <li>
-              <strong>For legal reasons:</strong> We may disclose information if required by law,
-              subpoena, or court order, or if we believe disclosure is necessary to protect our
-              rights, your safety, or the safety of others.
-            </li>
-            <li>
-              <strong>Business transfers:</strong> In the event of a merger, acquisition, or sale of
-              assets, your information may be transferred as part of that transaction. We will
-              notify you via email or prominent notice on the Service before your information
-              becomes subject to a different privacy policy.
-            </li>
+            <li>Comply with legal obligations and enforce our terms.</li>
           </ul>
 
           {/* 5 */}
-          <h2>5. Data Retention</h2>
+          <h2>5. Artificial Intelligence &amp; Automated Processing</h2>
           <p>
-            We retain your personal information for as long as your account is active or as needed
-            to provide the Service. Specifically:
+            Lira is an AI system. When you interact with it, you are communicating with an automated
+            agent, not a human. To generate responses, the Service uses large-language-model ("
+            <strong>LLM</strong>") technology, including models provided by third-party AI vendors
+            (for example, <strong>Anthropic</strong> and/or <strong>OpenAI</strong>) and our own
+            models. Relevant conversation content and Customer Content may be sent to these
+            providers solely to produce a response for that interaction.
           </p>
-          <ul>
-            <li>
-              <strong>Account data:</strong> Retained until you delete your account. Upon account
-              deletion, we will delete or anonymize your personal data within 30 days, except where
-              we are required by law to retain it.
-            </li>
-            <li>
-              <strong>Meeting recordings and transcripts:</strong> Retained according to your
-              organization's configured retention policy. You can delete individual recordings at
-              any time.
-            </li>
-            <li>
-              <strong>Integration data:</strong> Cached integration data is refreshed on each
-              request and removed when you disconnect the integration.
-            </li>
-            <li>
-              <strong>Usage and analytics data:</strong> Retained in aggregated, anonymized form for
-              up to 24 months for product improvement purposes.
-            </li>
-          </ul>
+          <p>
+            <strong>Model training.</strong> We do <strong>not</strong> use your Customer Content or
+            end-user conversation data to train our own foundation models, and we use AI providers
+            under terms that prohibit them from using your data to train their models. We may use
+            aggregated and de-identified information that cannot reasonably be linked to an
+            individual to monitor and improve quality and safety.
+          </p>
+          <p>
+            <strong>Automated decisions &amp; human review.</strong> Lira answers questions and can
+            route, prioritise, or escalate conversations automatically. It is designed to assist —
+            not to make decisions that produce legal or similarly significant effects about you
+            without human involvement. Where automated processing meaningfully affects you, you have
+            the right to request human review (Section 10). We assess our AI for safety and security
+            risk before and during use.
+          </p>
 
           {/* 6 */}
-          <h2>6. Data Security</h2>
+          <h2>6. Legal Bases for Processing (EU/UK)</h2>
           <p>
-            We implement industry-standard technical and organizational measures to protect your
-            data, including:
+            Where the GDPR or UK GDPR applies and we act as a controller, we rely on the following
+            legal bases:
           </p>
           <ul>
-            <li>Encryption of data in transit using TLS 1.2 or higher.</li>
-            <li>Encryption of sensitive data at rest using AES-256.</li>
-            <li>Salted cryptographic hashing for all stored passwords (bcrypt).</li>
             <li>
-              OAuth 2.0 with PKCE for all third-party integration authentication flows — we never
-              store your third-party passwords.
+              <strong>Performance of a contract</strong> — to provide the Service and your account;
             </li>
             <li>
-              Role-based access controls within organizations, ensuring team members only see data
-              appropriate to their role.
+              <strong>Legitimate interests</strong> — to secure, analyse, and improve the Service,
+              prevent fraud, and conduct limited B2B marketing, balanced against your rights;
             </li>
-            <li>Regular security assessments and dependency vulnerability scanning.</li>
             <li>
-              Infrastructure hosted on secure, SOC 2-compliant cloud providers with automated
-              backups and disaster recovery.
+              <strong>Consent</strong> — for certain cookies and electronic marketing, which you may
+              withdraw at any time;
+            </li>
+            <li>
+              <strong>Legal obligation</strong> — to comply with applicable laws, tax, and
+              accounting requirements.
             </li>
           </ul>
-          <p>
-            While we strive to protect your data, no method of electronic transmission or storage is
-            100% secure. If you become aware of any security incident, please contact us immediately
-            at <a href="mailto:security@creovine.com">security@creovine.com</a>.
-          </p>
 
           {/* 7 */}
-          <h2>7. Your Rights and Choices</h2>
-          <p>
-            Depending on your jurisdiction, you may have the following rights regarding your
-            personal data:
-          </p>
-
-          <h3>7.1 For All Users</h3>
+          <h2>7. How We Share Personal Data</h2>
+          <p>We share personal data only as described here:</p>
           <ul>
             <li>
-              <strong>Access:</strong> Request a copy of the personal data we hold about you.
+              <strong>Sub-processors and service providers</strong> who help us run the Service —
+              including cloud hosting and infrastructure (e.g., Amazon Web Services), AI/LLM
+              providers, communications and email delivery, analytics, and customer-support tooling.
+              They act on our instructions under contract.
             </li>
             <li>
-              <strong>Correction:</strong> Request correction of inaccurate or incomplete data.
+              <strong>Payment provider</strong> — Paddle, as Merchant of Record (Section 3.5).
             </li>
             <li>
-              <strong>Deletion:</strong> Request deletion of your account and associated data.
+              <strong>Integrations you enable</strong> — when you connect Lira to a third-party tool
+              (e.g., WhatsApp / Meta, a CRM such as HubSpot or Salesforce, Slack, or a webhook), we
+              transmit the relevant data to that tool at your direction. Their handling of the data
+              is governed by their own terms and privacy policies.
             </li>
             <li>
-              <strong>Data Portability:</strong> Request your data in a structured, machine-readable
-              format.
+              <strong>Legal &amp; safety</strong> — where required by law, legal process, or to
+              protect the rights, safety, and security of Creovine, our users, or the public.
             </li>
             <li>
-              <strong>Withdraw Consent:</strong> Where processing is based on consent, withdraw
-              consent at any time without affecting the lawfulness of prior processing.
-            </li>
-            <li>
-              <strong>Integration Management:</strong> Connect or disconnect any third-party
-              integration at any time from your organization settings.
+              <strong>Business transfers</strong> — in connection with a merger, acquisition,
+              financing, or sale of assets, subject to this Policy.
             </li>
           </ul>
-
-          <h3>7.2 European Economic Area (EEA) & UK Residents — GDPR</h3>
           <p>
-            If you are in the EEA or UK, the General Data Protection Regulation (GDPR) provides
-            additional rights including the right to restrict processing and the right to object to
-            processing. Our legal bases for processing include: performance of a contract (providing
-            the Service), legitimate interests (improving the Service, security), and consent (where
-            explicitly obtained, such as for optional analytics cookies).
-          </p>
-          <p>
-            You may also lodge a complaint with your local data protection authority if you believe
-            your rights have been violated.
-          </p>
-
-          <h3>7.3 California Residents — CCPA / CPRA</h3>
-          <p>
-            California residents have the right to know what personal information is collected, to
-            request deletion of personal information, and to opt out of the "sale" or "sharing" of
-            personal information. We do <strong>not</strong> sell or share your personal information
-            as defined under the California Consumer Privacy Act (CCPA) or the California Privacy
-            Rights Act (CPRA).
-          </p>
-
-          <p>
-            To exercise any of these rights, contact us at{' '}
-            <a href="mailto:privacy@creovine.com">privacy@creovine.com</a>. We will respond within
-            30 days (or as required by applicable law).
+            We do <strong>not</strong> sell personal data, and we do not "share" it for
+            cross-context behavioural advertising as those terms are defined under US state privacy
+            laws. A current list of our sub-processors is available on request at{' '}
+            <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>.
           </p>
 
           {/* 8 */}
           <h2>8. International Data Transfers</h2>
           <p>
-            Your data may be processed and stored in the United States or other countries where our
-            service providers operate. When we transfer data outside your jurisdiction, we ensure
-            appropriate safeguards are in place, including Standard Contractual Clauses (SCCs)
-            approved by the European Commission where applicable.
+            We and our providers may process personal data in countries other than your own,
+            including the United States. Where we transfer personal data out of the UK, EEA, or
+            other regions with transfer restrictions, we use appropriate safeguards — such as the
+            European Commission's Standard Contractual Clauses and the UK International Data
+            Transfer Addendum, together with additional measures where needed.
           </p>
 
           {/* 9 */}
-          <h2>9. Children's Privacy</h2>
+          <h2>9. Data Retention</h2>
           <p>
-            The Service is not directed to individuals under the age of 16. We do not knowingly
-            collect personal information from children. If you become aware that a child has
-            provided us with personal information, please contact us at{' '}
-            <a href="mailto:privacy@creovine.com">privacy@creovine.com</a> and we will promptly
-            delete such information.
-          </p>
-
-          {/* 10 */}
-          <h2>10. Third-Party Links and Services</h2>
-          <p>
-            The Service may contain links to third-party websites or services (including the
-            integration platforms listed above). We are not responsible for the privacy practices of
-            those third parties. We encourage you to read the privacy policies of any third-party
-            service you connect to Lira AI.
-          </p>
-
-          {/* 11 */}
-          <h2>11. Changes to This Policy</h2>
-          <p>
-            We may update this Privacy Policy from time to time to reflect changes in our practices
-            or applicable law. When we make material changes, we will notify you by email or by
-            posting a prominent notice on the Service at least 30 days before the changes take
-            effect. Your continued use of the Service after the effective date constitutes
-            acceptance of the updated Privacy Policy.
-          </p>
-
-          {/* 12 */}
-          <h2>12. Contact Us</h2>
-          <p>
-            If you have questions, concerns, or requests regarding this Privacy Policy or our data
-            practices, please contact us:
+            We retain personal data only for as long as necessary for the purposes described in this
+            Policy, then delete or anonymise it:
           </p>
           <ul>
             <li>
-              <strong>Email:</strong> <a href="mailto:privacy@creovine.com">privacy@creovine.com</a>
+              <strong>Account &amp; billing data</strong> — for the life of your account and a
+              limited period afterwards to meet legal, tax, and audit obligations;
             </li>
             <li>
-              <strong>Security Issues:</strong>{' '}
-              <a href="mailto:security@creovine.com">security@creovine.com</a>
+              <strong>Conversation &amp; lead data</strong> — for the retention period configured by
+              the business customer (the controller); we delete or return it on termination or valid
+              request, subject to legal retention requirements;
             </li>
             <li>
-              <strong>Mailing Address:</strong> Creovine Inc., Attn: Privacy Team
+              <strong>Logs &amp; diagnostics</strong> — for a limited period for security and
+              troubleshooting.
             </li>
           </ul>
 
-          {/* Related links */}
-          <div className="legal-link-row">
-            <Link to="/terms">Terms of Service</Link>
-            <Link to="/cookies">Cookie Policy</Link>
-            <Link to="/acceptable-use">Acceptable Use Policy</Link>
-            <Link to="/security">Security</Link>
-          </div>
+          {/* 10 */}
+          <h2>10. Your Rights</h2>
+          <p>
+            Depending on where you live, you may have some or all of the following rights regarding
+            personal data for which we are the controller:
+          </p>
+          <ul>
+            <li>
+              <strong>Access</strong> — obtain a copy of the personal data we hold about you;
+            </li>
+            <li>
+              <strong>Rectification</strong> — correct inaccurate or incomplete data;
+            </li>
+            <li>
+              <strong>Erasure</strong> — request deletion of your data ("right to be forgotten");
+            </li>
+            <li>
+              <strong>Restriction &amp; objection</strong> — limit or object to certain processing,
+              including direct marketing and processing based on legitimate interests;
+            </li>
+            <li>
+              <strong>Portability</strong> — receive your data in a portable format;
+            </li>
+            <li>
+              <strong>Automated decisions</strong> — request human review of, and contest, decisions
+              based solely on automated processing that significantly affect you;
+            </li>
+            <li>
+              <strong>Withdraw consent</strong> — where processing is based on consent;
+            </li>
+            <li>
+              <strong>US state rights (e.g., CCPA/CPRA)</strong> — the right to know, access,
+              delete, correct, and opt out of any "sale" or "sharing" of personal information, and
+              the right not to be discriminated against for exercising these rights. As noted in
+              Section 7, we do not sell or share personal information.
+            </li>
+          </ul>
+          <p>
+            To exercise any right, contact{' '}
+            <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>. We will
+            verify your request and respond within the timeframes required by law. You may use an
+            authorised agent where permitted. If we process your data only as a processor on behalf
+            of a business customer, we will refer your request to that customer or act on their
+            instructions.
+          </p>
+          <p>
+            If you are in the EU or UK and believe we have not handled your data lawfully, you may
+            lodge a complaint with your local data-protection supervisory authority (in the UK, the
+            Information Commissioner's Office). We would appreciate the chance to address your
+            concern first.
+          </p>
+
+          {/* 11 */}
+          <h2>11. For Website Visitors &amp; End Users</h2>
+          <p>
+            If you interacted with Lira on another company's website or channel, that company is the
+            controller of your conversation data and its privacy notice applies. Please direct
+            access or deletion requests to them; we will support them in fulfilling your request.
+          </p>
+
+          {/* 12 */}
+          <h2>12. Security</h2>
+          <p>
+            We implement technical and organisational measures appropriate to the risk, including
+            encryption in transit, access controls and least-privilege permissions, network
+            protections, logging and monitoring, and regular review of our providers. No method of
+            transmission or storage is completely secure, but we work continually to protect your
+            data and will notify affected parties and regulators of a personal-data breach where
+            required by law.
+          </p>
+
+          {/* 13 */}
+          <h2>13. Children's Privacy</h2>
+          <p>
+            The Service is intended for businesses and is not directed to children. We do not
+            knowingly collect personal data from children under the age of 16 (or the minimum age in
+            your jurisdiction). If you believe a child has provided us personal data, contact us and
+            we will delete it.
+          </p>
+
+          {/* 14 */}
+          <h2>14. Third-Party Links</h2>
+          <p>
+            Our websites and the Service may link to third-party sites and tools we do not control.
+            This Policy does not apply to them; please review their privacy policies.
+          </p>
+
+          {/* 15 */}
+          <h2>15. Changes to This Policy</h2>
+          <p>
+            We may update this Privacy Policy from time to time. Material changes will be posted on
+            this page with a new "Last updated" date and, where appropriate, communicated to account
+            holders. Your continued use of the Service after an update constitutes acceptance of the
+            revised Policy.
+          </p>
+
+          {/* 16 */}
+          <h2>16. Contact Us</h2>
+          <p>For privacy questions or to exercise your rights, contact our privacy team:</p>
+          <ul>
+            <li>
+              Email: <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>
+            </li>
+            <li>Controller: Creovine Ltd</li>
+            <li>Registered address: [Creovine Ltd registered address]</li>
+          </ul>
+          <p>
+            If we have appointed a Data Protection Officer or an EU/UK representative, their contact
+            details will be provided here and on request.
+          </p>
         </article>
       </div>
     </MarketingLayout>

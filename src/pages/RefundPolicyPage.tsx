@@ -25,7 +25,7 @@ export function RefundPolicyPage() {
           <h2>1. Overview</h2>
           <p>
             This Refund Policy explains how refunds and cancellations work for paid subscriptions to
-            the Lira platform ("<strong>Service</strong>"), operated by Creovine Inc. ("
+            the Lira platform ("<strong>Service</strong>"), operated by Creovine Ltd ("
             <strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>", or "
             <strong>our</strong>"). It applies in addition to our{' '}
             <a href="/terms">Terms of Service</a>.

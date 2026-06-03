@@ -27,7 +27,7 @@ export function AcceptableUsePolicyPage() {
           <p>
             This Acceptable Use Policy ("<strong>AUP</strong>") governs your use of the Lira AI
             platform and all associated services (the "<strong>Service</strong>") provided by
-            Creovine Inc. ("<strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>
+            Creovine Ltd ("<strong>Creovine</strong>", "<strong>we</strong>", "<strong>us</strong>
             "). This AUP is incorporated by reference into our{' '}
             <Link to="/terms">Terms of Service</Link>.
           </p>
