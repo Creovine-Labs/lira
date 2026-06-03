@@ -94,10 +94,7 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
         </ul>
 
         <div className="hidden items-center gap-4 md:flex">
-          <Link
-            to="/login"
-            className={`text-sm font-semibold transition ${linkClass}`}
-          >
+          <Link to="/login" className={`text-sm font-semibold transition ${linkClass}`}>
             Log in
           </Link>
           {isOverlay && !scrolled ? (
@@ -129,13 +126,23 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
       </nav>
 
       {mobileOpen && (
+        // !text-* prefixes here are deliberate. The drawer has a fixed cream
+        // background but it sits inside <header>, which toggles its own
+        // `color` between white (overlay, page at top) and gray-900 (after
+        // scroll). The marketing pages also ship a global rule
+        // `.hx-page a { color: inherit; }` whose specificity (0,1,1) beats
+        // plain Tailwind text-* utilities (0,1,0) — so without !important,
+        // every Link in here inherits the header's scroll-driven colour and
+        // collides with the drawer's own backgrounds (white-on-cream at top,
+        // dark-on-dark on the CTA after scroll). The drawer's contrast must
+        // be independent of scroll state; `!` forces that.
         <div className="mx-4 mb-4 rounded-2xl border border-gray-200 bg-[#fbfaf6] p-4 shadow-xl md:hidden">
           <div className="grid gap-1">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
-                className="rounded-xl px-3 py-2.5 text-sm font-semibold text-gray-800 hover:bg-gray-100"
+                className="rounded-xl px-3 py-2.5 text-sm font-semibold !text-gray-800 hover:bg-gray-100"
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
@@ -145,14 +152,14 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
           <div className="mt-4 grid gap-2 border-t border-gray-200 pt-4">
             <Link
               to="/login"
-              className="inline-flex justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-gray-200"
+              className="inline-flex justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold !text-gray-900 ring-1 ring-gray-200"
               onClick={() => setMobileOpen(false)}
             >
               Log in
             </Link>
             <Link
               to="/book-demo"
-              className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold text-white"
+              className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold !text-white"
               onClick={() => setMobileOpen(false)}
             >
               Speak to an expert
