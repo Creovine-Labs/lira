@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type DragEvent as ReactDragEvent,
+  type ReactNode,
+} from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowDownTrayIcon,
@@ -280,8 +287,31 @@ export function SupportTicketsPage() {
             : t
         )
       )
+      // Route to the dedicated lifecycle endpoint for the statuses that have
+      // one (they apply the right side-effects server-side); fall back to the
+      // generic status PATCH for the rest (open / in_progress / escalated).
+      const terminal: SupportTicketRecord['status'][] = ['resolved', 'closed', 'merged']
+      const persist = (): Promise<SupportTicketRecord> => {
+        switch (status) {
+          case 'resolved':
+            return resolveTicket(currentOrgId, ticketId)
+          case 'closed':
+            return closeTicket(currentOrgId, ticketId)
+          case 'on_hold':
+            return markTicketOnHold(currentOrgId, ticketId)
+          case 'pending':
+            return markTicketPending(currentOrgId, ticketId)
+          case 'open':
+            // Reopen only makes sense from a terminal state; otherwise just set.
+            return terminal.includes(current.status)
+              ? reopenTicket(currentOrgId, ticketId)
+              : setTicketStatus(currentOrgId, ticketId, status)
+          default:
+            return setTicketStatus(currentOrgId, ticketId, status)
+        }
+      }
       try {
-        const updated = await setTicketStatus(currentOrgId, ticketId, status)
+        const updated = await persist()
         setTickets((prev) => prev.map((t) => (t.ticket_id === ticketId ? updated : t)))
       } catch (err) {
         setTickets(snapshot)
@@ -680,8 +710,12 @@ function TicketBoard({
     return groups
   }, [tickets])
 
-  const handleDrop = (status: SupportTicketRecord['status']) => {
-    if (dragId) onMove(dragId, status)
+  const handleDrop = (e: ReactDragEvent, status: SupportTicketRecord['status']) => {
+    e.preventDefault()
+    // Read the id straight from the drag payload rather than React state — state
+    // set in onDragStart updates asynchronously, so relying on it here can miss.
+    const id = e.dataTransfer.getData('text/plain') || dragId
+    if (id) onMove(id, status)
     setDragId(null)
     setOverStatus(null)
   }
@@ -695,9 +729,12 @@ function TicketBoard({
           <div
             key={col.status}
             onDragOver={(e) => {
-              if (!dragId) return
+              // Must preventDefault on EVERY dragover for the column to be a
+              // valid drop target — do it unconditionally (dragover only fires
+              // mid-drag), not gated on async state.
               e.preventDefault()
-              setOverStatus(col.status)
+              e.dataTransfer.dropEffect = 'move'
+              setOverStatus((s) => (s === col.status ? s : col.status))
             }}
             onDragLeave={(e) => {
               // Only clear when the pointer actually leaves the column, not when
@@ -706,7 +743,7 @@ function TicketBoard({
                 setOverStatus((s) => (s === col.status ? null : s))
               }
             }}
-            onDrop={() => handleDrop(col.status)}
+            onDrop={(e) => handleDrop(e, col.status)}
             className={cn(
               'flex h-full w-[80vw] shrink-0 flex-col rounded-2xl border bg-gray-50/80 sm:w-72',
               isOver ? 'border-[#020308] bg-white ring-2 ring-[#020308]/10' : 'border-gray-200'
