@@ -363,17 +363,17 @@ export function TermsOfServicePage() {
           {/* 16 */}
           <h2>16. Governing Law and Dispute Resolution</h2>
           <p>
-            These Terms are governed by the laws of <strong>[England and Wales]</strong> (or such
-            other jurisdiction in which Creovine Ltd is established), without regard to
-            conflict-of-law rules. The courts of that jurisdiction shall have exclusive jurisdiction
-            over any dispute, except that either party may seek injunctive relief in any competent
-            court.
+            These Terms are governed by and construed in accordance with the laws of the{' '}
+            <strong>Republic of Rwanda</strong>, without regard to conflict-of-law rules. The
+            competent courts of <strong>Kigali, Rwanda</strong> shall have exclusive jurisdiction
+            over any dispute arising out of or relating to these Terms or the Service, except that
+            either party may seek injunctive or other equitable relief in any court of competent
+            jurisdiction.
           </p>
           <p>
             Before commencing proceedings, the parties will attempt in good faith to resolve any
-            dispute through negotiation. Where permitted by applicable law, you agree that disputes
-            will be resolved on an individual basis and you waive any right to participate in a
-            class action.
+            dispute through negotiation. Nothing in these Terms limits any mandatory rights you may
+            have under the laws applicable in your own country of residence.
           </p>
 
           {/* 17 */}
@@ -419,7 +419,7 @@ export function TermsOfServicePage() {
               <strong>Company:</strong> Creovine Ltd
             </li>
             <li>
-              <strong>Registered address:</strong> [Creovine Ltd registered address]
+              <strong>Registered address:</strong> Creovine Ltd, 1 KN 78 St, Kigali, Rwanda
             </li>
           </ul>
 

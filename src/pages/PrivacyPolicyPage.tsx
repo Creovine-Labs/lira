@@ -47,6 +47,13 @@ export function PrivacyPolicyPage() {
             using the Service you acknowledge the practices described here. If you do not agree,
             please do not use the Service.
           </p>
+          <p>
+            Creovine Ltd is established in Kigali, Rwanda. We handle personal data in accordance
+            with Rwanda's Law N° 058/2021 of 13/10/2021 relating to the protection of personal data
+            and privacy and, where they apply to your use of the Service, the EU and UK General Data
+            Protection Regulation (GDPR), the California Consumer Privacy Act (CCPA/CPRA), and other
+            applicable data-protection laws.
+          </p>
 
           {/* 2 */}
           <h2>2. Our Role: Controller and Processor</h2>
@@ -316,10 +323,11 @@ export function PrivacyPolicyPage() {
             instructions.
           </p>
           <p>
-            If you are in the EU or UK and believe we have not handled your data lawfully, you may
-            lodge a complaint with your local data-protection supervisory authority (in the UK, the
-            Information Commissioner's Office). We would appreciate the chance to address your
-            concern first.
+            If you believe we have not handled your data lawfully, you may lodge a complaint with
+            the competent data-protection supervisory authority — in Rwanda, the National Cyber
+            Security Authority (NCSA); in the UK, the Information Commissioner's Office; or your
+            local authority in the EU or your jurisdiction. We would appreciate the chance to
+            address your concern first.
           </p>
 
           {/* 11 */}
@@ -374,7 +382,7 @@ export function PrivacyPolicyPage() {
               Email: <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>
             </li>
             <li>Controller: Creovine Ltd</li>
-            <li>Registered address: [Creovine Ltd registered address]</li>
+            <li>Registered address: 1 KN 78 St, Kigali, Rwanda</li>
           </ul>
           <p>
             If we have appointed a Data Protection Officer or an EU/UK representative, their contact
