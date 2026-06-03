@@ -262,6 +262,30 @@ Acceptance:
 
 - Full-page support is usable as a real customer support center, not only chat.
 
+### Phase 6.5, Messenger home and multi-conversation UX
+
+Status: In progress
+
+Deliverables:
+
+- Every surface, floating widget, dashboard embed, and full-page SDK embed,
+  opens into a two-tab messenger: Home and Chat.
+- Home is org-configurable with `home_logo_url`, `home_title`,
+  `home_subtitle`, and `home_cards`.
+- Chat opens to a conversation list, not directly into a single thread.
+- Clicking a home card starts a topic-specific conversation; clicking that
+  same card later reopens the existing topic thread.
+- Dashboard onboarding keeps the guided setup CTA and adds a separate
+  "Start a conversation" action.
+- The widget can resume a selected conversation through a `convId` socket
+  parameter.
+
+Acceptance:
+
+- A LemonPay admin can design the home screen in Settings.
+- A visitor sees one thread per topic and can switch between old threads.
+- Full-page SDK mode and floating widget mode share the same behavior.
+
 ### Phase 7, Packaging and distribution
 
 Status: Done, package artifact ready
@@ -281,19 +305,20 @@ Acceptance:
 
 ## Implementation log
 
-| Date       | Phase | Change                                                             | Status |
-| ---------- | ----- | ------------------------------------------------------------------ | ------ |
-| 2026-05-24 | 1     | Created SDK/full-page embed plan                                   | Done   |
-| 2026-05-24 | 1     | Added `window.Lira` browser API and full-page widget mode          | Done   |
-| 2026-05-24 | 1     | Added first `src/sdk` NPM-loader entrypoint and `build:sdk` config | Done   |
-| 2026-05-24 | 1     | Deployed updated widget bundle to CDN and invalidated `/v1/*`      | Done   |
-| 2026-05-24 | 2     | Rewired `/demo/help` to use the SDK full-page embed surface        | Done   |
-| 2026-05-24 | 2     | Added full-page SDK dogfood checks and deployed frontend to Vercel | Done   |
-| 2026-05-24 | 2.5   | Updated activation/settings/docs to make Web SDK primary           | Done   |
-| 2026-05-24 | 3     | Added `packages/lira-support` headless client boundary             | Done   |
-| 2026-05-24 | 4     | Added React exports: provider, hook, support page, widget          | Done   |
-| 2026-05-24 | 5     | Added customer action registration APIs                            | Done   |
-| 2026-05-24 | 7     | Added package manifest, declarations, and `npm run build:sdk`      | Done   |
+| Date       | Phase | Change                                                             | Status      |
+| ---------- | ----- | ------------------------------------------------------------------ | ----------- |
+| 2026-05-24 | 1     | Created SDK/full-page embed plan                                   | Done        |
+| 2026-05-24 | 1     | Added `window.Lira` browser API and full-page widget mode          | Done        |
+| 2026-05-24 | 1     | Added first `src/sdk` NPM-loader entrypoint and `build:sdk` config | Done        |
+| 2026-05-24 | 1     | Deployed updated widget bundle to CDN and invalidated `/v1/*`      | Done        |
+| 2026-05-24 | 2     | Rewired `/demo/help` to use the SDK full-page embed surface        | Done        |
+| 2026-05-24 | 2     | Added full-page SDK dogfood checks and deployed frontend to Vercel | Done        |
+| 2026-05-24 | 2.5   | Updated activation/settings/docs to make Web SDK primary           | Done        |
+| 2026-05-24 | 3     | Added `packages/lira-support` headless client boundary             | Done        |
+| 2026-05-24 | 4     | Added React exports: provider, hook, support page, widget          | Done        |
+| 2026-05-24 | 5     | Added customer action registration APIs                            | Done        |
+| 2026-05-24 | 7     | Added package manifest, declarations, and `npm run build:sdk`      | Done        |
+| 2026-05-29 | 6.5   | Added org-configurable Home tab and multi-conversation widget UX   | In progress |
 
 ## Notes for future debugging
 

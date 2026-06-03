@@ -18,7 +18,13 @@
  *   data-sig="hmac_hex_signature"
  */
 
-import type { ChatMessage, IncomingWsMessage, WidgetConfig, WidgetView } from './types'
+import type {
+  ChatMessage,
+  IncomingWsMessage,
+  WidgetConfig,
+  WidgetHomeCard,
+  WidgetView,
+} from './types'
 import { WidgetSocket } from './socket'
 import { getWidgetStyles } from './styles'
 import { WidgetVoiceCall } from './voice'
@@ -169,6 +175,68 @@ function getStorageKey(
   return `lira_chat_${orgId}_anon_${identity.anonChatId ?? getAnonChatId()}`
 }
 
+interface WidgetConversationSummary {
+  convId: string
+  title: string
+  preview: string
+  updatedAt: string
+  status?: string
+  messages?: ChatMessage[]
+  /** @deprecated kept for legacy localStorage entries — use homeCardId instead. */
+  homePrompt?: string
+  /** Stable id of the home card that spawned this conversation. Lets the
+   *  widget reopen the same thread when the visitor re-clicks the same card,
+   *  even if the admin has since edited the card's prompt text. */
+  homeCardId?: string
+}
+
+function getConversationIndexKey(
+  orgId: string,
+  ephemeral: boolean,
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
+): string {
+  return `${getStorageKey(orgId, ephemeral, identity)}_conversations`
+}
+
+function saveConversationIndex(
+  orgId: string,
+  conversations: WidgetConversationSummary[],
+  ephemeral: boolean,
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
+): void {
+  const store = chatStore(ephemeral)
+  if (!store) return
+  try {
+    store.setItem(
+      getConversationIndexKey(orgId, ephemeral, identity),
+      JSON.stringify({ conversations, ts: Date.now() })
+    )
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadConversationIndex(
+  orgId: string,
+  ephemeral: boolean,
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
+): WidgetConversationSummary[] {
+  const store = chatStore(ephemeral)
+  if (!store) return []
+  try {
+    const raw = store.getItem(getConversationIndexKey(orgId, ephemeral, identity))
+    if (!raw) return []
+    const data = JSON.parse(raw)
+    if (Date.now() - (data.ts ?? 0) > 24 * 60 * 60 * 1000) {
+      store.removeItem(getConversationIndexKey(orgId, ephemeral, identity))
+      return []
+    }
+    return Array.isArray(data.conversations) ? data.conversations : []
+  } catch {
+    return []
+  }
+}
+
 function chatStore(ephemeral: boolean): Storage | null {
   try {
     return ephemeral ? sessionStorage : localStorage
@@ -242,12 +310,16 @@ function isSafeLink(href: string): boolean {
 function clearStoredMessages(
   orgId: string,
   ephemeral: boolean,
-  identity: { email?: string | null; anonChatId?: string; visitorId?: string }
+  identity: { email?: string | null; anonChatId?: string; visitorId?: string },
+  includeConversationIndex = false
 ): void {
   const store = chatStore(ephemeral)
   if (!store) return
   try {
     store.removeItem(getStorageKey(orgId, ephemeral, identity))
+    if (includeConversationIndex) {
+      store.removeItem(getConversationIndexKey(orgId, ephemeral, identity))
+    }
   } catch {
     /* ignore */
   }
@@ -326,13 +398,17 @@ class LiraSupportWidget {
       this.config.ephemeral === true,
       this.currentStorageIdentity()
     )
+    this.upsertCurrentConversationSummary(
+      this.isResolved ? 'resolved' : this.isEscalated ? 'escalated' : undefined
+    )
   }
 
   private wipeStoredMessages(): void {
     clearStoredMessages(
       this.config.orgId,
       this.config.ephemeral === true,
-      this.currentStorageIdentity()
+      this.currentStorageIdentity(),
+      true
     )
   }
 
@@ -349,6 +425,20 @@ class LiraSupportWidget {
   private callTimer: ReturnType<typeof setInterval> | null = null
   private customerTypingTimeout: ReturnType<typeof setTimeout> | null = null
   private unreadCount = 0
+
+  // ── Off-tab alert plumbing ───────────────────────────────────────────────
+  // When a new message arrives and the visitor is on a different tab (or the
+  // widget is closed), oscillate document.title and swap the favicon so they
+  // notice without us needing the OS-level Notifications permission.
+  /** Original document.title before any flashing — restored when cleared. */
+  private offTabOriginalTitle: string | null = null
+  /** Original favicon href — restored when cleared. */
+  private offTabOriginalFaviconHref: string | null = null
+  /** Interval id for the title flash. */
+  private offTabTitleTimer: ReturnType<typeof setInterval> | null = null
+  /** Bound focus/visibility handlers so we can attach + detach cleanly. */
+  private offTabFocusHandler: (() => void) | null = null
+  private offTabVisibilityHandler: (() => void) | null = null
   private forceNewCase = false
 
   // Streaming reply state — set when a reply_start arrives, cleared on reply_end
@@ -372,6 +462,31 @@ class LiraSupportWidget {
   // (which read as a "flicker" on every state-changing click).
   private chatAnimPlayed = false
 
+  // Pre-chat form skip flag. Once the visitor clicks "Skip", we don't show the
+  // form again — neither this session nor on reload. Persisted to localStorage
+  // (per orgId) so a returning visitor on the same browser isn't re-gated.
+  private preChatSkipped = false
+
+  // Local conversation index. The backend is the source of truth for verified
+  // visitors; this local index keeps anonymous/ephemeral sessions usable and
+  // makes home-card prompt → conversation mapping instant.
+  private conversations: WidgetConversationSummary[] = []
+  private activeHomePrompt: string | null = null
+  /** Stable id of the home card driving the current/next new conversation —
+   *  passed to the WS on first connect so the backend stamps it on the
+   *  conversation. Cleared after the WS picks it up. */
+  private activeHomeCardId: string | null = null
+  private suppressHeroWelcome = false
+  /** When true, open() skips pushing the synthetic config.greeting bubble.
+   *  Set by sendHomePrompt — the visitor's card-question is the entry, so a
+   *  generic intro above it would just push the question down and (worse,
+   *  pre-fix) act as a magnet for streamed AI tokens. */
+  private suppressGreetingBubble = false
+  /** Tracks whether the last server conversation-list fetch succeeded.
+   *  When false, the chat-list header shows an unobtrusive "Offline" hint
+   *  so visitors aren't misled by a stale local list. */
+  private conversationsOffline = false
+
   // DOM references
   private host: HTMLElement
   private shadow: ShadowRoot
@@ -382,8 +497,43 @@ class LiraSupportWidget {
   private readonly runtimeContextHandler = (e: Event) => {
     const detail = (e as CustomEvent<{ context?: LiraRuntimeContext }>).detail
     if (!detail?.context) return
+    // Capture the dashboard-org id BEFORE the update so we can detect a
+    // workspace switch and refresh the visitor's chat list to match the
+    // new context. Mid-chat current conversation stays open by design.
+    const prevContextOrgId = this.currentDashboardContextOrgId()
     this.latestRuntimeContext = detail.context
     this.sendRuntimeContext(detail.context)
+    const nextContextOrgId = this.currentDashboardContextOrgId()
+    if (prevContextOrgId !== nextContextOrgId) {
+      this.handleDashboardContextOrgChange()
+    }
+  }
+
+  /** Returns the dashboard-side workspace org id the visitor is currently
+   *  viewing (e.g. "Lira" or "Creovine" in the admin org-switcher), or null
+   *  for plain landing embeds that don't publish a runtime context. */
+  private currentDashboardContextOrgId(): string | null {
+    const id = this.latestRuntimeContext?.organisation?.org_id
+    return typeof id === 'string' && id.length > 0 ? id : null
+  }
+
+  /** Org-switcher fired in the host dashboard. The visitor's identity is
+   *  unchanged, but the chat list should now be scoped to the new workspace.
+   *  Strategy:
+   *    - Wipe the local conversation cache (it's per-identity, NOT per-org,
+   *      so it carries stale rows from the previous workspace).
+   *    - Re-fetch the server list with the new context_org_id filter.
+   *    - If the chat-list view is open, re-render once the fetch returns.
+   *    - Mid-chat sessions stay open by design (per your spec) — only the
+   *      list re-fetches, not the active conversation. */
+  private handleDashboardContextOrgChange(): void {
+    this.conversations = []
+    this.conversationsOffline = false
+    this.persistConversationIndex()
+    if (this.view === 'chat-list') this.render()
+    void this.loadServerConversationsIfPossible().finally(() => {
+      if (this.view === 'chat-list') this.render()
+    })
   }
 
   constructor(config: WidgetConfig) {
@@ -394,11 +544,25 @@ class LiraSupportWidget {
       greeting: 'Hi! How can we help you today?',
       ...config,
     }
-    this.view = this.isFullscreen() ? 'chat' : 'launcher'
+    this.view = this.isFullscreen() ? 'home' : 'launcher'
     // Demo embeds opt in to ephemeral mode via `data-ephemeral="true"`. Real
     // customer embeds never set this flag, so their behavior is unchanged.
     this.visitorId = getOrCreateVisitorId(this.config.ephemeral === true)
+
+    // Restore a previous "Skip" choice on the pre-chat form so returning
+    // visitors aren't re-gated on every load.
+    try {
+      this.preChatSkipped =
+        localStorage.getItem(`lira-prechat-skipped:${this.config.orgId}`) === '1'
+    } catch {
+      /* localStorage unavailable (e.g. SSR / privacy mode) — fall through */
+    }
     this.lastIdentityEmail = this.config.visitorEmail?.trim().toLowerCase() ?? null
+    this.conversations = loadConversationIndex(
+      this.config.orgId,
+      this.config.ephemeral === true,
+      this.currentStorageIdentity()
+    )
 
     // Restore persisted messages from the identity-scoped key — so a logged-in
     // visitor only sees their own history, never another user's chat that
@@ -422,6 +586,7 @@ class LiraSupportWidget {
       this.convId = stored.convId
       this.unreadCount = stored.unreadCount
       for (const m of this.messages) this.seenMessageIds.add(m.id)
+      this.upsertCurrentConversationSummary()
     } else if (this.config.autoOpenFirstVisit) {
       // No stored chat AND we're in onboarding mode — almost certainly a
       // post-Clear reload. The customer wants a fresh conversation; tell
@@ -447,7 +612,7 @@ class LiraSupportWidget {
     this.latestRuntimeContext = readLiraRuntimeContext() ?? null
 
     if (this.isFullscreen()) {
-      this.open()
+      this.openHome()
     } else {
       this.render()
     }
@@ -460,7 +625,11 @@ class LiraSupportWidget {
     // the launcher renders first; otherwise the chat panel mounts on top
     // of nothing and there's a visible jump.
     if (!this.isFullscreen() && this.config.autoOpenFirstVisit && !this.hasBeenDismissed()) {
-      setTimeout(() => this.open(), 0)
+      // Route to Home view, not Chat. Home renders the dashboard onboarding
+      // hero AND the Home/Chat bottom nav (`buildWidgetTabs`); going to
+      // Chat would show the hero but without the nav, leaving the visitor
+      // stuck on what looks like an isolated screen with no way back.
+      setTimeout(() => this.openHome(), 0)
     }
 
     // Listen for action lifecycle + PIN events that arrive over the VOICE
@@ -515,13 +684,18 @@ class LiraSupportWidget {
       this.config.ephemeral === true,
       prevIdentity
     )
-    clearStoredMessages(this.config.orgId, this.config.ephemeral === true, prevIdentity)
+    clearStoredMessages(this.config.orgId, this.config.ephemeral === true, prevIdentity, true)
 
     // 2) Switch to the new identity in memory.
     this.lastIdentityEmail = newEmail
     this.messages = []
     this.convId = null
     this.unreadCount = 0
+    this.clearOffTabAlert()
+    this.conversations = []
+    this.activeHomePrompt = null
+    this.activeHomeCardId = null
+    this.conversationsOffline = false
 
     // 3) On logout, rotate the anon chat id so the next anonymous user on
     //    this device cannot see anything the previous identified user did.
@@ -540,6 +714,8 @@ class LiraSupportWidget {
             this.messages = server.messages
             this.convId = server.convId
             this.unreadCount = 0
+            this.clearOffTabAlert()
+            this.upsertCurrentConversationSummary()
           } else {
             const local = loadMessages(
               this.config.orgId,
@@ -552,6 +728,12 @@ class LiraSupportWidget {
               this.unreadCount = local.unreadCount
             }
           }
+          this.conversations = loadConversationIndex(
+            this.config.orgId,
+            this.config.ephemeral === true,
+            this.currentStorageIdentity()
+          )
+          this.upsertCurrentConversationSummary()
           this.persistMessages()
           this.render()
         })
@@ -569,6 +751,12 @@ class LiraSupportWidget {
         this.convId = local.convId
         this.unreadCount = local.unreadCount
       }
+      this.conversations = loadConversationIndex(
+        this.config.orgId,
+        this.config.ephemeral === true,
+        this.currentStorageIdentity()
+      )
+      this.upsertCurrentConversationSummary()
       this.render()
     }
   }
@@ -714,6 +902,34 @@ class LiraSupportWidget {
         if (data.pre_chat_form_fields) {
           this.config.preChatFormFields = data.pre_chat_form_fields
         }
+        if (
+          data.home_template === 'default' ||
+          data.home_template === 'minimal' ||
+          data.home_template === 'branded'
+        ) {
+          this.config.homeTemplate = data.home_template
+          needsRerender = true
+        }
+        if (data.home_banner_url !== undefined) {
+          this.config.homeBannerUrl = data.home_banner_url || undefined
+          needsRerender = true
+        }
+        if (data.home_logo_url !== undefined) {
+          this.config.homeLogoUrl = data.home_logo_url || undefined
+          needsRerender = true
+        }
+        if (data.home_title !== undefined) {
+          this.config.homeTitle = data.home_title || undefined
+          needsRerender = true
+        }
+        if (data.home_subtitle !== undefined) {
+          this.config.homeSubtitle = data.home_subtitle || undefined
+          needsRerender = true
+        }
+        if (Array.isArray(data.home_cards)) {
+          this.config.homeCards = data.home_cards
+          needsRerender = true
+        }
         if (needsRerender) this.render()
       })
       .catch(() => {
@@ -724,7 +940,13 @@ class LiraSupportWidget {
   // ── Rendering ─────────────────────────────────────────────────────────────
 
   private render(): void {
-    // Remove previous content (keep style)
+    // Synchronous remove + append. The browser paints AFTER the whole
+    // render() function completes, not between DOM mutations within the
+    // same task, so there's no intermediate "empty shadow" frame visible
+    // to the user. The earlier stash-into-hidden-div approach was extra
+    // DOM work for no actual paint benefit. The real flicker users noticed
+    // came from openChatList double-rendering — that's fixed separately
+    // via the conversation-list change-detector.
     const style = this.shadow.querySelector('style')!
     while (this.shadow.lastChild && this.shadow.lastChild !== style) {
       this.shadow.removeChild(this.shadow.lastChild)
@@ -736,6 +958,8 @@ class LiraSupportWidget {
       this.renderHome()
     } else if (this.view === 'pre-chat') {
       this.renderPreChatForm()
+    } else if (this.view === 'chat-list') {
+      this.renderChatList()
     } else if (this.view === 'chat') {
       this.renderChat()
     } else if (this.view === 'csat') {
@@ -753,10 +977,7 @@ class LiraSupportWidget {
     btn.className = `lira-launcher ${this.config.position}`
     btn.innerHTML = ICON_CHAT
     btn.setAttribute('aria-label', 'Open chat')
-    btn.onclick = () => {
-      if (this.shouldUseHomeSurface()) this.openHome()
-      else this.open()
-    }
+    btn.onclick = () => this.openHome()
     if (this.unreadCount > 0) {
       const badge = document.createElement('span')
       badge.className = 'lira-unread-badge'
@@ -766,16 +987,411 @@ class LiraSupportWidget {
     this.shadow.appendChild(btn)
   }
 
-  private shouldUseHomeSurface(): boolean {
-    return !this.isFullscreen() && this.config.demoContext?.platform === 'lira-public-site'
-  }
-
   private openHome(): void {
     const fromLauncher = this.view === 'launcher'
     this.view = 'home'
     this.unreadCount = 0
+    this.clearOffTabAlert()
     if (fromLauncher) this.chatAnimPlayed = false
     this.render()
+  }
+
+  private openChatList(): void {
+    this.view = 'chat-list'
+    this.unreadCount = 0
+    this.clearOffTabAlert()
+    // Snapshot the local list signature so we can skip the post-fetch
+    // re-render when the server returned the same data we already showed.
+    // Two renders in quick succession looked like a glitch on the bottom
+    // nav even though only the content area changed.
+    const sigBefore = this.conversationListSignature()
+    this.loadServerConversationsIfPossible().finally(() => {
+      if (this.view !== 'chat-list') return
+      if (this.conversationListSignature() !== sigBefore) this.render()
+    })
+    this.render()
+  }
+
+  /**
+   * Stable-ish signature for the current conversation list so we can
+   * detect "actually changed" vs "same data, no need to re-render."
+   */
+  private conversationListSignature(): string {
+    return (
+      this.conversations.map((c) => `${c.convId}:${c.updatedAt}:${c.status ?? ''}`).join('|') +
+      `|offline=${this.conversationsOffline}`
+    )
+  }
+
+  private async openConversation(convId: string): Promise<void> {
+    const summary = this.conversations.find((c) => c.convId === convId)
+    this.socket?.disconnect()
+    this.socket = null
+    this.pipecatChat = null
+    this.convId = convId
+    this.messages = summary?.messages ?? []
+    this.isResolved = summary?.status === 'resolved'
+    this.isEscalated = summary?.status === 'escalated'
+    this.activeHomePrompt = summary?.homePrompt ?? null
+    this.suppressHeroWelcome = true
+    this.forceNewCase = false
+    this.seenMessageIds.clear()
+    for (const msg of this.messages) this.seenMessageIds.add(msg.id)
+    const remote = await this.fetchServerConversation(convId)
+    if (remote) {
+      this.messages = remote.messages
+      this.isResolved = remote.status === 'resolved'
+      this.isEscalated = remote.status === 'escalated'
+      this.upsertCurrentConversationSummary(remote.status)
+    }
+    this.open()
+  }
+
+  private sortedConversations(): WidgetConversationSummary[] {
+    return [...this.conversations].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+  }
+
+  private formatConversationTime(value: string): string {
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return ''
+    const diff = Date.now() - d.getTime()
+    if (diff < 60_000) return 'now'
+    if (diff < 60 * 60_000) return `${Math.max(1, Math.floor(diff / 60_000))}m`
+    if (diff < 24 * 60 * 60_000) return `${Math.floor(diff / (60 * 60_000))}h`
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  }
+
+  // Build a single chat-list row. The row is a flex wrap with two siblings:
+  // the main click target (opens the conversation) and a small hide button
+  // that swaps the wrap into an inline confirm — keeps the tap targets
+  // separate so a sloppy thumb doesn't trigger the wrong one.
+  private buildConversationRow(conversation: WidgetConversationSummary): HTMLDivElement {
+    const wrap = document.createElement('div')
+    wrap.className = 'lira-conversation-item-wrap'
+
+    const item = document.createElement('button')
+    item.className = `lira-conversation-item ${conversation.convId === this.convId ? 'active' : ''}`
+    item.type = 'button'
+    item.onclick = () => this.openConversation(conversation.convId)
+
+    const avatar = document.createElement('span')
+    avatar.className = 'lira-conversation-avatar'
+    avatar.textContent = conversation.title.trim().charAt(0).toUpperCase() || 'C'
+    item.appendChild(avatar)
+
+    const copy = document.createElement('span')
+    copy.className = 'lira-conversation-copy'
+
+    const top = document.createElement('span')
+    top.className = 'lira-conversation-topline'
+
+    const title = document.createElement('span')
+    title.className = 'lira-conversation-title'
+    title.textContent = conversation.title || 'Conversation'
+    top.appendChild(title)
+
+    const time = document.createElement('span')
+    time.className = 'lira-conversation-time'
+    time.textContent = this.formatConversationTime(conversation.updatedAt)
+    top.appendChild(time)
+    copy.appendChild(top)
+
+    const preview = document.createElement('span')
+    preview.className = 'lira-conversation-preview'
+    preview.textContent = conversation.preview || 'Open conversation'
+    copy.appendChild(preview)
+
+    item.appendChild(copy)
+    wrap.appendChild(item)
+
+    const hideBtn = document.createElement('button')
+    hideBtn.className = 'lira-conversation-hide'
+    hideBtn.type = 'button'
+    hideBtn.setAttribute('aria-label', 'Remove this conversation from your list')
+    hideBtn.setAttribute('title', 'Remove from your list')
+    hideBtn.innerHTML = ICON_CLOSE
+    hideBtn.onclick = (e) => {
+      e.stopPropagation()
+      this.swapRowToConfirm(wrap, conversation)
+    }
+    wrap.appendChild(hideBtn)
+
+    return wrap
+  }
+
+  // Replace a row's contents with an inline confirm. Compact: a line of copy
+  // explaining the action plus Cancel / Remove buttons. Cancel restores the
+  // original row; Remove fires the hide flow.
+  private swapRowToConfirm(wrap: HTMLDivElement, conversation: WidgetConversationSummary): void {
+    wrap.innerHTML = ''
+    wrap.classList.add('lira-conversation-item-wrap-confirm')
+
+    const copy = document.createElement('div')
+    copy.className = 'lira-conversation-confirm-copy'
+    copy.innerHTML =
+      '<div class="lira-conversation-confirm-title">Remove from your list?</div>' +
+      '<div class="lira-conversation-confirm-body">The team still has the record.</div>'
+    wrap.appendChild(copy)
+
+    const actions = document.createElement('div')
+    actions.className = 'lira-conversation-confirm-actions'
+
+    const cancel = document.createElement('button')
+    cancel.className = 'lira-conversation-confirm-cancel'
+    cancel.type = 'button'
+    cancel.textContent = 'Cancel'
+    cancel.onclick = (e) => {
+      e.stopPropagation()
+      const fresh = this.buildConversationRow(conversation)
+      wrap.replaceWith(fresh)
+    }
+    actions.appendChild(cancel)
+
+    const remove = document.createElement('button')
+    remove.className = 'lira-conversation-confirm-remove'
+    remove.type = 'button'
+    remove.textContent = 'Remove'
+    remove.onclick = (e) => {
+      e.stopPropagation()
+      this.hideConversationFromList(conversation.convId)
+    }
+    actions.appendChild(remove)
+
+    wrap.appendChild(actions)
+  }
+
+  private persistConversationIndex(): void {
+    saveConversationIndex(
+      this.config.orgId,
+      this.sortedConversations().slice(0, 30),
+      this.config.ephemeral === true,
+      this.currentStorageIdentity()
+    )
+  }
+
+  // ── Visitor-side conversation hide ─────────────────────────────────────
+  //
+  // The X icon on each chat-list row removes a conversation from THIS
+  // visitor's widget view. It does NOT delete the conversation server-side;
+  // the org's support inbox still sees it.
+  //
+  // Two persistence layers, belt-and-suspenders:
+  //   1. POST to the hide endpoint so future server fetches filter it.
+  //   2. Stash the id in localStorage as a fallback so a network failure
+  //      (or a brief race between the optimistic UI update and the next
+  //      list refresh) doesn't make the row pop back into view.
+  private hiddenConvsStorageKey(): string | null {
+    if (typeof localStorage === 'undefined') return null
+    const orgId = this.config.orgId
+    const id = this.config.visitorEmail
+      ? `email:${this.config.visitorEmail.toLowerCase()}`
+      : `visitor:${this.visitorId}`
+    return `lira_hidden_convs:${orgId}:${id}`
+  }
+
+  private loadHiddenConvIds(): Set<string> {
+    const key = this.hiddenConvsStorageKey()
+    if (!key) return new Set()
+    try {
+      const raw = localStorage.getItem(key)
+      if (!raw) return new Set()
+      const arr = JSON.parse(raw) as string[]
+      return new Set(Array.isArray(arr) ? arr : [])
+    } catch {
+      return new Set()
+    }
+  }
+
+  private markConvHiddenLocally(convId: string): void {
+    const key = this.hiddenConvsStorageKey()
+    if (!key) return
+    try {
+      const ids = this.loadHiddenConvIds()
+      ids.add(convId)
+      // Cap to last 200 ids so this never grows unbounded for heavy users.
+      const arr = Array.from(ids).slice(-200)
+      localStorage.setItem(key, JSON.stringify(arr))
+    } catch {
+      /* storage full / disabled — fail silent */
+    }
+  }
+
+  // Inner half: state + persistence + server POST. No render — callers that
+  // are about to render something else (e.g. Clear → startNewConversation)
+  // use this directly so the in-between render doesn't flash a stale frame.
+  private async markConversationHidden(convId: string): Promise<void> {
+    this.conversations = this.conversations.filter((c) => c.convId !== convId)
+    this.markConvHiddenLocally(convId)
+    this.persistConversationIndex()
+
+    // Fire-and-mostly-forget POST. If it fails, the localStorage flag still
+    // hides the row on this device; the server-side row simply stays visible
+    // to this visitor on other devices until next attempt.
+    try {
+      const orgId = encodeURIComponent(this.config.orgId)
+      const convPart = encodeURIComponent(convId)
+      const isIdentified = Boolean(this.config.visitorEmail && this.config.visitorSig)
+      const url = isIdentified
+        ? `https://api.creovine.com/lira/v1/support/chat/conversation/${orgId}/${convPart}/hide` +
+          `?email=${encodeURIComponent(this.config.visitorEmail!)}&sig=${encodeURIComponent(this.config.visitorSig!)}`
+        : `https://api.creovine.com/lira/v1/support/chat/conversation/visitor/${orgId}/${encodeURIComponent(this.visitorId)}/${convPart}/hide`
+      await fetch(url, { method: 'POST' })
+    } catch {
+      /* network blip — local flag is the safety net */
+    }
+  }
+
+  // X-icon path: hide the row + re-render the list right away.
+  private async hideConversationFromList(convId: string): Promise<void> {
+    void this.markConversationHidden(convId)
+    this.render()
+  }
+
+  private upsertCurrentConversationSummary(status?: string): void {
+    if (!this.convId) return
+    const visible = this.messages.filter((m) => m.role !== 'system')
+    const firstCustomer = visible.find((m) => m.role === 'customer')
+    const last = visible[visible.length - 1]
+    const title =
+      this.activeHomePrompt ||
+      firstCustomer?.body?.slice(0, 70) ||
+      this.config.greeting ||
+      'Conversation'
+    // Preserve any homeCardId already stamped on this conversation by an
+    // earlier render or by a server-side hydrate — once a conversation is
+    // born from a card, that linkage is stable.
+    const previous = this.conversations.find((c) => c.convId === this.convId)
+    const summary: WidgetConversationSummary = {
+      convId: this.convId,
+      title: title.length > 72 ? `${title.slice(0, 69)}...` : title,
+      preview: last?.body?.slice(0, 120) || 'New conversation',
+      updatedAt: last?.timestamp || new Date().toISOString(),
+      status,
+      messages: this.messages,
+      homePrompt: this.activeHomePrompt ?? previous?.homePrompt,
+      homeCardId: previous?.homeCardId ?? this.activeHomeCardId ?? undefined,
+    }
+    this.conversations = [summary, ...this.conversations.filter((c) => c.convId !== this.convId)]
+    this.persistConversationIndex()
+  }
+
+  private async loadServerConversationsIfPossible(): Promise<void> {
+    // Identified path is preferred (covers cross-device for the same email).
+    // For purely anonymous visitors we fall back to the visitorId-gated
+    // endpoint so they still see their conversation list after the local
+    // index is wiped (e.g. cleared cache, fresh tab in non-ephemeral mode).
+    const isIdentified = Boolean(this.config.visitorEmail && this.config.visitorSig)
+    // Optional dashboard-context scope. When the widget is embedded inside
+    // a multi-tenant admin app (e.g. Lira's own dashboard), the host's
+    // selected workspace id rides on this param so the server-side filter
+    // can scope the list to that workspace. Untagged conversations are
+    // returned under every workspace as legacy — see matchesDashboardContext
+    // in the backend route.
+    const contextOrgId = this.currentDashboardContextOrgId()
+    const contextParam = contextOrgId ? `&context_org_id=${encodeURIComponent(contextOrgId)}` : ''
+    const url = isIdentified
+      ? `https://api.creovine.com/lira/v1/support/chat/conversations/${this.config.orgId}` +
+        `?email=${encodeURIComponent(this.config.visitorEmail!)}&sig=${encodeURIComponent(this.config.visitorSig!)}` +
+        contextParam
+      : `https://api.creovine.com/lira/v1/support/chat/conversations/visitor/${this.config.orgId}/${encodeURIComponent(this.visitorId)}` +
+        (contextOrgId ? `?context_org_id=${encodeURIComponent(contextOrgId)}` : '')
+
+    try {
+      const res = await fetch(url)
+      if (!res.ok) {
+        this.conversationsOffline = true
+        return
+      }
+      const data = (await res.json()) as {
+        conversations?: Array<{
+          conv_id: string
+          subject?: string
+          preview?: string
+          updated_at: string
+          status?: string
+          home_card_id?: string
+        }>
+      }
+      this.conversationsOffline = false
+      // Belt-and-suspenders: if the visitor X'd a conversation but the
+      // server-side flag hasn't propagated yet (or the hide POST failed),
+      // the localStorage allowlist keeps the row hidden on this device.
+      const locallyHidden = this.loadHiddenConvIds()
+      const remote = (data.conversations ?? [])
+        .filter((c) => !locallyHidden.has(c.conv_id))
+        .map((c): WidgetConversationSummary => {
+          const local = this.conversations.find((l) => l.convId === c.conv_id)
+          return {
+            convId: c.conv_id,
+            title: c.subject || c.preview || 'Conversation',
+            preview: c.preview || c.subject || 'Open conversation',
+            updatedAt: c.updated_at,
+            status: c.status,
+            messages: local?.messages,
+            homePrompt: local?.homePrompt,
+            // Server is the source of truth for card linkage; only fall back to
+            // local if the server didn't (yet) stamp one.
+            homeCardId: c.home_card_id ?? local?.homeCardId,
+          }
+        })
+      // localOnly merge handles the brief race where a brand-new conversation
+      // exists in memory but the server's list view hasn't observed it yet.
+      // BUT — keeping ALL local entries that the server didn't return makes
+      // hidden conversations resurrect: server filters out a hidden row, the
+      // local cache still has it, the merge re-adds it, and the user sees a
+      // "phantom" row that won't go away (the persistent-conv-after-clear bug).
+      //
+      // Fix: only keep a localOnly entry if it's the CURRENT active conversation
+      // (this.convId) — that's the only one that might be in-flight. Everything
+      // else: trust the server's view. Hidden rows are now properly omitted on
+      // the next fetch; the local cache catches up by saving the trimmed list.
+      const localOnly = this.conversations.filter(
+        (local) =>
+          local.convId === this.convId && !remote.some((item) => item.convId === local.convId)
+      )
+      this.conversations = [...remote, ...localOnly]
+      this.persistConversationIndex()
+    } catch {
+      this.conversationsOffline = true
+      /* local list remains usable */
+    }
+  }
+
+  private async fetchServerConversation(
+    convId: string
+  ): Promise<{ messages: ChatMessage[]; status?: string } | null> {
+    if (!this.config.visitorEmail || !this.config.visitorSig) return null
+    try {
+      const url =
+        `https://api.creovine.com/lira/v1/support/chat/conversation/${this.config.orgId}/${convId}` +
+        `?email=${encodeURIComponent(this.config.visitorEmail)}&sig=${encodeURIComponent(this.config.visitorSig)}`
+      const res = await fetch(url)
+      if (!res.ok) return null
+      const data = (await res.json()) as {
+        status?: string
+        messages?: Array<{
+          id?: string
+          role: ChatMessage['role']
+          body: string
+          timestamp: string
+          sender_name?: string
+          sender_avatar?: string
+        }>
+      }
+      return {
+        status: data.status,
+        messages: (data.messages ?? []).map((m) => ({
+          id: m.id ?? `srv-${m.timestamp}-${Math.random().toString(36).slice(2, 8)}`,
+          role: m.role,
+          body: m.body,
+          timestamp: m.timestamp,
+          sender_name: m.sender_name,
+          sender_avatar: m.sender_avatar,
+        })),
+      }
+    } catch {
+      return null
+    }
   }
 
   private buildWidgetTabs(active: 'home' | 'chat'): HTMLElement {
@@ -793,14 +1409,31 @@ class LiraSupportWidget {
     chat.className = `lira-widget-tab ${active === 'chat' ? 'active' : ''}`
     chat.type = 'button'
     chat.textContent = 'Chat'
-    chat.onclick = () => this.open()
+    chat.onclick = () => this.openChatList()
     tabs.appendChild(chat)
 
     return tabs
   }
 
-  private sendHomePrompt(body: string): void {
-    this.open()
+  /**
+   * Open or start the conversation owned by a home card.
+   *  - Matches by stable `cardId` first (survives prompt rename + cross-device).
+   *  - Falls back to matching by raw prompt text so legacy conversations from
+   *    before card IDs existed are still discoverable.
+   * Re-clicking a card that already has a conversation just reopens it instead
+   * of re-firing the prompt as a fresh message.
+   */
+  private sendHomePrompt(body: string, cardId?: string): void {
+    const existing = this.conversations.find(
+      (c) => (cardId && c.homeCardId === cardId) || (!cardId && c.homePrompt === body)
+    )
+    if (existing) {
+      this.openConversation(existing.convId)
+      return
+    }
+    if (cardId) this.activeHomeCardId = cardId
+    this.startNewConversation({ preserveIndex: true, suppressHero: true, suppressGreeting: true })
+    this.activeHomePrompt = body
     requestAnimationFrame(() => this.sendSuggestedReply(body))
   }
 
@@ -813,13 +1446,19 @@ class LiraSupportWidget {
 
     const headerAvatar = document.createElement('div')
     headerAvatar.className = 'lira-header-avatar'
-    headerAvatar.innerHTML = ICON_LIRA
+    const orgName = this.config.orgName || 'Lira'
+    const headerLogo = this.config.logoUrl || this.config.homeLogoUrl
+    if (headerLogo) {
+      headerAvatar.innerHTML = `<img src="${headerLogo}" alt="${orgName}" />`
+    } else {
+      headerAvatar.innerHTML = ICON_LIRA
+    }
     header.appendChild(headerAvatar)
 
     const headerInfo = document.createElement('div')
     headerInfo.className = 'lira-header-info'
     headerInfo.innerHTML = `
-      <div class="lira-header-title">Lira</div>
+      <div class="lira-header-title">${orgName}</div>
       <div class="lira-header-subtitle"><span class="lira-online-dot"></span> Online</div>
     `
     header.appendChild(headerInfo)
@@ -836,72 +1475,115 @@ class LiraSupportWidget {
     win.appendChild(header)
 
     const home = document.createElement('div')
-    home.className = 'lira-home'
+
+    // Dashboard / onboarding mode: the widget is embedded inside the Lira
+    // admin app (autoOpenFirstVisit is the dashboard's signal). These users
+    // are already paying customers — they don't need the marketing-style
+    // "What is Lira / Compare to Intercom" cards. The Home tab should show
+    // the same setup-guidance hero the Chat tab opens with so the experience
+    // is coherent across tabs. Skip the template branch entirely below.
+    if (this.config.autoOpenFirstVisit === true) {
+      home.className = 'lira-home lira-home-onboarding'
+      home.appendChild(this.buildHeroWelcomeEl())
+      win.appendChild(home)
+      win.appendChild(this.buildWidgetTabs('home'))
+      const powered = document.createElement('div')
+      powered.className = 'lira-powered'
+      powered.innerHTML =
+        'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
+      win.appendChild(powered)
+      this.shadow.appendChild(win)
+      this.renderLauncher()
+      return
+    }
+
+    // Templates: 'default' (refreshed clean hero + cards), 'minimal' (no big
+    // hero — just a small greeting and a button list), 'branded' (large org
+    // banner image above the content via home_banner_url). The default
+    // dropped the ring/orbit/glow decoration that read as generic AI-widget
+    // chrome — see the comment above .lira-home in styles.ts.
+    const template = this.config.homeTemplate ?? 'default'
+    home.className = `lira-home${template !== 'default' ? ` lira-home-${template}` : ''}`
+
+    // Branded: render a banner image (falls back to a primary-colour block).
+    if (template === 'branded') {
+      const banner = document.createElement('section')
+      banner.className = 'lira-home-banner'
+      if (this.config.homeBannerUrl) {
+        banner.innerHTML = `<img src="${this.config.homeBannerUrl}" alt="${orgName}" />`
+      }
+      home.appendChild(banner)
+    }
 
     const hero = document.createElement('section')
     hero.className = 'lira-home-hero'
 
-    const glow = document.createElement('div')
-    glow.className = 'lira-home-glow'
-    hero.appendChild(glow)
-
-    const logo = document.createElement('div')
-    logo.className = 'lira-home-logo-wrap'
-    logo.innerHTML = `
-      <span class="lira-home-ring lira-home-ring-1"></span>
-      <span class="lira-home-ring lira-home-ring-2"></span>
-      <span class="lira-home-orbit lira-home-orbit-1"></span>
-      <span class="lira-home-orbit lira-home-orbit-2"></span>
-      <span class="lira-home-logo">${ICON_LIRA}</span>
-    `
-    home.appendChild(logo)
+    // Minimal template skips the logo block — keeps the surface compact.
+    if (template !== 'minimal') {
+      const logo = document.createElement('div')
+      logo.className = 'lira-home-logo-wrap'
+      const homeLogo = this.config.homeLogoUrl || this.config.logoUrl
+      logo.innerHTML = `<span class="lira-home-logo">${
+        homeLogo ? `<img src="${homeLogo}" alt="${orgName}" />` : ICON_LIRA
+      }</span>`
+      hero.appendChild(logo)
+    }
 
     const title = document.createElement('h3')
     title.className = 'lira-home-title'
-    title.textContent = 'Welcome to Lira'
+    title.textContent = this.config.homeTitle?.trim() || `Welcome to ${orgName}`
     hero.appendChild(title)
+
+    const subtitle = document.createElement('p')
+    subtitle.className = 'lira-home-subtitle'
+    subtitle.textContent =
+      this.config.homeSubtitle?.trim() ||
+      'Search the knowledge base, get account help, or start a conversation with support.'
+    hero.appendChild(subtitle)
 
     const primary = document.createElement('button')
     primary.className = 'lira-home-primary'
     primary.type = 'button'
     primary.innerHTML = `Start a conversation <span class="lira-home-primary-arrow">&rarr;</span>`
-    primary.onclick = () => this.open()
+    primary.onclick = () => this.startNewConversation({ preserveIndex: true, suppressHero: true })
     hero.appendChild(primary)
 
     home.appendChild(hero)
 
     const cards = document.createElement('div')
     cards.className = 'lira-home-cards'
-    const prompts = [
-      {
-        icon: '01',
-        title: 'Install Lira',
-        body: 'Get the SDK and embed snippets for your app.',
-        prompt: 'How do I integrate the Lira support SDK on my app?',
-      },
-      {
-        icon: '02',
-        title: 'See what it can do',
-        body: 'Conversations, tickets, actions, and handoff.',
-        prompt: 'What can Lira do for a B2B support team?',
-      },
-      {
-        icon: '03',
-        title: 'Account help',
-        body: 'Login, password reset, invites, and billing.',
-        prompt: 'I need help with my Lira account.',
-      },
-    ]
+    const prompts: WidgetHomeCard[] = this.config.homeCards?.length
+      ? this.config.homeCards
+      : [
+          {
+            icon: '01',
+            title: 'Install Lira',
+            body: 'Get the SDK and embed snippets for your app.',
+            prompt: 'How do I integrate the Lira support SDK on my app?',
+          },
+          {
+            icon: '02',
+            title: 'See what it can do',
+            body: 'Conversations, tickets, actions, and handoff.',
+            prompt: 'What can Lira do for a B2B support team?',
+          },
+          {
+            icon: '03',
+            title: 'Account help',
+            body: 'Login, password reset, invites, and billing.',
+            prompt: 'I need help with my Lira account.',
+          },
+        ]
 
     for (const item of prompts) {
       const card = document.createElement('button')
       card.className = 'lira-home-card'
       card.type = 'button'
-      card.onclick = () => this.sendHomePrompt(item.prompt)
+      card.onclick = () => this.sendHomePrompt(item.prompt, item.id)
 
       const cardIcon = document.createElement('span')
       cardIcon.className = 'lira-home-card-icon'
-      cardIcon.textContent = item.icon
+      cardIcon.textContent = item.icon || '•'
       card.appendChild(cardIcon)
 
       const cardCopy = document.createElement('span')
@@ -914,7 +1596,7 @@ class LiraSupportWidget {
 
       const cardBody = document.createElement('span')
       cardBody.className = 'lira-home-card-body'
-      cardBody.textContent = item.body
+      cardBody.textContent = item.body || ''
       cardCopy.appendChild(cardBody)
 
       card.appendChild(cardCopy)
@@ -1006,10 +1688,18 @@ class LiraSupportWidget {
 
       const input = document.createElement('input')
       input.type = field === 'email' ? 'email' : 'text'
+      // id/name + autocomplete: silences "form field has neither an id nor a
+      // name attribute" DevTools warning and lets the browser autofill these.
+      input.id = `lira-prechat-${field}`
+      input.name = `lira_prechat_${field}`
+      input.autocomplete = field === 'email' ? 'email' : field === 'name' ? 'name' : 'off'
       input.placeholder =
         field === 'email' ? 'you@company.com' : field === 'name' ? 'Your name' : ''
       input.style.cssText =
         'width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #e0e0e0;border-radius:10px;font-size:13px;outline:none;transition:border-color .15s;'
+      // Bind the label to this input for accessibility (clicking the label
+      // focuses the input, screen readers announce them together).
+      label.htmlFor = input.id
       input.onfocus = () => {
         input.style.borderColor = this.config.primaryColor!
       }
@@ -1053,6 +1743,15 @@ class LiraSupportWidget {
     skip.style.cssText =
       'display:block;margin:10px auto 0;background:none;border:none;color:#999;font-size:11px;cursor:pointer;text-decoration:underline;'
     skip.onclick = () => {
+      // Persist the skip decision so subsequent opens / reloads don't re-gate
+      // the visitor on the pre-chat form. Without this, open() re-evaluates
+      // `needsPreChat` and forces view back to 'pre-chat' — Skip was a no-op.
+      this.preChatSkipped = true
+      try {
+        localStorage.setItem(`lira-prechat-skipped:${this.config.orgId}`, '1')
+      } catch {
+        /* localStorage unavailable — flag still holds for this session */
+      }
       this.view = 'chat'
       this.open()
     }
@@ -1061,6 +1760,95 @@ class LiraSupportWidget {
     win.appendChild(formWrap)
 
     // Powered by
+    const powered = document.createElement('div')
+    powered.className = 'lira-powered'
+    powered.innerHTML =
+      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
+    win.appendChild(powered)
+
+    this.shadow.appendChild(win)
+    if (!this.isFullscreen()) this.renderLauncher()
+  }
+
+  private renderChatList(): void {
+    const win = document.createElement('div')
+    win.className = this.chatWindowClass()
+
+    const header = document.createElement('div')
+    header.className = 'lira-header'
+
+    const orgName = this.config.orgName || 'Support'
+    const logoUrl = this.config.logoUrl
+    const initial = orgName.charAt(0).toUpperCase()
+
+    const headerAvatar = document.createElement('div')
+    headerAvatar.className = 'lira-header-avatar'
+    headerAvatar.innerHTML = logoUrl
+      ? `<img src="${logoUrl}" alt="${orgName}" />`
+      : `<span class="lira-initial">${initial}</span>`
+    header.appendChild(headerAvatar)
+
+    const headerInfo = document.createElement('div')
+    headerInfo.className = 'lira-header-info'
+    // Subtitle shows the org normally; if the last server fetch failed, swap
+    // in a small "Offline · showing cached" line so the visitor isn't misled
+    // into thinking they're looking at the freshest list.
+    const subtitle = this.conversationsOffline
+      ? `<span class="lira-online-dot lira-online-dot-offline"></span> Offline · showing cached`
+      : `<span class="lira-online-dot"></span> ${orgName}`
+    headerInfo.innerHTML = `
+      <div class="lira-header-title">Conversations</div>
+      <div class="lira-header-subtitle">${subtitle}</div>
+    `
+    header.appendChild(headerInfo)
+
+    const actions = document.createElement('div')
+    actions.className = 'lira-header-actions'
+    const newBtn = document.createElement('button')
+    newBtn.className = 'lira-header-text-btn'
+    newBtn.textContent = '+ New'
+    newBtn.setAttribute('aria-label', 'Start a new conversation')
+    newBtn.onclick = () => this.startNewConversation({ preserveIndex: true, suppressHero: true })
+    actions.appendChild(newBtn)
+
+    if (!this.isFullscreen()) {
+      const closeBtn = document.createElement('button')
+      closeBtn.className = 'lira-header-btn'
+      closeBtn.innerHTML = ICON_CLOSE
+      closeBtn.setAttribute('aria-label', 'Close widget')
+      closeBtn.onclick = () => this.close()
+      actions.appendChild(closeBtn)
+    }
+    header.appendChild(actions)
+    win.appendChild(header)
+
+    const list = document.createElement('div')
+    list.className = 'lira-conversation-list'
+
+    if (this.conversations.length === 0) {
+      const empty = document.createElement('div')
+      empty.className = 'lira-conversation-empty'
+      empty.innerHTML = `
+        <div class="lira-conversation-empty-icon">${ICON_CHAT}</div>
+        <div class="lira-conversation-empty-title">No conversations yet</div>
+        <div class="lira-conversation-empty-body">Start a new thread or choose a quick-start card from Home.</div>
+      `
+      const start = document.createElement('button')
+      start.className = 'lira-home-primary'
+      start.type = 'button'
+      start.textContent = 'Start a conversation'
+      start.onclick = () => this.startNewConversation({ preserveIndex: true, suppressHero: true })
+      empty.appendChild(start)
+      list.appendChild(empty)
+    } else {
+      for (const conversation of this.sortedConversations()) {
+        list.appendChild(this.buildConversationRow(conversation))
+      }
+    }
+
+    win.appendChild(list)
+    win.appendChild(this.buildWidgetTabs('chat'))
+
     const powered = document.createElement('div')
     powered.className = 'lira-powered'
     powered.innerHTML =
@@ -1083,15 +1871,13 @@ class LiraSupportWidget {
     const logoUrl = this.config.logoUrl
     const initial = orgName.charAt(0).toUpperCase()
 
-    if (this.shouldUseHomeSurface()) {
-      const backBtn = document.createElement('button')
-      backBtn.className = 'lira-header-btn lira-back-btn'
-      backBtn.innerHTML = ICON_ARROW_LEFT
-      backBtn.setAttribute('aria-label', 'Back to home')
-      backBtn.setAttribute('title', 'Back to home')
-      backBtn.onclick = () => this.openHome()
-      header.appendChild(backBtn)
-    }
+    const backBtn = document.createElement('button')
+    backBtn.className = 'lira-header-btn lira-back-btn'
+    backBtn.innerHTML = ICON_ARROW_LEFT
+    backBtn.setAttribute('aria-label', 'Back to conversations')
+    backBtn.setAttribute('title', 'Back to conversations')
+    backBtn.onclick = () => this.openChatList()
+    header.appendChild(backBtn)
 
     // Header avatar
     const headerAvatar = document.createElement('div')
@@ -1262,7 +2048,8 @@ class LiraSupportWidget {
       const newChatActionBtn = document.createElement('button')
       newChatActionBtn.className = 'lira-new-chat-btn'
       newChatActionBtn.textContent = 'Start a new conversation'
-      newChatActionBtn.onclick = () => this.startNewConversation()
+      newChatActionBtn.onclick = () =>
+        this.startNewConversation({ preserveIndex: true, suppressHero: true })
 
       inputArea.appendChild(resolvedBanner)
       inputArea.appendChild(newChatActionBtn)
@@ -1307,9 +2094,12 @@ class LiraSupportWidget {
 
     win.appendChild(inputArea)
 
-    // Bottom Home/Chat tabs are intentionally NOT rendered on the chat view —
-    // they steal vertical space and the chat panel already has a left-arrow
-    // header button (lira-back-btn) that returns to the home surface.
+    // Bottom nav (Home / Chat) is intentionally NOT rendered inside an
+    // active chat. The chat already has a back arrow in the header that
+    // returns to the conversation list, and the tabs sitting under the
+    // input were a visual duplication that confused visitors. Keep tabs
+    // on Home + Chat-list only.
+
     const powered = document.createElement('div')
     powered.className = 'lira-powered'
     powered.innerHTML =
@@ -1392,7 +2182,8 @@ class LiraSupportWidget {
       newChatBtn2.className = 'lira-new-chat-btn'
       newChatBtn2.textContent = 'Start a new conversation'
       newChatBtn2.style.marginTop = '12px'
-      newChatBtn2.onclick = () => this.startNewConversation()
+      newChatBtn2.onclick = () =>
+        this.startNewConversation({ preserveIndex: true, suppressHero: true })
       csat.appendChild(newChatBtn2)
     } else {
       csat.innerHTML = `
@@ -1685,6 +2476,120 @@ class LiraSupportWidget {
   }
 
   /**
+   * Increment unread + update the launcher badge + trigger the off-tab
+   * alert if the visitor isn't looking at this tab. Use this instead of
+   * `this.bumpUnread()` so every increment site picks up the alerts.
+   */
+  private bumpUnread(): void {
+    this.bumpUnread()
+    this.updateLauncherBadge()
+    this.maybeStartOffTabAlert()
+  }
+
+  /**
+   * Start the title flash + favicon badge when the visitor is on a different
+   * tab. No-op if the tab is currently visible (no point pestering them when
+   * they can already see the message).
+   */
+  private maybeStartOffTabAlert(): void {
+    if (typeof document === 'undefined') return
+    if (!document.hidden && document.hasFocus()) return
+    if (this.offTabTitleTimer) return // already flashing
+
+    // Save the originals so we can restore exactly what was there.
+    if (this.offTabOriginalTitle === null) this.offTabOriginalTitle = document.title
+    const link = this.getFaviconLink()
+    if (link && this.offTabOriginalFaviconHref === null) {
+      this.offTabOriginalFaviconHref = link.getAttribute('href')
+    }
+
+    const flashTitle = () => {
+      const original = this.offTabOriginalTitle ?? ''
+      const orgName = this.config.orgName || 'Lira'
+      const count = this.unreadCount
+      const notice =
+        count > 1 ? `(${count}) New messages · ${orgName}` : `(1) New message · ${orgName}`
+      document.title = document.title === notice ? original : notice
+    }
+    flashTitle()
+    this.offTabTitleTimer = setInterval(flashTitle, 1200)
+
+    // Swap the favicon to a small red-dot SVG so the tab pip carries the
+    // signal too. Drawing on top of the original favicon would need CORS
+    // headers many hosts don't set; swapping to a self-contained data URI
+    // sidesteps that entirely. Original is restored on focus.
+    if (link) {
+      link.setAttribute(
+        'href',
+        'data:image/svg+xml;utf8,' +
+          encodeURIComponent(
+            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">' +
+              '<circle cx="16" cy="16" r="14" fill="#0f172a"/>' +
+              '<circle cx="22" cy="10" r="6" fill="#ef4444"/>' +
+              '</svg>'
+          )
+      )
+    }
+
+    // Attach focus + visibility listeners (once) to auto-clear when the
+    // visitor returns to the tab. We re-attach them per session because
+    // detachOffTabAlert removes them.
+    if (!this.offTabFocusHandler) {
+      this.offTabFocusHandler = () => this.clearOffTabAlert()
+      this.offTabVisibilityHandler = () => {
+        if (!document.hidden) this.clearOffTabAlert()
+      }
+      window.addEventListener('focus', this.offTabFocusHandler)
+      document.addEventListener('visibilitychange', this.offTabVisibilityHandler)
+    }
+  }
+
+  /**
+   * Restore document.title + favicon and stop the flash. Idempotent.
+   */
+  private clearOffTabAlert(): void {
+    if (this.offTabTitleTimer) {
+      clearInterval(this.offTabTitleTimer)
+      this.offTabTitleTimer = null
+    }
+    if (this.offTabOriginalTitle !== null) {
+      document.title = this.offTabOriginalTitle
+    }
+    const link = this.getFaviconLink()
+    if (link && this.offTabOriginalFaviconHref !== null) {
+      link.setAttribute('href', this.offTabOriginalFaviconHref)
+    }
+    if (this.offTabFocusHandler) {
+      window.removeEventListener('focus', this.offTabFocusHandler)
+      this.offTabFocusHandler = null
+    }
+    if (this.offTabVisibilityHandler) {
+      document.removeEventListener('visibilitychange', this.offTabVisibilityHandler)
+      this.offTabVisibilityHandler = null
+    }
+    this.offTabOriginalTitle = null
+    this.offTabOriginalFaviconHref = null
+  }
+
+  /**
+   * Resolve (or create) the host page's <link rel="icon"> element so we can
+   * swap its href when the off-tab alert fires. If the page has no favicon
+   * link we create one — better to add a red dot than to render nothing.
+   */
+  private getFaviconLink(): HTMLLinkElement | null {
+    if (typeof document === 'undefined') return null
+    let link =
+      (document.querySelector('link[rel="icon"]') as HTMLLinkElement | null) ||
+      (document.querySelector('link[rel="shortcut icon"]') as HTMLLinkElement | null)
+    if (!link) {
+      link = document.createElement('link')
+      link.setAttribute('rel', 'icon')
+      document.head.appendChild(link)
+    }
+    return link
+  }
+
+  /**
    * Decide whether the chat panel should render the first-visit hero
    * welcome instead of the normal (empty) message list. Conditions:
    *   - The embed opted into the onboarding flow (`autoOpenFirstVisit`)
@@ -1696,6 +2601,7 @@ class LiraSupportWidget {
   private shouldShowHeroWelcome(): boolean {
     return (
       this.config.autoOpenFirstVisit === true &&
+      !this.suppressHeroWelcome &&
       this.messages.length === 0 &&
       !this.isTyping &&
       !this.isResolved &&
@@ -1705,74 +2611,66 @@ class LiraSupportWidget {
   }
 
   /**
-   * Build the first-visit hero welcome block. Designed to feel like a
-   * polished onboarding screen rather than an empty chat: centered avatar,
-   * big personalised greeting, one-line subtitle, primary CTA that kicks
-   * off the guided flow, and a hint that typing below also works.
+   * Build the first-visit hero welcome block. Editorial — no animated
+   * rings, no decorative glow, no fake "online" pill. Just a clean avatar,
+   * a personalised eyebrow, a confident headline, a short subtitle, and
+   * the two CTAs. Reads like the top of a well-designed product page
+   * rather than a generic AI-widget landing.
    *
    * The input area below it (rendered by renderChat) remains active, so
-   * the user can type a free-form question instead of clicking the CTA.
-   * Either action dismisses the hero on the next DOM mutation.
+   * the user can type a free-form question instead of clicking a CTA.
    */
   private buildHeroWelcomeEl(): HTMLElement {
     const wrap = document.createElement('div')
     wrap.className = 'lira-hero'
 
-    // Decorative glow background — soft animated radial gradient, sits
-    // behind the content. Pure CSS, no SVG, lightweight.
-    const glow = document.createElement('div')
-    glow.className = 'lira-hero-glow'
-    glow.setAttribute('aria-hidden', 'true')
-    wrap.appendChild(glow)
+    const inner = document.createElement('div')
+    inner.className = 'lira-hero-inner'
+    wrap.appendChild(inner)
 
-    // Avatar with breathing pulse ring around it. Two rings, staggered,
-    // give a continuous "thinking / alive" feel without being distracting.
-    const avatarWrap = document.createElement('div')
-    avatarWrap.className = 'lira-hero-avatar-wrap'
-    const ring1 = document.createElement('span')
-    ring1.className = 'lira-hero-ring lira-hero-ring-1'
-    ring1.setAttribute('aria-hidden', 'true')
-    const ring2 = document.createElement('span')
-    ring2.className = 'lira-hero-ring lira-hero-ring-2'
-    ring2.setAttribute('aria-hidden', 'true')
-    avatarWrap.appendChild(ring1)
-    avatarWrap.appendChild(ring2)
+    // Avatar — clean circle, no rings/halo/animation.
     const avatar = document.createElement('div')
     avatar.className = 'lira-hero-avatar'
     avatar.innerHTML = ICON_LIRA
-    avatarWrap.appendChild(avatar)
-    wrap.appendChild(avatarWrap)
+    inner.appendChild(avatar)
 
-    // Small "online" pill above the headline.
-    const badge = document.createElement('div')
-    badge.className = 'lira-hero-badge'
-    badge.innerHTML = '<span class="lira-hero-dot"></span> Lira is online'
-    wrap.appendChild(badge)
+    // Small "Lira" wordmark line under the avatar — gives the hero an
+    // identity without resorting to a fake online-status pill.
+    const eyebrow = document.createElement('div')
+    eyebrow.className = 'lira-hero-eyebrow'
+    eyebrow.textContent = 'Lira'
+    inner.appendChild(eyebrow)
 
     const title = document.createElement('h2')
     title.className = 'lira-hero-title'
     const firstName = this.config.visitorName?.split(' ')[0] ?? ''
-    title.textContent = firstName ? `Welcome, ${firstName}` : 'Welcome'
-    wrap.appendChild(title)
+    title.textContent = firstName ? `Hi, ${firstName}.` : 'Hi.'
+    inner.appendChild(title)
 
     const subtitle = document.createElement('p')
     subtitle.className = 'lira-hero-subtitle'
     subtitle.textContent =
-      "I'm your guide. I can walk you through setting up your support agent in just a few minutes."
-    wrap.appendChild(subtitle)
+      'I can walk you through setting up your support agent — or just answer questions while you build.'
+    inner.appendChild(subtitle)
+
+    const ctas = document.createElement('div')
+    ctas.className = 'lira-hero-ctas'
 
     const ctaBtn = document.createElement('button')
     ctaBtn.className = 'lira-hero-cta'
-    ctaBtn.innerHTML =
-      '<span>Guide me through setup</span>' +
-      '<svg viewBox="0 0 24 24" class="lira-hero-cta-arrow" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M13 6l6 6-6 6"/></svg>'
+    ctaBtn.type = 'button'
+    ctaBtn.textContent = 'Guide me through setup'
     ctaBtn.onclick = () => this.startGuidedFlow()
-    wrap.appendChild(ctaBtn)
+    ctas.appendChild(ctaBtn)
 
-    const hint = document.createElement('p')
-    hint.className = 'lira-hero-hint'
-    hint.textContent = 'or type your question below'
-    wrap.appendChild(hint)
+    const blankBtn = document.createElement('button')
+    blankBtn.className = 'lira-hero-secondary'
+    blankBtn.type = 'button'
+    blankBtn.textContent = 'Start a conversation'
+    blankBtn.onclick = () => this.startNewConversation({ preserveIndex: true, suppressHero: true })
+    ctas.appendChild(blankBtn)
+
+    inner.appendChild(ctas)
 
     return wrap
   }
@@ -1784,14 +2682,53 @@ class LiraSupportWidget {
    * via appendChatMessage() inside sendMessage().
    */
   private startGuidedFlow(): void {
-    if (this.inputEl) {
-      this.inputEl.value = 'Guide me through setting up my support agent.'
+    const prompt = 'Guide me through setting up my support agent.'
+    // If the visitor already has a guided-flow conversation alive in their
+    // list, reopen it (continue where they left off). Match by the prompt
+    // body stamped on the conversation summary — the home-prompt path uses
+    // the same approach. Note: any conversation the visitor cleared via the
+    // X icon or the Clear button has been removed from this.conversations
+    // AND filtered out of the server-side list, so it can't match here —
+    // which is exactly why the OLD startGuidedFlow leaked into a cleared
+    // conversation (it bypassed this check, set view='chat', and the still-
+    // populated this.convId caused the socket to resume the dead thread).
+    const existing = this.conversations.find((c) => c.homePrompt === prompt)
+    if (existing) {
+      this.openConversation(existing.convId)
+      return
     }
-    this.sendMessage()
+
+    // No match → fully reset (this.convId, this.messages, socket, seen-ids,
+    // forceNewCase, etc) before dispatching the prompt. startNewConversation
+    // calls open() internally, which mounts renderChat and the textarea.
+    this.suppressHeroWelcome = true
+    this.startNewConversation({ preserveIndex: true, suppressHero: true, suppressGreeting: true })
+    this.activeHomePrompt = prompt
+
+    // Force-refresh runtime context from window storage RIGHT NOW so the
+    // server's session has the latest before processing the first message.
+    // Queued into the WS pendingMessages buffer; sendSuggestedReply queues
+    // the message after it, server processes context_update → message in
+    // order so the onboarding pack's customerOrgId resolves cleanly.
+    const fresh = readLiraRuntimeContext()
+    if (fresh) {
+      this.latestRuntimeContext = fresh
+      this.sendRuntimeContext(fresh)
+    }
+
+    // Defer one frame so renderChat has flushed the new textarea into the
+    // DOM before sendSuggestedReply tries to read this.inputEl.
+    requestAnimationFrame(() => this.sendSuggestedReply(prompt))
   }
 
   /** Append a single message to the chat (no DOM rebuild). */
   private appendChatMessage(msg: ChatMessage): void {
+    // Belt-and-suspenders dedup: a few server paths can fan out the same
+    // message id (a reply_start picked up by the chunk stream + a history
+    // event arriving from a reconnect, etc.). seenMessageIds is the
+    // authoritative dedup set — if we already rendered this id, drop it.
+    if (msg.id && this.seenMessageIds.has(msg.id)) return
+    if (msg.id) this.seenMessageIds.add(msg.id)
     this.messages.push(msg)
     if (this.messagesEl) {
       // Auto-dismiss the first-visit hero block once the conversation
@@ -1867,6 +2804,7 @@ class LiraSupportWidget {
     bodyDiv.appendChild(nameEl)
     const bubble = document.createElement('div')
     bubble.className = `lira-msg ${msg.role}`
+    if (msg.id) bubble.dataset.msgId = msg.id
     this.renderMessageBody(bubble, msg)
     bodyDiv.appendChild(bubble)
     row.appendChild(avatarDiv)
@@ -2171,7 +3109,7 @@ class LiraSupportWidget {
 
   private sendSuggestedReply(body: string): void {
     if (/^start a new conversation\.?$/i.test(body.trim())) {
-      this.startNewConversation()
+      this.startNewConversation({ preserveIndex: true, suppressHero: true })
       return
     }
 
@@ -2476,7 +3414,14 @@ class LiraSupportWidget {
     confirmBtn.textContent = 'Clear conversation'
     confirmBtn.onclick = () => {
       this.showClearConfirm = false
-      this.startNewConversation()
+      // Hide the cleared conversation from the visitor's list (server-side
+      // flag + localStorage fallback) so it doesn't reappear when they tap
+      // the row from the list afterward — that was the surprise: "I cleared
+      // it but reopening showed the full history again." The team's inbox
+      // still has the record. Then start a fresh conversation in its place.
+      const oldConvId = this.convId
+      if (oldConvId) void this.markConversationHidden(oldConvId)
+      this.startNewConversation({ preserveIndex: true, suppressHero: true })
     }
     buttons.appendChild(confirmBtn)
 
@@ -2638,7 +3583,7 @@ class LiraSupportWidget {
     const synthetic = new Set(['greeting', 'server_welcome'])
     const real = this.messages.filter((m) => !synthetic.has(m.id))
     if (real.length === 0) {
-      this.startNewConversation()
+      this.startNewConversation({ preserveIndex: true, suppressHero: true })
       return
     }
     this.showClearConfirm = true
@@ -2663,7 +3608,9 @@ class LiraSupportWidget {
     this.socket?.send({ type: 'customer_action_result', ...detail })
   }
 
-  private startNewConversation(): void {
+  private startNewConversation(
+    options: { preserveIndex?: boolean; suppressHero?: boolean; suppressGreeting?: boolean } = {}
+  ): void {
     this.socket?.disconnect()
     this.socket = null
     this.messages = []
@@ -2675,7 +3622,10 @@ class LiraSupportWidget {
     this.csatSubmitted = false
     this.seenMessageIds.clear()
     this.stopPolling()
-    this.wipeStoredMessages()
+    this.activeHomePrompt = null
+    this.suppressHeroWelcome = options.suppressHero === true
+    this.suppressGreetingBubble = options.suppressGreeting === true
+    if (!options.preserveIndex) this.wipeStoredMessages()
     this.forceNewCase = true
     // Re-open fresh (will reconnect socket and add greeting)
     this.open()
@@ -2698,8 +3648,10 @@ class LiraSupportWidget {
    */
   open(): void {
     // Show pre-chat form if enabled AND visitor hasn't provided identity yet
+    // AND they haven't explicitly skipped (Skip persists across reloads).
     const needsPreChat =
       this.config.preChatFormEnabled &&
+      !this.preChatSkipped &&
       !this.config.visitorEmail &&
       !this.config.visitorName &&
       this.messages.length === 0
@@ -2713,6 +3665,7 @@ class LiraSupportWidget {
 
     this.view = 'chat'
     this.unreadCount = 0
+    this.clearOffTabAlert()
     if (this.convId) this.startPolling()
 
     // Chat path: legacy WidgetSocket directly to Fastify's
@@ -2728,20 +3681,42 @@ class LiraSupportWidget {
         this.config,
         this.visitorId,
         this.forceNewCase,
+        this.convId,
         (msg) => this.handleIncoming(msg),
         (_status) => {
           // Could show connection status indicator
-        }
+        },
+        this.activeHomeCardId
       )
       this.forceNewCase = false
+      // One-shot: cleared so a reconnect against this same conversation
+      // doesn't keep re-sending the card id.
+      this.activeHomeCardId = null
       this.socket.connect()
-      if (this.latestRuntimeContext) this.sendRuntimeContext(this.latestRuntimeContext)
+      // Belt-and-suspenders: fall back to the global window storage in case
+      // an event was missed between the dashboard publishing and the widget
+      // mounting. Common on cold-start when the script bundle is cached and
+      // the widget constructs before the host's publish useEffect has had a
+      // microtask to run.
+      const runtime = this.latestRuntimeContext ?? readLiraRuntimeContext() ?? null
+      if (runtime) {
+        this.latestRuntimeContext = runtime
+        this.sendRuntimeContext(runtime)
+      }
 
-      // Add greeting message — unless this embed shows the first-visit
-      // hero welcome view (which IS the greeting, designed to look like a
-      // landing rather than a chat bubble). Pushing the greeting here
-      // would make messages.length > 0 and suppress the hero.
-      if (this.messages.length === 0 && this.config.greeting && !this.config.autoOpenFirstVisit) {
+      // Add greeting message — unless:
+      //   - this embed shows the first-visit hero welcome view (which IS the
+      //     greeting, designed to look like a landing rather than a chat
+      //     bubble); pushing the greeting here would make messages.length > 0
+      //     and suppress the hero, OR
+      //   - the visitor is entering via a home-card click (suppressGreeting),
+      //     where their card-question replaces the need for a generic intro.
+      if (
+        this.messages.length === 0 &&
+        this.config.greeting &&
+        !this.config.autoOpenFirstVisit &&
+        !this.suppressGreetingBubble
+      ) {
         this.messages.push({
           id: 'greeting',
           role: 'lira',
@@ -2764,7 +3739,7 @@ class LiraSupportWidget {
    */
   close(): void {
     if (this.isFullscreen()) {
-      this.view = 'chat'
+      this.view = 'home'
       this.render()
       return
     }
@@ -2854,6 +3829,13 @@ class LiraSupportWidget {
     if (!body) return
     this.lastCustomerPrompt = body
 
+    // Mark the auto-open as dismissed once the visitor sends ANY message —
+    // they've engaged, so future page loads / re-logins shouldn't re-pop the
+    // welcome panel. Previously markDismissed only fired on explicit Close,
+    // so logging out (without clicking Close) caused the widget to auto-open
+    // on every subsequent login, which the user found surprising.
+    if (this.config.autoOpenFirstVisit) this.markDismissed()
+
     // Clear input early so the UI feels instant. Re-focus the textarea so
     // we stay in the :focus state — otherwise the click moves focus to the
     // send button, which fires the 150ms border/background transition and
@@ -2940,6 +3922,7 @@ class LiraSupportWidget {
     // Always capture conv_id when the server provides it
     if (msg.conv_id) {
       this.convId = msg.conv_id
+      this.upsertCurrentConversationSummary(msg.status)
       if (!this.isResolved) this.startPolling()
     }
     // 'escalated' no longer locks the widget — the AI never hands the live chat
@@ -2962,9 +3945,15 @@ class LiraSupportWidget {
         // bubble, which reads as a flicker. Keep the dots showing until the
         // first reply_chunk arrives; that's when we hide the dots AND insert
         // the bubble with real content in the same DOM frame.
+        //
+        // Important: do NOT pre-add the id to seenMessageIds here. If we do,
+        // the first reply_chunk's appendChatMessage call short-circuits as a
+        // dedup hit, no new bubble is appended, and the fallback
+        // querySelectorAll('.lira-msg.lira') grabs the previous lira bubble
+        // (e.g. the synthetic greeting) — subsequent chunks then stream INTO
+        // that wrong bubble. appendChatMessage adds the id on first append.
         const id = msg.message_id ?? `lira_${Date.now()}`
         this.streamingMessageId = id
-        this.seenMessageIds.add(id)
         break
       }
 
@@ -2982,10 +3971,15 @@ class LiraSupportWidget {
             body: msg.body,
             timestamp: new Date().toISOString(),
           })
-          const bubbles = this.messagesEl?.querySelectorAll<HTMLElement>('.lira-msg.lira') ?? []
-          this.streamingBubbleEl = bubbles.length > 0 ? bubbles[bubbles.length - 1] : null
+          // Look the bubble up by id rather than "last lira bubble in DOM".
+          // The latter is fragile: if any other lira-role bubble exists in
+          // the conversation surface (greeting, card, system message), it
+          // would be picked instead and subsequent chunks would stream into
+          // the wrong bubble.
+          const sel = `.lira-msg.lira[data-msg-id="${CSS.escape(this.streamingMessageId)}"]`
+          this.streamingBubbleEl = this.messagesEl?.querySelector<HTMLElement>(sel) ?? null
           if (this.view === 'launcher') {
-            this.unreadCount++
+            this.bumpUnread()
             this.dispatchLifecycle('unread_count', { count: this.unreadCount })
           }
           break
@@ -3003,7 +3997,7 @@ class LiraSupportWidget {
           if (this.messagesEl) this.messagesEl.scrollTop = this.messagesEl.scrollHeight
         }
         if (this.view === 'launcher') {
-          this.unreadCount++
+          this.bumpUnread()
           this.dispatchLifecycle('unread_count', { count: this.unreadCount })
         }
         break
@@ -3074,7 +4068,7 @@ class LiraSupportWidget {
             timestamp: new Date().toISOString(),
           })
           if (this.view === 'launcher') {
-            this.unreadCount++
+            this.bumpUnread()
             this.dispatchLifecycle('unread_count', { count: this.unreadCount })
             this.updateLauncherBadge()
           }
@@ -3096,7 +4090,7 @@ class LiraSupportWidget {
             sender_avatar: msg.sender_avatar,
           })
           if (this.view === 'launcher') {
-            this.unreadCount++
+            this.bumpUnread()
             this.dispatchLifecycle('unread_count', { count: this.unreadCount })
             this.updateLauncherBadge()
           }
@@ -3123,7 +4117,7 @@ class LiraSupportWidget {
         }
         this.isResolved = false
         if (this.view === 'launcher') {
-          this.unreadCount++
+          this.bumpUnread()
           this.dispatchLifecycle('unread_count', { count: this.unreadCount })
           this.updateLauncherBadge()
         }
@@ -3233,7 +4227,7 @@ class LiraSupportWidget {
         break
       }
 
-      case 'welcome':
+      case 'welcome': {
         if (this.startFreshDemoConversationIfNeeded(msg.status)) break
         // If localStorage had an old conversation but the server did not resume
         // it, start a visually clean case. The old record remains in the inbox.
@@ -3246,20 +4240,36 @@ class LiraSupportWidget {
           this.isEscalated = false
           this.wipeStoredMessages()
         }
-        // Skip the server-emitted welcome bubble when we're showing the
-        // first-visit hero. The hero IS the greeting; an extra "Hi! How
-        // can we help" bubble would make messages.length > 0 and dismiss
-        // the hero on first render.
-        if (msg.body && this.messages[0]?.id !== 'greeting' && !this.config.autoOpenFirstVisit) {
-          this.messages.unshift({
+        // Decide whether to render the welcome bubble. We surface it only
+        // when the conversation surface is genuinely empty — if the visitor
+        // already typed a question (e.g. they clicked a home card, which
+        // sends their message before the welcome arrives), the welcome is
+        // stale and inserting it would push the visitor's question BELOW a
+        // generic greeting, which is the wrong order. The first-visit hero
+        // is its own greeting too, so we skip then.
+        const welcomeAllowed =
+          msg.body &&
+          !this.config.autoOpenFirstVisit &&
+          this.messages.length === 0 &&
+          this.messages[0]?.id !== 'greeting' &&
+          // Home-card entry path: the visitor's question is already on its
+          // way (queued in a requestAnimationFrame). If the server's welcome
+          // wins the race, dropping a generic intro above the question would
+          // recreate exactly the bad ordering we just fixed.
+          !this.activeHomePrompt
+        if (welcomeAllowed) {
+          // appendChatMessage handles dedup + scroll + persistence and is
+          // surgical — no full re-render, so it doesn't blow away an
+          // in-flight input focus or scroll position.
+          this.appendChatMessage({
             id: 'server_welcome',
             role: 'lira',
-            body: msg.body,
+            body: msg.body!,
             timestamp: new Date().toISOString(),
           })
-          this.render()
         }
         break
+      }
 
       case 'error':
         this.setTyping(false)
@@ -3291,7 +4301,7 @@ class LiraSupportWidget {
           },
         })
         if (this.view === 'launcher') {
-          this.unreadCount++
+          this.bumpUnread()
           this.dispatchLifecycle('unread_count', { count: this.unreadCount })
         }
         break
@@ -3314,7 +4324,7 @@ class LiraSupportWidget {
           },
         })
         if (this.view === 'launcher') {
-          this.unreadCount++
+          this.bumpUnread()
           this.dispatchLifecycle('unread_count', { count: this.unreadCount })
         }
         break
@@ -3538,7 +4548,7 @@ class LiraSupportWidget {
               sender_avatar: m.sender_avatar,
             })
             if (this.view === 'launcher') {
-              this.unreadCount++
+              this.bumpUnread()
               this.dispatchLifecycle('unread_count', { count: this.unreadCount })
               unreadBumped = true
             }

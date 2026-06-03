@@ -17,6 +17,14 @@ export interface WidgetConfig {
   greeting?: string
   orgName?: string
   logoUrl?: string
+  /** Visual template for the widget home tab. */
+  homeTemplate?: 'default' | 'minimal' | 'branded'
+  /** Banner image rendered above the home content when homeTemplate === 'branded'. */
+  homeBannerUrl?: string
+  homeLogoUrl?: string
+  homeTitle?: string
+  homeSubtitle?: string
+  homeCards?: WidgetHomeCard[]
   voiceEnabled?: boolean
   preChatFormEnabled?: boolean
   preChatFormFields?: string[]
@@ -54,6 +62,16 @@ export interface WidgetConfig {
    * web visitors who didn't ask for chat.
    */
   autoOpenFirstVisit?: boolean
+}
+
+export interface WidgetHomeCard {
+  /** Stable card identity. Survives prompt/title renames so re-clicking a
+   *  card after an admin edits its copy still reopens the same conversation. */
+  id?: string
+  title: string
+  body?: string
+  prompt: string
+  icon?: string
 }
 
 export interface ChatMessage {
@@ -148,6 +166,8 @@ export interface IncomingWsMessage {
     | 'pin_required'
     | 'suggestions'
     | 'lira_action'
+    | 'lira_resource'
+    | 'host_capability_request'
     | 'integration_warning'
   body?: string
   conv_id?: string
@@ -231,6 +251,9 @@ export interface OutgoingWsMessage {
     | 'pin_response'
     | 'pin_cancel'
     | 'customer_action_result'
+    | 'customer_resource_result'
+    | 'sdk_capabilities_register'
+    | 'host_capability_result'
   body?: string
   name?: string
   email?: string
@@ -250,6 +273,19 @@ export interface OutgoingWsMessage {
   ok?: boolean
   message?: string
   data?: Record<string, unknown>
+  /** customer_resource_result — outcome of an SDK-registered host resource read. */
+  resourceName?: string
+  /**
+   * sdk_capabilities_register — host-registered resources / actions sent
+   * to the backend so the agent can see them as Tools for this session.
+   */
+  resources?: Array<Record<string, unknown>>
+  actions?: Array<Record<string, unknown>>
+  /**
+   * host_capability_result — reply to a backend-initiated
+   * host_capability_request. Correlates via `request_id`.
+   */
+  request_id?: string
 }
 
-export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat' | 'csat'
+export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat-list' | 'chat' | 'csat'

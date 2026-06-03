@@ -45,7 +45,6 @@ import {
   CookiePolicyPage,
   AcceptableUsePolicyPage,
   SecurityPage,
-  UsagePage,
   LaunchDemoPage,
   VerifyEmailPage,
   ForgotPasswordPage,
@@ -240,7 +239,6 @@ function App() {
             <Route path="members/:userId" element={<MemberProfilePage />} />
             <Route path="email" element={<OrgEmailPage />} />
             <Route path="integrations" element={<IntegrationsPage />} />
-            <Route path="usage" element={<UsagePage />} />
             <Route path="webhooks" element={<WebhooksPage />} />
           </Route>
           <Route path="/support" element={<Navigate to="/support/inbox" replace />} />

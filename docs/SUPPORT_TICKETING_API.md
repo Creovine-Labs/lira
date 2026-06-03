@@ -90,7 +90,7 @@ These are the routes the support team's dashboard uses. Auth: `Bearer <jwt>`, or
 
 ## 2. Phase 4 — Public + verified customer ticket access
 
-> Replaces the deprecated `/by-number/*` and `/visitor/:orgId/:email` endpoints, which still work but should not be used in new code.
+> Replaces the deprecated `/by-number/*` and `/visitor/:orgId/:email` endpoints. In production they now fail closed with `410 Gone` unless `LIRA_ALLOW_LEGACY_PUBLIC_TICKET_ACCESS=true` is explicitly set for a temporary migration window. New frontend code must use `/public/*` or `/verified/*`.
 
 ### 2.1 Request magic link
 
@@ -110,6 +110,10 @@ Response (**always 200, even if email has no tickets** — prevents account enum
 ```json
 { "ok": true }
 ```
+
+In non-production only, setting `LIRA_DEBUG_TICKET_ACCESS_TOKEN=true` returns
+`debug_access_token` and `debug_expires_at` for smoke tests. Never enable this
+in production.
 
 curl:
 
@@ -526,6 +530,10 @@ LIRA_TEST_EMAIL=you+ticketing-smoke@gmail.com \
 
 It hits every Phase 4–7 endpoint (and a couple of Phase 1–3 ones for plumbing) and prints `PASS`/`FAIL` per route. Read the script before running — it creates one real ticket and triggers one real email.
 
+For local/staging API runs, set `LIRA_DEBUG_TICKET_ACCESS_TOKEN=true` on the API
+process before running the script. That lets the smoke test verify successful
+public list/detail/reply flows without opening the test inbox.
+
 ---
 
 ## 9. Notes for the frontend team
@@ -534,6 +542,6 @@ It hits every Phase 4–7 endpoint (and a couple of Phase 1–3 ones for plumbin
 - All Phase 5 lifecycle emails fire automatically from the operator endpoints. You don't need to call extra "notify" routes after a status transition.
 - The Phase 6 outbox is opt-in per org via `outbox_providers` in support config. If an org hasn't configured it, the Integrations → Outbox tab can show an explainer + "Connect Slack/Linear" CTA pointing at the existing integration config.
 - The Phase 7 analytics endpoints scan tickets per request. For orgs > ~3k tickets this will get slow. The backend team will materialize a rollup row when that becomes a problem; the response shape will stay stable.
-- **DEPRECATED endpoints** (still in the OpenAPI spec, marked deprecated): `/by-number/*`, `/visitor/:orgId/:email`. Don't reach for them in new code.
+- **DEPRECATED endpoints** (still in the OpenAPI spec, marked deprecated): `/by-number/*`, `/visitor/:orgId/:email`. They are blocked by default in production and should not be used in new code.
 
 Questions / clarifications — drop them in the support-eng channel or open a comment on this doc. Keep the UI/UX deliberately calm and minimal; the product earns trust by being precise, not by being flashy.
