@@ -57,6 +57,7 @@ import {
   markTicketOnHold,
   reopenTicket,
   closeTicket,
+  escalateTicket,
   classifyTicket,
   routeTicket,
   ackEscalation,
@@ -287,10 +288,9 @@ export function SupportTicketsPage() {
             : t
         )
       )
-      // Route to the dedicated lifecycle endpoint for the statuses that have
-      // one (they apply the right side-effects server-side); fall back to the
-      // generic status PATCH for the rest (open / in_progress / escalated).
-      const terminal: SupportTicketRecord['status'][] = ['resolved', 'closed', 'merged']
+      // Each column maps to its dedicated POST action endpoint — those work;
+      // the generic status PATCH does not (the backend doesn't implement it),
+      // which is why moving to in_progress/escalated used to silently fail.
       const persist = (): Promise<SupportTicketRecord> => {
         switch (status) {
           case 'resolved':
@@ -301,12 +301,18 @@ export function SupportTicketsPage() {
             return markTicketOnHold(currentOrgId, ticketId)
           case 'pending':
             return markTicketPending(currentOrgId, ticketId)
+          case 'escalated':
+            return escalateTicket(currentOrgId, ticketId, {
+              tier: 'tier_2',
+              reason: 'Escalated from board',
+            })
           case 'open':
-            // Reopen only makes sense from a terminal state; otherwise just set.
-            return terminal.includes(current.status)
-              ? reopenTicket(currentOrgId, ticketId)
-              : setTicketStatus(currentOrgId, ticketId, status)
+            // "Reopen" is the action that returns a ticket to open from any
+            // other state.
+            return reopenTicket(currentOrgId, ticketId)
           default:
+            // in_progress (and snoozed/merged) have no dedicated action — fall
+            // back to the generic status PATCH.
             return setTicketStatus(currentOrgId, ticketId, status)
         }
       }
