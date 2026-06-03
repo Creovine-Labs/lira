@@ -9,6 +9,7 @@ import {
   GlobeAltIcon,
   InformationCircleIcon,
   ShieldCheckIcon,
+  SparklesIcon,
   XCircleIcon,
   ChevronLeftIcon,
 } from '@heroicons/react/24/outline'
@@ -52,6 +53,43 @@ const NOTIFY_EVENTS: { value: string; label: string; description: string }[] = [
     description: 'Send the meeting summary to all participants',
   },
 ]
+
+type SettingsTabKey = 'general' | 'sender' | 'domain' | 'notifications' | 'autoreply'
+
+const EMAIL_SETTINGS_TABS: { key: SettingsTabKey; label: string; Icon: typeof BellIcon }[] = [
+  { key: 'general', label: 'General', Icon: InformationCircleIcon },
+  { key: 'sender', label: 'Sender identity', Icon: EnvelopeIcon },
+  { key: 'domain', label: 'Sending domain', Icon: GlobeAltIcon },
+  { key: 'notifications', label: 'Notifications', Icon: BellIcon },
+  { key: 'autoreply', label: 'Auto-reply', Icon: SparklesIcon },
+]
+
+function EmailRailItem({
+  Icon,
+  label,
+  active,
+  onClick,
+}: {
+  Icon: typeof BellIcon
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-current={active ? 'page' : undefined}
+      className={cn(
+        'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] font-medium transition',
+        active ? 'bg-[#020308] text-white' : 'text-gray-600 hover:bg-gray-100'
+      )}
+    >
+      <Icon className={cn('h-4 w-4 shrink-0', active ? 'text-white' : 'text-gray-400')} />
+      <span className="flex-1 truncate text-left">{label}</span>
+    </button>
+  )
+}
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
@@ -237,592 +275,620 @@ function OrgEmailPage() {
   const step = !dnsRecords.length ? 1 : domainStatus !== 'verified' ? 2 : 3
 
   return (
-    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
-      <div className="mx-auto max-w-2xl space-y-6">
-        {/* Header */}
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-              Workspace
-            </p>
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Email</h1>
-          </div>
-          {activeTab === 'settings' && settingsTab !== 'general' && settingsTab !== 'domain' && (
-            <button
-              onClick={handleSave}
-              disabled={saving || !isDirty}
-              className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white shadow-lg transition hover:bg-[#1a1a1a] disabled:opacity-40"
-            >
-              {saving ? (
-                <img
-                  src="/lira_black.png"
-                  alt="Loading"
-                  className="h-4 w-4 animate-spin opacity-50"
-                  style={{ animationDuration: '1.2s' }}
-                />
-              ) : (
-                <CheckCircleIcon className="h-4 w-4" />
-              )}
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          )}
+    <div className="flex h-full overflow-hidden bg-[#ebebeb]">
+      {/* ── Left rail ─────────────────────────────────────────────────── */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
+        <div className="flex items-center gap-2 px-4 pb-2 pt-4">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#020308] text-white">
+            <EnvelopeIcon className="h-4 w-4" />
+          </span>
+          <h1 className="text-sm font-bold tracking-tight text-gray-900">Email</h1>
         </div>
-
-        {/* Tab switcher */}
-        <div className="flex gap-1 rounded-xl bg-white p-1 shadow-sm">
-          {(['settings', 'inbox'] as const).map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={cn(
-                'flex-1 rounded-lg py-2 text-sm font-semibold transition-colors capitalize',
-                activeTab === tab
-                  ? 'bg-[#0f0f0f] text-white shadow'
-                  : 'text-gray-500 hover:text-gray-800'
-              )}
-            >
-              {tab === 'inbox' ? 'Inbox' : 'Settings'}
-            </button>
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
+          <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Mail
+          </p>
+          <EmailRailItem
+            Icon={EnvelopeOpenIcon}
+            label="Inbox"
+            active={activeTab === 'inbox'}
+            onClick={() => setActiveTab('inbox')}
+          />
+          <p className="mt-4 px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Settings
+          </p>
+          {EMAIL_SETTINGS_TABS.map((s) => (
+            <EmailRailItem
+              key={s.key}
+              Icon={s.Icon}
+              label={s.label}
+              active={activeTab === 'settings' && settingsTab === s.key}
+              onClick={() => {
+                setActiveTab('settings')
+                setSettingsTab(s.key)
+              }}
+            />
           ))}
-        </div>
+        </nav>
+      </aside>
 
-        {activeTab === 'inbox' && currentOrgId && <InboxPanel orgId={currentOrgId} />}
-
-        {activeTab === 'settings' && (
-          <div className="flex gap-1 overflow-x-auto rounded-xl bg-white p-1 shadow-sm">
-            {(
-              [
-                { key: 'general', label: 'General' },
-                { key: 'sender', label: 'Sender Identity' },
-                { key: 'domain', label: 'Sending Domain' },
-                { key: 'notifications', label: 'Notifications' },
-                { key: 'autoreply', label: 'Auto-Reply' },
-              ] as {
-                key: 'general' | 'sender' | 'domain' | 'notifications' | 'autoreply'
-                label: string
-              }[]
-            ).map((s) => (
+      {/* ── Main ──────────────────────────────────────────────────────── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-2.5">
+          <div className="flex items-center gap-3">
+            <h2 className="text-base font-bold text-gray-900">
+              {activeTab === 'inbox'
+                ? 'Inbox'
+                : (EMAIL_SETTINGS_TABS.find((s) => s.key === settingsTab)?.label ?? 'Settings')}
+            </h2>
+            {activeTab === 'settings' && settingsTab !== 'general' && settingsTab !== 'domain' && (
+              <button
+                onClick={handleSave}
+                disabled={saving || !isDirty}
+                className="ml-auto flex shrink-0 items-center gap-2 rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:opacity-40"
+              >
+                {saving ? (
+                  <img
+                    src="/lira_black.png"
+                    alt="Loading"
+                    className="h-4 w-4 animate-spin opacity-50"
+                    style={{ animationDuration: '1.2s' }}
+                  />
+                ) : (
+                  <CheckCircleIcon className="h-4 w-4" />
+                )}
+                {saving ? 'Saving…' : 'Save changes'}
+              </button>
+            )}
+          </div>
+          {/* Mobile nav — rail is hidden under lg */}
+          <div className="mt-2 flex gap-1 overflow-x-auto pb-0.5 lg:hidden">
+            <button
+              onClick={() => setActiveTab('inbox')}
+              className={cn(
+                'shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition',
+                activeTab === 'inbox' ? 'bg-[#020308] text-white' : 'bg-gray-100 text-gray-500'
+              )}
+            >
+              Inbox
+            </button>
+            {EMAIL_SETTINGS_TABS.map((s) => (
               <button
                 key={s.key}
-                onClick={() => setSettingsTab(s.key)}
+                onClick={() => {
+                  setActiveTab('settings')
+                  setSettingsTab(s.key)
+                }}
                 className={cn(
-                  'shrink-0 rounded-lg px-3 py-2 text-sm font-semibold transition-colors',
-                  settingsTab === s.key
-                    ? 'bg-[#0f0f0f] text-white shadow'
-                    : 'text-gray-500 hover:text-gray-800'
+                  'shrink-0 rounded-full px-3 py-1 text-xs font-semibold transition',
+                  activeTab === 'settings' && settingsTab === s.key
+                    ? 'bg-[#020308] text-white'
+                    : 'bg-gray-100 text-gray-500'
                 )}
               >
                 {s.label}
               </button>
             ))}
           </div>
-        )}
+        </div>
 
-        {activeTab === 'settings' && (
-          <>
-            {/* General — status overview */}
-            {settingsTab === 'general' && config && (
-              <section className="rounded-2xl border border-white/60 bg-white px-5 py-5 shadow-sm">
-                <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                  Current Status
-                </p>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <p className="text-xs text-gray-400">Sending mode</p>
-                    <p className="font-semibold text-gray-900 capitalize">{config.mode}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Domain verified</p>
-                    <p
-                      className={`font-semibold ${config.domain_verified ? 'text-[#3730a3]' : 'text-red-500'}`}
-                    >
-                      {config.domain_verified ? 'Yes' : 'No'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Notifications</p>
-                    <p
-                      className={`font-semibold ${config.email_notifications_enabled ? 'text-[#3730a3]' : 'text-gray-400'}`}
-                    >
-                      {config.email_notifications_enabled ? 'Enabled' : 'Disabled'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">AI auto-reply</p>
-                    <p
-                      className={`font-semibold ${(config.ai_reply_enabled ?? true) ? 'text-[#3730a3]' : 'text-red-500'}`}
-                    >
-                      {(config.ai_reply_enabled ?? true) ? 'On' : 'Off'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-gray-400">Last updated</p>
-                    <p className="font-semibold text-gray-700">
-                      {new Date(config.updated_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-                <div className="mt-4 grid grid-cols-2 gap-2">
-                  {(
-                    [
-                      { key: 'sender', label: 'Sender Identity' },
-                      { key: 'domain', label: 'Sending Domain' },
-                      { key: 'notifications', label: 'Notifications' },
-                      { key: 'autoreply', label: 'Auto-Reply' },
-                    ] as {
-                      key: 'general' | 'sender' | 'domain' | 'notifications' | 'autoreply'
-                      label: string
-                    }[]
-                  ).map((s) => (
-                    <button
-                      key={s.key}
-                      onClick={() => setSettingsTab(s.key)}
-                      className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
-                    >
-                      {s.label} →
-                    </button>
-                  ))}
-                </div>
-              </section>
-            )}
+        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5">
+          <div className="mx-auto max-w-2xl space-y-6">
+            {activeTab === 'inbox' && currentOrgId && <InboxPanel orgId={currentOrgId} />}
 
-            {/* Sender identity */}
-            {settingsTab === 'sender' && (
-              <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-                  <EnvelopeIcon className="h-5 w-5 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-800">Sender Identity</h2>
-                  <a
-                    href="https://docs.liraintelligence.com/platform/email#sender-identity"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
-                  >
-                    <BookOpenIcon className="h-3.5 w-3.5" />
-                    Docs
-                  </a>
-                </div>
-                <div className="space-y-4 px-5 py-5">
-                  <div>
-                    <label
-                      htmlFor="from-name-input"
-                      className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-gray-500"
-                    >
-                      From Name
-                    </label>
-                    <input
-                      id="from-name-input"
-                      type="text"
-                      value={fromName}
-                      onChange={(e) => setFromName(e.target.value)}
-                      placeholder="Lira"
-                      className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-400"
-                    />
-                    <p className="mt-1.5 text-xs text-gray-400">
-                      Appears as the sender name — e.g.{' '}
-                      <em>{fromName || 'Lira'} &lt;lira@liraintelligence.com&gt;</em>
+            {activeTab === 'settings' && (
+              <>
+                {/* General — status overview */}
+                {settingsTab === 'general' && config && (
+                  <section className="rounded-2xl border border-white/60 bg-white px-5 py-5 shadow-sm">
+                    <p className="mb-3 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                      Current Status
                     </p>
-                  </div>
-
-                  {/* Current sending address pill */}
-                  <div className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                    {hasDomain && config?.domain_verified ? (
-                      <CheckCircleSolid className="h-4 w-4 shrink-0 text-emerald-500" />
-                    ) : (
-                      <InformationCircleIcon className="h-4 w-4 shrink-0 text-blue-400" />
-                    )}
-                    <p className="text-xs text-gray-600">
-                      {hasDomain && config?.domain_verified ? (
-                        <>
-                          Sending as{' '}
-                          <span className="font-semibold text-gray-800">
-                            lira@{config.custom_domain}
-                          </span>
-                        </>
-                      ) : (
-                        <>
-                          Sending from{' '}
-                          <span className="font-semibold">lira@liraintelligence.com</span>. Set up a
-                          custom domain below to send from your own address.
-                        </>
-                      )}
-                    </p>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Custom domain setup */}
-            {settingsTab === 'domain' && (
-              <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-                  <GlobeAltIcon className="h-5 w-5 text-gray-400" />
-                  <div className="flex-1">
-                    <h2 className="text-sm font-semibold text-gray-800">Custom Sending Domain</h2>
-                    <p className="text-xs text-gray-400">
-                      Send emails from your own domain, e.g. lira@yourcompany.com
-                    </p>
-                  </div>
-                  <a
-                    href="https://docs.liraintelligence.com/platform/email#sending-domain"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
-                  >
-                    <BookOpenIcon className="h-3.5 w-3.5" />
-                    Docs
-                  </a>
-                  {domainStatus === 'verified' && (
-                    <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
-                      Verified
-                    </span>
-                  )}
-                  {domainStatus === 'pending' && (
-                    <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
-                      Pending DNS
-                    </span>
-                  )}
-                </div>
-
-                <div className="px-5 py-5 space-y-5">
-                  {/* Step indicators */}
-                  <div className="flex items-center gap-0">
-                    {[
-                      { n: 1, label: 'Enter domain' },
-                      { n: 2, label: 'Add DNS records' },
-                      { n: 3, label: 'Verified' },
-                    ].map((s, i) => (
-                      <div key={s.n} className="flex items-center">
-                        <div className="flex flex-col items-center">
-                          <div
-                            className={cn(
-                              'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors',
-                              step > s.n
-                                ? 'bg-emerald-500 text-white'
-                                : step === s.n
-                                  ? 'bg-[#0f0f0f] text-white'
-                                  : 'bg-gray-100 text-gray-400'
-                            )}
-                          >
-                            {step > s.n ? <CheckCircleIcon className="h-4 w-4" /> : s.n}
-                          </div>
-                          <span
-                            className={cn(
-                              'mt-1 text-[10px] font-semibold whitespace-nowrap',
-                              step === s.n ? 'text-gray-800' : 'text-gray-400'
-                            )}
-                          >
-                            {s.label}
-                          </span>
-                        </div>
-                        {i < 2 && (
-                          <div
-                            className={cn(
-                              'mb-3 h-px w-10 mx-1',
-                              step > s.n ? 'bg-emerald-400' : 'bg-gray-200'
-                            )}
-                          />
-                        )}
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-xs text-gray-400">Sending mode</p>
+                        <p className="font-semibold text-gray-900 capitalize">{config.mode}</p>
                       </div>
-                    ))}
-                  </div>
-
-                  {/* Step 1 — enter domain */}
-                  <div
-                    className={cn(
-                      'space-y-3',
-                      step !== 1 && domainStatus !== 'pending' && 'opacity-50 pointer-events-none'
-                    )}
-                  >
-                    <label
-                      htmlFor="domain-input"
-                      className="block text-xs font-semibold uppercase tracking-widest text-gray-500"
-                    >
-                      Your Domain
-                    </label>
-                    <div className="flex gap-2">
-                      <input
-                        id="domain-input"
-                        type="text"
-                        value={domainInput}
-                        onChange={(e) => setDomainInput(e.target.value)}
-                        placeholder="yourcompany.com"
-                        disabled={domainStatus === 'verified' || registering}
-                        className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-400 disabled:opacity-50"
-                      />
-                      <button
-                        onClick={handleRegisterDomain}
-                        disabled={registering || !domainInput.trim() || domainStatus === 'verified'}
-                        className="flex items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a1a1a] disabled:opacity-40"
-                      >
-                        {registering ? (
-                          <img
-                            src="/lira_black.png"
-                            alt="Loading"
-                            className="h-4 w-4 animate-spin opacity-50"
-                            style={{ animationDuration: '1.2s' }}
-                          />
-                        ) : null}
-                        {registering
-                          ? 'Registering…'
-                          : dnsRecords.length
-                            ? 'Re-register'
-                            : 'Register'}
-                      </button>
+                      <div>
+                        <p className="text-xs text-gray-400">Domain verified</p>
+                        <p
+                          className={`font-semibold ${config.domain_verified ? 'text-[#3730a3]' : 'text-red-500'}`}
+                        >
+                          {config.domain_verified ? 'Yes' : 'No'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Notifications</p>
+                        <p
+                          className={`font-semibold ${config.email_notifications_enabled ? 'text-[#3730a3]' : 'text-gray-400'}`}
+                        >
+                          {config.email_notifications_enabled ? 'Enabled' : 'Disabled'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">AI auto-reply</p>
+                        <p
+                          className={`font-semibold ${(config.ai_reply_enabled ?? true) ? 'text-[#3730a3]' : 'text-red-500'}`}
+                        >
+                          {(config.ai_reply_enabled ?? true) ? 'On' : 'Off'}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400">Last updated</p>
+                        <p className="font-semibold text-gray-700">
+                          {new Date(config.updated_at).toLocaleDateString()}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-xs text-gray-400">
-                      Enter the root domain — Lira will send as <em>lira@yourcompany.com</em>.
-                      You'll need access to your DNS provider to complete setup.
-                    </p>
-                  </div>
+                    <div className="mt-4 grid grid-cols-2 gap-2">
+                      {(
+                        [
+                          { key: 'sender', label: 'Sender Identity' },
+                          { key: 'domain', label: 'Sending Domain' },
+                          { key: 'notifications', label: 'Notifications' },
+                          { key: 'autoreply', label: 'Auto-Reply' },
+                        ] as {
+                          key: 'general' | 'sender' | 'domain' | 'notifications' | 'autoreply'
+                          label: string
+                        }[]
+                      ).map((s) => (
+                        <button
+                          key={s.key}
+                          onClick={() => setSettingsTab(s.key)}
+                          className="rounded-xl border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors text-left"
+                        >
+                          {s.label} →
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                )}
 
-                  {/* Step 2 — DNS records */}
-                  {dnsRecords.length > 0 && domainStatus !== 'verified' && (
-                    <div className="space-y-3">
-                      <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
-                        <p className="text-xs font-semibold text-amber-800 mb-1">
-                          Add these records to your DNS provider
-                        </p>
-                        <p className="text-xs text-amber-700">
-                          Log in to your domain registrar (e.g. Cloudflare, GoDaddy, Route 53,
-                          Namecheap) and add the following DNS records exactly as shown. Propagation
-                          typically takes 5–30 minutes.
+                {/* Sender identity */}
+                {settingsTab === 'sender' && (
+                  <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                      <EnvelopeIcon className="h-5 w-5 text-gray-400" />
+                      <h2 className="text-sm font-semibold text-gray-800">Sender Identity</h2>
+                      <a
+                        href="https://docs.liraintelligence.com/platform/email#sender-identity"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+                      >
+                        <BookOpenIcon className="h-3.5 w-3.5" />
+                        Docs
+                      </a>
+                    </div>
+                    <div className="space-y-4 px-5 py-5">
+                      <div>
+                        <label
+                          htmlFor="from-name-input"
+                          className="mb-1.5 block text-xs font-semibold uppercase tracking-widest text-gray-500"
+                        >
+                          From Name
+                        </label>
+                        <input
+                          id="from-name-input"
+                          type="text"
+                          value={fromName}
+                          onChange={(e) => setFromName(e.target.value)}
+                          placeholder="Lira"
+                          className="w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-400"
+                        />
+                        <p className="mt-1.5 text-xs text-gray-400">
+                          Appears as the sender name — e.g.{' '}
+                          <em>{fromName || 'Lira'} &lt;lira@liraintelligence.com&gt;</em>
                         </p>
                       </div>
 
-                      <div className="overflow-x-auto rounded-xl border border-gray-100">
-                        <table className="w-full text-left">
-                          <thead>
-                            <tr className="border-b border-gray-100 bg-gray-50">
-                              <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                Type
-                              </th>
-                              <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                Name / Host
-                              </th>
-                              <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                                Value
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="px-4">
-                            {dnsRecords.map((r, i) => (
-                              <tr key={i} className="border-b border-gray-100 last:border-0">
-                                <td className="px-4 py-3">
-                                  <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-bold uppercase text-gray-600">
-                                    {r.type}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3">
-                                  <CopyCell text={r.name} />
-                                </td>
-                                <td className="px-4 py-3">
-                                  <CopyCell text={r.value} />
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      {/* Current sending address pill */}
+                      <div className="flex items-center gap-2.5 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                        {hasDomain && config?.domain_verified ? (
+                          <CheckCircleSolid className="h-4 w-4 shrink-0 text-emerald-500" />
+                        ) : (
+                          <InformationCircleIcon className="h-4 w-4 shrink-0 text-blue-400" />
+                        )}
+                        <p className="text-xs text-gray-600">
+                          {hasDomain && config?.domain_verified ? (
+                            <>
+                              Sending as{' '}
+                              <span className="font-semibold text-gray-800">
+                                lira@{config.custom_domain}
+                              </span>
+                            </>
+                          ) : (
+                            <>
+                              Sending from{' '}
+                              <span className="font-semibold">lira@liraintelligence.com</span>. Set
+                              up a custom domain below to send from your own address.
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </section>
+                )}
+
+                {/* Custom domain setup */}
+                {settingsTab === 'domain' && (
+                  <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                      <GlobeAltIcon className="h-5 w-5 text-gray-400" />
+                      <div className="flex-1">
+                        <h2 className="text-sm font-semibold text-gray-800">
+                          Custom Sending Domain
+                        </h2>
+                        <p className="text-xs text-gray-400">
+                          Send emails from your own domain, e.g. lira@yourcompany.com
+                        </p>
+                      </div>
+                      <a
+                        href="https://docs.liraintelligence.com/platform/email#sending-domain"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+                      >
+                        <BookOpenIcon className="h-3.5 w-3.5" />
+                        Docs
+                      </a>
+                      {domainStatus === 'verified' && (
+                        <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-700">
+                          Verified
+                        </span>
+                      )}
+                      {domainStatus === 'pending' && (
+                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold text-amber-700">
+                          Pending DNS
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="px-5 py-5 space-y-5">
+                      {/* Step indicators */}
+                      <div className="flex items-center gap-0">
+                        {[
+                          { n: 1, label: 'Enter domain' },
+                          { n: 2, label: 'Add DNS records' },
+                          { n: 3, label: 'Verified' },
+                        ].map((s, i) => (
+                          <div key={s.n} className="flex items-center">
+                            <div className="flex flex-col items-center">
+                              <div
+                                className={cn(
+                                  'flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-colors',
+                                  step > s.n
+                                    ? 'bg-emerald-500 text-white'
+                                    : step === s.n
+                                      ? 'bg-[#0f0f0f] text-white'
+                                      : 'bg-gray-100 text-gray-400'
+                                )}
+                              >
+                                {step > s.n ? <CheckCircleIcon className="h-4 w-4" /> : s.n}
+                              </div>
+                              <span
+                                className={cn(
+                                  'mt-1 text-[10px] font-semibold whitespace-nowrap',
+                                  step === s.n ? 'text-gray-800' : 'text-gray-400'
+                                )}
+                              >
+                                {s.label}
+                              </span>
+                            </div>
+                            {i < 2 && (
+                              <div
+                                className={cn(
+                                  'mb-3 h-px w-10 mx-1',
+                                  step > s.n ? 'bg-emerald-400' : 'bg-gray-200'
+                                )}
+                              />
+                            )}
+                          </div>
+                        ))}
                       </div>
 
-                      <p className="text-xs text-gray-400">
-                        <strong className="text-gray-600">Tip:</strong> Some providers (e.g.
-                        GoDaddy, cPanel) strip the root domain from the Name field automatically —
-                        if your record name already includes your domain, enter only the subdomain
-                        part shown above.
-                      </p>
+                      {/* Step 1 — enter domain */}
+                      <div
+                        className={cn(
+                          'space-y-3',
+                          step !== 1 &&
+                            domainStatus !== 'pending' &&
+                            'opacity-50 pointer-events-none'
+                        )}
+                      >
+                        <label
+                          htmlFor="domain-input"
+                          className="block text-xs font-semibold uppercase tracking-widest text-gray-500"
+                        >
+                          Your Domain
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            id="domain-input"
+                            type="text"
+                            value={domainInput}
+                            onChange={(e) => setDomainInput(e.target.value)}
+                            placeholder="yourcompany.com"
+                            disabled={domainStatus === 'verified' || registering}
+                            className="flex-1 rounded-xl border border-gray-200 bg-gray-50 px-4 py-2.5 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-gray-400 disabled:opacity-50"
+                          />
+                          <button
+                            onClick={handleRegisterDomain}
+                            disabled={
+                              registering || !domainInput.trim() || domainStatus === 'verified'
+                            }
+                            className="flex items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a1a1a] disabled:opacity-40"
+                          >
+                            {registering ? (
+                              <img
+                                src="/lira_black.png"
+                                alt="Loading"
+                                className="h-4 w-4 animate-spin opacity-50"
+                                style={{ animationDuration: '1.2s' }}
+                              />
+                            ) : null}
+                            {registering
+                              ? 'Registering…'
+                              : dnsRecords.length
+                                ? 'Re-register'
+                                : 'Register'}
+                          </button>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Enter the root domain — Lira will send as <em>lira@yourcompany.com</em>.
+                          You'll need access to your DNS provider to complete setup.
+                        </p>
+                      </div>
 
-                      {/* Verify button */}
-                      <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">Ready to verify?</p>
+                      {/* Step 2 — DNS records */}
+                      {dnsRecords.length > 0 && domainStatus !== 'verified' && (
+                        <div className="space-y-3">
+                          <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3">
+                            <p className="text-xs font-semibold text-amber-800 mb-1">
+                              Add these records to your DNS provider
+                            </p>
+                            <p className="text-xs text-amber-700">
+                              Log in to your domain registrar (e.g. Cloudflare, GoDaddy, Route 53,
+                              Namecheap) and add the following DNS records exactly as shown.
+                              Propagation typically takes 5–30 minutes.
+                            </p>
+                          </div>
+
+                          <div className="overflow-x-auto rounded-xl border border-gray-100">
+                            <table className="w-full text-left">
+                              <thead>
+                                <tr className="border-b border-gray-100 bg-gray-50">
+                                  <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                    Type
+                                  </th>
+                                  <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                    Name / Host
+                                  </th>
+                                  <th className="px-4 py-2.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                                    Value
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="px-4">
+                                {dnsRecords.map((r, i) => (
+                                  <tr key={i} className="border-b border-gray-100 last:border-0">
+                                    <td className="px-4 py-3">
+                                      <span className="rounded-md bg-gray-100 px-2 py-0.5 text-[11px] font-bold uppercase text-gray-600">
+                                        {r.type}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <CopyCell text={r.name} />
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <CopyCell text={r.value} />
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+
                           <p className="text-xs text-gray-400">
-                            Once DNS records are added, click Verify. This polls Resend every 8
-                            seconds.
+                            <strong className="text-gray-600">Tip:</strong> Some providers (e.g.
+                            GoDaddy, cPanel) strip the root domain from the Name field automatically
+                            — if your record name already includes your domain, enter only the
+                            subdomain part shown above.
+                          </p>
+
+                          {/* Verify button */}
+                          <div className="flex items-center justify-between gap-3 rounded-xl border border-gray-100 bg-gray-50 px-4 py-3">
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">Ready to verify?</p>
+                              <p className="text-xs text-gray-400">
+                                Once DNS records are added, click Verify. This polls Resend every 8
+                                seconds.
+                              </p>
+                            </div>
+                            <button
+                              onClick={startPolling}
+                              disabled={verifying}
+                              className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a1a1a] disabled:opacity-40"
+                            >
+                              {verifying ? (
+                                <img
+                                  src="/lira_black.png"
+                                  alt="Loading"
+                                  className="h-4 w-4 animate-spin opacity-50"
+                                  style={{ animationDuration: '1.2s' }}
+                                />
+                              ) : (
+                                <ShieldCheckIcon className="h-4 w-4" />
+                              )}
+                              {verifying ? 'Checking DNS…' : 'Verify'}
+                            </button>
+                          </div>
+
+                          {domainStatus === 'failed' && (
+                            <div className="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
+                              <XCircleIcon className="h-4 w-4 mt-0.5 shrink-0 text-red-400" />
+                              <p className="text-xs text-red-700">
+                                Verification failed — DNS records may not have propagated yet. Wait
+                                a few minutes and try again.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Step 3 — verified */}
+                      {domainStatus === 'verified' && (
+                        <div className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-4">
+                          <CheckCircleSolid className="h-5 w-5 shrink-0 text-emerald-500 mt-0.5" />
+                          <div>
+                            <p className="text-sm font-semibold text-emerald-800">
+                              {config?.custom_domain ?? domainInput} is verified
+                            </p>
+                            <p className="text-xs text-emerald-700 mt-0.5">
+                              Lira will now send all emails from{' '}
+                              <strong>lira@{config?.custom_domain ?? domainInput}</strong>. Replies
+                              still route through the Lira inbound engine.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
+                {/* Notifications */}
+                {settingsTab === 'notifications' && (
+                  <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                      <BellIcon className="h-5 w-5 text-gray-400" />
+                      <h2 className="text-sm font-semibold text-gray-800">Email Notifications</h2>
+                      <a
+                        href="https://docs.liraintelligence.com/platform/email#notifications"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
+                      >
+                        <BookOpenIcon className="h-3.5 w-3.5" />
+                        Docs
+                      </a>
+                    </div>
+                    <div className="space-y-4 px-5 py-5">
+                      <div className="flex cursor-pointer items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">
+                            Enable email notifications
+                          </p>
+                          <p className="text-xs text-gray-400">
+                            Lira will send automated emails for the events selected below.
                           </p>
                         </div>
                         <button
-                          onClick={startPolling}
-                          disabled={verifying}
-                          className="flex shrink-0 items-center gap-2 rounded-xl bg-[#0f0f0f] px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#1a1a1a] disabled:opacity-40"
-                        >
-                          {verifying ? (
-                            <img
-                              src="/lira_black.png"
-                              alt="Loading"
-                              className="h-4 w-4 animate-spin opacity-50"
-                              style={{ animationDuration: '1.2s' }}
-                            />
-                          ) : (
-                            <ShieldCheckIcon className="h-4 w-4" />
+                          role="switch"
+                          aria-checked={notificationsEnabled}
+                          onClick={() => setNotificationsEnabled((v) => !v)}
+                          className={cn(
+                            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none',
+                            notificationsEnabled ? 'bg-[#0f0f0f]' : 'bg-gray-200'
                           )}
-                          {verifying ? 'Checking DNS…' : 'Verify'}
+                        >
+                          <span
+                            className={cn(
+                              'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                              notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
+                            )}
+                          />
                         </button>
                       </div>
 
-                      {domainStatus === 'failed' && (
-                        <div className="flex items-start gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-                          <XCircleIcon className="h-4 w-4 mt-0.5 shrink-0 text-red-400" />
-                          <p className="text-xs text-red-700">
-                            Verification failed — DNS records may not have propagated yet. Wait a
-                            few minutes and try again.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Step 3 — verified */}
-                  {domainStatus === 'verified' && (
-                    <div className="flex items-start gap-3 rounded-xl border border-emerald-100 bg-emerald-50 px-4 py-4">
-                      <CheckCircleSolid className="h-5 w-5 shrink-0 text-emerald-500 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-emerald-800">
-                          {config?.custom_domain ?? domainInput} is verified
+                      <div
+                        className={cn(
+                          'space-y-2 transition-opacity',
+                          notificationsEnabled ? 'opacity-100' : 'pointer-events-none opacity-30'
+                        )}
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                          Notify on
                         </p>
-                        <p className="text-xs text-emerald-700 mt-0.5">
-                          Lira will now send all emails from{' '}
-                          <strong>lira@{config?.custom_domain ?? domainInput}</strong>. Replies
-                          still route through the Lira inbound engine.
-                        </p>
+                        {NOTIFY_EVENTS.map((ev) => (
+                          <label
+                            key={ev.value}
+                            htmlFor={`notif-${ev.value}`}
+                            aria-label={ev.label}
+                            className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-100 px-4 py-3 hover:bg-gray-50 transition-colors"
+                          >
+                            <input
+                              id={`notif-${ev.value}`}
+                              type="checkbox"
+                              checked={notifyOn.includes(ev.value)}
+                              onChange={() => toggleEvent(ev.value)}
+                              className="mt-0.5 h-4 w-4 rounded accent-[#0f0f0f]"
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{ev.label}</p>
+                              <p className="text-xs text-gray-400">{ev.description}</p>
+                            </div>
+                          </label>
+                        ))}
                       </div>
                     </div>
-                  )}
-                </div>
-              </section>
-            )}
+                  </section>
+                )}
 
-            {/* Notifications */}
-            {settingsTab === 'notifications' && (
-              <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-                  <BellIcon className="h-5 w-5 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-800">Email Notifications</h2>
-                  <a
-                    href="https://docs.liraintelligence.com/platform/email#notifications"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
-                  >
-                    <BookOpenIcon className="h-3.5 w-3.5" />
-                    Docs
-                  </a>
-                </div>
-                <div className="space-y-4 px-5 py-5">
-                  <div className="flex cursor-pointer items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">
-                        Enable email notifications
-                      </p>
-                      <p className="text-xs text-gray-400">
-                        Lira will send automated emails for the events selected below.
-                      </p>
-                    </div>
-                    <button
-                      role="switch"
-                      aria-checked={notificationsEnabled}
-                      onClick={() => setNotificationsEnabled((v) => !v)}
-                      className={cn(
-                        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none',
-                        notificationsEnabled ? 'bg-[#0f0f0f]' : 'bg-gray-200'
-                      )}
-                    >
-                      <span
-                        className={cn(
-                          'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                          notificationsEnabled ? 'translate-x-6' : 'translate-x-1'
-                        )}
-                      />
-                    </button>
-                  </div>
-
-                  <div
-                    className={cn(
-                      'space-y-2 transition-opacity',
-                      notificationsEnabled ? 'opacity-100' : 'pointer-events-none opacity-30'
-                    )}
-                  >
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                      Notify on
-                    </p>
-                    {NOTIFY_EVENTS.map((ev) => (
-                      <label
-                        key={ev.value}
-                        htmlFor={`notif-${ev.value}`}
-                        aria-label={ev.label}
-                        className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-100 px-4 py-3 hover:bg-gray-50 transition-colors"
+                {/* AI Auto-Reply */}
+                {settingsTab === 'autoreply' && (
+                  <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
+                    <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
+                      <EnvelopeOpenIcon className="h-5 w-5 text-gray-400" />
+                      <h2 className="text-sm font-semibold text-gray-800">AI Auto-Reply</h2>
+                      <a
+                        href="https://docs.liraintelligence.com/platform/email#auto-reply"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
                       >
-                        <input
-                          id={`notif-${ev.value}`}
-                          type="checkbox"
-                          checked={notifyOn.includes(ev.value)}
-                          onChange={() => toggleEvent(ev.value)}
-                          className="mt-0.5 h-4 w-4 rounded accent-[#0f0f0f]"
-                        />
-                        <div>
-                          <p className="text-sm font-medium text-gray-800">{ev.label}</p>
-                          <p className="text-xs text-gray-400">{ev.description}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* AI Auto-Reply */}
-            {settingsTab === 'autoreply' && (
-              <section className="overflow-hidden rounded-2xl bg-white shadow-sm">
-                <div className="flex items-center gap-3 border-b border-gray-100 px-5 py-4">
-                  <EnvelopeOpenIcon className="h-5 w-5 text-gray-400" />
-                  <h2 className="text-sm font-semibold text-gray-800">AI Auto-Reply</h2>
-                  <a
-                    href="https://docs.liraintelligence.com/platform/email#auto-reply"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-gray-400 hover:text-gray-600 px-2 py-1.5 rounded-xl hover:bg-gray-50 border border-transparent hover:border-gray-200 transition-colors"
-                  >
-                    <BookOpenIcon className="h-3.5 w-3.5" />
-                    Docs
-                  </a>
-                </div>
-                <div className="px-5 py-5">
-                  <div className="flex cursor-pointer items-center justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-medium text-gray-800">Enable AI auto-reply</p>
-                      <p className="text-xs text-gray-400">
-                        When on, Lira replies to incoming emails using GPT-4o. When off, all inbound
-                        replies are escalated to an admin immediately.
-                      </p>
+                        <BookOpenIcon className="h-3.5 w-3.5" />
+                        Docs
+                      </a>
                     </div>
-                    <button
-                      role="switch"
-                      aria-checked={aiReplyEnabled}
-                      onClick={() => setAiReplyEnabled((v) => !v)}
-                      className={cn(
-                        'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none',
-                        aiReplyEnabled ? 'bg-[#0f0f0f]' : 'bg-gray-200'
+                    <div className="px-5 py-5">
+                      <div className="flex cursor-pointer items-center justify-between gap-4">
+                        <div>
+                          <p className="text-sm font-medium text-gray-800">Enable AI auto-reply</p>
+                          <p className="text-xs text-gray-400">
+                            When on, Lira replies to incoming emails using GPT-4o. When off, all
+                            inbound replies are escalated to an admin immediately.
+                          </p>
+                        </div>
+                        <button
+                          role="switch"
+                          aria-checked={aiReplyEnabled}
+                          onClick={() => setAiReplyEnabled((v) => !v)}
+                          className={cn(
+                            'relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus:outline-none',
+                            aiReplyEnabled ? 'bg-[#0f0f0f]' : 'bg-gray-200'
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                              aiReplyEnabled ? 'translate-x-6' : 'translate-x-1'
+                            )}
+                          />
+                        </button>
+                      </div>
+                      {!aiReplyEnabled && (
+                        <p className="mt-3 rounded-xl bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
+                          AI replies are disabled. Any email replies will be forwarded to your org
+                          admins for manual follow-up.
+                        </p>
                       )}
-                    >
-                      <span
-                        className={cn(
-                          'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                          aiReplyEnabled ? 'translate-x-6' : 'translate-x-1'
-                        )}
-                      />
-                    </button>
-                  </div>
-                  {!aiReplyEnabled && (
-                    <p className="mt-3 rounded-xl bg-amber-50 px-4 py-2.5 text-xs text-amber-700">
-                      AI replies are disabled. Any email replies will be forwarded to your org
-                      admins for manual follow-up.
-                    </p>
-                  )}
-                </div>
-              </section>
+                    </div>
+                  </section>
+                )}
+              </>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </div>
     </div>
   )
