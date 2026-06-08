@@ -151,6 +151,44 @@ export function getWidgetStyles(primaryColor: string): string {
       box-shadow: none;
     }
 
+    /* ── Mobile / small viewport ──────────────────────────────────
+       Two breakpoints:
+         ≤640px  → tablet portrait + most phones in landscape. Widget
+                   takes near-full width but keeps the floating shape.
+         ≤480px  → phone portrait. Widget goes effectively fullscreen
+                   so the on-screen keyboard doesn't crush the chat.
+       100dvh is the dynamic viewport unit — handles iOS Safari's
+       collapsing URL bar correctly where 100vh would overflow. Falls
+       back to 100vh on browsers without dvh support.
+       safe-area-inset keeps the launcher, header, and input clear of
+       the notch + home indicator on notched devices. */
+
+    @media (max-width: 640px) {
+      .lira-launcher.bottom-right,
+      .lira-launcher.bottom-left {
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+      }
+      .lira-launcher.bottom-right { right: 16px; }
+      .lira-launcher.bottom-left { left: 16px; }
+
+      .lira-chat-window {
+        width: calc(100vw - 16px);
+        height: calc(100vh - 96px);
+        height: calc(100dvh - 96px);
+        bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+        right: 8px;
+        left: 8px;
+        border-radius: 16px;
+      }
+      .lira-chat-window.lira-fullscreen {
+        width: 100%;
+        height: 100%;
+        min-height: 0;
+        inset: auto;
+        border-radius: 0;
+      }
+    }
+
     @media (max-width: 480px) {
       /* Keep the launcher clear of notches / home indicators. */
       .lira-launcher.bottom-right {
@@ -163,8 +201,7 @@ export function getWidgetStyles(primaryColor: string): string {
       }
 
       /* On phones the floating panel becomes a full-screen sheet so the
-         on-screen keyboard doesn't squash the conversation. Uses dvh so the
-         mobile browser's collapsing URL bar doesn't clip the input. */
+         on-screen keyboard doesn't squash the conversation. */
       .lira-chat-window {
         width: 100vw;
         height: 100vh;
@@ -188,12 +225,31 @@ export function getWidgetStyles(primaryColor: string): string {
       .lira-input-area {
         padding-bottom: max(12px, env(safe-area-inset-bottom));
       }
-      .lira-chat-window.lira-fullscreen {
-        width: 100%;
-        height: 100%;
-        min-height: 100%;
-        inset: auto;
+    }
+
+    @media (max-width: 480px) {
+      .lira-chat-window {
+        /* True fullscreen on small phones — no rounded corners, no
+           outer margin, no overhang above keyboard. The launcher
+           hides while the chat is open (handled in widget.ts). */
+        width: 100vw;
+        height: 100vh;
+        height: 100dvh;
+        inset: 0;
+        bottom: 0;
+        right: 0;
+        left: 0;
+        top: 0;
         border-radius: 0;
+        border-left: 0;
+        border-right: 0;
+        max-height: none;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+      }
+      .lira-header {
+        /* Notch / status-bar offset so the close button isn't under
+           the iOS clock. */
+        padding-top: calc(14px + env(safe-area-inset-top, 0px));
       }
     }
 
@@ -1603,7 +1659,12 @@ export function getWidgetStyles(primaryColor: string): string {
       border: 1px solid #d8dee8;
       border-radius: 14px;
       padding: 9px 12px;
-      font-size: 14px;
+      /* 16px is the iOS Safari threshold below which it auto-zooms the
+         viewport on focus — visually jarring and traps the visitor inside
+         a zoomed-in widget. Keep it at 16 everywhere; we visually shrink
+         it back via the lira-touch-input class on desktop where zoom
+         doesn't trigger anyway. */
+      font-size: 16px;
       font-family: inherit;
       resize: none;
       max-height: 100px;
@@ -1612,6 +1673,13 @@ export function getWidgetStyles(primaryColor: string): string {
       outline: none;
       transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
       background: #f8fafc;
+    }
+    @media (min-width: 641px) {
+      .lira-input-area textarea {
+        /* Desktop: tighten back to the original visual weight; zoom-on-focus
+           doesn't apply outside iOS Safari mobile. */
+        font-size: 14px;
+      }
     }
     .lira-input-area textarea:focus {
       border-color: ${primaryColor};

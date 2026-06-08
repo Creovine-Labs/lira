@@ -36,6 +36,24 @@ export type LiraContext = Record<string, unknown>
 
 export type LiraTrackPayload = Record<string, unknown>
 
+export type LiraAuthScope = 'public' | 'verified_visitor' | 'verified_customer'
+
+export type LiraRiskTier =
+  | 'read_public'
+  | 'read_private'
+  | 'safe_write'
+  | 'customer_confirm'
+  | 'step_up'
+  | 'admin_approve'
+  | 'human_only'
+
+export type LiraJsonSchema = {
+  type: 'object'
+  properties?: Record<string, unknown>
+  required?: string[]
+  additionalProperties?: boolean
+}
+
 export type LiraSupportInstance = {
   destroy: () => void
 }
@@ -58,10 +76,61 @@ export type LiraActionHandler<TPayload = Record<string, unknown>> = (
   request: LiraActionRequest<TPayload>
 ) => Promise<LiraActionResult | void> | LiraActionResult | void
 
+export type LiraActionRegistrationOptions = {
+  description?: string
+  authScope?: LiraAuthScope
+  risk?: LiraRiskTier
+  inputSchema?: LiraJsonSchema
+  outputSchema?: LiraJsonSchema
+}
+
 export type LiraRegisteredAction = {
   name: string
   description?: string
+  authScope?: LiraAuthScope
+  risk?: LiraRiskTier
+  inputSchema?: LiraJsonSchema
+  outputSchema?: LiraJsonSchema
   handler: LiraActionHandler
+}
+
+export type LiraResourceRequest<TInput = Record<string, unknown>> = {
+  resourceName: string
+  input: TInput
+  payload: TInput
+  rawEvent: CustomEvent
+}
+
+export type LiraResourceResult = {
+  ok: boolean
+  data?: Record<string, unknown>
+  message?: string
+}
+
+export type LiraResourceHandler<TInput = Record<string, unknown>> = (
+  request: LiraResourceRequest<TInput>
+) =>
+  | Promise<LiraResourceResult | Record<string, unknown> | void>
+  | LiraResourceResult
+  | Record<string, unknown>
+  | void
+
+export type LiraResourceRegistrationOptions = {
+  description?: string
+  authScope?: LiraAuthScope
+  risk?: Extract<LiraRiskTier, 'read_public' | 'read_private'>
+  inputSchema?: LiraJsonSchema
+  outputSchema?: LiraJsonSchema
+}
+
+export type LiraRegisteredResource = {
+  name: string
+  description?: string
+  authScope?: LiraAuthScope
+  risk?: Extract<LiraRiskTier, 'read_public' | 'read_private'>
+  inputSchema?: LiraJsonSchema
+  outputSchema?: LiraJsonSchema
+  handler: LiraResourceHandler
 }
 
 export type LiraBrowserApi = {
@@ -80,8 +149,18 @@ export type LiraBrowserApi = {
   logout?: () => LiraBrowserApi
   setContext: (context: LiraContext) => LiraBrowserApi
   track: (eventName: string, payload?: LiraTrackPayload) => LiraBrowserApi
-  registerAction?: (name: string, handler: LiraActionHandler) => LiraBrowserApi
+  registerAction?: (
+    name: string,
+    handler: LiraActionHandler,
+    options?: LiraActionRegistrationOptions
+  ) => LiraBrowserApi
   unregisterAction?: (name: string) => LiraBrowserApi
+  registerResource?: (
+    name: string,
+    handler: LiraResourceHandler,
+    options?: LiraResourceRegistrationOptions
+  ) => LiraBrowserApi
+  unregisterResource?: (name: string) => LiraBrowserApi
   /**
    * Programmatically open the chat panel from the host's UI. Optional on the
    * browser API for back-compat with older runtimes; the SDK helper no-ops

@@ -3,6 +3,12 @@
 This is the tracked implementation plan for turning the current support widget
 runtime into a real B2B integration surface.
 
+This SDK work is one surface of the broader
+[`AGENTIC_ORGANIZATION_RUNTIME.md`](./AGENTIC_ORGANIZATION_RUNTIME.md)
+architecture. The SDK should carry the same identity, context, resource, action,
+policy, and audit model used by the widget, full-page embed, dashboard
+assistant, and future mobile SDK.
+
 The goal is not to force customers to send their users to a Lira-hosted support
 URL. A hosted portal can exist as a no-code fallback, but the primary product
 should let a company run support inside its own product, for example

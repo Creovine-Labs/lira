@@ -1,10 +1,13 @@
 import { defaultClient } from './core'
 import type {
   LiraActionHandler,
+  LiraActionRegistrationOptions,
   LiraConfig,
   LiraContext,
   LiraEventHandler,
   LiraEventName,
+  LiraResourceHandler,
+  LiraResourceRegistrationOptions,
   LiraSupportInstance,
   LiraTrackPayload,
   LiraVisitorIdentity,
@@ -23,6 +26,9 @@ export type {
   LiraEventHandler,
   LiraEventName,
   LiraRegisteredAction,
+  LiraRegisteredResource,
+  LiraResourceHandler,
+  LiraResourceRegistrationOptions,
   LiraRenderMode,
   LiraSupportInstance,
   LiraTrackPayload,
@@ -74,13 +80,25 @@ export function mountSupportPage(
 export function registerAction(
   name: string,
   handler: LiraActionHandler,
-  options?: { description?: string }
+  options?: LiraActionRegistrationOptions
 ) {
   return defaultClient.registerAction(name, handler, options)
 }
 
 export function unregisterAction(name: string) {
   return defaultClient.unregisterAction(name)
+}
+
+export function registerResource(
+  name: string,
+  handler: LiraResourceHandler,
+  options?: LiraResourceRegistrationOptions
+) {
+  return defaultClient.registerResource(name, handler, options)
+}
+
+export function unregisterResource(name: string) {
+  return defaultClient.unregisterResource(name)
 }
 
 /** Programmatically open the chat (e.g. from a "Need help?" button). */
@@ -134,5 +152,7 @@ export const LiraSupport = {
   mountSupportPage,
   registerAction,
   unregisterAction,
+  registerResource,
+  unregisterResource,
   destroy,
 }

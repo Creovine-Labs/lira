@@ -75,10 +75,16 @@ function Avatar({ name, size = 20 }: { name?: string | null; size?: number }) {
 export function AssignControl({
   orgId,
   itemId,
+  kind,
   compact = false,
 }: {
   orgId: string
   itemId: string
+  /** Which entity itemId belongs to — determines which backend endpoint
+   *  receives the assignment write. Defaults to 'ticket' for backward
+   *  compatibility with call sites that haven't been migrated; new call
+   *  sites in the inbox should pass 'conversation'. */
+  kind?: 'ticket' | 'conversation'
   /** compact = avatar-only trigger (board cards); full = avatar + label. */
   compact?: boolean
 }) {
@@ -86,6 +92,12 @@ export function AssignControl({
   const teams = useTeamsPreview((s) => s.teams)
   const assignment = useTeamsPreview((s) => s.assignments[itemId])
   const assign = useTeamsPreview((s) => s.assign)
+  // Ensure the teams cache is fresh for this org so the dropdown reflects
+  // the server canonical set instead of stale localStorage from a prior org.
+  const syncTeams = useTeamsPreview((s) => s.syncTeams)
+  useEffect(() => {
+    if (orgId) void syncTeams(orgId)
+  }, [orgId, syncTeams])
 
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement | null>(null)
@@ -106,8 +118,10 @@ export function AssignControl({
     assignee?.user_name ??
     (assignment?.assignee_user_id === userId ? (userName ?? 'Me') : assignment?.assignee_user_id)
 
-  const setTeam = (teamId: string | null) => assign(itemId, { team_id: teamId })
-  const setAssignee = (uid: string | null) => assign(itemId, { assignee_user_id: uid })
+  // Default kind to 'ticket' for legacy call sites that don't pass it.
+  const assignKind = kind ?? 'ticket'
+  const setTeam = (teamId: string | null) => assign(itemId, { team_id: teamId }, assignKind)
+  const setAssignee = (uid: string | null) => assign(itemId, { assignee_user_id: uid }, assignKind)
 
   return (
     <div className="relative" ref={ref}>
@@ -202,7 +216,7 @@ export function AssignControl({
                 <button
                   type="button"
                   onClick={() => {
-                    assign(itemId, { team_id: null, assignee_user_id: null })
+                    assign(itemId, { team_id: null, assignee_user_id: null }, assignKind)
                     setOpen(false)
                   }}
                   className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-gray-500 transition hover:bg-gray-50"

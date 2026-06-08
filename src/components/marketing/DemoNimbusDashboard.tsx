@@ -3468,14 +3468,36 @@ function Styles() {
         .ndb-modal-foot .ndb-secondary-btn { width: 100%; }
         .ndb-form-grid { grid-template-columns: 1fr; }
       }
+      /* Narrow phones (iPhone SE = 375px, iPhone 14 = 390px). The 760px
+         tier above already collapses to a single column and hides the
+         nav; this tier just tightens the small-screen details so the
+         dashboard still reads cleanly when the widget bubble is taking
+         up real estate too. Union of two parallel mobile passes — keep
+         both sets of rules. */
       @media (max-width: 480px) {
+        .ndb-main { padding: 16px 14px 56px; }  /* extra bottom pad clears the widget launcher */
         .ndb-kpis { grid-template-columns: 1fr; }
+        .ndb-health-grid { grid-template-columns: 1fr; }
+        .ndb-brand-name { font-size: 14px; }
         .ndb-greeting h1 { font-size: 22px; }
-        .ndb-main { padding: 18px 14px 44px; }
         .ndb-banner-inner { gap: 8px; }
+        .ndb-banner-pill { font-size: 9px; padding: 2px 8px; }
         .ndb-user-btn { padding: 4px; }
+        .ndb-top-actions { gap: 8px; }
         .ndb-toolbar-right .ndb-search { width: 100%; }
         .ndb-toolbar-right .ndb-primary-btn { width: 100%; }
+        /* Keep the "open issue" toast clear of the launcher bubble at
+           the bottom-right corner — they used to stack and overlap. */
+        .ndb-open-issue { bottom: 88px; left: 8px; right: 8px; }
+        /* Table fits 2 columns max on a 375px viewport before the
+           ticket-number cell starts wrapping unreadably. */
+        .ndb-table-head, .ndb-table-row,
+        .ndb-table-wide .ndb-table-head,
+        .ndb-table-wide .ndb-table-row {
+          grid-template-columns: 72px 1fr;
+        }
+        .ndb-table-head span:nth-child(n + 3),
+        .ndb-table-row span:nth-child(n + 3) { display: none; }
       }
     `}</style>
   )

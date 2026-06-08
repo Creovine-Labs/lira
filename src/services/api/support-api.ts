@@ -1596,6 +1596,91 @@ export async function assignTicket(
   return patchTicketProperty(orgId, ticketId, 'assign', { assignee_user_id: userId })
 }
 
+// ── Teams CRUD ────────────────────────────────────────────────────────────
+// Teams are an operator-side organizing concept (distinct from Queues which
+// are routing targets). The shape mirrors lira-ai/src/app/store/teams-
+// preview-store.ts so the components consuming the preview store can switch
+// to these wrappers without changing call sites.
+
+export interface SupportTeamRecord {
+  team_id: string
+  org_id: string
+  name: string
+  /** Brand-aligned accent (hex like #4f46e5). */
+  color: string
+  member_user_ids: string[]
+  created_at: string
+  updated_at: string
+}
+
+const TEAMS_BASE = (orgId: string) => `/lira/v1/support/teams/orgs/${encodeURIComponent(orgId)}`
+
+export async function listTeams(orgId: string): Promise<SupportTeamRecord[]> {
+  const data = await supportFetch<{ teams: SupportTeamRecord[] }>(TEAMS_BASE(orgId))
+  return data.teams
+}
+
+export async function createTeam(
+  orgId: string,
+  input: { name: string; color: string; member_user_ids?: string[] }
+): Promise<SupportTeamRecord> {
+  const data = await supportFetch<{ team: SupportTeamRecord }>(TEAMS_BASE(orgId), {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+  return data.team
+}
+
+export async function updateTeam(
+  orgId: string,
+  teamId: string,
+  patch: { name?: string; color?: string; member_user_ids?: string[] }
+): Promise<SupportTeamRecord> {
+  const data = await supportFetch<{ team: SupportTeamRecord }>(
+    `${TEAMS_BASE(orgId)}/${encodeURIComponent(teamId)}`,
+    { method: 'PATCH', body: JSON.stringify(patch) }
+  )
+  return data.team
+}
+
+export async function deleteTeam(orgId: string, teamId: string): Promise<void> {
+  await supportFetch<{ ok: true }>(`${TEAMS_BASE(orgId)}/${encodeURIComponent(teamId)}`, {
+    method: 'DELETE',
+  })
+}
+
+/**
+ * Set or clear the team grouping on a ticket. Pass `null` for team_id to
+ * clear. The backend writes a ticket.assigned event with kind='team'.
+ */
+export async function setTicketTeam(
+  orgId: string,
+  ticketId: string,
+  teamId: string | null
+): Promise<SupportTicketRecord> {
+  const data = await supportFetch<{ ticket: SupportTicketRecord }>(
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/team`,
+    { method: 'PATCH', body: JSON.stringify({ team_id: teamId }) }
+  )
+  return data.ticket
+}
+
+/**
+ * Set or clear team_id and/or assignee_user_id on a conversation. Either or
+ * both fields may be present in the patch; `null` clears, omit leaves
+ * unchanged.
+ */
+export async function setConversationAssignment(
+  orgId: string,
+  convId: string,
+  patch: { team_id?: string | null; assignee_user_id?: string | null }
+): Promise<void> {
+  await supportFetch<{ conversation: SupportConversation }>(
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/assignment`,
+    { method: 'PATCH', body: JSON.stringify(patch) }
+  )
+}
+
 // ── Queues CRUD (§1.2) ───────────────────────────────────────────────────
 
 /**

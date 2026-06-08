@@ -820,7 +820,7 @@ function ReadingPane({
             {conv.customer?.email ? ` · ${conv.customer.email}` : ''}
           </p>
         </div>
-        {orgId && <AssignControl orgId={orgId} itemId={conv.conv_id} />}
+        {orgId && <AssignControl orgId={orgId} itemId={conv.conv_id} kind="conversation" />}
         <button
           type="button"
           onClick={() => onOpenFull(conv.conv_id)}

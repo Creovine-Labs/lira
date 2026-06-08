@@ -1087,7 +1087,9 @@ export function SupportTicketDetailPage() {
             {ticket.priority !== 'medium' && <PriorityChip priority={ticket.priority} />}
             <SlaPill ticket={ticket} now={now} />
             <div className="ml-auto flex items-center gap-2">
-              {currentOrgId && <AssignControl orgId={currentOrgId} itemId={ticket.ticket_id} />}
+              {currentOrgId && (
+                <AssignControl orgId={currentOrgId} itemId={ticket.ticket_id} kind="ticket" />
+              )}
               {!isClosed && (
                 <button
                   onClick={() => setShowResolveModal(true)}
@@ -1607,7 +1609,9 @@ function NewTicketModal({
         /* category is non-critical */
       }
       if (assignee) {
-        assignPreview(ticket.ticket_id, { assignee_user_id: assignee.user_id })
+        // 'ticket' kind so the store also writes through to the backend
+        // assign endpoint instead of staying local-only.
+        assignPreview(ticket.ticket_id, { assignee_user_id: assignee.user_id }, 'ticket')
       }
       toast.success(`Ticket ${ticket.ticket_number ?? ''} created`)
       onCreated({ ...ticket, status: presetStatus ?? ticket.status })

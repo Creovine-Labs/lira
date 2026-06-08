@@ -1734,6 +1734,7 @@ class LiraSupportWidget {
       // Skip to chat
       this.view = 'chat'
       this.open()
+      this.dispatchPendingHomePromptIfAny()
     }
     formWrap.appendChild(startBtn)
 
@@ -1754,6 +1755,7 @@ class LiraSupportWidget {
       }
       this.view = 'chat'
       this.open()
+      this.dispatchPendingHomePromptIfAny()
     }
     formWrap.appendChild(skip)
 
@@ -3119,6 +3121,25 @@ class LiraSupportWidget {
     this.sendMessage()
   }
 
+  /**
+   * Called from the pre-chat form's Start and Skip handlers. When the
+   * visitor clicked a home-card BEFORE the pre-chat form intervened,
+   * `sendHomePrompt` already stamped the card's prompt onto
+   * `this.activeHomePrompt` — but the rAF that would have dispatched it
+   * fired against a 'pre-chat' view (no chat input mounted), so the
+   * message was silently dropped and the visitor saw an empty chat after
+   * Skip/Start. Replay it here, deferred one frame so renderChat has
+   * flushed the input textarea into the DOM before sendSuggestedReply
+   * tries to read this.inputEl.
+   */
+  private dispatchPendingHomePromptIfAny(): void {
+    const prompt = this.activeHomePrompt
+    if (!prompt) return
+    requestAnimationFrame(() => {
+      if (this.activeHomePrompt === prompt) this.sendSuggestedReply(prompt)
+    })
+  }
+
   private buildCardEl(msg: ChatMessage): HTMLElement {
     const card = msg.card!
     if (card.kind === 'stepper' && card.steps && card.steps.length > 0) {
@@ -3608,6 +3629,63 @@ class LiraSupportWidget {
     this.socket?.send({ type: 'customer_action_result', ...detail })
   }
 
+  /**
+   * Forward a host-side resource read result back to the backend so the
+   * agent can use the structured data on its next turn. Mirrors
+   * `sendCustomerActionResult` for the resource layer of the agentic
+   * runtime. Best-effort and silent if the socket isn't connected.
+   */
+  public sendCustomerResourceResult(detail: {
+    resourceName: string
+    ok: boolean
+    message?: string
+    data?: Record<string, unknown>
+  }): void {
+    this.socket?.send({ type: 'customer_resource_result', ...detail })
+  }
+
+  /**
+   * Slice 5 — push the current SDK-registered resources and actions to
+   * the backend so the agent sees them as Tools for this WS session.
+   * Safe to call repeatedly; the backend treats incoming registrations as
+   * upserts keyed on name. `socket.send` queues if the socket isn't open
+   * yet, so this is also safe to call right after `socket.connect()`.
+   */
+  public sendSdkCapabilitiesRegistration(): void {
+    const resources = [...sdkResourceRegistry.entries()].map(([name, entry]) => ({
+      name,
+      description: entry.options.description,
+      auth_scope: entry.options.authScope ?? 'verified_visitor',
+      risk: entry.options.risk ?? 'read_private',
+      input_schema: entry.options.inputSchema,
+      output_schema: entry.options.outputSchema,
+    }))
+    const actions = [...sdkActionRegistry.entries()].map(([name, entry]) => ({
+      name,
+      description: entry.options.description,
+      auth_scope: entry.options.authScope ?? 'verified_visitor',
+      risk: entry.options.risk ?? 'safe_write',
+      input_schema: entry.options.inputSchema,
+      output_schema: entry.options.outputSchema,
+    }))
+    if (resources.length === 0 && actions.length === 0) return
+    this.socket?.send({ type: 'sdk_capabilities_register', resources, actions })
+  }
+
+  /**
+   * Slice 5 — reply to a backend-initiated host_capability_request.
+   * Mirrors `sendCustomerActionResult` shape but carries `request_id`
+   * so the backend can resolve the pending tool-call promise.
+   */
+  public sendHostCapabilityResult(detail: {
+    request_id: string
+    ok: boolean
+    message?: string
+    data?: Record<string, unknown>
+  }): void {
+    this.socket?.send({ type: 'host_capability_result', ...detail })
+  }
+
   private startNewConversation(
     options: { preserveIndex?: boolean; suppressHero?: boolean; suppressGreeting?: boolean } = {}
   ): void {
@@ -3693,6 +3771,11 @@ class LiraSupportWidget {
       // doesn't keep re-sending the card id.
       this.activeHomeCardId = null
       this.socket.connect()
+      // Slice 5 — replay any SDK-registered capabilities to the backend so
+      // the agent's first turn sees them as tools. WidgetSocket queues
+      // outbound messages until the WS is open, so this is safe to call
+      // immediately after connect().
+      this.sendSdkCapabilitiesRegistration()
       // Belt-and-suspenders: fall back to the global window storage in case
       // an event was missed between the dashboard publishing and the widget
       // mounting. Common on cold-start when the script bundle is cached and
@@ -3836,14 +3919,20 @@ class LiraSupportWidget {
     // on every subsequent login, which the user found surprising.
     if (this.config.autoOpenFirstVisit) this.markDismissed()
 
-    // Clear input early so the UI feels instant. Re-focus the textarea so
-    // we stay in the :focus state — otherwise the click moves focus to the
-    // send button, which fires the 150ms border/background transition and
-    // reads as a flicker right under the user's eye.
+    // Only refocus the textarea if it ALREADY held focus when send fired —
+    // i.e. the visitor typed and hit Enter / clicked Send. Refocusing on a
+    // chip/CTA-triggered send (where the activeElement was the button, not
+    // the input) pops up the soft keyboard on tablet/phone with the user's
+    // first message getting half-obscured by the keyboard. Heuristic: shadow
+    // DOM's activeElement is the focused element inside the shadow; if it's
+    // the inputEl, the user was typing — refocus to keep the typing flow
+    // smooth. Otherwise, leave focus alone.
+    const wasFocused =
+      this.inputEl !== null && (this.shadow as ShadowRoot).activeElement === this.inputEl
     if (this.inputEl) {
       this.inputEl.value = ''
       this.inputEl.style.height = 'auto'
-      this.inputEl.focus()
+      if (wasFocused) this.inputEl.focus()
     }
 
     // Clear any suggestion chips from the previous reply now that the user
@@ -4472,6 +4561,55 @@ class LiraSupportWidget {
         }
         break
       }
+      case 'lira_resource': {
+        // Server-emitted resource fetch — agent wants a structured read
+        // from the host page. The SDK's `registerResource` handler runs
+        // and the result is dispatched as `lira:resource_result` and
+        // forwarded back to the agent over the WS for the next turn.
+        const resourceName =
+          (msg as { resource_name?: string }).resource_name ??
+          (msg as { resourceName?: string }).resourceName
+        if (!resourceName) break
+        try {
+          const detail = {
+            resource_name: resourceName,
+            input: (msg as { input?: Record<string, unknown> }).input,
+            payload: (msg as { payload?: Record<string, unknown> }).payload,
+          }
+          const event = new CustomEvent('lira:resource', { detail })
+          window.dispatchEvent(event)
+          void runRegisteredLiraResource(detail, event)
+        } catch {
+          /* CustomEvent unavailable, ignore */
+        }
+        break
+      }
+      case 'host_capability_request': {
+        // Slice 5 — synthesized backend Tool call routed to a host-side
+        // resource/action handler. Includes a request_id we MUST echo so
+        // the backend can resolve its awaiting promise; on any error we
+        // still send ok=false with the same request_id so the agent loop
+        // does not hang waiting on a missed reply.
+        const m = msg as {
+          capability_kind?: 'resource' | 'action'
+          name?: string
+          input?: Record<string, unknown>
+          request_id?: string
+        }
+        const requestId = m.request_id
+        const capabilityKind = m.capability_kind
+        const name = m.name
+        if (!requestId || !name || (capabilityKind !== 'resource' && capabilityKind !== 'action')) {
+          break
+        }
+        void runHostCapabilityRequest({
+          kind: capabilityKind,
+          name,
+          input: m.input ?? {},
+          requestId,
+        })
+        break
+      }
     }
   }
 
@@ -4676,6 +4814,59 @@ type LiraActionHandler = (
   request: LiraActionRequest
 ) => Promise<LiraActionResult | void> | LiraActionResult | void
 
+// Agentic runtime metadata. Kept in lockstep with the public SDK
+// package types in packages/lira-support/src/types.ts — the SDK forwards
+// `registerAction`/`registerResource` calls into `window.Lira` with this
+// shape, so any drift here silently truncates host-supplied policy.
+type LiraAuthScope = 'public' | 'verified_visitor' | 'verified_customer'
+type LiraRiskTier =
+  | 'read_public'
+  | 'read_private'
+  | 'safe_write'
+  | 'customer_confirm'
+  | 'step_up'
+  | 'admin_approve'
+  | 'human_only'
+type LiraJsonSchema = {
+  type: 'object'
+  properties?: Record<string, unknown>
+  required?: string[]
+  additionalProperties?: boolean
+}
+type LiraActionRegistrationOptions = {
+  description?: string
+  authScope?: LiraAuthScope
+  risk?: LiraRiskTier
+  inputSchema?: LiraJsonSchema
+  outputSchema?: LiraJsonSchema
+}
+
+type LiraResourceRequest = {
+  resourceName: string
+  input: Record<string, unknown>
+  payload: Record<string, unknown>
+  rawEvent: CustomEvent
+}
+type LiraResourceResult = {
+  ok: boolean
+  data?: Record<string, unknown>
+  message?: string
+}
+type LiraResourceHandler = (
+  request: LiraResourceRequest
+) =>
+  | Promise<LiraResourceResult | Record<string, unknown> | void>
+  | LiraResourceResult
+  | Record<string, unknown>
+  | void
+type LiraResourceRegistrationOptions = {
+  description?: string
+  authScope?: LiraAuthScope
+  risk?: Extract<LiraRiskTier, 'read_public' | 'read_private'>
+  inputSchema?: LiraJsonSchema
+  outputSchema?: LiraJsonSchema
+}
+
 type LiraPublicApi = {
   init: (config: Partial<WidgetConfig>) => LiraPublicApi
   identify: (visitor: LiraVisitorIdentity) => LiraPublicApi
@@ -4687,8 +4878,28 @@ type LiraPublicApi = {
   logout: () => LiraPublicApi
   setContext: (context: Record<string, unknown>) => LiraPublicApi
   track: (eventName: string, payload?: Record<string, unknown>) => LiraPublicApi
-  registerAction: (name: string, handler: LiraActionHandler) => LiraPublicApi
+  /**
+   * Register a host-provided action. The optional 3rd argument carries the
+   * agentic runtime metadata the policy engine reads when the agent asks
+   * to call this action. Calls without options keep working unchanged.
+   */
+  registerAction: (
+    name: string,
+    handler: LiraActionHandler,
+    options?: LiraActionRegistrationOptions
+  ) => LiraPublicApi
   unregisterAction: (name: string) => LiraPublicApi
+  /**
+   * Register a host-provided resource — a read the agent can request from
+   * the host page (e.g. current invoice, visible transaction, selected row).
+   * Defaults to `authScope: 'verified_visitor'`, `risk: 'read_private'`.
+   */
+  registerResource: (
+    name: string,
+    handler: LiraResourceHandler,
+    options?: LiraResourceRegistrationOptions
+  ) => LiraPublicApi
+  unregisterResource: (name: string) => LiraPublicApi
   /** Programmatically open the chat from the host's own UI (e.g. a "Need help?" button). */
   open: () => LiraPublicApi
   /** Programmatically close the chat. */
@@ -4719,7 +4930,17 @@ type LiraWindow = Window &
 const liraWindow = window as LiraWindow
 let sdkConfig: Partial<WidgetConfig> = {}
 let sdkWidget: LiraSupportWidget | null = null
-const sdkActionRegistry = new Map<string, LiraActionHandler>()
+
+type RegisteredAction = {
+  handler: LiraActionHandler
+  options: LiraActionRegistrationOptions
+}
+type RegisteredResource = {
+  handler: LiraResourceHandler
+  options: LiraResourceRegistrationOptions
+}
+const sdkActionRegistry = new Map<string, RegisteredAction>()
+const sdkResourceRegistry = new Map<string, RegisteredResource>()
 
 function assertWidgetConfig(config: Partial<WidgetConfig>): WidgetConfig {
   if (!config.orgId) {
@@ -4749,9 +4970,10 @@ async function runRegisteredLiraAction(
   },
   rawEvent: CustomEvent
 ): Promise<void> {
-  const handler =
+  const entry =
     sdkActionRegistry.get(detail.action_type) ?? sdkActionRegistry.get(detail.target ?? '')
-  if (!handler) return
+  if (!entry) return
+  const handler = entry.handler
 
   const request: LiraActionRequest = {
     actionType: detail.action_type,
@@ -4795,6 +5017,138 @@ async function runRegisteredLiraAction(
       message: error instanceof Error ? error.message : 'Action failed',
       data: {},
     })
+  }
+}
+
+// Backend-initiated resource fetch. The agent asked the widget to read
+// something from the host page (e.g. the current invoice the customer is
+// viewing). We invoke the host's registered handler and forward the
+// redacted result back through the WS so the next agent turn can see it.
+async function runRegisteredLiraResource(
+  detail: {
+    resource_name: string
+    input?: Record<string, unknown>
+    payload?: Record<string, unknown>
+  },
+  rawEvent: CustomEvent
+): Promise<void> {
+  const entry = sdkResourceRegistry.get(detail.resource_name)
+  if (!entry) return
+  const handler = entry.handler
+
+  const input = detail.input ?? detail.payload ?? {}
+  const request: LiraResourceRequest = {
+    resourceName: detail.resource_name,
+    input,
+    payload: input,
+    rawEvent,
+  }
+
+  const emitResult = (resultDetail: {
+    resourceName: string
+    ok: boolean
+    message?: string
+    data: Record<string, unknown>
+  }) => {
+    window.dispatchEvent(new CustomEvent('lira:resource_result', { detail: resultDetail }))
+    sdkWidget?.sendCustomerResourceResult?.(resultDetail)
+  }
+
+  try {
+    const raw = await handler(request)
+    const result: LiraResourceResult = normaliseResourceResult(raw)
+    emitResult({
+      resourceName: detail.resource_name,
+      ok: result.ok,
+      message: result.message,
+      data: result.data ?? {},
+    })
+  } catch (error) {
+    emitResult({
+      resourceName: detail.resource_name,
+      ok: false,
+      message: error instanceof Error ? error.message : 'Resource lookup failed',
+      data: {},
+    })
+  }
+}
+
+function normaliseResourceResult(
+  raw: LiraResourceResult | Record<string, unknown> | void
+): LiraResourceResult {
+  if (!raw) return { ok: true, data: {} }
+  if (
+    typeof raw === 'object' &&
+    'ok' in raw &&
+    typeof (raw as LiraResourceResult).ok === 'boolean'
+  ) {
+    return raw as LiraResourceResult
+  }
+  return { ok: true, data: raw as Record<string, unknown> }
+}
+
+// Slice 5 — invoked when the backend agent calls a synthesized
+// SDK-registered Tool. Looks up the host's registered handler, runs it,
+// and replies with a host_capability_result carrying the same request_id.
+// Always sends a reply (success or error) so the backend never blocks
+// the agent loop waiting for a missed response.
+async function runHostCapabilityRequest(detail: {
+  kind: 'resource' | 'action'
+  name: string
+  input: Record<string, unknown>
+  requestId: string
+}): Promise<void> {
+  const emitResult = (ok: boolean, message?: string, data: Record<string, unknown> = {}) => {
+    sdkWidget?.sendHostCapabilityResult?.({
+      request_id: detail.requestId,
+      ok,
+      message,
+      data,
+    })
+  }
+
+  try {
+    if (detail.kind === 'resource') {
+      const entry = sdkResourceRegistry.get(detail.name)
+      if (!entry) {
+        emitResult(false, `Resource '${detail.name}' is not registered on this host.`)
+        return
+      }
+      const request: LiraResourceRequest = {
+        resourceName: detail.name,
+        input: detail.input,
+        payload: detail.input,
+        rawEvent: new CustomEvent('lira:resource', {
+          detail: { resource_name: detail.name, input: detail.input },
+        }),
+      }
+      const raw = await entry.handler(request)
+      const result = normaliseResourceResult(raw)
+      emitResult(result.ok, result.message, result.data ?? {})
+      return
+    }
+
+    const entry = sdkActionRegistry.get(detail.name)
+    if (!entry) {
+      emitResult(false, `Action '${detail.name}' is not registered on this host.`)
+      return
+    }
+    const request: LiraActionRequest = {
+      actionType: detail.name,
+      target: detail.name,
+      value: undefined,
+      payload: detail.input,
+      rawEvent: new CustomEvent('lira:action', {
+        detail: {
+          action_type: detail.name,
+          payload: detail.input,
+        },
+      }),
+    }
+    const result = (await entry.handler(request)) ?? { ok: true }
+    emitResult(result.ok, result.message, result.data ?? {})
+  } catch (err) {
+    emitResult(false, err instanceof Error ? err.message : 'Host handler threw.')
   }
 }
 
@@ -4877,13 +5231,40 @@ const Lira: LiraPublicApi = {
     return Lira
   },
 
-  registerAction(name: string, handler: LiraActionHandler): LiraPublicApi {
-    sdkActionRegistry.set(name, handler)
+  registerAction(
+    name: string,
+    handler: LiraActionHandler,
+    options: LiraActionRegistrationOptions = {}
+  ): LiraPublicApi {
+    sdkActionRegistry.set(name, { handler, options })
+    sdkWidget?.sendSdkCapabilitiesRegistration?.()
     return Lira
   },
 
   unregisterAction(name: string): LiraPublicApi {
     sdkActionRegistry.delete(name)
+    return Lira
+  },
+
+  registerResource(
+    name: string,
+    handler: LiraResourceHandler,
+    options: LiraResourceRegistrationOptions = {}
+  ): LiraPublicApi {
+    sdkResourceRegistry.set(name, {
+      handler,
+      options: {
+        ...options,
+        authScope: options.authScope ?? 'verified_visitor',
+        risk: options.risk ?? 'read_private',
+      },
+    })
+    sdkWidget?.sendSdkCapabilitiesRegistration?.()
+    return Lira
+  },
+
+  unregisterResource(name: string): LiraPublicApi {
+    sdkResourceRegistry.delete(name)
     return Lira
   },
 

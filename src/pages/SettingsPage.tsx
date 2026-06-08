@@ -44,7 +44,16 @@ import {
   deleteAccount,
   leaveOrganization,
 } from '@/services/api'
-import { rotateWidgetSecret } from '@/services/api/support-api'
+import {
+  deleteAgentCapability,
+  listAgentCapabilities,
+  listAgentActionRuns,
+  rotateWidgetSecret,
+  upsertAgentCapability,
+  type AgentCapabilityConfig,
+  type AgentActionRun,
+  type AgentActionRunStatus,
+} from '@/services/api/support-api'
 import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 
@@ -889,7 +898,16 @@ function SupportSettingsSection() {
   ])
 
   const [activeTab, setActiveTab] = useState<
-    'widget' | 'secret' | 'channels' | 'portal' | 'behavior' | 'escalation' | 'mobile' | 'health'
+    | 'widget'
+    | 'secret'
+    | 'channels'
+    | 'portal'
+    | 'behavior'
+    | 'escalation'
+    | 'mobile'
+    | 'health'
+    | 'audit'
+    | 'capabilities'
   >('widget')
 
   // Show the "not activated" prompt for both null configs AND for the
@@ -916,7 +934,9 @@ function SupportSettingsSection() {
     { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
     { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
     { key: 'mobile' as const, label: 'Mobile', icon: DevicePhoneMobileIcon },
+    { key: 'capabilities' as const, label: 'Capabilities', icon: SparklesIcon },
     { key: 'health' as const, label: 'Health', icon: ShieldCheckIcon },
+    { key: 'audit' as const, label: 'Audit', icon: ClipboardDocumentCheckIcon },
   ]
 
   const escapedGreeting = (greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '&quot;')
@@ -1214,6 +1234,12 @@ function SupportSettingsSection() {
 
       {/* ── Health tab — run integration diagnostics on demand ── */}
       {activeTab === 'health' && <SupportHealthTab orgId={currentOrgId!} />}
+
+      {/* ── Capabilities tab — server-side action/resource registration ── */}
+      {activeTab === 'capabilities' && <SupportCapabilitiesTab orgId={currentOrgId!} />}
+
+      {/* ── Audit tab — agent runtime action runs ── */}
+      {activeTab === 'audit' && <SupportAuditTab orgId={currentOrgId!} />}
 
       {/* ── Channels tab ── */}
       {activeTab === 'channels' && (
@@ -2195,6 +2221,409 @@ function SupportHealthTab({ orgId }: { orgId: string }) {
           ))}
         </ul>
       )}
+    </div>
+  )
+}
+
+const AGENT_RUN_STATUSES: Array<{ value: '' | AgentActionRunStatus; label: string }> = [
+  { value: '', label: 'All statuses' },
+  { value: 'pending_approval', label: 'Pending approval' },
+  { value: 'running', label: 'Running' },
+  { value: 'succeeded', label: 'Succeeded' },
+  { value: 'failed', label: 'Failed' },
+  { value: 'cancelled', label: 'Cancelled' },
+]
+
+function SupportAuditTab({ orgId }: { orgId: string }) {
+  const [runs, setRuns] = useState<AgentActionRun[]>([])
+  const [status, setStatus] = useState<'' | AgentActionRunStatus>('')
+  const [capability, setCapability] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const data = await listAgentActionRuns(orgId, {
+        status,
+        capability: capability.trim() || undefined,
+        limit: 50,
+      })
+      setRuns(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to load audit events')
+    } finally {
+      setLoading(false)
+    }
+  }, [capability, orgId, status])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const totalEstimatedCost = runs.reduce((sum, r) => sum + (r.estimated_model_cost_usd ?? 0), 0)
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-gray-900">Agent runtime audit</p>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-600">
+              Org-admin view of the resources and actions Lira requested while helping customers.
+              This is the first runtime audit surface for tickets, escalations, setup changes,
+              integration health checks, and approved customer actions.
+            </p>
+          </div>
+          <Button size="sm" onClick={load} disabled={loading} className="shrink-0">
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-[180px_minmax(0,1fr)_auto]">
+        <select
+          value={status}
+          onChange={(e) => setStatus(e.target.value as '' | AgentActionRunStatus)}
+          className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+        >
+          {AGENT_RUN_STATUSES.map((s) => (
+            <option key={s.value || 'all'} value={s.value}>
+              {s.label}
+            </option>
+          ))}
+        </select>
+        <input
+          value={capability}
+          onChange={(e) => setCapability(e.target.value)}
+          placeholder="Filter by capability, e.g. lira_check_integration_health"
+          className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+        />
+        <Button size="sm" onClick={load} disabled={loading}>
+          Apply
+        </Button>
+      </div>
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <AuditMetric label="Events shown" value={String(runs.length)} />
+        <AuditMetric
+          label="Failed/cancelled"
+          value={String(
+            runs.filter((r) => r.status === 'failed' || r.status === 'cancelled').length
+          )}
+        />
+        <AuditMetric label="Estimated model cost" value={`$${totalEstimatedCost.toFixed(4)}`} />
+      </div>
+
+      {error && (
+        <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+          {error}
+        </div>
+      )}
+
+      <div className="overflow-hidden rounded-xl border border-gray-200">
+        <div className="grid grid-cols-[minmax(180px,1.2fr)_110px_120px_140px] gap-3 border-b bg-gray-50 px-4 py-2 text-[11px] font-semibold uppercase tracking-wide text-gray-500">
+          <span>Capability</span>
+          <span>Status</span>
+          <span>Risk</span>
+          <span>Time</span>
+        </div>
+        {runs.length === 0 && !loading ? (
+          <div className="px-4 py-8 text-center text-sm text-gray-500">
+            No agent action runs match these filters yet.
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {runs.map((run) => (
+              <li key={run.run_id} className="px-4 py-3">
+                <div className="grid grid-cols-[minmax(180px,1.2fr)_110px_120px_140px] gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900">
+                      {run.capability_name}
+                    </p>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      {run.capability_kind} · {run.auth_scope ?? 'unknown scope'}
+                    </p>
+                  </div>
+                  <StatusPill status={run.status} />
+                  <span className="self-start rounded-full bg-gray-100 px-2 py-1 text-[11px] font-medium text-gray-600">
+                    {run.risk}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    {new Date(run.created_at).toLocaleString()}
+                  </span>
+                </div>
+                <div className="mt-3 grid gap-2 text-xs text-gray-600 sm:grid-cols-2">
+                  <AuditJsonBlock title="Input" value={run.input_summary} />
+                  <AuditJsonBlock
+                    title={run.error ? 'Error' : 'Output'}
+                    value={run.error ? { error: run.error } : run.output_summary}
+                  />
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
+                  <span>Run {run.run_id.slice(0, 8)}</span>
+                  {run.conv_id && <span>Conversation {run.conv_id.slice(0, 8)}</span>}
+                  {run.ticket_id && (
+                    <a
+                      href={`/support/tickets/${run.ticket_id}`}
+                      className="font-medium text-[#3730a3] hover:underline"
+                    >
+                      Open ticket
+                    </a>
+                  )}
+                  <span>
+                    Tokens {run.estimated_tokens_in ?? 0}/{run.estimated_tokens_out ?? 0}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function SupportCapabilitiesTab({ orgId }: { orgId: string }) {
+  const [capabilities, setCapabilities] = useState<AgentCapabilityConfig[]>([])
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [kind, setKind] = useState<'resource' | 'action'>('action')
+  const [authScope, setAuthScope] = useState<'public' | 'verified_visitor' | 'verified_customer'>(
+    'verified_customer'
+  )
+  const [risk, setRisk] = useState<AgentCapabilityConfig['risk']>('customer_confirm')
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      setCapabilities(await listAgentCapabilities(orgId))
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to load capabilities')
+    } finally {
+      setLoading(false)
+    }
+  }, [orgId])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const createCapability = useCallback(async () => {
+    if (!name.trim() || !description.trim()) {
+      toast.error('Capability name and description are required')
+      return
+    }
+    setSaving(true)
+    try {
+      await upsertAgentCapability(orgId, {
+        name,
+        description,
+        kind,
+        auth_scope: authScope,
+        risk,
+        source: 'server_side',
+        enabled: true,
+        input_schema: { type: 'object', properties: {}, additionalProperties: true },
+        output_schema: { type: 'object', properties: {}, additionalProperties: true },
+      })
+      setName('')
+      setDescription('')
+      toast.success('Capability registered')
+      await load()
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to register capability')
+    } finally {
+      setSaving(false)
+    }
+  }, [authScope, description, kind, load, name, orgId, risk])
+
+  const removeCapability = useCallback(
+    async (capabilityId: string) => {
+      try {
+        await deleteAgentCapability(orgId, capabilityId)
+        toast.success('Capability deleted')
+        await load()
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : 'Failed to delete capability')
+      }
+    },
+    [load, orgId]
+  )
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-violet-100 bg-violet-50/60 px-4 py-3">
+        <p className="text-sm font-semibold text-violet-950">Agent capabilities</p>
+        <p className="mt-1 max-w-2xl text-xs leading-relaxed text-violet-950/80">
+          Register server-side resources and actions Lira may use later through the policy engine.
+          V1 can override or disable existing executable tools. New names are stored as metadata
+          until a backend executor or connector is attached.
+        </p>
+      </div>
+
+      <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <p className="text-sm font-semibold text-gray-900">Register a capability</p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="billing.retry_payment"
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+          />
+          <input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Retry a failed payment after customer approval."
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+          />
+          <select
+            value={kind}
+            onChange={(e) => {
+              const next = e.target.value as 'resource' | 'action'
+              setKind(next)
+              setRisk(next === 'resource' ? 'read_private' : 'customer_confirm')
+            }}
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+          >
+            <option value="action">Action</option>
+            <option value="resource">Resource</option>
+          </select>
+          <select
+            value={authScope}
+            onChange={(e) =>
+              setAuthScope(e.target.value as 'public' | 'verified_visitor' | 'verified_customer')
+            }
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+          >
+            <option value="public">Public</option>
+            <option value="verified_visitor">Verified visitor</option>
+            <option value="verified_customer">Verified customer</option>
+          </select>
+          <select
+            value={risk}
+            onChange={(e) => setRisk(e.target.value as AgentCapabilityConfig['risk'])}
+            className="rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900 sm:col-span-2"
+          >
+            <option value="read_public">Read public</option>
+            <option value="read_private">Read private</option>
+            <option value="safe_write">Safe write</option>
+            <option value="customer_confirm">Customer confirm</option>
+            <option value="step_up">Step-up required</option>
+            <option value="admin_approve">Admin approve</option>
+            <option value="human_only">Human only</option>
+          </select>
+        </div>
+        <div className="mt-3 flex justify-end">
+          <Button size="sm" onClick={createCapability} disabled={saving}>
+            {saving ? 'Registering...' : 'Register capability'}
+          </Button>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-xl border border-gray-200">
+        <div className="flex items-center justify-between border-b bg-gray-50 px-4 py-2">
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Registered capabilities
+          </p>
+          <button
+            type="button"
+            onClick={() => void load()}
+            className="text-xs font-medium text-gray-500 hover:text-gray-900"
+          >
+            {loading ? 'Loading...' : 'Refresh'}
+          </button>
+        </div>
+        {capabilities.length === 0 && !loading ? (
+          <div className="px-4 py-8 text-center text-sm text-gray-500">
+            No server-side capabilities registered yet.
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {capabilities.map((cap) => (
+              <li key={cap.capability_id} className="px-4 py-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-gray-900">{cap.name}</p>
+                    <p className="mt-0.5 text-xs text-gray-500">{cap.description}</p>
+                    <div className="mt-2 flex flex-wrap gap-2 text-[11px]">
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">
+                        {cap.kind}
+                      </span>
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">
+                        {cap.auth_scope}
+                      </span>
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">
+                        {cap.risk}
+                      </span>
+                      <span className="rounded-full bg-gray-100 px-2 py-1 text-gray-600">
+                        {cap.enabled ? 'enabled' : 'disabled'}
+                      </span>
+                      <span
+                        className={`rounded-full px-2 py-1 ${
+                          cap.executable
+                            ? 'bg-emerald-50 text-emerald-700'
+                            : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {cap.executable ? 'runtime executable' : 'metadata only'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void removeCapability(cap.capability_id)}
+                    className="text-xs font-semibold text-red-600 hover:text-red-700"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function AuditMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
+      <p className="mt-1 text-lg font-semibold text-gray-900">{value}</p>
+    </div>
+  )
+}
+
+function StatusPill({ status }: { status: AgentActionRunStatus }) {
+  const tone =
+    status === 'succeeded'
+      ? 'bg-emerald-50 text-emerald-700'
+      : status === 'failed' || status === 'cancelled' || status === 'blocked'
+        ? 'bg-red-50 text-red-700'
+        : status === 'pending_approval'
+          ? 'bg-amber-50 text-amber-700'
+          : 'bg-blue-50 text-blue-700'
+  return (
+    <span className={cn('self-start rounded-full px-2 py-1 text-[11px] font-semibold', tone)}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  )
+}
+
+function AuditJsonBlock({ title, value }: { title: string; value?: Record<string, unknown> }) {
+  return (
+    <div className="rounded-lg bg-gray-50 px-3 py-2">
+      <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">
+        {title}
+      </p>
+      <pre className="max-h-32 overflow-auto whitespace-pre-wrap break-words font-mono text-[11px] leading-relaxed text-gray-600">
+        {value ? JSON.stringify(value, null, 2) : 'No data'}
+      </pre>
     </div>
   )
 }

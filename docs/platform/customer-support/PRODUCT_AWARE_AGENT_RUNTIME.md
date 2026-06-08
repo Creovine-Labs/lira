@@ -7,6 +7,14 @@
 
 ---
 
+> This document is now a dogfood sub-track of the broader
+> [`AGENTIC_ORGANIZATION_RUNTIME.md`](./AGENTIC_ORGANIZATION_RUNTIME.md)
+> plan. Keep this file focused on the internal Lira dashboard implementation,
+> and use the agentic runtime plan for the shared context, resource, action,
+> policy, and audit architecture.
+
+---
+
 ## 0. Purpose
 
 Lira should not behave like a generic chatbot embedded in a product. It should

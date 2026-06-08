@@ -8,7 +8,15 @@ import {
   type ReactNode,
 } from 'react'
 import { LiraClient, createClient } from './core'
-import type { LiraActionHandler, LiraConfig, LiraContext, LiraVisitorIdentity } from './types'
+import type {
+  LiraActionHandler,
+  LiraActionRegistrationOptions,
+  LiraConfig,
+  LiraContext,
+  LiraResourceHandler,
+  LiraResourceRegistrationOptions,
+  LiraVisitorIdentity,
+} from './types'
 
 type LiraReactContextValue = {
   client: LiraClient
@@ -76,12 +84,24 @@ export function useLira(): LiraClient {
 export function useLiraAction(
   name: string,
   handler: LiraActionHandler,
-  options?: { description?: string }
+  options?: LiraActionRegistrationOptions
 ): void {
   const client = useLira()
 
   useEffect(() => {
     return client.registerAction(name, handler, options)
+  }, [client, name, handler, options])
+}
+
+export function useLiraResource(
+  name: string,
+  handler: LiraResourceHandler,
+  options?: LiraResourceRegistrationOptions
+): void {
+  const client = useLira()
+
+  useEffect(() => {
+    return client.registerResource(name, handler, options)
   }, [client, name, handler, options])
 }
 

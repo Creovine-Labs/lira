@@ -1,10 +1,12 @@
 # Lira — Dogfood Test Plan
 
-Generated: 2026-05-28
+Last updated: 2026-05-31
 
 This is the end-to-end test you run against your own Lira org before any external use (customer demo, design partner outreach, recording). Work through phases in order. Mark ✅ pass, ❌ fail with one-line note, ⚠️ partial/quirk. Stop on ❌, triage, then continue.
 
 > A Nimbus-specific test plan exists at [NIMBUS_DOGFOOD_TEST_PLAN.md](NIMBUS_DOGFOOD_TEST_PLAN.md) — this one is the generic app-level plan that covers everything (not just the support demo).
+
+> **New since 2026-05-28** — the agentic runtime shipped. Capabilities, Audit, and a richer Actions queue are now in Settings → Support; the SDK gained `registerResource` + metadata on `registerAction`; the model adapter routes per-org with automatic fallback. The dedicated checklist is [Phase 19](#phase-19) at the bottom — run that first if the agentic runtime is what you're stress-testing.
 
 ---
 
@@ -187,13 +189,17 @@ This is the end-to-end test you run against your own Lira org before any externa
 
 ## Phase 8 — Actions, Knowledge gaps, Proactive, Tool packs
 
-### 8a. Actions
+### 8a. Actions queue (human-approval subset of the agentic runtime)
+
+> Actions is now the **human-approval queue** specifically — only the subset of capability calls the policy engine routed to a teammate because the capability's risk tier is `admin_approve`. Most reads and low-risk writes execute automatically; many high-stakes calls confirm with the customer in chat. Only runs requiring teammate approval land here. Full audit (every run, including auto-executed ones) is under Settings → Support → Audit (see [Phase 19b](#phase-19b)).
 
 - [ ] Send a billing/account issue from the widget that should draft a follow-up email
-- [ ] **Support → Actions → Approval Queue** shows pending `email_followup` within ~10s
-- [ ] **Reject** action → moves to History as `rejected`
-- [ ] Send the same issue again → new pending action → **Approve** → transitions to `completed` (or `failed` with clear error)
-- [ ] Ask a question that escalates → confirm `escalation_email` appears in **History** as completed
+- [ ] **Support → Actions → Approval Queue** shows pending run within ~10s
+- [ ] Approval queue card shows: capability name, risk tier badge, conversation id, redacted input summary
+- [ ] **Reject** action → moves to History as `cancelled`, agent is signalled to pursue a different path
+- [ ] Send the same issue again → new pending run → **Approve** → transitions to `succeeded` (or `failed` with clear error)
+- [ ] Ask a question that escalates → confirm the run appears in **History** as `succeeded`
+- [ ] Blocked runs (insufficient auth, e.g. an anonymous visitor asking for billing) do NOT appear here — they appear in Audit with status `blocked`
 
 ### 8b. Knowledge gaps
 
@@ -215,10 +221,13 @@ This is the end-to-end test you run against your own Lira org before any externa
 
 ### 8d. Tool packs
 
+> Pack metadata is now typed and surfaced on the Capabilities tab — see [Phase 19a](#phase-19a) for the full per-capability flow.
+
 - [ ] **Support → Tool Packs** lists installed packs
 - [ ] Toggle a pack off → corresponding actions no longer fire
 - [ ] Upsert pack config (redacted display) → saves
 - [ ] Re-enable pack → actions resume
+- [ ] When a pack has unmet requirements (plan-tier too low, or required integration not connected), the toggle is disabled with a clear reason
 
 ---
 
@@ -363,6 +372,96 @@ This is the end-to-end test you run against your own Lira org before any externa
 - [ ] Favicon correct on all pages
 - [ ] All page titles set (no `Vite + React + TS` defaults anywhere)
 - [ ] Legal page links in marketing footer all resolve
+
+---
+
+## Phase 19 — Agentic runtime {#phase-19}
+
+> Everything that shipped between 2026-05-28 and 2026-05-31. If you only have an hour, run this phase. The implementation is end-to-end live; this phase is how you confirm the surfaces behave the way the docs say they do.
+
+### 19a. Capabilities tab {#phase-19a}
+
+Open **Settings → Support → Capabilities** (requires Owner or Admin role).
+
+- [ ] Page loads with a list of built-in capabilities (kb_search, escalate_to_human, create_ticket, lira_check_integration_health, lira_get_setup_progress, …)
+- [ ] Each row shows: name, kind (resource / action), risk tier, auth scope, source (built_in / connector / sdk / server_side), and a status badge
+- [ ] Status badge correctly reads `runtime executable` for any capability backed by a real handler, `metadata only` for any that doesn't have one yet
+- [ ] **Edit a built-in to TIGHTEN risk** — e.g. `lira_create_support_ticket` from `safe_write` → `customer_confirm`. Save succeeds; next widget conversation that triggers it shows a confirm card to the visitor instead of executing silently
+- [ ] **Edit to LOOSEN risk** — try saving `customer_confirm` → `safe_write` on the same row. Save is REJECTED with error code `RISK_LOOSENED`. UI shows the error inline; nothing changes in the runtime
+- [ ] **Edit to LOOSEN auth scope** — try saving `verified_customer` → `public` on a private-read capability. Save is rejected with `SCOPE_LOOSENED`
+- [ ] **Disable a capability** — toggle the Enabled flag off on, e.g. `kb_search`. Next conversation: agent cannot call it and falls back to either escalation or a no-info reply. Re-enable: it returns
+- [ ] **Register a new server-side capability** via the admin API (PUT `/lira/v1/support/agent-runtime/orgs/:orgId/capabilities` with `name: 'billing.retry_payment'`). It appears in the list with the `metadata only` badge. The agent does NOT see it as callable yet
+- [ ] **Delete the test capability** via API DELETE. It disappears from the list; built-in defaults are restored for any name it was shadowing
+
+### 19b. Audit tab {#phase-19b}
+
+Open **Settings → Support → Audit** (admin-only).
+
+- [ ] Page loads with a paginated list of AgentActionRun records from recent conversations
+- [ ] Each row shows: capability name, kind, status, risk tier, effective auth scope, timestamp, conversation id link
+- [ ] Click a row → detail panel shows the **policy decision** (mode + reason), redacted input summary, redacted output summary, estimated tokens in/out, and dollar cost
+- [ ] **PII redaction check** — find a row where the visitor's email was an input. Confirm it appears as `a***@example.com` (masked), not raw
+- [ ] **Secret-name redaction** — register a server-side capability with an input named `api_key` and call it from chat. Confirm the audit row's input summary has the field stripped/blank, not the raw value
+- [ ] **Filter by status** — pick `blocked`. Only blocked runs show. Pick `failed`. Only failed runs show. Clear → all return
+- [ ] **Filter by capability** — type `stripe_get_subscription`. Only matching rows
+- [ ] **Filter by time range** — set `from` to 1 hour ago. Older rows disappear
+- [ ] **Pagination** — set page size to 10 (if UI exposes it; otherwise default). Confirm a `next_cursor` is returned in the network response and that clicking "Load more" advances through results without duplicates
+- [ ] Run blocks across multiple pages don't repeat (cursor-based pagination is consistent)
+
+### 19c. Policy engine behaviour end-to-end
+
+Use the widget on the dogfood org, anonymous mode unless noted.
+
+- [ ] **read_public + anonymous** — ask "what does Lira do?" (kb_search). Reply streams; audit row shows `mode: execute`
+- [ ] **read_private + anonymous** — ask "what's my plan?". Blocked. Audit row shows `mode: block`, `reason` mentions verified_customer required. Agent escalates or asks for sign-in
+- [ ] **read_private + verified_customer** — embed widget with HMAC-signed identity for a real customer; same question. Reply succeeds; audit row shows `mode: execute`
+- [ ] **customer_confirm** — ask "cancel my subscription" while verified. Agent emits a confirm card. Click Approve → executes; audit row shows `mode: confirm`, then a follow-up row for the actual execution
+- [ ] Click Cancel on the same confirm card on a new conversation → audit row shows `cancelled`
+- [ ] **admin_approve** — using a capability you've tightened to admin_approve (per 19a), trigger it. Run appears in **Customer Support → Actions** queue, NOT executed automatically. Approve → executes. Audit shows `pending_approval` → `succeeded`
+- [ ] **human_only / step_up** — call a capability at one of these tiers (you can override a built-in temporarily). Audit shows `mode: human` or `mode: block` with appropriate reason. Agent escalates instead of looping
+
+### 19d. SDK host-capability round-trip (Slice 5)
+
+Set up a host app that calls `Lira.registerResource('account.current_invoice', handler, { description: '…', risk: 'read_private' })` and `Lira.registerAction('billing.retry_payment', handler, { description: '…', risk: 'customer_confirm' })` on widget mount.
+
+- [ ] Open the widget on the host page. In DevTools → Network → WS frames, confirm a `sdk_capabilities_register` outbound message right after connect with both registrations
+- [ ] First visitor message → agent's tool list (visible in audit on next turn) includes both names
+- [ ] Ask a question that would benefit from the resource (e.g. "what do I owe right now?"). Agent calls `account.current_invoice` — host handler runs, returns data, agent uses it in the reply. Audit row shows `kind: resource`, `risk: read_private`
+- [ ] Trigger the action (e.g. "retry that payment"). Confirm card appears (customer_confirm). Approve. Host handler runs. Result flows back to the next agent turn. Audit row shows `kind: action`, `risk: customer_confirm`
+- [ ] **Trust boundary**: try registering a capability claiming `auth_scope: 'verified_customer'`. Audit / capabilities view shows it stored as `verified_visitor` — the host-supplied scope was hard-clamped at ingest
+- [ ] **Built-in shadowing rejection**: register a capability with the name `escalate_to_human`. Agent still uses the real built-in (host registration is silently shadowed; built-ins always win on name collision)
+- [ ] **Timeout fallback**: register a resource whose handler never resolves. Agent's tool call returns `ok: false` with a host-timeout message within 15s; agent recovers gracefully
+- [ ] **Disconnect cleanup**: open chat, register a resource, close the browser tab. No "ghost" pending request stays in the backend (verifiable in logs — `widget_disconnected` rejection)
+- [ ] Post-connect registration: call `Lira.registerResource('extra.thing', …)` after the chat is already open. Confirm a second `sdk_capabilities_register` frame goes over WS, and the agent's next turn sees `extra.thing` in its tool list
+
+### 19e. Model provider canary + fallback
+
+The Lira-internal org (the one whose widget is on the Lira admin dashboard) is currently on **Claude Sonnet 4.6 primary, GPT-4o fallback**. Every other org is on GPT-4o.
+
+- [ ] Open the Lira admin chat. Ask a tool-heavy question ("walk me through setting up support" or "what's my setup progress?"). Reply streams. Tool calls happen
+- [ ] Check the backend logs / agent_run audit — provider field reads `anthropic`, model reads `claude-sonnet-4-6`
+- [ ] On a NON-canary org (e.g. Nimbus demo, or a fresh test org), ask the same kind of question. Provider field reads `openai`, model reads `gpt-4o`
+- [ ] **Fallback test**: temporarily set an invalid `ANTHROPIC_API_KEY` on prod (`.env`, restart service). Open the Lira admin chat again. Reply succeeds; backend logs show "anthropic stream failed before first token; falling back to OpenAI". Audit row shows provider `openai`. Restore the real key when done
+- [ ] **Mid-stream commit**: if Anthropic produces the first token then disconnects, no fallback occurs — the visitor sees a partial reply followed by an error, not a re-streamed second attempt (this is the correct behaviour; switching mid-reply would look like the assistant losing its train of thought)
+- [ ] **Ramp control**: add a second org id to `LIRA_LLM_CANARY_ORG_IDS` and restart service. That org's next conversation also routes to Anthropic
+- [ ] **Global flip**: set `LIRA_LLM_PRIMARY=anthropic` and restart. ALL orgs route to Anthropic regardless of the canary list. Unset → reverts to per-org canary behaviour
+- [ ] **Kill switch**: delete the `LIRA_LLM_CANARY_ORG_IDS` line entirely and restart. Lira admin chat routes back to OpenAI within one new conversation
+
+### 19f. Onboarding Step 6 (optional "Tune Lira's agent")
+
+- [ ] Brand new test org, complete required steps 1–5 (activate → KB → Web SDK → widget → identity verify). `lira_get_setup_progress` card shows "Setup complete — Live" badge
+- [ ] Step 6 ("Tune Lira's agent (optional)") shows in the stepper as `optional`, NOT counted against required progress
+- [ ] Open the dogfood widget on the dashboard. Ask the onboarding agent "what can Lira actually do for my customers?" — agent's reply mentions Capabilities and offers a chip to take you there
+- [ ] Click the chip. You land on Settings → Support → Capabilities. Back in chat: agent calls `lira_mark_install_step({step: 'agent_runtime_capabilities'})`. Next `lira_get_setup_progress` shows Step 6 → "Reviewed Capabilities tab" as done
+- [ ] Repeat for Audit. Step 6 sub-progress shows both as done; the optional step itself can stay "active" or be marked done as you prefer
+- [ ] **Anti-pushiness check**: complete only steps 1–3 on a different test org. Ask the agent "what's next?". Agent points to step 4 (widget) or 5 (identity), NOT Step 6. RULE 12 in the prompt explicitly forbids surfacing the agentic-runtime tour before required steps are green
+- [ ] Open the agent unprompted and ask "what has Lira done?" anytime. Agent points to Settings → Support → Audit even mid-setup (admin asked explicitly; the no-pushiness rule only applies to unprompted introductions)
+
+### 19g. Tenant isolation (defense-in-depth check)
+
+- [ ] In dogfood org A, send a widget message containing `{ "orgId": "different-org-id" }` in JSON anywhere. Audit row for the resulting tool call shows the original org id (yours), NOT the injected one. Cross-tenant reads are impossible by construction
+- [ ] Same check on a tool call's input JSON — the agent passing `{orgId: '…'}` as a parameter does not change which org the handler resolves against
+- [ ] An admin API call with a JWT scoped to org A trying to PUT a capability for org B → 403 / not found, never a successful write
 
 ---
 
