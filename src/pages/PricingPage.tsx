@@ -1,302 +1,540 @@
+import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckIcon } from '@heroicons/react/24/solid'
-import { ArrowRightIcon, GiftIcon } from '@heroicons/react/24/outline'
+import { ArrowRightIcon } from '@heroicons/react/24/outline'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
-interface Tier {
+/* ────────────────────────────────────────────────────────────────────────────
+   Pricing model — Resend-style. One AI support agent, metered by conversation
+   volume, with unlimited human seats. The volume selector below drives the
+   price shown on each paid plan (base + overage), and moves the "Recommended"
+   badge to the plan that costs least at the chosen volume.
+   ──────────────────────────────────────────────────────────────────────────── */
+
+interface Plan {
+  id: 'free' | 'pro' | 'scale' | 'enterprise'
   name: string
-  emoji: string
   dot: string
-  price: string
-  cadence: string
+  /** Monthly base price in USD. null = custom (Enterprise). */
+  base: number | null
+  /** Conversations included in the base price. */
+  included: number
+  /** Overage price per extra 1,000 conversations. null = not metered. */
+  overagePer1000: number | null
   blurb: string
   cta: { label: string; href: string }
-  highlight?: boolean
   featuresLead?: string
   features: string[]
   note?: string
 }
 
-const TIERS: Tier[] = [
+const PLANS: Plan[] = [
   {
-    name: 'Startup',
-    emoji: '🟢',
+    id: 'free',
+    name: 'Free',
     dot: 'bg-emerald-500',
-    price: '$49',
-    cadence: '/ month',
-    blurb: 'For getting started — a smart assistant that answers and captures leads.',
-    cta: { label: 'Start free trial', href: '/signup' },
+    base: 0,
+    included: 250,
+    overagePer1000: null,
+    blurb: 'Everything you need to launch an AI support agent and see it work.',
+    cta: { label: 'Start for free', href: '/signup' },
     features: [
-      'Website chat widget',
-      'Custom knowledge base (answers from your own content)',
-      'English + 2 languages',
-      'FAQ answering + lead capture to email',
+      '250 conversations / mo',
+      '1 website widget (1 domain)',
+      'Knowledge base from your own content',
+      'English + 1 language',
+      'Lead capture to email',
       'WhatsApp handoff',
-      'Up to 300 conversations / month',
+      'Unlimited team seats',
+      'Community support',
     ],
   },
   {
-    name: 'Growth',
-    emoji: '⭐',
-    dot: 'bg-amber-400',
-    price: '$99',
-    cadence: '/ month',
-    blurb: 'For businesses that want the agent to actually drive and organize leads.',
-    cta: { label: 'Start free trial', href: '/signup' },
-    highlight: true,
-    featuresLead: 'Everything in Startup, plus:',
-    features: [
-      'All conversation flows — lead qualification, event / registration assistance, application intake',
-      '4–5 languages',
-      'Analytics dashboard (questions asked + leads captured)',
-      'CRM / webhook lead delivery',
-      'Up to 1,000 conversations / month',
-      '“Powered by Lira” branding removed',
-    ],
-  },
-  {
+    id: 'pro',
     name: 'Pro',
-    emoji: '🔵',
-    dot: 'bg-blue-500',
-    price: '$199',
-    cadence: '/ month',
-    blurb: 'For teams that want Lira everywhere, including inside WhatsApp.',
+    dot: 'bg-amber-400',
+    base: 29,
+    included: 2000,
+    overagePer1000: 12,
+    blurb: 'For businesses that want the agent resolving and organizing real volume.',
     cta: { label: 'Start free trial', href: '/signup' },
-    featuresLead: 'Everything in Growth, plus:',
+    featuresLead: 'Everything in Free, plus:',
     features: [
-      'Agent inside WhatsApp (WhatsApp Business API)*',
+      'All conversation flows — lead qualification, intake, registration',
+      '5 languages',
+      'Analytics dashboard (questions + leads)',
+      'CRM / webhook lead delivery',
+      '“Powered by Lira” branding removed',
+      'Email & chat support',
+    ],
+  },
+  {
+    id: 'scale',
+    name: 'Scale',
+    dot: 'bg-blue-500',
+    base: 99,
+    included: 12000,
+    overagePer1000: 8,
+    blurb: 'For teams that want Lira on every channel, including inside WhatsApp.',
+    cta: { label: 'Start free trial', href: '/signup' },
+    featuresLead: 'Everything in Pro, plus:',
+    features: [
+      'AI agent inside WhatsApp (WhatsApp Business API)*',
       'Priority support',
       'Custom integrations',
-      'High / unlimited conversations',
+      'Advanced analytics & exports',
+      'Multiple domains',
     ],
     note: '* WhatsApp Business API has per-conversation fees charged by Meta, billed on top of the plan.',
   },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    dot: 'bg-purple-500',
+    base: null,
+    included: 0,
+    overagePer1000: null,
+    blurb: 'For high volume and strict security, governance, and support needs.',
+    cta: { label: 'Talk to sales', href: '/contact' },
+    featuresLead: 'Everything in Scale, plus:',
+    features: [
+      'Volume conversation pricing',
+      'SSO & SAML',
+      'SLAs & uptime guarantees',
+      'Custom data retention',
+      'Dedicated onboarding & CSM',
+    ],
+  },
 ]
 
-const TRIAL_INCLUDES = [
-  'Website widget',
-  'Your knowledge base',
-  'English + 1 language',
-  'Lead capture',
-  'WhatsApp handoff',
+/** Volume stops for the selector (conversations / month). */
+const VOLUME_STOPS = [250, 1000, 2000, 5000, 12000, 25000, 50000, 100000] as const
+
+/** Monthly price for a plan at a given conversation volume. */
+function priceAt(plan: Plan, volume: number): number | null {
+  if (plan.base === null) return null
+  if (plan.overagePer1000 === null || volume <= plan.included) return plan.base
+  const extraThousands = Math.ceil((volume - plan.included) / 1000)
+  return plan.base + extraThousands * plan.overagePer1000
+}
+
+/** The plan we nudge toward for a given volume: cheapest metered plan, else Enterprise. */
+function recommendedPlanId(volume: number): Plan['id'] {
+  if (volume <= 250) return 'free'
+  if (volume > 50000) return 'enterprise'
+  const pro = priceAt(PLANS[1], volume)!
+  const scale = priceAt(PLANS[2], volume)!
+  return scale <= pro ? 'scale' : 'pro'
+}
+
+const fmt = (n: number) => n.toLocaleString('en-US')
+
+/* Competitor comparison — cheapest published paid tier, billed annually,
+   for a small 5-agent support team. Seats are the story: everyone else meters people. */
+const COMPARISON = [
+  {
+    name: 'Zendesk',
+    plan: 'Suite Team',
+    perSeat: 55,
+    model: '$55 / agent / mo · billed yearly',
+    team5: 275,
+  },
+  {
+    name: 'Freshworks',
+    plan: 'Pro',
+    perSeat: 55,
+    model: '$55 / agent / mo · billed yearly',
+    team5: 275,
+  },
+  {
+    name: 'Intercom',
+    plan: 'Advanced + Fin',
+    perSeat: 85,
+    model: '~$85 / seat / mo + $0.99 per AI resolution',
+    team5: 425,
+  },
 ]
 
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'What counts as a “conversation”?',
-    a: 'A conversation is one complete chat session between a visitor and the agent — not one per message. So a visitor asking several questions in one sitting counts as a single conversation. This is what the monthly caps refer to.',
+    a: 'A conversation is one complete chat session between a visitor and the agent — not one per message. A visitor asking several questions in one sitting counts as a single conversation. This is what the plan volume and overage refer to.',
   },
   {
-    q: 'How does the free trial work?',
-    a: 'Try Lira free for 14 days or 10 conversations, whichever comes first. Full setup, no commitment. When the trial ends, just pick a plan to keep your assistant live.',
+    q: 'What’s a “resolution”, and how is that cheaper than Intercom?',
+    a: 'A resolution is a conversation the AI closes end-to-end without a human. Intercom charges $0.99 for every Fin resolution on top of per-seat fees. With Lira you pay for conversation volume, not per resolution — even at our metered overage, the cost per AI-resolved conversation lands far below $0.99, and seats are always free.',
+  },
+  {
+    q: 'Do you charge per agent or per seat?',
+    a: 'No. Every plan includes unlimited team seats. Zendesk, Freshworks, and Intercom all bill per agent — a 5-person team pays them $275–$425/mo before any AI. Lira meters the AI’s work instead, so growing your team never grows your bill.',
+  },
+  {
+    q: 'What happens if I go over my included conversations?',
+    a: 'Nothing breaks. Lira keeps answering and automatically bills overage at your plan’s rate — $12 per 1,000 on Pro, $8 per 1,000 on Scale. You can set a cap if you’d rather pause at your limit.',
+  },
+  {
+    q: 'How does the free plan work?',
+    a: 'Free is free forever — 250 conversations a month, one widget, unlimited seats, no credit card. Paid plans add a 14-day trial so you can test the full feature set before you commit.',
   },
   {
     q: 'Monthly or annual?',
     a: 'Both. Choose annual and get 2 months free — you pay for 10 and get 12.',
   },
   {
-    q: 'Can I change or cancel my plan?',
-    a: 'Yes. Upgrade, downgrade, or cancel anytime — changes take effect from your next billing cycle.',
-  },
-  {
     q: 'Who processes payments?',
     a: 'Payments are securely processed by Paddle, our authorized reseller and Merchant of Record.',
-  },
-  {
-    q: 'Are there extra fees for WhatsApp on the Pro plan?',
-    a: 'The WhatsApp Business API has per-conversation fees charged by Meta. Those are billed on top of your plan.',
   },
 ]
 
 export function PricingPage() {
+  const [volumeIdx, setVolumeIdx] = useState(2) // default: 2,000 / mo (Pro's home)
+  const volume = VOLUME_STOPS[volumeIdx]
+  const recommended = useMemo(() => recommendedPlanId(volume), [volume])
+
   return (
     <MarketingLayout>
       <SEO
         title="Pricing — Lira AI Support Agent"
-        description="One AI support agent, three plans. Startup $49/mo, Growth $99/mo, Pro $199/mo. Start with a 14-day free trial — website widget, knowledge base, multilingual answers, lead capture, and WhatsApp handoff."
-        keywords="Lira pricing, AI support agent pricing, AI chat widget pricing, lead capture chatbot pricing, WhatsApp AI agent"
+        description="Start free and scale as you grow. Unlimited team seats on every plan — pay only for the AI, not per agent. Free 250 conversations/mo, Pro $29/mo, Scale $99/mo. Beats Zendesk, Freshworks, and Intercom per-seat pricing."
+        keywords="Lira pricing, AI customer service pricing, AI support agent pricing, Zendesk alternative, Intercom alternative, Freshworks alternative, per resolution pricing, unlimited seats support"
         path="/pricing"
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'Product',
           name: 'Lira AI Support Agent',
           description:
-            'An AI support agent that answers customer questions 24/7 in multiple languages, captures and qualifies leads, and hands off to your team.',
+            'An AI customer service agent that answers questions 24/7 in multiple languages, resolves and captures leads, and hands off to your team — with unlimited seats and usage-based pricing.',
           brand: { '@type': 'Brand', name: 'Lira' },
-          offers: TIERS.map((t) => ({
+          offers: PLANS.map((p) => ({
             '@type': 'Offer',
-            name: t.name,
-            price: t.price.replace('$', ''),
+            name: p.name,
+            price: p.base === null ? undefined : String(p.base),
             priceCurrency: 'USD',
-            description: t.blurb,
+            description: p.blurb,
           })),
         }}
       />
 
       {/* ── Hero ─────────────────────────────────────────────────────────── */}
-      <section className="bg-[#ebebeb] px-6 pb-16 pt-40">
+      <section className="bg-[#ebebeb] px-6 pb-10 pt-40">
         <div className="mx-auto max-w-5xl text-center">
           <p className="mb-4 text-xs font-black uppercase tracking-[0.2em] text-gray-500">
             Pricing
           </p>
           <h1 className="text-4xl font-black leading-[1.05] tracking-tight text-gray-900 md:text-6xl">
-            One AI support agent.
+            Start for free.
             <br />
-            Three plans. Start free.
+            Scale as you grow.
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-gray-600 md:text-lg">
-            Lira sits on your website, answers customer questions 24/7 in multiple languages,
-            qualifies and captures leads, and hands off to your team when needed. Pick the plan that
-            matches how much you need it to do.
+            One AI support agent that answers 24/7, resolves tickets, and captures leads. Every plan
+            includes <strong className="text-gray-900">unlimited team seats</strong> — you pay for
+            the AI, never per agent.
           </p>
-          <div className="mt-8 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-white/70 px-4 py-2 text-xs font-semibold text-gray-700">
-            <span className="h-2 w-2 rounded-full bg-emerald-500" />
-            14-day free trial · no credit card · cancel anytime
+          <div className="mt-8 inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-full border border-gray-200 bg-white/70 px-5 py-2 text-xs font-semibold text-gray-700">
+            <span className="inline-flex items-center gap-2">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Free forever plan
+            </span>
+            <span className="hidden text-gray-300 sm:inline">·</span>
+            <span>Unlimited seats</span>
+            <span className="hidden text-gray-300 sm:inline">·</span>
+            <span>No per-resolution fees</span>
           </div>
         </div>
       </section>
 
-      {/* ── Free trial band ──────────────────────────────────────────────── */}
-      <section className="bg-[#ebebeb] px-6 pb-12">
-        <div className="mx-auto max-w-5xl">
-          <div className="overflow-hidden rounded-3xl border border-emerald-500/30 bg-emerald-50 p-7 sm:p-8">
-            <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
-              <div className="max-w-2xl">
-                <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-[11px] font-black uppercase tracking-widest text-emerald-700">
-                  <GiftIcon className="h-3.5 w-3.5" />
-                  Free trial — 14 days
+      {/* ── Volume selector ──────────────────────────────────────────────── */}
+      <section className="bg-[#ebebeb] px-6 pb-6">
+        <div className="mx-auto max-w-4xl text-center">
+          <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+            How many conversations a month?
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-2">
+            {VOLUME_STOPS.map((stop, i) => {
+              const active = i === volumeIdx
+              return (
+                <button
+                  key={stop}
+                  type="button"
+                  onClick={() => setVolumeIdx(i)}
+                  aria-pressed={active}
+                  className={`rounded-full px-4 py-2 text-sm font-black tabular-nums transition-colors ${
+                    active
+                      ? 'bg-gray-900 text-white'
+                      : 'border border-gray-300 bg-white text-gray-700 hover:border-gray-900'
+                  }`}
+                >
+                  {stop >= 100000 ? '100,000+' : fmt(stop)}
+                </button>
+              )
+            })}
+          </div>
+          <p className="mt-4 text-sm text-gray-600">
+            At <strong className="text-gray-900">{fmt(volume)}</strong> conversations / mo, we
+            recommend the{' '}
+            <strong className="text-gray-900">
+              {PLANS.find((p) => p.id === recommended)!.name}
+            </strong>{' '}
+            plan.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Plans ────────────────────────────────────────────────────────── */}
+      <section className="bg-[#ebebeb] px-6 pb-16">
+        <div className="mx-auto grid max-w-7xl items-start gap-5 lg:grid-cols-4">
+          {PLANS.map((plan) => {
+            const isRecommended = plan.id === recommended
+            const highlight = isRecommended
+            const price = priceAt(plan, volume)
+            const overCap =
+              plan.base !== null &&
+              plan.overagePer1000 !== null &&
+              volume > plan.included &&
+              price !== null
+                ? Math.ceil((volume - plan.included) / 1000) * plan.overagePer1000
+                : 0
+
+            return (
+              <div
+                key={plan.id}
+                className={`relative flex h-full flex-col rounded-3xl p-7 ${
+                  highlight
+                    ? 'bg-gray-900 text-white shadow-2xl ring-2 ring-emerald-400'
+                    : 'border border-gray-200 bg-white'
+                }`}
+              >
+                {isRecommended && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-full bg-emerald-400 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-900">
+                    Recommended
+                  </span>
+                )}
+
+                <div className="flex items-center gap-2">
+                  <span className={`h-2.5 w-2.5 rounded-full ${plan.dot}`} aria-hidden />
+                  <h3
+                    className={`text-lg font-black ${highlight ? 'text-white' : 'text-gray-900'}`}
+                  >
+                    {plan.name}
+                  </h3>
                 </div>
-                <p className="mt-3 text-[15px] leading-relaxed text-emerald-900">
-                  Try Lira free for <strong>14 days or 10 conversations</strong>, whichever comes
-                  first. Full setup, no commitment. When the trial ends, just pick a plan to keep
-                  your assistant live.
+                <p
+                  className={`mt-2 min-h-[40px] text-sm leading-relaxed ${
+                    highlight ? 'text-gray-300' : 'text-gray-600'
+                  }`}
+                >
+                  {plan.blurb}
                 </p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  {TRIAL_INCLUDES.map((item) => (
-                    <span
-                      key={item}
-                      className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-semibold text-emerald-800"
-                    >
-                      <CheckIcon className="h-3.5 w-3.5 text-emerald-600" />
-                      {item}
-                    </span>
+
+                {/* Price */}
+                <div className="mt-5">
+                  {price === null ? (
+                    <div className="flex items-baseline gap-1">
+                      <span
+                        className={`text-4xl font-black tracking-tight ${
+                          highlight ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        Custom
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-baseline gap-1">
+                      <span
+                        className={`text-4xl font-black tabular-nums tracking-tight ${
+                          highlight ? 'text-white' : 'text-gray-900'
+                        }`}
+                      >
+                        ${fmt(price)}
+                      </span>
+                      <span
+                        className={`text-sm font-semibold ${
+                          highlight ? 'text-gray-400' : 'text-gray-500'
+                        }`}
+                      >
+                        / mo
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Sub-line: what the price covers at this volume */}
+                  <p
+                    className={`mt-2 min-h-[32px] text-xs leading-relaxed ${
+                      highlight ? 'text-gray-400' : 'text-gray-500'
+                    }`}
+                  >
+                    {plan.base === null ? (
+                      <>Volume pricing for {fmt(volume)}+ / mo</>
+                    ) : overCap > 0 ? (
+                      <>
+                        {fmt(plan.included)} included · +{fmt(volume - plan.included)} @ $
+                        {plan.overagePer1000}/1k = ${fmt(overCap)}
+                      </>
+                    ) : plan.overagePer1000 === null ? (
+                      <>{fmt(plan.included)} conversations / mo · then upgrade</>
+                    ) : (
+                      <>
+                        {fmt(plan.included)} included · extra ${plan.overagePer1000} / 1,000
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                <Link
+                  to={plan.cta.href}
+                  className={`mt-5 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-black transition-colors ${
+                    highlight
+                      ? 'bg-white text-gray-900 hover:bg-gray-100'
+                      : 'bg-gray-900 text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {plan.cta.label}
+                  <ArrowRightIcon className="h-4 w-4" />
+                </Link>
+
+                {plan.featuresLead && (
+                  <p
+                    className={`mt-7 text-xs font-black uppercase tracking-widest ${
+                      highlight ? 'text-gray-400' : 'text-gray-500'
+                    }`}
+                  >
+                    {plan.featuresLead}
+                  </p>
+                )}
+                <ul className={`space-y-2.5 ${plan.featuresLead ? 'mt-4' : 'mt-7'}`}>
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <CheckIcon
+                        className={`mt-0.5 h-4 w-4 shrink-0 ${
+                          highlight ? 'text-emerald-400' : 'text-emerald-600'
+                        }`}
+                      />
+                      <span className={highlight ? 'text-gray-200' : 'text-gray-700'}>{f}</span>
+                    </li>
                   ))}
-                </div>
+                </ul>
+
+                {plan.note && (
+                  <p
+                    className={`mt-6 text-[11px] leading-relaxed ${
+                      highlight ? 'text-gray-500' : 'text-gray-400'
+                    }`}
+                  >
+                    {plan.note}
+                  </p>
+                )}
               </div>
-              <Link
-                to="/signup"
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-black text-white transition-colors hover:bg-gray-700"
-              >
-                Start free trial
-                <ArrowRightIcon className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Tiers ────────────────────────────────────────────────────────── */}
-      <section className="bg-[#ebebeb] px-6 pb-20">
-        <div className="mx-auto grid max-w-6xl items-start gap-6 md:grid-cols-3">
-          {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              className={`relative flex flex-col rounded-3xl p-8 ${
-                tier.highlight
-                  ? 'bg-gray-900 text-white shadow-2xl md:scale-[1.03]'
-                  : 'border border-gray-200 bg-white'
-              }`}
-            >
-              {tier.highlight && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-emerald-400 px-3 py-1 text-[10px] font-black uppercase tracking-widest text-gray-900">
-                  Most popular
-                </span>
-              )}
-
-              <div className="flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${tier.dot}`} aria-hidden />
-                <h3
-                  className={`text-lg font-black ${tier.highlight ? 'text-white' : 'text-gray-900'}`}
-                >
-                  {tier.name}
-                </h3>
-              </div>
-              <p
-                className={`mt-2 text-sm leading-relaxed ${
-                  tier.highlight ? 'text-gray-300' : 'text-gray-600'
-                }`}
-              >
-                {tier.blurb}
-              </p>
-
-              <div className="mt-6 flex items-baseline gap-1">
-                <span
-                  className={`text-5xl font-black tracking-tight ${
-                    tier.highlight ? 'text-white' : 'text-gray-900'
-                  }`}
-                >
-                  {tier.price}
-                </span>
-                <span
-                  className={`text-sm font-semibold ${
-                    tier.highlight ? 'text-gray-400' : 'text-gray-500'
-                  }`}
-                >
-                  {tier.cadence}
-                </span>
-              </div>
-
-              <Link
-                to={tier.cta.href}
-                className={`mt-6 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-black transition-colors ${
-                  tier.highlight
-                    ? 'bg-white text-gray-900 hover:bg-gray-100'
-                    : 'bg-gray-900 text-white hover:bg-gray-700'
-                }`}
-              >
-                {tier.cta.label}
-                <ArrowRightIcon className="h-4 w-4" />
-              </Link>
-
-              {tier.featuresLead && (
-                <p
-                  className={`mt-8 text-xs font-black uppercase tracking-widest ${
-                    tier.highlight ? 'text-gray-400' : 'text-gray-500'
-                  }`}
-                >
-                  {tier.featuresLead}
-                </p>
-              )}
-              <ul className={`space-y-3 ${tier.featuresLead ? 'mt-4' : 'mt-8'}`}>
-                {tier.features.map((f) => (
-                  <li key={f} className="flex items-start gap-2 text-sm">
-                    <CheckIcon
-                      className={`mt-0.5 h-4 w-4 shrink-0 ${
-                        tier.highlight ? 'text-emerald-400' : 'text-emerald-600'
-                      }`}
-                    />
-                    <span className={tier.highlight ? 'text-gray-200' : 'text-gray-700'}>{f}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {tier.note && (
-                <p
-                  className={`mt-6 text-[11px] leading-relaxed ${
-                    tier.highlight ? 'text-gray-400' : 'text-gray-400'
-                  }`}
-                >
-                  {tier.note}
-                </p>
-              )}
-            </div>
-          ))}
+            )
+          })}
         </div>
 
-        <p className="mt-10 text-center text-xs text-gray-500">
+        <p className="mt-8 text-center text-xs text-gray-500">
           Prices in USD. Billed monthly unless stated. Choose annual and get 2 months free.
         </p>
+      </section>
+
+      {/* ── The seats story: why we're cheaper ───────────────────────────── */}
+      <section className="border-t border-gray-200 bg-white px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <div className="text-center">
+            <p className="text-xs font-black uppercase tracking-widest text-gray-500">The math</p>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-gray-900 md:text-4xl">
+              Everyone else bills per agent.
+              <br />
+              Lira bills for the AI. Seats are free.
+            </h2>
+            <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-gray-600">
+              Here’s what a small <strong className="text-gray-900">5-agent</strong> support team
+              pays each month — at the competitors’ cheapest published tier, billed annually —
+              before a single AI resolution.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-3xl border border-gray-200">
+            <table className="w-full text-left text-sm">
+              <thead className="bg-[#fbfaf6] text-gray-500">
+                <tr>
+                  <th className="px-5 py-4 font-black uppercase tracking-widest text-[11px]">
+                    Provider
+                  </th>
+                  <th className="px-5 py-4 font-black uppercase tracking-widest text-[11px]">
+                    How they charge
+                  </th>
+                  <th className="px-5 py-4 text-right font-black uppercase tracking-widest text-[11px]">
+                    Team of 5 / mo
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {COMPARISON.map((c) => (
+                  <tr key={c.name}>
+                    <td className="px-5 py-4">
+                      <span className="font-black text-gray-900">{c.name}</span>{' '}
+                      <span className="text-gray-400">· {c.plan}</span>
+                    </td>
+                    <td className="px-5 py-4 text-gray-600">{c.model}</td>
+                    <td className="px-5 py-4 text-right font-black tabular-nums text-gray-900">
+                      ${fmt(c.team5)}+
+                    </td>
+                  </tr>
+                ))}
+                <tr className="bg-gray-900 text-white">
+                  <td className="px-5 py-4">
+                    <span className="font-black">Lira</span>{' '}
+                    <span className="text-gray-400">· Pro</span>
+                  </td>
+                  <td className="px-5 py-4 text-gray-300">
+                    $29 / mo flat · unlimited seats · 2,000 AI conversations
+                  </td>
+                  <td className="px-5 py-4 text-right font-black tabular-nums text-emerald-400">
+                    $29
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-gray-500">
+            Add a 6th, 20th, or 100th teammate and their bill climbs every time. On Lira it doesn’t
+            move — you only pay when conversation volume grows. And with no{' '}
+            <strong className="text-gray-700">$0.99-per-resolution</strong> tax, the AI resolving
+            more tickets makes you <em>cheaper</em> per outcome, not pricier.
+          </p>
+        </div>
+      </section>
+
+      {/* ── Pay-as-you-go ────────────────────────────────────────────────── */}
+      <section className="bg-[#ebebeb] px-6 py-20">
+        <div className="mx-auto max-w-5xl">
+          <h2 className="text-center text-3xl font-black tracking-tight text-gray-900 md:text-4xl">
+            Pay only for what you use
+          </h2>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            <div className="rounded-3xl border border-gray-200 bg-white p-7">
+              <div className="flex items-baseline justify-between">
+                <p className="text-lg font-black text-gray-900">Extra conversations</p>
+                <p className="text-sm font-black tabular-nums text-emerald-600">from $8 / 1,000</p>
+              </div>
+              <p className="mt-3 text-[15px] leading-relaxed text-gray-600">
+                Go past your plan’s included volume and Lira keeps answering — overage is billed
+                automatically at <strong>$12 / 1,000</strong> on Pro and <strong>$8 / 1,000</strong>{' '}
+                on Scale. Set a cap anytime if you’d rather pause at your limit.
+              </p>
+            </div>
+            <div className="rounded-3xl border border-gray-200 bg-white p-7">
+              <div className="flex items-baseline justify-between">
+                <p className="text-lg font-black text-gray-900">No per-seat, no per-resolution</p>
+                <p className="text-sm font-black tabular-nums text-emerald-600">$0</p>
+              </div>
+              <p className="mt-3 text-[15px] leading-relaxed text-gray-600">
+                Unlimited teammates on every plan, and no charge each time the AI resolves a ticket.
+                The only thing that scales your bill is conversation volume — nothing else.
+              </p>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ── How billing works ────────────────────────────────────────────── */}
@@ -332,7 +570,6 @@ export function PricingPage() {
             </div>
           </div>
 
-          {/* Conversation definition callout */}
           <div className="mt-6 rounded-2xl border border-gray-200 bg-[#fbfaf6] p-6">
             <p className="text-xs font-black uppercase tracking-widest text-gray-500">
               What counts as a “conversation”?
@@ -340,7 +577,7 @@ export function PricingPage() {
             <p className="mt-3 text-[15px] leading-relaxed text-gray-700">
               A conversation is one complete chat session between a visitor and the agent (not per
               message) — so a visitor asking several questions in one sitting counts as a single
-              conversation. This is what the monthly caps refer to.
+              conversation. This is what plan volume and overage refer to.
             </p>
           </div>
 
@@ -397,15 +634,15 @@ export function PricingPage() {
             Put Lira on your site today.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-gray-300 md:text-lg">
-            Try it free for 14 days — full setup, no commitment. See it answer your customers, then
-            pick the plan that fits.
+            Start free — 250 conversations a month, unlimited seats, no credit card. Upgrade the day
+            it pays for itself.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               to="/signup"
               className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-gray-900 transition-colors hover:bg-gray-100"
             >
-              Start free trial
+              Start for free
               <ArrowRightIcon className="h-4 w-4" />
             </Link>
             <a
