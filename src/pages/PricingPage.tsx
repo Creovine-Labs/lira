@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom'
 import { CheckIcon } from '@heroicons/react/24/solid'
 import {
   ArrowRightIcon,
-  RocketLaunchIcon,
-  BoltIcon,
-  ArrowTrendingUpIcon,
+  CubeIcon,
+  Squares2X2Icon,
+  RectangleStackIcon,
   BuildingOffice2Icon,
 } from '@heroicons/react/24/outline'
 import { SEO } from '@/components/SEO'
@@ -21,7 +21,6 @@ interface Plan {
   id: 'free' | 'pro' | 'scale' | 'enterprise'
   name: string
   Icon: ComponentType<{ className?: string }>
-  accent: string
   /** Monthly base price in USD. null = custom (Enterprise). */
   base: number | null
   /** Conversations included in the base price. */
@@ -39,8 +38,7 @@ const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Free',
-    Icon: RocketLaunchIcon,
-    accent: 'text-emerald-500',
+    Icon: CubeIcon,
     base: 0,
     included: 250,
     overagePer1000: null,
@@ -60,8 +58,7 @@ const PLANS: Plan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    Icon: BoltIcon,
-    accent: 'text-amber-500',
+    Icon: Squares2X2Icon,
     base: 29,
     included: 2000,
     overagePer1000: 12,
@@ -80,8 +77,7 @@ const PLANS: Plan[] = [
   {
     id: 'scale',
     name: 'Scale',
-    Icon: ArrowTrendingUpIcon,
-    accent: 'text-blue-500',
+    Icon: RectangleStackIcon,
     base: 99,
     included: 12000,
     overagePer1000: 8,
@@ -101,7 +97,6 @@ const PLANS: Plan[] = [
     id: 'enterprise',
     name: 'Enterprise',
     Icon: BuildingOffice2Icon,
-    accent: 'text-purple-500',
     base: null,
     included: 0,
     overagePer1000: null,
@@ -352,7 +347,9 @@ export function PricingPage() {
                 )}
 
                 <div className="flex items-center gap-2.5">
-                  <plan.Icon className={`h-5 w-5 shrink-0 ${plan.accent}`} />
+                  <plan.Icon
+                    className={`h-5 w-5 shrink-0 ${highlight ? 'text-white' : 'text-gray-900'}`}
+                  />
                   <h3
                     className={`text-lg font-black ${highlight ? 'text-white' : 'text-gray-900'}`}
                   >
