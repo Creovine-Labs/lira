@@ -1,26 +1,32 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type ComponentType } from 'react'
 import { Link } from 'react-router-dom'
 import { CheckIcon } from '@heroicons/react/24/solid'
-import { ArrowRightIcon } from '@heroicons/react/24/outline'
+import {
+  ArrowRightIcon,
+  RocketLaunchIcon,
+  BoltIcon,
+  ArrowTrendingUpIcon,
+  BuildingOffice2Icon,
+} from '@heroicons/react/24/outline'
 import { SEO } from '@/components/SEO'
 import { MarketingLayout } from '@/components/marketing'
 
-/* ────────────────────────────────────────────────────────────────────────────
-   Pricing model — Resend-style. One AI support agent, metered by conversation
-   volume, with unlimited human seats. The volume selector below drives the
-   price shown on each paid plan (base + overage), and moves the "Recommended"
-   badge to the plan that costs least at the chosen volume.
-   ──────────────────────────────────────────────────────────────────────────── */
+/* Pricing model, Resend-style. One AI support agent, metered by conversation
+   volume, with unlimited human seats. The volume selector drives the price
+   shown on each paid plan (base + overage) and moves the "Recommended" badge
+   to the plan that costs least at the chosen volume. Access is invite-only, so
+   every call to action routes to "speak to an expert", never a self-serve login. */
 
 interface Plan {
   id: 'free' | 'pro' | 'scale' | 'enterprise'
   name: string
-  dot: string
+  Icon: ComponentType<{ className?: string }>
+  accent: string
   /** Monthly base price in USD. null = custom (Enterprise). */
   base: number | null
   /** Conversations included in the base price. */
   included: number
-  /** Overage price per extra 1,000 conversations. null = not metered. */
+  /** Overage price per extra 1,000 conversations (USD). null = not metered. */
   overagePer1000: number | null
   blurb: string
   cta: { label: string; href: string }
@@ -33,12 +39,13 @@ const PLANS: Plan[] = [
   {
     id: 'free',
     name: 'Free',
-    dot: 'bg-emerald-500',
+    Icon: RocketLaunchIcon,
+    accent: 'text-emerald-500',
     base: 0,
     included: 250,
     overagePer1000: null,
     blurb: 'Everything you need to launch an AI support agent and see it work.',
-    cta: { label: 'Start for free', href: '/signup' },
+    cta: { label: 'Speak to an expert', href: '/contact' },
     features: [
       '250 conversations / mo',
       '1 website widget (1 domain)',
@@ -53,15 +60,16 @@ const PLANS: Plan[] = [
   {
     id: 'pro',
     name: 'Pro',
-    dot: 'bg-amber-400',
+    Icon: BoltIcon,
+    accent: 'text-amber-500',
     base: 29,
     included: 2000,
     overagePer1000: 12,
     blurb: 'For businesses that want the agent resolving and organizing real volume.',
-    cta: { label: 'Start free trial', href: '/signup' },
+    cta: { label: 'Speak to an expert', href: '/contact' },
     featuresLead: 'Everything in Free, plus:',
     features: [
-      'All conversation flows — lead qualification, intake, registration',
+      'All conversation flows: lead qualification, intake, registration',
       '5 languages',
       'Analytics dashboard (questions + leads)',
       'CRM / webhook lead delivery',
@@ -72,12 +80,13 @@ const PLANS: Plan[] = [
   {
     id: 'scale',
     name: 'Scale',
-    dot: 'bg-blue-500',
+    Icon: ArrowTrendingUpIcon,
+    accent: 'text-blue-500',
     base: 99,
     included: 12000,
     overagePer1000: 8,
     blurb: 'For teams that want Lira on every channel, including inside WhatsApp.',
-    cta: { label: 'Start free trial', href: '/signup' },
+    cta: { label: 'Speak to an expert', href: '/contact' },
     featuresLead: 'Everything in Pro, plus:',
     features: [
       'AI agent inside WhatsApp (WhatsApp Business API)*',
@@ -91,7 +100,8 @@ const PLANS: Plan[] = [
   {
     id: 'enterprise',
     name: 'Enterprise',
-    dot: 'bg-purple-500',
+    Icon: BuildingOffice2Icon,
+    accent: 'text-purple-500',
     base: null,
     included: 0,
     overagePer1000: null,
@@ -111,7 +121,12 @@ const PLANS: Plan[] = [
 /** Volume stops for the selector (conversations / month). */
 const VOLUME_STOPS = [250, 1000, 2000, 5000, 12000, 25000, 50000, 100000] as const
 
-/** Monthly price for a plan at a given conversation volume. */
+/** Indicative Naira rate. Billing is charged in USD; Naira is shown for reference. */
+const NGN_PER_USD = 1600
+
+type CurrencyCode = 'USD' | 'NGN'
+
+/** Monthly price for a plan at a given conversation volume (USD). */
 function priceAt(plan: Plan, volume: number): number | null {
   if (plan.base === null) return null
   if (plan.overagePer1000 === null || volume <= plan.included) return plan.base
@@ -130,27 +145,14 @@ function recommendedPlanId(volume: number): Plan['id'] {
 
 const fmt = (n: number) => n.toLocaleString('en-US')
 
-/* Competitor comparison — cheapest published paid tier, billed annually,
-   for a small 5-agent support team. Seats are the story: everyone else meters people. */
+/* Competitor comparison. Cheapest published paid tier, billed annually, for a
+   small 5-agent support team. Seats are the story: everyone else meters people. */
 const COMPARISON = [
-  {
-    name: 'Zendesk',
-    plan: 'Suite Team',
-    perSeat: 55,
-    model: '$55 / agent / mo · billed yearly',
-    team5: 275,
-  },
-  {
-    name: 'Freshworks',
-    plan: 'Pro',
-    perSeat: 55,
-    model: '$55 / agent / mo · billed yearly',
-    team5: 275,
-  },
+  { name: 'Zendesk', plan: 'Suite Team', model: '$55 / agent / mo, billed yearly', team5: 275 },
+  { name: 'Freshworks', plan: 'Pro', model: '$55 / agent / mo, billed yearly', team5: 275 },
   {
     name: 'Intercom',
     plan: 'Advanced + Fin',
-    perSeat: 85,
     model: '~$85 / seat / mo + $0.99 per AI resolution',
     team5: 425,
   },
@@ -159,27 +161,31 @@ const COMPARISON = [
 const FAQ: Array<{ q: string; a: string }> = [
   {
     q: 'What counts as a “conversation”?',
-    a: 'A conversation is one complete chat session between a visitor and the agent — not one per message. A visitor asking several questions in one sitting counts as a single conversation. This is what the plan volume and overage refer to.',
+    a: 'A conversation is one complete chat session between a visitor and the agent, not one per message. A visitor asking several questions in one sitting counts as a single conversation. This is what the plan volume and overage refer to.',
   },
   {
     q: 'What’s a “resolution”, and how is that cheaper than Intercom?',
-    a: 'A resolution is a conversation the AI closes end-to-end without a human. Intercom charges $0.99 for every Fin resolution on top of per-seat fees. With Lira you pay for conversation volume, not per resolution — even at our metered overage, the cost per AI-resolved conversation lands far below $0.99, and seats are always free.',
+    a: 'A resolution is a conversation the AI closes end to end without a human. Intercom charges $0.99 for every Fin resolution on top of per-seat fees. With Lira you pay for conversation volume, not per resolution. Even at our metered overage, the cost per AI-resolved conversation lands far below $0.99, and seats are always free.',
   },
   {
     q: 'Do you charge per agent or per seat?',
-    a: 'No. Every plan includes unlimited team seats. Zendesk, Freshworks, and Intercom all bill per agent — a 5-person team pays them $275–$425/mo before any AI. Lira meters the AI’s work instead, so growing your team never grows your bill.',
+    a: 'No. Every plan includes unlimited team seats. Zendesk, Freshworks, and Intercom all bill per agent, so a 5-person team pays them $275 to $425 a month before any AI. Lira meters the AI’s work instead, so growing your team never grows your bill.',
   },
   {
     q: 'What happens if I go over my included conversations?',
-    a: 'Nothing breaks. Lira keeps answering and automatically bills overage at your plan’s rate — $12 per 1,000 on Pro, $8 per 1,000 on Scale. You can set a cap if you’d rather pause at your limit.',
+    a: 'Nothing breaks. Lira keeps answering and automatically bills overage at your plan’s rate: $12 per 1,000 on Pro, $8 per 1,000 on Scale. You can set a cap if you’d rather pause at your limit.',
   },
   {
-    q: 'How does the free plan work?',
-    a: 'Free is free forever — 250 conversations a month, one widget, unlimited seats, no credit card. Paid plans add a 14-day trial so you can test the full feature set before you commit.',
+    q: 'Can I see prices in Naira?',
+    a: 'Yes. Use the USD / NGN toggle at the top of the plans to switch currency. Naira figures are indicative, based on a reference exchange rate; your subscription is charged in USD.',
+  },
+  {
+    q: 'How do I get started?',
+    a: 'Lira is invite-only while we onboard businesses one at a time. Speak to our team and we’ll set up your agent, confirm the right plan, and hand over your login. There’s no self-serve signup.',
   },
   {
     q: 'Monthly or annual?',
-    a: 'Both. Choose annual and get 2 months free — you pay for 10 and get 12.',
+    a: 'Both. Choose annual and get 2 months free: you pay for 10 and get 12.',
   },
   {
     q: 'Who processes payments?',
@@ -189,14 +195,24 @@ const FAQ: Array<{ q: string; a: string }> = [
 
 export function PricingPage() {
   const [volumeIdx, setVolumeIdx] = useState(2) // default: 2,000 / mo (Pro's home)
+  const [currency, setCurrency] = useState<CurrencyCode>('USD')
   const volume = VOLUME_STOPS[volumeIdx]
   const recommended = useMemo(() => recommendedPlanId(volume), [volume])
+
+  /** Format a USD amount in the currently selected currency. */
+  const money = (usd: number): string => {
+    if (currency === 'NGN') {
+      const val = Math.round((usd * NGN_PER_USD) / 100) * 100
+      return `₦${fmt(val)}`
+    }
+    return `$${fmt(usd)}`
+  }
 
   return (
     <MarketingLayout>
       <SEO
-        title="Pricing — Lira AI Support Agent"
-        description="Start free and scale as you grow. Unlimited team seats on every plan — pay only for the AI, not per agent. Free 250 conversations/mo, Pro $29/mo, Scale $99/mo. Beats Zendesk, Freshworks, and Intercom per-seat pricing."
+        title="Pricing | Lira AI Support Agent"
+        description="Start with a free plan and scale as you grow. Unlimited team seats on every plan, so you pay only for the AI, not per agent. Free 250 conversations/mo, Pro $29/mo, Scale $99/mo. Beats Zendesk, Freshworks, and Intercom per-seat pricing."
         keywords="Lira pricing, AI customer service pricing, AI support agent pricing, Zendesk alternative, Intercom alternative, Freshworks alternative, per resolution pricing, unlimited seats support"
         path="/pricing"
         jsonLd={{
@@ -204,7 +220,7 @@ export function PricingPage() {
           '@type': 'Product',
           name: 'Lira AI Support Agent',
           description:
-            'An AI customer service agent that answers questions 24/7 in multiple languages, resolves and captures leads, and hands off to your team — with unlimited seats and usage-based pricing.',
+            'An AI customer service agent that answers questions 24/7 in multiple languages, resolves and captures leads, and hands off to your team, with unlimited seats and usage-based pricing.',
           brand: { '@type': 'Brand', name: 'Lira' },
           offers: PLANS.map((p) => ({
             '@type': 'Offer',
@@ -229,7 +245,7 @@ export function PricingPage() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-base leading-relaxed text-gray-600 md:text-lg">
             One AI support agent that answers 24/7, resolves tickets, and captures leads. Every plan
-            includes <strong className="text-gray-900">unlimited team seats</strong> — you pay for
+            includes <strong className="text-gray-900">unlimited team seats</strong>. You pay for
             the AI, never per agent.
           </p>
           <div className="mt-8 inline-flex flex-wrap items-center justify-center gap-x-4 gap-y-2 rounded-full border border-gray-200 bg-white/70 px-5 py-2 text-xs font-semibold text-gray-700">
@@ -245,10 +261,33 @@ export function PricingPage() {
         </div>
       </section>
 
-      {/* ── Volume selector ──────────────────────────────────────────────── */}
+      {/* ── Controls: currency toggle + volume selector ──────────────────── */}
       <section className="bg-[#ebebeb] px-6 pb-6">
         <div className="mx-auto max-w-4xl text-center">
-          <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+          {/* Currency toggle */}
+          <div className="flex justify-center">
+            <div className="inline-flex items-center rounded-full border border-gray-300 bg-white p-1 text-sm font-black">
+              {(['USD', 'NGN'] as CurrencyCode[]).map((code) => {
+                const active = currency === code
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => setCurrency(code)}
+                    aria-pressed={active}
+                    className={`rounded-full px-4 py-1.5 transition-colors ${
+                      active ? 'bg-gray-900 text-white' : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {code === 'USD' ? '$ USD' : '₦ NGN'}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* Volume selector */}
+          <p className="mt-8 text-xs font-black uppercase tracking-widest text-gray-500">
             How many conversations a month?
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
@@ -312,8 +351,8 @@ export function PricingPage() {
                   </span>
                 )}
 
-                <div className="flex items-center gap-2">
-                  <span className={`h-2.5 w-2.5 rounded-full ${plan.dot}`} aria-hidden />
+                <div className="flex items-center gap-2.5">
+                  <plan.Icon className={`h-5 w-5 shrink-0 ${plan.accent}`} />
                   <h3
                     className={`text-lg font-black ${highlight ? 'text-white' : 'text-gray-900'}`}
                   >
@@ -347,7 +386,7 @@ export function PricingPage() {
                           highlight ? 'text-white' : 'text-gray-900'
                         }`}
                       >
-                        ${fmt(price)}
+                        {money(price)}
                       </span>
                       <span
                         className={`text-sm font-semibold ${
@@ -369,14 +408,14 @@ export function PricingPage() {
                       <>Volume pricing for {fmt(volume)}+ / mo</>
                     ) : overCap > 0 ? (
                       <>
-                        {fmt(plan.included)} included · +{fmt(volume - plan.included)} @ $
-                        {plan.overagePer1000}/1k = ${fmt(overCap)}
+                        {fmt(plan.included)} included, +{fmt(volume - plan.included)} @{' '}
+                        {money(plan.overagePer1000!)}/1k = {money(overCap)}
                       </>
                     ) : plan.overagePer1000 === null ? (
-                      <>{fmt(plan.included)} conversations / mo · then upgrade</>
+                      <>{fmt(plan.included)} conversations / mo</>
                     ) : (
                       <>
-                        {fmt(plan.included)} included · extra ${plan.overagePer1000} / 1,000
+                        {fmt(plan.included)} included, extra {money(plan.overagePer1000)} / 1,000
                       </>
                     )}
                   </p>
@@ -431,7 +470,10 @@ export function PricingPage() {
         </div>
 
         <p className="mt-8 text-center text-xs text-gray-500">
-          Prices in USD. Billed monthly unless stated. Choose annual and get 2 months free.
+          Billed monthly unless stated. Choose annual and get 2 months free.{' '}
+          {currency === 'NGN'
+            ? 'Naira is indicative, based on a reference rate; subscriptions are charged in USD.'
+            : 'Prices in USD.'}
         </p>
       </section>
 
@@ -447,8 +489,8 @@ export function PricingPage() {
             </h2>
             <p className="mx-auto mt-5 max-w-2xl text-base leading-relaxed text-gray-600">
               Here’s what a small <strong className="text-gray-900">5-agent</strong> support team
-              pays each month — at the competitors’ cheapest published tier, billed annually —
-              before a single AI resolution.
+              pays each month, at the competitors’ cheapest published tier billed annually, before a
+              single AI resolution.
             </p>
           </div>
 
@@ -456,13 +498,13 @@ export function PricingPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-[#fbfaf6] text-gray-500">
                 <tr>
-                  <th className="px-5 py-4 font-black uppercase tracking-widest text-[11px]">
+                  <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest">
                     Provider
                   </th>
-                  <th className="px-5 py-4 font-black uppercase tracking-widest text-[11px]">
+                  <th className="px-5 py-4 text-[11px] font-black uppercase tracking-widest">
                     How they charge
                   </th>
-                  <th className="px-5 py-4 text-right font-black uppercase tracking-widest text-[11px]">
+                  <th className="px-5 py-4 text-right text-[11px] font-black uppercase tracking-widest">
                     Team of 5 / mo
                   </th>
                 </tr>
@@ -476,7 +518,7 @@ export function PricingPage() {
                     </td>
                     <td className="px-5 py-4 text-gray-600">{c.model}</td>
                     <td className="px-5 py-4 text-right font-black tabular-nums text-gray-900">
-                      ${fmt(c.team5)}+
+                      {money(c.team5)}+
                     </td>
                   </tr>
                 ))}
@@ -486,10 +528,10 @@ export function PricingPage() {
                     <span className="text-gray-400">· Pro</span>
                   </td>
                   <td className="px-5 py-4 text-gray-300">
-                    $29 / mo flat · unlimited seats · 2,000 AI conversations
+                    {money(29)} / mo flat, unlimited seats, 2,000 AI conversations
                   </td>
                   <td className="px-5 py-4 text-right font-black tabular-nums text-emerald-400">
-                    $29
+                    {money(29)}
                   </td>
                 </tr>
               </tbody>
@@ -498,7 +540,7 @@ export function PricingPage() {
 
           <p className="mx-auto mt-6 max-w-2xl text-center text-sm leading-relaxed text-gray-500">
             Add a 6th, 20th, or 100th teammate and their bill climbs every time. On Lira it doesn’t
-            move — you only pay when conversation volume grows. And with no{' '}
+            move; you only pay when conversation volume grows. And with no{' '}
             <strong className="text-gray-700">$0.99-per-resolution</strong> tax, the AI resolving
             more tickets makes you <em>cheaper</em> per outcome, not pricier.
           </p>
@@ -515,22 +557,25 @@ export function PricingPage() {
             <div className="rounded-3xl border border-gray-200 bg-white p-7">
               <div className="flex items-baseline justify-between">
                 <p className="text-lg font-black text-gray-900">Extra conversations</p>
-                <p className="text-sm font-black tabular-nums text-emerald-600">from $8 / 1,000</p>
+                <p className="text-sm font-black tabular-nums text-emerald-600">
+                  from {money(8)} / 1,000
+                </p>
               </div>
               <p className="mt-3 text-[15px] leading-relaxed text-gray-600">
-                Go past your plan’s included volume and Lira keeps answering — overage is billed
-                automatically at <strong>$12 / 1,000</strong> on Pro and <strong>$8 / 1,000</strong>{' '}
-                on Scale. Set a cap anytime if you’d rather pause at your limit.
+                Go past your plan’s included volume and Lira keeps answering. Overage is billed
+                automatically at <strong>{money(12)} / 1,000</strong> on Pro and{' '}
+                <strong>{money(8)} / 1,000</strong> on Scale. Set a cap anytime if you’d rather
+                pause at your limit.
               </p>
             </div>
             <div className="rounded-3xl border border-gray-200 bg-white p-7">
               <div className="flex items-baseline justify-between">
                 <p className="text-lg font-black text-gray-900">No per-seat, no per-resolution</p>
-                <p className="text-sm font-black tabular-nums text-emerald-600">$0</p>
+                <p className="text-sm font-black tabular-nums text-emerald-600">{money(0)}</p>
               </div>
               <p className="mt-3 text-[15px] leading-relaxed text-gray-600">
                 Unlimited teammates on every plan, and no charge each time the AI resolves a ticket.
-                The only thing that scales your bill is conversation volume — nothing else.
+                The only thing that scales your bill is conversation volume, nothing else.
               </p>
             </div>
           </div>
@@ -549,13 +594,13 @@ export function PricingPage() {
                 Monthly or annual
               </p>
               <p className="mt-3 text-[15px] leading-relaxed text-gray-700">
-                Choose annual and get <strong>2 months free</strong> — pay for 10, get 12.
+                Choose annual and get <strong>2 months free</strong>: pay for 10, get 12.
               </p>
             </div>
             <div className="rounded-2xl border border-gray-200 p-6">
               <p className="text-xs font-black uppercase tracking-widest text-gray-500">Flexible</p>
               <p className="mt-3 text-[15px] leading-relaxed text-gray-700">
-                Upgrade, downgrade, or cancel anytime — changes take effect from your next billing
+                Upgrade, downgrade, or cancel anytime. Changes take effect from your next billing
                 cycle.
               </p>
             </div>
@@ -576,7 +621,7 @@ export function PricingPage() {
             </p>
             <p className="mt-3 text-[15px] leading-relaxed text-gray-700">
               A conversation is one complete chat session between a visitor and the agent (not per
-              message) — so a visitor asking several questions in one sitting counts as a single
+              message), so a visitor asking several questions in one sitting counts as a single
               conversation. This is what plan volume and overage refer to.
             </p>
           </div>
@@ -634,15 +679,15 @@ export function PricingPage() {
             Put Lira on your site today.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-gray-300 md:text-lg">
-            Start free — 250 conversations a month, unlimited seats, no credit card. Upgrade the day
-            it pays for itself.
+            See it answer your customers in the live demo, then speak to our team to get set up. We
+            onboard businesses personally, so there’s no self-serve signup.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              to="/signup"
+              to="/contact"
               className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-gray-900 transition-colors hover:bg-gray-100"
             >
-              Start for free
+              Speak to an expert
               <ArrowRightIcon className="h-4 w-4" />
             </Link>
             <a
