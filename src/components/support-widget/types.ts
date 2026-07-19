@@ -140,6 +140,10 @@ export interface AgentCard {
     sub_progress?: Array<{ label: string; done: boolean }>
     docs?: string
     optional?: boolean
+    /** Host-dashboard route this step opens when clicked (via lira-host-navigate). */
+    route?: string
+    /** Rendered disabled until support is activated; clicking shows a brief notice. */
+    locked?: boolean
   }>
   /** Overall stepper progress, e.g. { done: 2, total: 5 }. */
   progress?: { done: number; total: number }
@@ -205,6 +209,10 @@ export interface IncomingWsMessage {
     sub_progress?: Array<{ label: string; done: boolean }>
     docs?: string
     optional?: boolean
+    /** Host-dashboard route this step opens when clicked (via lira-host-navigate). */
+    route?: string
+    /** Rendered disabled until support is activated; clicking shows a brief notice. */
+    locked?: boolean
   }>
   /** Overall stepper progress, e.g. { done: 2, total: 5 }. */
   progress?: { done: number; total: number }

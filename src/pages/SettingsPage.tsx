@@ -45,6 +45,7 @@ import {
   changePassword,
   deleteAccount,
   leaveOrganization,
+  listOrgMembers,
   getMyPlan,
   requestPlanChange,
   cancelPlanChangeRequest,
@@ -252,8 +253,13 @@ const SANDBOX_LLM_CALLS_CAP = 2000
 
 function SubscriptionSection() {
   const { currentOrgId } = useOrgStore()
+  const userId = useAuthStore((s) => s.userId)
   const navigate = useNavigate()
   const [plan, setPlan] = useState<MyPlan | null>(null)
+  // Only org owners/admins may request plan changes — members get a
+  // read-only view. Defaults true so a failed role lookup never locks
+  // an admin out; the backend still enforces the role on every POST.
+  const [canManage, setCanManage] = useState(true)
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>('production')
   const [usage, setUsage] = useState<{
     conversations: number
@@ -274,6 +280,13 @@ function SubscriptionSection() {
       const p = await getMyPlan(currentOrgId ?? undefined)
       setPlan(p)
       if (currentOrgId) {
+        try {
+          const members = await listOrgMembers(currentOrgId)
+          const me = members.find((m) => m.user_id === userId)
+          setCanManage(!me || me.role === 'owner' || me.role === 'admin')
+        } catch {
+          // role lookup failed — keep manage UI, backend enforces anyway
+        }
         const cfg = await getSupportConfig(currentOrgId)
         setEnvironment(cfg.environment ?? 'production')
         setUsage({
@@ -293,7 +306,7 @@ function SubscriptionSection() {
     } finally {
       setLoading(false)
     }
-  }, [currentOrgId])
+  }, [currentOrgId, userId])
 
   useEffect(() => {
     void load()
@@ -439,7 +452,9 @@ function SubscriptionSection() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={busy || !!plan.pendingRequest || sandboxExtensionLimitReached}
+                  disabled={
+                    busy || !canManage || !!plan.pendingRequest || sandboxExtensionLimitReached
+                  }
                   onClick={handleSandboxExtension}
                 >
                   {plan.pendingRequest?.type === 'SANDBOX_EXTENSION'
@@ -505,7 +520,12 @@ function SubscriptionSection() {
                 </>
               )}
             </p>
-            <Button variant="outline" size="sm" disabled={busy} onClick={handleCancel}>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={busy || !canManage}
+              onClick={handleCancel}
+            >
               Cancel
             </Button>
           </div>
@@ -514,9 +534,9 @@ function SubscriptionSection() {
 
       <Section icon={CreditCardIcon} title="Change plan">
         <p className="mb-4 text-sm text-muted-foreground">
-          Pick a plan and the Lira team will review and apply the change. Upgrades take effect on
-          approval. On a downgrade, paid features lock when the change is applied, while your
-          current usage limits stay in place until your next monthly reset.
+          {canManage
+            ? 'Pick a plan and the Lira team will review and apply the change. Upgrades take effect on approval. On a downgrade, paid features lock when the change is applied, while your current usage limits stay in place until your next monthly reset.'
+            : 'Only org owners and admins can request plan changes. Ask an admin of this organization if you need a different plan.'}
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {plan.allTiers.map(({ tier, entitlements }) => {
@@ -543,7 +563,9 @@ function SubscriptionSection() {
                   className="mt-3"
                   size="sm"
                   variant={isCurrent ? 'outline' : 'default'}
-                  disabled={busy || isCurrent || !!plan.pendingRequest || isPendingTarget}
+                  disabled={
+                    busy || !canManage || isCurrent || !!plan.pendingRequest || isPendingTarget
+                  }
                   onClick={() => handleRequest(tier)}
                 >
                   {isCurrent ? 'Current plan' : isPendingTarget ? 'Requested' : 'Request change'}

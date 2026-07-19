@@ -2138,6 +2138,31 @@ export function getWidgetStyles(primaryColor: string): string {
       text-decoration: none;
     }
     .lira-stepper-docs:hover { text-decoration: underline; }
+    /* Clickable steps navigate the host dashboard to the step's page. */
+    .lira-stepper-step.clickable { cursor: pointer; border-radius: 10px; }
+    .lira-stepper-step.clickable:hover { background: #f9fafb; }
+    .lira-stepper-step.clickable:hover .lira-stepper-step-title {
+      color: var(--lira-primary, #3730a3);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+    .lira-stepper-step.clickable:focus-visible {
+      outline: 2px solid var(--lira-primary, #3730a3);
+      outline-offset: 2px;
+    }
+    /* Locked steps (gated until support is activated). The transient
+       locked-note is intentionally NOT dimmed, so it stays readable. */
+    .lira-stepper-step.locked { cursor: not-allowed; }
+    .lira-stepper-step.locked .lira-stepper-step-title,
+    .lira-stepper-step.locked .lira-stepper-step-desc,
+    .lira-stepper-step.locked .lira-stepper-sub,
+    .lira-stepper-step.locked .lira-stepper-docs,
+    .lira-stepper-step.locked .lira-stepper-dot { opacity: 0.45; }
+    .lira-stepper-locked-note {
+      margin-top: 6px;
+      font-size: 11.5px; font-weight: 600;
+      color: #b45309;
+    }
 
     /* ── Generative UI: confirm ─────────────────────────────── */
     .lira-confirm {

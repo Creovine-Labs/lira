@@ -534,6 +534,10 @@ class LiraSupportWidget {
     const prevContextOrgId = this.currentDashboardContextOrgId()
     this.latestRuntimeContext = detail.context
     this.sendRuntimeContext(detail.context)
+    // Real-time setup-guide sync: the dashboard republishes context when
+    // support/KB state changes (not just on route change), so an activation
+    // unlocks any locked stepper steps in already-rendered cards instantly.
+    this.refreshStepperGating()
     const nextContextOrgId = this.currentDashboardContextOrgId()
     if (prevContextOrgId !== nextContextOrgId) {
       this.handleDashboardContextOrgChange()
@@ -3937,20 +3941,44 @@ class LiraSupportWidget {
     // ── Steps list ───────────────────────────────────────────────────
     const list = document.createElement('ol')
     list.className = 'lira-stepper-list'
+    let stepIndex = 0
     for (const step of card.steps!) {
+      stepIndex += 1
       const li = document.createElement('li')
-      li.className = `lira-stepper-step status-${step.status}${step.optional ? ' optional' : ''}`
+      const locked = this.isStepLocked(step)
+      li.className =
+        `lira-stepper-step status-${step.status}` +
+        `${step.optional ? ' optional' : ''}` +
+        `${locked ? ' locked' : ''}` +
+        `${step.route && !locked ? ' clickable' : ''}`
+      // Stamp identity + gating so refreshStepperGating() can live-update
+      // already-rendered cards when the host context reports activation.
+      li.dataset.stepKey = step.key
+      if (step.locked) li.dataset.stepGated = '1'
+      if (step.route) {
+        li.dataset.stepRoute = step.route
+        // Click → navigate the host dashboard to this step's page. Lock
+        // state is re-checked at CLICK time (not render time) so a card
+        // rendered before activation unlocks the moment the live runtime
+        // context reports support as activated.
+        li.setAttribute('role', 'button')
+        li.tabIndex = 0
+        const onActivate = () => this.handleStepperStepClick(step, li)
+        li.addEventListener('click', onActivate)
+        li.addEventListener('keydown', (e) => {
+          const key = (e as KeyboardEvent).key
+          if (key === 'Enter' || key === ' ') {
+            e.preventDefault()
+            onActivate()
+          }
+        })
+      }
 
-      // Status dot with check / index
+      // Status dot: check when done, plain step number otherwise (numbered
+      // steps so the visitor always knows where they are — no emojis).
       const dot = document.createElement('span')
       dot.className = 'lira-stepper-dot'
-      if (step.status === 'done') {
-        dot.textContent = '✓'
-      } else if (step.status === 'active') {
-        dot.textContent = '●'
-      } else {
-        dot.textContent = ''
-      }
+      dot.textContent = step.status === 'done' ? '✓' : String(stepIndex)
       li.appendChild(dot)
 
       // Content
@@ -3986,13 +4014,15 @@ class LiraSupportWidget {
         content.appendChild(subUl)
       }
 
-      if (step.docs && step.status !== 'done') {
+      if (step.docs) {
         const link = document.createElement('a')
         link.className = 'lira-stepper-docs'
         link.href = step.docs
         link.target = '_blank'
         link.rel = 'noopener noreferrer'
         link.textContent = 'View guide →'
+        // Docs open in a new tab; don't also trigger the step's navigation.
+        link.addEventListener('click', (e) => e.stopPropagation())
         content.appendChild(link)
       }
 
@@ -4002,6 +4032,88 @@ class LiraSupportWidget {
     wrap.appendChild(list)
 
     return wrap
+  }
+
+  /** True when the live host runtime context reports support as activated. */
+  private hostSupportActivated(): boolean {
+    const ctx = this.latestRuntimeContext ?? readLiraRuntimeContext() ?? null
+    return ctx?.support?.activated === true
+  }
+
+  /** A gated step stays locked only while the host has not activated support. */
+  private isStepLocked(step: { locked?: boolean }): boolean {
+    return step.locked === true && !this.hostSupportActivated()
+  }
+
+  private handleStepperStepClick(
+    step: { route?: string; locked?: boolean },
+    li: HTMLElement
+  ): void {
+    if (this.isStepLocked(step)) {
+      this.showStepperLockedNote(li)
+      return
+    }
+    if (!step.route) return
+    this.hostNavigate(step.route)
+  }
+
+  /** Brief inline "Activate customer support first." notice on a locked step. */
+  private showStepperLockedNote(li: HTMLElement): void {
+    const content = li.querySelector('.lira-stepper-content')
+    if (!content || content.querySelector('.lira-stepper-locked-note')) return
+    const note = document.createElement('div')
+    note.className = 'lira-stepper-locked-note'
+    note.textContent = 'Activate customer support first.'
+    content.appendChild(note)
+    setTimeout(() => note.remove(), 2600)
+  }
+
+  /**
+   * Same-tab host navigation used by clickable stepper steps. Mirrors the
+   * 'navigate' WS message path: the host dashboard intercepts the cancelable
+   * lira-host-navigate event and routes via React Router (SPA nav keeps the
+   * widget mounted); embeds without a listener fall back to window.open.
+   */
+  private hostNavigate(url: string): void {
+    try {
+      const evt = new CustomEvent('lira-host-navigate', {
+        detail: { url, target: '_self' },
+        cancelable: true,
+      })
+      window.dispatchEvent(evt)
+      if (evt.defaultPrevented) return
+    } catch {
+      /* CustomEvent unavailable — fall through to window.open */
+    }
+    try {
+      window.open(url, '_self', 'noopener')
+    } catch {
+      /* blocked — nothing sensible left to do */
+    }
+  }
+
+  /**
+   * Live-sync rendered stepper cards with the latest host runtime context.
+   * When support flips to activated, gated steps unlock in place and the
+   * "activate" step flips to done styling — no reload and no "I'm done"
+   * message needed. The server re-emits the full truth on the next
+   * lira_get_setup_progress call; this keeps the visible card honest in
+   * the meantime.
+   */
+  private refreshStepperGating(): void {
+    if (!this.hostSupportActivated()) return
+    this.shadow.querySelectorAll('.lira-stepper-step[data-step-gated="1"]').forEach((el) => {
+      el.classList.remove('locked')
+      if ((el as HTMLElement).dataset.stepRoute) el.classList.add('clickable')
+      el.querySelector('.lira-stepper-locked-note')?.remove()
+    })
+    this.shadow.querySelectorAll('.lira-stepper-step[data-step-key="activate"]').forEach((el) => {
+      if (el.classList.contains('status-done')) return
+      el.classList.remove('status-active', 'status-pending')
+      el.classList.add('status-done')
+      const dot = el.querySelector('.lira-stepper-dot')
+      if (dot) dot.textContent = '✓'
+    })
   }
 
   private buildConfirmEl(msg: ChatMessage): HTMLElement {

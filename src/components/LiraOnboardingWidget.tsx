@@ -128,6 +128,13 @@ export function LiraOnboardingWidget() {
     return () => window.removeEventListener('lira:action', handler)
   }, [])
 
+  // Republish runtime context on EVERY relevant state change, not just route
+  // changes: `runtimeContext` is memoized over supportConfig, kbEntries.length,
+  // and crawlStatus, so activating support or a crawl adding pages re-fires
+  // this effect immediately. The widget forwards each publish over WS as a
+  // `context_update`, which is what (a) lets the AI mark setup-guide steps
+  // done without the user saying "done", and (b) unlocks the gated stepper
+  // steps in-place the moment support is activated.
   useEffect(() => {
     if (!token || !userEmail || !currentOrg) return
     publishLiraRuntimeContext(runtimeContext)
