@@ -10,11 +10,9 @@ import {
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
   CodeBracketIcon,
-  Cog6ToothIcon,
   DevicePhoneMobileIcon,
   EyeIcon,
   EyeSlashIcon,
-  GlobeAltIcon,
   CreditCardIcon,
   EnvelopeIcon,
   ExclamationTriangleIcon,
@@ -1420,19 +1418,13 @@ function SupportSettingsSection() {
     updateConfig,
   ])
 
-  const [activeTab, setActiveTab] = useState<
-    | 'widget'
-    | 'secret'
-    | 'channels'
-    | 'whatsapp'
-    | 'portal'
-    | 'behavior'
-    | 'escalation'
-    | 'mobile'
-    | 'health'
-    | 'audit'
-    | 'capabilities'
-  >('widget')
+  // Grouped tab keys. The old granular keys (widget/secret/mobile/whatsapp/
+  // portal/capabilities/audit) still resolve via LEGACY_SUPPORT_TAB_MAP so any
+  // stored value, deep link, or internal setActiveTab('widget') keeps working.
+  const [activeTab, setActiveTabState] = useState<SupportSettingsTabKey>('connect')
+  const setActiveTab = (key: string) => {
+    setActiveTabState(LEGACY_SUPPORT_TAB_MAP[key] ?? 'connect')
+  }
 
   // Show the "not activated" prompt for both null configs AND for the
   // empty default the backend now returns for unactivated orgs.
@@ -1450,18 +1442,47 @@ function SupportSettingsSection() {
     )
   }
 
-  const SUPPORT_TABS = [
-    { key: 'widget' as const, label: 'Web SDK', icon: CodeBracketIcon },
-    { key: 'secret' as const, label: 'Secret', icon: KeyIcon },
-    { key: 'channels' as const, label: 'Channels', icon: EnvelopeIcon },
-    { key: 'whatsapp' as const, label: 'WhatsApp', icon: DevicePhoneMobileIcon },
-    { key: 'portal' as const, label: 'Hosted', icon: GlobeAltIcon },
-    { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
-    { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
-    { key: 'mobile' as const, label: 'Mobile', icon: DevicePhoneMobileIcon },
-    { key: 'capabilities' as const, label: 'Capabilities', icon: SparklesIcon },
-    { key: 'health' as const, label: 'Health', icon: ShieldCheckIcon },
-    { key: 'audit' as const, label: 'Audit', icon: ClipboardDocumentCheckIcon },
+  const SUPPORT_TABS: Array<{
+    key: SupportSettingsTabKey
+    label: string
+    icon: typeof CodeBracketIcon
+    description: string
+  }> = [
+    {
+      key: 'connect',
+      label: 'Get connected',
+      icon: CodeBracketIcon,
+      description:
+        'Install Lira in your product: the web SDK embed, the signing secret for identified visitors, and mobile.',
+    },
+    {
+      key: 'channels',
+      label: 'Channels',
+      icon: EnvelopeIcon,
+      description:
+        'Where customers reach you: web chat, voice, email, WhatsApp, and the Lira-hosted page.',
+    },
+    {
+      key: 'behavior',
+      label: 'AI behavior',
+      icon: SparklesIcon,
+      description:
+        'How the AI replies, when it holds back, and which actions it is allowed to take.',
+    },
+    {
+      key: 'escalation',
+      label: 'Escalation',
+      icon: ExclamationTriangleIcon,
+      description:
+        'Where conversations go when a human needs to step in: email, SLA, Slack, and Linear.',
+    },
+    {
+      key: 'health',
+      label: 'Health & audit',
+      icon: ShieldCheckIcon,
+      description:
+        'Integration diagnostics plus a log of every action the agent ran on your behalf.',
+    },
   ]
 
   const escapedGreeting = (greetingMessage ?? 'Hi! How can we help?').replace(/"/g, '&quot;')
@@ -1564,9 +1585,18 @@ function SupportSettingsSection() {
         </Button>
       </div>
 
-      {/* ── Web SDK tab ── */}
-      {activeTab === 'widget' && (
+      {/* One-line plain-language description of the active tab */}
+      <p className="text-xs text-muted-foreground">
+        {SUPPORT_TABS.find((t) => t.key === activeTab)?.description}
+      </p>
+
+      {/* ── Get connected: Web SDK ── */}
+      {activeTab === 'connect' && (
         <div className="space-y-4">
+          <SupportGroupHeading
+            title="Web SDK"
+            hint="Embed Lira chat and the full-page support experience inside your own product."
+          />
           {/* Full-page SDK */}
           <div className="rounded-lg border px-4 py-4 space-y-3">
             <div>
@@ -1749,39 +1779,70 @@ function SupportSettingsSection() {
         </div>
       )}
 
-      {/* ── Secret tab ── HMAC widget secret + identified-visitor guide.
-          Migrated from the old /support/configuration page; the secret is
-          the only thing customers really need from there. */}
-      {activeTab === 'secret' && (
-        <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
+      {/* ── Get connected: widget secret ── HMAC widget secret +
+          identified-visitor guide. The secret is part of install/identity,
+          so it lives with the SDK instructions. */}
+      {activeTab === 'connect' && (
+        <div className="space-y-4">
+          <SupportGroupHeading
+            title="Widget secret"
+            hint="Signs identify() calls so Lira can trust who a visitor is."
+          />
+          <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
+        </div>
       )}
 
-      {/* ── Mobile tab ── placeholder. Native iOS/Android SDKs are on the
-          roadmap; this tab exists today so customers see we have a plan. */}
-      {activeTab === 'mobile' && <SupportMobileTab />}
+      {/* ── Get connected: mobile ── placeholder. Native iOS/Android SDKs are
+          on the roadmap; this section exists today so customers see the plan. */}
+      {activeTab === 'connect' && (
+        <div className="space-y-4">
+          <SupportGroupHeading
+            title="Mobile SDKs"
+            hint="Native iOS and Android SDKs, on the roadmap."
+          />
+          <SupportMobileTab />
+        </div>
+      )}
 
-      {/* ── Health tab — run integration diagnostics on demand ── */}
-      {activeTab === 'health' && <SupportHealthTab orgId={currentOrgId!} />}
+      {/* ── Health & audit: integration diagnostics ── */}
+      {activeTab === 'health' && (
+        <div className="space-y-4">
+          <SupportGroupHeading
+            title="Integration health"
+            hint="Run diagnostics on demand to confirm your setup is working."
+          />
+          <SupportHealthTab orgId={currentOrgId!} />
+        </div>
+      )}
 
-      {/* ── Capabilities tab — server-side action/resource registration ── */}
-      {activeTab === 'capabilities' && <SupportCapabilitiesTab orgId={currentOrgId!} />}
+      {/* ── Health & audit: agent runtime action runs ── */}
+      {activeTab === 'health' && (
+        <div className="space-y-4">
+          <SupportGroupHeading
+            title="Agent audit log"
+            hint="Every resource and action the agent used while helping customers."
+          />
+          <SupportAuditTab orgId={currentOrgId!} />
+        </div>
+      )}
 
-      {/* ── Audit tab — agent runtime action runs ── */}
-      {activeTab === 'audit' && <SupportAuditTab orgId={currentOrgId!} />}
-
-      {/* ── Channels tab ── */}
+      {/* ── Channels: core channels ── */}
       {activeTab === 'channels' && (
         <div className="space-y-4">
-          {/* Web SDK — configure in Web SDK tab */}
+          <SupportGroupHeading
+            title="Core channels"
+            hint="Toggle web chat, voice, and email support on or off."
+          />
+          {/* Web SDK — configure in Get connected tab */}
           <button
             type="button"
             className="w-full rounded-lg border border-gray-100 bg-gray-50 px-4 py-3 cursor-pointer hover:bg-gray-100 transition text-left"
-            onClick={() => setActiveTab('widget')}
+            onClick={() => setActiveTab('connect')}
           >
             <div className="flex items-center gap-2">
               <CodeBracketIcon className="h-4 w-4 text-gray-400" />
               <p className="text-sm font-medium text-gray-500">Full-page Support SDK</p>
-              <span className="text-xs text-gray-400">→ Web SDK tab</span>
+              <span className="text-xs text-gray-400">→ Get connected tab</span>
             </div>
           </button>
 
@@ -1892,12 +1953,24 @@ function SupportSettingsSection() {
         </div>
       )}
 
-      {/* ── WhatsApp tab ── */}
-      {activeTab === 'whatsapp' && <SupportWhatsAppTab orgId={currentOrgId!} />}
-
-      {/* ── Hosted fallback tab ── */}
-      {activeTab === 'portal' && (
+      {/* ── Channels: WhatsApp ── */}
+      {activeTab === 'channels' && (
         <div className="space-y-4">
+          <SupportGroupHeading
+            title="WhatsApp"
+            hint="Connect a WhatsApp Business number so Lira can answer there too."
+          />
+          <SupportWhatsAppTab orgId={currentOrgId!} />
+        </div>
+      )}
+
+      {/* ── Channels: hosted page (formerly the "Hosted" / portal tab) ── */}
+      {activeTab === 'channels' && (
+        <div className="space-y-4">
+          <SupportGroupHeading
+            title="Hosted page"
+            hint="A Lira-hosted support page for teams that can't embed code yet."
+          />
           {/* What this is + what to do with it */}
           <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 space-y-2">
             <p className="text-sm font-semibold text-blue-900">Hosted portal fallback</p>
@@ -2236,9 +2309,13 @@ function SupportSettingsSection() {
         </div>
       )}
 
-      {/* ── Behavior tab ── */}
+      {/* ── AI behavior: reply behavior ── */}
       {activeTab === 'behavior' && (
         <div className="space-y-4">
+          <SupportGroupHeading
+            title="Reply behavior"
+            hint="Auto-reply, confidence threshold, and monthly volume limits."
+          />
           <div className="flex items-start justify-between rounded-lg border px-4 py-3">
             <div>
               <p className="text-sm font-medium text-foreground">Auto-reply</p>
@@ -2308,6 +2385,17 @@ function SupportSettingsSection() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ── AI behavior: capabilities — server-side action/resource registration ── */}
+      {activeTab === 'behavior' && (
+        <div className="space-y-4">
+          <SupportGroupHeading
+            title="Capabilities"
+            hint="Register the server-side actions and resources the agent may use."
+          />
+          <SupportCapabilitiesTab orgId={currentOrgId!} />
         </div>
       )}
 
@@ -2391,6 +2479,39 @@ function SupportSettingsSection() {
           </Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Grouped Support-settings tab keys (post-consolidation). */
+type SupportSettingsTabKey = 'connect' | 'channels' | 'behavior' | 'escalation' | 'health'
+
+/**
+ * Maps the pre-consolidation tab keys (one tab per feature) to the grouped
+ * tabs, so old deep links / stored values / internal setActiveTab('widget')
+ * calls resolve to the right group. New keys map to themselves.
+ */
+const LEGACY_SUPPORT_TAB_MAP: Record<string, SupportSettingsTabKey> = {
+  connect: 'connect',
+  widget: 'connect',
+  secret: 'connect',
+  mobile: 'connect',
+  channels: 'channels',
+  whatsapp: 'channels',
+  portal: 'channels',
+  behavior: 'behavior',
+  capabilities: 'behavior',
+  escalation: 'escalation',
+  health: 'health',
+  audit: 'health',
+}
+
+/** Subheading used inside a grouped Support-settings tab. */
+function SupportGroupHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="border-b border-gray-100 pb-2">
+      <p className="text-sm font-semibold text-gray-900">{title}</p>
+      {hint && <p className="mt-0.5 text-xs text-muted-foreground">{hint}</p>}
     </div>
   )
 }
@@ -3500,7 +3621,11 @@ function SupportAuditTab({ orgId }: { orgId: string }) {
             runs.filter((r) => r.status === 'failed' || r.status === 'cancelled').length
           )}
         />
-        <AuditMetric label="Estimated model cost" value={`$${totalEstimatedCost.toFixed(4)}`} />
+        <AuditMetric
+          label="Estimated model cost"
+          value={`$${totalEstimatedCost.toFixed(4)}`}
+          hint="Estimate, not a bill. Token counts come from the model provider's usage reports where available (split evenly across the actions in a turn) and from message-size heuristics otherwise, priced at a flat $3 per 1M input / $15 per 1M output tokens regardless of model."
+        />
       </div>
 
       {error && (
@@ -3777,9 +3902,12 @@ function SupportCapabilitiesTab({ orgId }: { orgId: string }) {
   )
 }
 
-function AuditMetric({ label, value }: { label: string; value: string }) {
+function AuditMetric({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
-    <div className="rounded-xl border border-gray-200 bg-white px-4 py-3">
+    <div
+      title={hint}
+      className={cn('rounded-xl border border-gray-200 bg-white px-4 py-3', hint && 'cursor-help')}
+    >
       <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">{label}</p>
       <p className="mt-1 text-lg font-semibold text-gray-900">{value}</p>
     </div>

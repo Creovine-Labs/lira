@@ -291,6 +291,7 @@ function buildRuntimeContext(args: {
     },
     support: {
       activated: Boolean(supportConfig?.activated),
+      environment: supportConfig?.environment ?? null,
       chat_enabled: Boolean(supportConfig?.chat_enabled),
       portal_enabled: Boolean(supportConfig?.portal_enabled),
       portal_chat_enabled: Boolean(supportConfig?.portal_chat_enabled),

@@ -33,6 +33,7 @@ export interface LiraRuntimeContext {
   }
   support?: {
     activated?: boolean
+    environment?: 'sandbox' | 'production' | null
     chat_enabled?: boolean
     portal_enabled?: boolean
     portal_chat_enabled?: boolean
