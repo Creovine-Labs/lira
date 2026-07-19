@@ -69,7 +69,6 @@ function SupportKnowledgePage() {
       <div className="mx-auto max-w-4xl">
         {/* Header */}
         <div className="mb-5">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Knowledge</h1>
           <p className="mt-1 text-sm text-gray-400">
             Manage support-specific knowledge and review AI-generated draft entries

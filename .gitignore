@@ -47,3 +47,8 @@ docs/LIRA_MARKET_RESEARCH.md
 # load the unreleased widget without pushing to the CDN. Not for commit.
 public/dev/
 
+
+# Confidential — client docs and internal strategy; repo is public, never commit
+Riverly_docs/
+docs/lira-product-vision-v1.txt
+docs/platform/customer-support/RIVERLY_PILOT_PLAN.md

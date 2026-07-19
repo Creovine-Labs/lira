@@ -68,7 +68,10 @@ export function DemoEntryModal({ open, onClose }: DemoEntryModalProps) {
       // network call. The demo works regardless of backend availability.
       createDemoProfile(trimmed, 'growth')
       onClose()
-      navigate(mode === 'help' ? '/demo/help' : '/demo')
+      // 'help' mode → the true full-page SDK support center (layout:
+      // support_center). The old hand-built /demo/help page is retired from
+      // the demo flow.
+      navigate(mode === 'help' ? '/demo/support-center' : '/demo')
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Could not start demo'
       setError(message)

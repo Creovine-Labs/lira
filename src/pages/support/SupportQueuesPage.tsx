@@ -106,7 +106,6 @@ function SupportQueuesPage() {
       <div className="mx-auto max-w-5xl">
         <header className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Queues</h1>
             <p className="mt-1 max-w-xl text-sm text-gray-500">
               Group tickets into team queues. Choose how new tickets get assigned, and add the

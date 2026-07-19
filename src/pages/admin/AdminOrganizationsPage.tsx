@@ -114,8 +114,11 @@ export function AdminOrganizationsPage() {
       setOrgs((prev) => prev.filter((o) => o.org_id !== deleteTarget.org_id))
       setSelected(null)
       setDeleteTarget(null)
-    } catch {
-      /* ignore */
+      toast.success('Organization deleted')
+    } catch (err) {
+      const msg =
+        err instanceof Error ? err.message.replace(/^\d+:\s*/, '') : 'Could not delete organization'
+      toast.error(msg)
     } finally {
       setDeleting(false)
     }

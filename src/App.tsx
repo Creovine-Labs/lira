@@ -29,6 +29,9 @@ import {
   PricingPage,
   DemoSitePage,
   DemoHelpPage,
+  SupportCenterDemoPage,
+  LiraForFintechPage,
+  LiraForHospitalityPage,
   ResourcesPage,
   TutorialsPage,
   DocsHubPage,
@@ -72,7 +75,6 @@ import {
   SupportCustomerDetailPage,
   SupportInboxPage,
   SupportCustomersPage,
-  SupportActionsPage,
   SupportProactivePage,
   SupportAnalyticsPage,
   SupportOutboxPage,
@@ -171,6 +173,9 @@ function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />
         <Route path="/demo/help" element={<DemoHelpPage />} />
+        <Route path="/demo/support-center" element={<SupportCenterDemoPage />} />
+        <Route path="/for/fintech" element={<LiraForFintechPage />} />
+        <Route path="/for/hospitality" element={<LiraForHospitalityPage />} />
         <Route path="/resources" element={<ResourcesPage />} />
         <Route path="/docs" element={<DocsHubPage />} />
         <Route path="/docs/:slug" element={<DocArticlePage />} />
@@ -248,7 +253,6 @@ function App() {
           <Route path="/support/tickets/:ticketId" element={<SupportTicketDetailPage />} />
           <Route path="/support/inbox" element={<SupportInboxPage />} />
           <Route path="/support/customers" element={<SupportCustomersPage />} />
-          <Route path="/support/actions" element={<SupportActionsPage />} />
           <Route path="/support/proactive" element={<SupportProactivePage />} />
           <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
           <Route path="/support/portal" element={<SupportPortalPage />} />

@@ -30,6 +30,7 @@ export type {
   LiraResourceHandler,
   LiraResourceRegistrationOptions,
   LiraRenderMode,
+  LiraRenderLayout,
   LiraSupportInstance,
   LiraTrackPayload,
   LiraVisitorIdentity,

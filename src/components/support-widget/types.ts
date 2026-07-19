@@ -12,6 +12,20 @@ export interface WidgetConfig {
   mode?: 'bubble' | 'fullscreen'
   /** CSS selector or HTMLElement target used by fullscreen SDK embeds. */
   target?: string | HTMLElement
+  /**
+   * Fullscreen layout. `messenger` (default) renders the Home/Chat
+   * conversational surface — the widget without a bubble. `support_center`
+   * renders an answer-first, button-driven help page: describe-issue input
+   * at the top, inline AI answer + suggestion buttons + KB source cards
+   * below, with free-text chat opt-in and ticket escalation as the fallback.
+   * Only applies when `mode === 'fullscreen'`.
+   */
+  layout?: 'messenger' | 'support_center'
+  /**
+   * Org lifecycle environment (from the server config). When 'sandbox', the
+   * widget shows a SANDBOX badge so testers know nothing is going live.
+   */
+  environment?: 'sandbox' | 'production'
   position?: 'bottom-right' | 'bottom-left'
   primaryColor?: string
   greeting?: string
@@ -288,4 +302,27 @@ export interface OutgoingWsMessage {
   request_id?: string
 }
 
-export type WidgetView = 'launcher' | 'home' | 'pre-chat' | 'chat-list' | 'chat' | 'csat'
+export type WidgetView =
+  | 'launcher'
+  | 'home'
+  | 'pre-chat'
+  | 'chat-list'
+  | 'chat'
+  | 'csat'
+  | 'support-center'
+
+/** One AI turn on the answer-first support page (mirrors the backend contract). */
+export interface SupportCenterTurn {
+  convId: string
+  reply: string
+  interpretations: string[]
+  suggestions: string[]
+  sources: Array<{ id: string; title: string; category?: string; url?: string }>
+  status: 'answered' | 'need_more' | 'cannot_answer'
+  offerTicket: boolean
+  verified?: boolean
+  /** Client-only: the visitor's question that produced this turn (for rendering). */
+  _question?: string
+  /** Client-only: true while the answer is still loading. */
+  _pending?: boolean
+}

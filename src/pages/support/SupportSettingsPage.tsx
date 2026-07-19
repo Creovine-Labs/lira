@@ -374,6 +374,232 @@ function HandoffTriggersSection({
   )
 }
 
+// ── Pilot & compliance controls (sandbox, currency, refusal, CBN SLA, KB freshness) ──
+type PilotDraft = {
+  environment: 'sandbox' | 'production'
+  currency: string
+  financial_advice_refusal: boolean
+  sla_acknowledge_hours: number
+  sla_resolution_hours: number
+  kb_stale_after_days: number
+}
+
+function PilotControlsSection({ orgId, config }: { orgId: string; config: SupportConfig | null }) {
+  const fromConfig = (): PilotDraft => ({
+    environment: config?.environment ?? 'production',
+    currency: config?.currency ?? 'USD',
+    financial_advice_refusal: config?.financial_advice_refusal !== false,
+    sla_acknowledge_hours: config?.sla_acknowledge_hours ?? 24,
+    sla_resolution_hours: config?.sla_resolution_hours ?? 336,
+    kb_stale_after_days: config?.kb_stale_after_days ?? 180,
+  })
+  const [draft, setDraft] = useState<PilotDraft>(fromConfig)
+  const [saved, setSaved] = useState<PilotDraft>(fromConfig)
+  const [saving, setSaving] = useState(false)
+  // Re-seed once the config loads in.
+  useEffect(() => {
+    const next = fromConfig()
+    setDraft(next)
+    setSaved(next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config])
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+  const set = <K extends keyof PilotDraft>(key: K, value: PilotDraft[K]) =>
+    setDraft((d) => ({ ...d, [key]: value }))
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateSupportConfig(orgId, {
+        environment: draft.environment,
+        currency: draft.currency.trim().toUpperCase() || 'USD',
+        financial_advice_refusal: draft.financial_advice_refusal,
+        sla_acknowledge_hours: draft.sla_acknowledge_hours,
+        sla_resolution_hours: draft.sla_resolution_hours,
+        kb_stale_after_days: draft.kb_stale_after_days,
+      })
+      setSaved(draft)
+      toast.success('Pilot settings saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const isSandbox = draft.environment === 'sandbox'
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+      <div className="px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <ExclamationTriangleIcon className="h-4 w-4 text-[#020308]" />
+          <h2 className="font-semibold text-gray-900 text-sm">Pilot & compliance</h2>
+        </div>
+        <p className="mt-0.5 text-xs text-gray-400">
+          Environment, currency, advice guardrail, complaint SLAs, and knowledge freshness.
+        </p>
+      </div>
+
+      <div className="divide-y divide-gray-100">
+        {/* Environment */}
+        <div className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-800">Environment</p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              In <span className="font-medium">sandbox</span>, no real emails are sent (previewed
+              only) and the widget shows a SANDBOX badge. Flip to production to go live.
+            </p>
+          </div>
+          <div className="flex flex-none items-center gap-1 rounded-lg bg-gray-100 p-1">
+            <button
+              type="button"
+              onClick={() => set('environment', 'sandbox')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                isSandbox
+                  ? 'bg-white text-[#020308] shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Sandbox
+            </button>
+            <button
+              type="button"
+              onClick={() => set('environment', 'production')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                !isSandbox
+                  ? 'bg-white text-[#020308] shadow-sm'
+                  : 'text-gray-400 hover:text-gray-600'
+              }`}
+            >
+              Production
+            </button>
+          </div>
+        </div>
+
+        {/* Currency */}
+        <div className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-800">Currency</p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              ISO code the assistant uses for amounts (e.g. USD, NGN, KES, GBP).
+            </p>
+          </div>
+          <input
+            type="text"
+            value={draft.currency}
+            maxLength={3}
+            onChange={(e) => set('currency', e.target.value.toUpperCase())}
+            className="w-20 flex-none rounded-lg border border-gray-200 px-3 py-1.5 text-center text-sm font-mono uppercase text-gray-800 focus:border-[#020308] focus:outline-none"
+          />
+        </div>
+
+        {/* Financial-advice refusal */}
+        <div className="flex items-center justify-between gap-4 px-5 py-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-800">
+              Refuse financial / investment advice
+            </p>
+            <p className="mt-0.5 text-xs text-gray-400">
+              The assistant declines advice questions and offers a ticket. Recommended for any org
+              that sells financial products.
+            </p>
+          </div>
+          <Toggle
+            checked={draft.financial_advice_refusal}
+            onChange={(v) => set('financial_advice_refusal', v)}
+          />
+        </div>
+
+        {/* Acknowledge SLA */}
+        <NumberRow
+          title="Complaint acknowledgement SLA"
+          desc="Hours to first response before the ticket is flagged at-risk (CBN: 24h)."
+          value={draft.sla_acknowledge_hours}
+          suffix="hours"
+          min={1}
+          max={720}
+          onChange={(n) => set('sla_acknowledge_hours', n)}
+        />
+
+        {/* Resolution SLA */}
+        <NumberRow
+          title="Complaint resolution SLA"
+          desc="Hours to resolution before breach. CBN target is 14 days (336h)."
+          value={draft.sla_resolution_hours}
+          suffix="hours"
+          min={1}
+          max={8760}
+          onChange={(n) => set('sla_resolution_hours', n)}
+        />
+
+        {/* KB staleness */}
+        <NumberRow
+          title="Flag knowledge as stale after"
+          desc="Articles not updated within this window are surfaced for human review."
+          value={draft.kb_stale_after_days}
+          suffix="days"
+          min={7}
+          max={3650}
+          onChange={(n) => set('kb_stale_after_days', n)}
+        />
+      </div>
+
+      <div className="flex items-center justify-end gap-3 px-5 py-3 bg-gray-50/60 border-t border-gray-100">
+        <button
+          onClick={save}
+          disabled={!dirty || saving}
+          className="inline-flex items-center gap-1.5 rounded-lg bg-[#020308] px-4 py-2 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
+function NumberRow({
+  title,
+  desc,
+  value,
+  suffix,
+  min,
+  max,
+  onChange,
+}: {
+  title: string
+  desc: string
+  value: number
+  suffix: string
+  min: number
+  max: number
+  onChange: (n: number) => void
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 px-5 py-4">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-gray-800">{title}</p>
+        <p className="mt-0.5 text-xs text-gray-400">{desc}</p>
+      </div>
+      <div className="flex flex-none items-center gap-2">
+        <input
+          type="number"
+          value={value}
+          min={min}
+          max={max}
+          onChange={(e) => {
+            const n = Number(e.target.value)
+            if (!Number.isNaN(n)) onChange(Math.min(max, Math.max(min, Math.round(n))))
+          }}
+          className="w-24 rounded-lg border border-gray-200 px-3 py-1.5 text-center text-sm text-gray-800 focus:border-[#020308] focus:outline-none"
+        />
+        <span className="text-xs text-gray-400">{suffix}</span>
+      </div>
+    </div>
+  )
+}
+
 function TriggerRow({
   title,
   desc,
@@ -948,6 +1174,9 @@ export function SupportSettingsPanel() {
       {/* ── Handoff triggers ──────────────────────────────────────────────── */}
       <HandoffTriggersSection orgId={orgId} initial={config?.handoff_triggers} />
 
+      {/* ── Pilot & compliance controls ───────────────────────────────────── */}
+      <PilotControlsSection orgId={orgId} config={config} />
+
       {/* ── Mobile App integration ────────────────────────────────────────── */}
       <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
         <div className="px-5 py-4 border-b border-gray-100">
@@ -1102,7 +1331,6 @@ export function SupportSettingsPage() {
         {/* Header */}
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Configuration</h1>
             <p className="mt-1 text-sm text-gray-400">
               Configure widget, integrations, secrets, email, and tool packs

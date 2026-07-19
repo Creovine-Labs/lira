@@ -1,20 +1,14 @@
-// /support/analytics — Phase 7 §5.1–5.4 + legacy Weekly Report.
+// /support/analytics
 //
-// Five tabs:
-//   • Overview    — §5.1 backlog + learning metrics
-//   • SLA         — §5.2 hit-rate + averages + breached/at-risk picker hint
-//   • Categories  — §5.3 category counts + root causes
-//   • Agents      — §5.4 per-agent open/resolved + avg resolution
-//   • Weekly      — legacy `getWeeklyReport` (kept until the team archives it)
-//
-// Each tab loads its endpoint on first activation (lazy) so opening the page
-// doesn't fan out 5 parallel requests when the operator only wants one view.
+// Left-rail layout (matches the Tickets / Inbox pages): a vertical nav of
+// reports on the left, the selected report rendered on the right. Every
+// metric is a chart, not a scattered box. No SLA report here (SLA lives in
+// its own policies surface).
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowTrendingUpIcon,
-  BookOpenIcon,
   ChartBarIcon,
   ChartPieIcon,
   ClockIcon,
@@ -30,46 +24,39 @@ import {
   getTicketAnalyticsAgents,
   getTicketAnalyticsCategories,
   getTicketAnalyticsOverview,
-  getTicketAnalyticsSla,
   type AgentMetric,
   type CategoryAnalytics,
   type TicketAnalyticsOverview,
-  type TicketSlaMetrics,
 } from '@/services/api/support-api'
 import {
-  Donut,
-  HitGauge,
-  HorizontalBars,
-  MetricTile,
-  StatCard,
-  type BarDatum,
-  type DonutSlice,
+  DistributionChart,
+  GroupedBars,
+  KpiTile,
+  PALETTE,
+  RateGauge,
+  type ChartDatum,
+  type ChartType,
 } from './analytics-charts'
 
-const TABS = [
+const NAV = [
   { key: 'overview', label: 'Overview', icon: Squares2X2Icon },
-  { key: 'sla', label: 'SLA', icon: ChartBarIcon },
   { key: 'categories', label: 'Categories', icon: TagIcon },
   { key: 'agents', label: 'Agents', icon: UsersIcon },
-  { key: 'weekly', label: 'Weekly Report', icon: ArrowTrendingUpIcon },
+  { key: 'weekly', label: 'Weekly report', icon: ArrowTrendingUpIcon },
 ] as const
 
-type TabKey = (typeof TABS)[number]['key']
+type NavKey = (typeof NAV)[number]['key']
 
-// ── Top-level page chrome ────────────────────────────────────────────────
+// ── Page shell ────────────────────────────────────────────────────────────
 
 function SupportAnalyticsPage() {
   const navigate = useNavigate()
   const { currentOrgId } = useOrgStore()
   const { config, configLoading } = useSupportStore()
-  const loadStarted = useRef(false)
+  const [active, setActive] = useState<NavKey>('overview')
+  const [chartType, setChartType] = useState<ChartType>('bar')
 
   useEffect(() => {
-    if (configLoading) loadStarted.current = true
-  }, [configLoading])
-
-  useEffect(() => {
-    if (!loadStarted.current) return
     if (!configLoading && (!config || !config.activated)) {
       navigate('/support/activate', { replace: true })
     }
@@ -77,79 +64,143 @@ function SupportAnalyticsPage() {
 
   if (!currentOrgId || configLoading) {
     return (
-      <div className="flex min-h-full items-center justify-center bg-[#ebebeb]">
+      <div className="flex h-full items-center justify-center bg-[#ebebeb]">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-[#020308] border-t-transparent" />
       </div>
     )
   }
 
+  const activeNav = NAV.find((n) => n.key === active) ?? NAV[0]
+  const showToggle = active === 'overview'
+
   return (
-    <div className="min-h-full bg-[#ebebeb] px-5 py-7">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-5 flex items-start justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
-            <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Analytics</h1>
-            <p className="mt-1 text-sm text-gray-400">
-              Backlog, SLA, categories, and per-agent metrics.
-            </p>
-          </div>
+    <div className="flex h-full overflow-hidden bg-[#ebebeb]">
+      {/* ── Left rail ──────────────────────────────────────────────── */}
+      <aside className="hidden w-56 shrink-0 flex-col border-r border-gray-200 bg-white lg:flex">
+        <div className="flex items-center gap-2 px-4 pb-2 pt-4">
+          <span className="grid h-7 w-7 place-items-center rounded-lg bg-[#020308] text-white">
+            <ChartBarIcon className="h-4 w-4" />
+          </span>
+          <h1 className="text-sm font-bold tracking-tight text-gray-900">Analytics</h1>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto px-2 py-2">
+          <p className="px-2 pb-1 pt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+            Reports
+          </p>
+          {NAV.map((n) => {
+            const isActive = active === n.key
+            return (
+              <button
+                key={n.key}
+                onClick={() => setActive(n.key)}
+                aria-current={isActive ? 'page' : undefined}
+                className={cn(
+                  'flex w-full items-center gap-2.5 rounded-lg px-2 py-1.5 text-[13px] font-medium transition',
+                  isActive ? 'bg-[#020308] text-white' : 'text-gray-600 hover:bg-gray-100'
+                )}
+              >
+                <n.icon
+                  className={cn('h-4 w-4 shrink-0', isActive ? 'text-white' : 'text-gray-400')}
+                />
+                <span className="flex-1 truncate text-left">{n.label}</span>
+              </button>
+            )
+          })}
+        </nav>
+
+        <div className="border-t border-gray-100 p-3">
           <a
             href="https://docs.liraintelligence.com/platform/customer-support"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-transparent px-2 py-1.5 text-xs font-medium text-gray-400 transition-colors hover:border-gray-200 hover:bg-white hover:text-gray-600"
+            className="flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:border-gray-300 hover:text-gray-900"
           >
-            <BookOpenIcon className="h-3.5 w-3.5" />
             Docs
           </a>
         </div>
-        <SupportAnalyticsPanel orgId={currentOrgId} />
+      </aside>
+
+      {/* ── Main ───────────────────────────────────────────────────── */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        <div className="shrink-0 border-b border-gray-200 bg-white px-4 py-2.5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <activeNav.icon className="h-4 w-4 text-gray-500 lg:hidden" />
+              <h2 className="text-sm font-bold text-gray-900">{activeNav.label}</h2>
+            </div>
+            {showToggle && <ChartTypeToggle value={chartType} onChange={setChartType} />}
+          </div>
+
+          {/* Mobile nav strip */}
+          <div className="mt-2 flex gap-1 overflow-x-auto lg:hidden">
+            {NAV.map((n) => (
+              <button
+                key={n.key}
+                onClick={() => setActive(n.key)}
+                className={cn(
+                  'shrink-0 rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+                  active === n.key
+                    ? 'bg-[#020308] text-white'
+                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                )}
+              >
+                {n.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-5">
+          <div className="mx-auto max-w-5xl">
+            {active === 'overview' && <OverviewView orgId={currentOrgId} chartType={chartType} />}
+            {active === 'categories' && <CategoriesView orgId={currentOrgId} />}
+            {active === 'agents' && <AgentsView orgId={currentOrgId} />}
+            {active === 'weekly' && <WeeklyView orgId={currentOrgId} />}
+          </div>
+        </div>
       </div>
     </div>
   )
 }
 
-// ── Panel + tabs ─────────────────────────────────────────────────────────
+// ── Chart type toggle ──────────────────────────────────────────────────────
 
-function SupportAnalyticsPanel({ orgId }: { orgId: string }) {
-  const [activeTab, setActiveTab] = useState<TabKey>('overview')
-
+function ChartTypeToggle({
+  value,
+  onChange,
+}: {
+  value: ChartType
+  onChange: (t: ChartType) => void
+}) {
+  const opts: Array<{ key: ChartType; label: string; Icon: typeof ChartBarIcon }> = [
+    { key: 'bar', label: 'Bars', Icon: ChartBarIcon },
+    { key: 'pie', label: 'Pie', Icon: ChartPieIcon },
+  ]
   return (
-    <>
-      <div className="mb-5 grid grid-cols-3 gap-1 rounded-2xl border border-white/60 bg-white p-1 shadow-sm sm:grid-cols-5">
-        {TABS.map((tab) => {
-          const Icon = tab.icon
-          return (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                'flex flex-1 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
-                activeTab === tab.key
-                  ? 'bg-[#020308] text-white shadow-sm'
-                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-700'
-              )}
-            >
-              <Icon className="h-4 w-4 shrink-0" />
-              <span className="truncate">{tab.label}</span>
-            </button>
-          )
-        })}
-      </div>
-
-      {activeTab === 'overview' && <OverviewTab orgId={orgId} />}
-      {activeTab === 'sla' && <SlaTab orgId={orgId} />}
-      {activeTab === 'categories' && <CategoriesTab orgId={orgId} />}
-      {activeTab === 'agents' && <AgentsTab orgId={orgId} />}
-      {activeTab === 'weekly' && <WeeklyTab orgId={orgId} />}
-    </>
+    <div className="flex items-center gap-0.5 rounded-lg border border-gray-200 bg-gray-50 p-0.5">
+      {opts.map((o) => (
+        <button
+          key={o.key}
+          onClick={() => onChange(o.key)}
+          className={cn(
+            'flex items-center gap-1.5 rounded-md px-2.5 py-1 text-[12px] font-semibold transition',
+            value === o.key
+              ? 'bg-white text-gray-900 shadow-sm'
+              : 'text-gray-500 hover:text-gray-700'
+          )}
+        >
+          <o.Icon className="h-3.5 w-3.5" />
+          {o.label}
+        </button>
+      ))}
+    </div>
   )
 }
 
-// ── Overview tab (§5.1) ──────────────────────────────────────────────────
+// ── Overview ────────────────────────────────────────────────────────────────
 
-function OverviewTab({ orgId }: { orgId: string }) {
+function OverviewView({ orgId, chartType }: { orgId: string; chartType: ChartType }) {
   const [data, setData] = useState<TicketAnalyticsOverview | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -176,199 +227,109 @@ function OverviewTab({ orgId }: { orgId: string }) {
 
   const { overview, learning } = data
 
-  const statusBars: BarDatum[] = [
-    { label: 'Open', value: overview.open, colorClass: 'bg-sky-500' },
-    { label: 'In progress', value: overview.in_progress, colorClass: 'bg-indigo-500' },
-    { label: 'Pending', value: overview.pending, colorClass: 'bg-amber-500' },
-    { label: 'On hold', value: overview.on_hold, colorClass: 'bg-slate-500' },
-    { label: 'Escalated', value: overview.escalated, colorClass: 'bg-orange-500' },
-    { label: 'Resolved', value: overview.resolved, colorClass: 'bg-emerald-500' },
-    { label: 'Closed', value: overview.closed, colorClass: 'bg-gray-400' },
-  ]
+  const statusData: ChartDatum[] = [
+    { name: 'Open', value: overview.open, color: '#0ea5e9' },
+    { name: 'In progress', value: overview.in_progress, color: '#6366f1' },
+    { name: 'Pending', value: overview.pending, color: '#f59e0b' },
+    { name: 'On hold', value: overview.on_hold, color: '#64748b' },
+    { name: 'Escalated', value: overview.escalated, color: '#f97316' },
+    { name: 'Resolved', value: overview.resolved, color: '#10b981' },
+    { name: 'Closed', value: overview.closed, color: '#9ca3af' },
+  ].filter((d) => d.value > 0)
 
-  const queueSlices: DonutSlice[] = Object.entries(overview.by_queue).map(([name, value], idx) => ({
-    label: name || '(unrouted)',
-    value,
-    color: QUEUE_PALETTE[idx % QUEUE_PALETTE.length],
-  }))
+  const priorityData: ChartDatum[] = [
+    { name: 'Urgent', value: overview.by_priority.urgent, color: '#ef4444' },
+    { name: 'High', value: overview.by_priority.high, color: '#f97316' },
+    { name: 'Medium', value: overview.by_priority.medium, color: '#0ea5e9' },
+    { name: 'Low', value: overview.by_priority.low, color: '#9ca3af' },
+  ].filter((d) => d.value > 0)
+
+  const queueData: ChartDatum[] = Object.entries(overview.by_queue)
+    .map(([name, value], i) => ({
+      name: name || 'Unrouted',
+      value,
+      color: PALETTE[i % PALETTE.length],
+    }))
+    .filter((d) => d.value > 0)
+
+  const aiConversion = learning.ai_to_ticket_conversion ?? 0
+  const reopenRate = learning.reopen_rate ?? 0
+  const csat = learning.csat_average ?? 0
+  const negatives = learning.csat_negative_count ?? 0
 
   return (
     <div className="space-y-4">
+      {/* Backlog KPIs */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <MetricTile label="Total" value={overview.total} tooltip="All tickets ever opened." />
-        <MetricTile
+        <KpiTile label="Total" value={overview.total} />
+        <KpiTile
           label="Open"
           value={overview.open}
-          tooltip="Active tickets waiting for a first response or follow-up."
           tone={overview.open > 0 ? 'warning' : 'default'}
         />
-        <MetricTile
+        <KpiTile
           label="Unassigned"
           value={overview.unassigned}
-          tooltip="Tickets in a queue with no agent assigned yet."
           tone={overview.unassigned > 5 ? 'danger' : 'default'}
         />
-        <MetricTile
+        <KpiTile
           label="Escalated"
           value={overview.escalated}
-          tooltip="Currently sitting in an escalation tier."
           tone={overview.escalated > 0 ? 'warning' : 'default'}
         />
       </div>
 
+      {/* Quality gauges */}
+      <Card title="Resolution quality">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <RateGauge
+            label="AI ticket conversion"
+            value={aiConversion}
+            display={`${aiConversion.toFixed(0)}%`}
+            caption="Opened from an AI conversation"
+            color="#0ea5e9"
+          />
+          <RateGauge
+            label="Reopen rate"
+            value={reopenRate}
+            display={`${reopenRate.toFixed(1)}%`}
+            caption="Resolved tickets that came back"
+            color={reopenRate > 8 ? '#ef4444' : '#10b981'}
+          />
+          <RateGauge
+            label="Avg CSAT"
+            value={(csat / 5) * 100}
+            display={`${csat.toFixed(1)} / 5`}
+            caption={`${negatives} negative rating${negatives === 1 ? '' : 's'}`}
+            color="#8b5cf6"
+          />
+        </div>
+      </Card>
+
+      {/* Distributions */}
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold text-gray-900">By status</h3>
-          <HorizontalBars data={statusBars} />
-        </div>
-
-        <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold text-gray-900">By queue</h3>
-          <Donut slices={queueSlices} />
-        </div>
+        <Card title="By status">
+          <DistributionChart data={statusData} type={chartType} />
+        </Card>
+        <Card title="By priority">
+          <DistributionChart data={priorityData} type={chartType} />
+        </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <StatCard
-          label="AI ticket conversion"
-          value={`${learning.ai_to_ticket_conversion.toFixed(1)}%`}
-          hint="Tickets opened from a non-manual source (AI handed off)"
-          tooltip="Percentage of all tickets that came from AI conversations rather than manual creation. Lower is better — the AI is resolving more on its own."
-        />
-        <StatCard
-          label="Reopen rate"
-          value={`${learning.reopen_rate.toFixed(1)}%`}
-          hint="Resolved tickets that came back as not-actually-resolved"
-          tooltip="Reopens divided by resolved tickets. Above 8% usually means resolutions are being declared too early."
-          tone={learning.reopen_rate > 8 ? 'warning' : 'good'}
-        />
-        <StatCard
-          label="Avg CSAT"
-          value={learning.csat_average > 0 ? `${learning.csat_average.toFixed(1)} / 5` : '—'}
-          hint={`${learning.csat_negative_count} negative rating${learning.csat_negative_count === 1 ? '' : 's'}`}
-          tooltip="Average customer-satisfaction rating across submitted CSAT responses."
-          tone={
-            learning.csat_average >= 4.5
-              ? 'good'
-              : learning.csat_average >= 3.5
-                ? 'default'
-                : 'warning'
-          }
-        />
-      </div>
-
-      <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-        <h3 className="mb-3 text-sm font-bold text-gray-900">By priority</h3>
-        <HorizontalBars
-          data={[
-            { label: 'Urgent', value: overview.by_priority.urgent, colorClass: 'bg-rose-500' },
-            { label: 'High', value: overview.by_priority.high, colorClass: 'bg-orange-500' },
-            { label: 'Medium', value: overview.by_priority.medium, colorClass: 'bg-sky-500' },
-            { label: 'Low', value: overview.by_priority.low, colorClass: 'bg-gray-400' },
-          ]}
-        />
-      </div>
+      <Card title="By queue">
+        <DistributionChart data={queueData} type={chartType} height={260} />
+      </Card>
     </div>
   )
 }
 
-// ── SLA tab (§5.2) ───────────────────────────────────────────────────────
+// ── Categories ──────────────────────────────────────────────────────────────
 
-function SlaTab({ orgId }: { orgId: string }) {
-  const navigate = useNavigate()
-  const [data, setData] = useState<TicketSlaMetrics | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setData(await getTicketAnalyticsSla(orgId))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load SLA')
-    } finally {
-      setLoading(false)
-    }
-  }, [orgId])
-
-  useEffect(() => {
-    void load()
-  }, [load])
-
-  if (loading) return <SectionSpinner />
-  if (error) return <SectionError message={error} onRetry={load} />
-  if (!data) return null
-
-  return (
-    <div className="space-y-4">
-      <div className="grid gap-3 lg:grid-cols-[260px_1fr]">
-        <div className="flex items-center justify-center rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-          <HitGauge value={data.hit_rate} label="SLA hit rate" />
-        </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <StatCard
-            label="Avg first response"
-            value={formatMinutes(data.avg_first_response_minutes)}
-            hint={`Across ${data.total_with_first_response} tickets that have a first response logged`}
-            tooltip="Average time from ticket creation to first agent response."
-          />
-          <StatCard
-            label="Avg resolution"
-            value={formatMinutes(data.avg_resolution_minutes)}
-            hint={`Across ${data.total_resolved} resolved tickets`}
-            tooltip="Average time from ticket creation to resolution."
-          />
-          <StatCard
-            label="Breached"
-            value={String(data.breach_count)}
-            hint="Currently over the response or resolution due date"
-            tone={data.breach_count > 0 ? 'danger' : 'good'}
-            tooltip="Tickets that have already missed their SLA targets."
-          />
-          <StatCard
-            label="At risk"
-            value={String(data.at_risk_count)}
-            hint="Approaching the SLA due date"
-            tone={data.at_risk_count > 0 ? 'warning' : 'default'}
-            tooltip="Tickets within the at-risk window (typically <30 minutes from breach)."
-          />
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-sm font-bold text-gray-900">Breached &amp; at-risk tickets</h3>
-            <p className="mt-0.5 text-[11px] text-gray-500">
-              Filter the ticket list to focus on tickets that need immediate triage.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => navigate('/support/tickets?sla=at_risk')}
-            className="inline-flex items-center gap-1 rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white hover:bg-gray-800"
-          >
-            Open ticket list
-          </button>
-        </div>
-        <p className="mt-3 text-[12px] text-gray-500">
-          Note — the ticket list filter for SLA status is wired by the operator detail page using
-          local data. The aggregate counts here come from the backend scan.
-        </p>
-      </div>
-    </div>
-  )
-}
-
-// ── Categories tab (§5.3) ────────────────────────────────────────────────
-
-function CategoriesTab({ orgId }: { orgId: string }) {
+function CategoriesView({ orgId }: { orgId: string }) {
   const navigate = useNavigate()
   const [data, setData] = useState<CategoryAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<keyof CategoryAnalytics['categories'][number]>('count')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -386,15 +347,18 @@ function CategoriesTab({ orgId }: { orgId: string }) {
     void load()
   }, [load])
 
-  const sortedCategories = useMemo(() => {
+  const chartData = useMemo(() => {
     if (!data) return []
-    return [...data.categories].sort((a, b) => {
-      const av = a[sortKey] as number | string
-      const bv = b[sortKey] as number | string
-      if (typeof av === 'number' && typeof bv === 'number') return bv - av
-      return String(av).localeCompare(String(bv))
-    })
-  }, [data, sortKey])
+    return [...data.categories]
+      .sort((a, b) => b.count - a.count)
+      .map((c) => ({
+        name: prettyCategory(c.category),
+        Resolved: c.resolved,
+        Escalated: c.escalated,
+        Reopens: c.reopen_count,
+        raw: c.category,
+      }))
+  }, [data])
 
   if (loading) return <SectionSpinner />
   if (error) return <SectionError message={error} onRetry={load} />
@@ -402,95 +366,25 @@ function CategoriesTab({ orgId }: { orgId: string }) {
 
   return (
     <div className="space-y-4">
-      <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
-        <div className="border-b border-gray-100 px-5 py-3">
-          <h3 className="text-sm font-bold text-gray-900">By category</h3>
-          <p className="mt-0.5 text-[11px] text-gray-500">
-            Click a row to filter the ticket list by category.
-          </p>
-        </div>
-        {sortedCategories.length === 0 ? (
-          <p className="px-5 py-6 text-[12px] text-gray-400">
-            No categorised tickets yet — Lira's classifier needs at least a few tickets to start
-            grouping.
-          </p>
-        ) : (
-          <table className="w-full text-left text-[12px]">
-            <thead className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-              <tr>
-                <SortableTh
-                  active={sortKey === 'category'}
-                  onClick={() => setSortKey('category')}
-                  className="w-[40%] px-5 py-2.5"
-                >
-                  Category
-                </SortableTh>
-                <SortableTh
-                  active={sortKey === 'count'}
-                  onClick={() => setSortKey('count')}
-                  className="px-3 py-2.5 text-right"
-                >
-                  Total
-                </SortableTh>
-                <SortableTh
-                  active={sortKey === 'resolved'}
-                  onClick={() => setSortKey('resolved')}
-                  className="px-3 py-2.5 text-right"
-                >
-                  Resolved
-                </SortableTh>
-                <SortableTh
-                  active={sortKey === 'escalated'}
-                  onClick={() => setSortKey('escalated')}
-                  className="px-3 py-2.5 text-right"
-                >
-                  Escalated
-                </SortableTh>
-                <SortableTh
-                  active={sortKey === 'reopen_count'}
-                  onClick={() => setSortKey('reopen_count')}
-                  className="px-3 py-2.5 text-right"
-                >
-                  Reopens
-                </SortableTh>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {sortedCategories.map((c) => (
-                <tr
-                  key={c.category}
-                  onClick={() =>
-                    navigate(`/support/tickets?category=${encodeURIComponent(c.category)}`)
-                  }
-                  className="cursor-pointer text-gray-700 hover:bg-gray-50"
-                >
-                  <td className="px-5 py-2.5 font-semibold text-gray-900">{c.category}</td>
-                  <td className="px-3 py-2.5 text-right font-mono">{c.count}</td>
-                  <td className="px-3 py-2.5 text-right font-mono text-emerald-700">
-                    {c.resolved}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-orange-700">
-                    {c.escalated}
-                  </td>
-                  <td className="px-3 py-2.5 text-right font-mono text-rose-700">
-                    {c.reopen_count}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <Card
+        title="Tickets by category"
+        subtitle="Resolved, escalated, and reopened tickets grouped by what they were about."
+      >
+        <GroupedBars
+          data={chartData}
+          height={Math.max(200, chartData.length * 54)}
+          series={[
+            { key: 'Resolved', label: 'Resolved', color: '#10b981' },
+            { key: 'Escalated', label: 'Escalated', color: '#f97316' },
+            { key: 'Reopens', label: 'Reopens', color: '#ef4444' },
+          ]}
+        />
+      </Card>
 
-      <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-        <div className="mb-3 flex items-center gap-2">
-          <ChartPieIcon className="h-4 w-4 text-gray-500" />
-          <h3 className="text-sm font-bold text-gray-900">Root causes</h3>
-        </div>
-        <p className="mb-3 text-[11px] text-gray-500">
-          Dedupe-keyed clusters — tickets that share a fingerprint, so you can fix the underlying
-          issue once. Click to filter the ticket list.
-        </p>
+      <Card
+        title="Root causes"
+        subtitle="Clusters of tickets that share a fingerprint, so you can fix the underlying issue once."
+      >
         {data.root_causes.length === 0 ? (
           <p className="text-[12px] text-gray-400">No root-cause clusters surfaced yet.</p>
         ) : (
@@ -508,11 +402,11 @@ function CategoriesTab({ orgId }: { orgId: string }) {
                     <div className="min-w-0">
                       <p className="font-mono text-[11px] text-gray-500">{r.dedupe_key}</p>
                       <p className="mt-0.5 truncate text-[13px] font-semibold text-gray-900">
-                        {r.sample_subjects[0] ?? '(no sample subject)'}
+                        {r.sample_subjects[0] ?? 'No sample subject'}
                       </p>
                       {r.sample_subjects.length > 1 && (
                         <p className="mt-0.5 truncate text-[11px] text-gray-500">
-                          + {r.sample_subjects.length - 1} similar
+                          plus {r.sample_subjects.length - 1} similar
                         </p>
                       )}
                     </div>
@@ -526,19 +420,18 @@ function CategoriesTab({ orgId }: { orgId: string }) {
             ))}
           </ul>
         )}
-      </div>
+      </Card>
     </div>
   )
 }
 
-// ── Agents tab (§5.4) ────────────────────────────────────────────────────
+// ── Agents ──────────────────────────────────────────────────────────────────
 
-function AgentsTab({ orgId }: { orgId: string }) {
+function AgentsView({ orgId }: { orgId: string }) {
   const navigate = useNavigate()
   const [data, setData] = useState<AgentMetric[] | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [sortKey, setSortKey] = useState<keyof AgentMetric>('resolved_count')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -557,93 +450,81 @@ function AgentsTab({ orgId }: { orgId: string }) {
     void load()
   }, [load])
 
-  const sorted = useMemo(() => {
+  const chartData = useMemo(() => {
     if (!data) return []
-    return [...data].sort((a, b) => {
-      const av = a[sortKey]
-      const bv = b[sortKey]
-      if (typeof av === 'number' && typeof bv === 'number') return bv - av
-      return String(av).localeCompare(String(bv))
-    })
-  }, [data, sortKey])
+    return [...data]
+      .sort((a, b) => b.resolved_count + b.open_count - (a.resolved_count + a.open_count))
+      .map((a) => ({
+        name: a.user_name || 'Unnamed',
+        Open: a.open_count,
+        Resolved: a.resolved_count,
+      }))
+  }, [data])
 
   if (loading) return <SectionSpinner />
   if (error) return <SectionError message={error} onRetry={load} />
   if (!data) return null
 
+  const sorted = [...data].sort((a, b) => b.resolved_count - a.resolved_count)
+
   return (
-    <div className="overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm">
-      <div className="border-b border-gray-100 px-5 py-3">
-        <h3 className="text-sm font-bold text-gray-900">Per-agent metrics</h3>
-        <p className="mt-0.5 text-[11px] text-gray-500">
-          Click a name to filter the ticket list by assignee.
-        </p>
-      </div>
-      {sorted.length === 0 ? (
-        <p className="px-5 py-6 text-[12px] text-gray-400">No assigned tickets yet.</p>
-      ) : (
-        <table className="w-full text-left text-[12px]">
-          <thead className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold uppercase tracking-widest text-gray-500">
-            <tr>
-              <SortableTh
-                active={sortKey === 'user_name'}
-                onClick={() => setSortKey('user_name')}
-                className="px-5 py-2.5"
-              >
-                Agent
-              </SortableTh>
-              <SortableTh
-                active={sortKey === 'open_count'}
-                onClick={() => setSortKey('open_count')}
-                className="px-3 py-2.5 text-right"
-              >
-                Open
-              </SortableTh>
-              <SortableTh
-                active={sortKey === 'resolved_count'}
-                onClick={() => setSortKey('resolved_count')}
-                className="px-3 py-2.5 text-right"
-              >
-                Resolved
-              </SortableTh>
-              <SortableTh
-                active={sortKey === 'avg_resolution_minutes'}
-                onClick={() => setSortKey('avg_resolution_minutes')}
-                className="px-3 py-2.5 text-right"
-              >
-                Avg resolution
-              </SortableTh>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {sorted.map((a) => (
-              <tr
-                key={a.user_id}
-                onClick={() =>
-                  navigate(`/support/tickets?assignee=${encodeURIComponent(a.user_id)}`)
-                }
-                className="cursor-pointer text-gray-700 hover:bg-gray-50"
-              >
-                <td className="px-5 py-2.5 font-semibold text-gray-900">{a.user_name}</td>
-                <td className="px-3 py-2.5 text-right font-mono">{a.open_count}</td>
-                <td className="px-3 py-2.5 text-right font-mono text-emerald-700">
-                  {a.resolved_count}
-                </td>
-                <td className="px-3 py-2.5 text-right font-mono text-gray-700">
-                  {formatMinutes(a.avg_resolution_minutes)}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
+    <div className="space-y-4">
+      <Card title="Workload by agent" subtitle="Open and resolved tickets per assignee.">
+        <GroupedBars
+          data={chartData}
+          height={Math.max(200, chartData.length * 54)}
+          series={[
+            { key: 'Open', label: 'Open', color: '#0ea5e9' },
+            { key: 'Resolved', label: 'Resolved', color: '#10b981' },
+          ]}
+        />
+      </Card>
+
+      <Card title="Per-agent detail" subtitle="Click a name to filter the ticket list by assignee.">
+        {sorted.length === 0 ? (
+          <p className="text-[12px] text-gray-400">No assigned tickets yet.</p>
+        ) : (
+          <div className="overflow-hidden rounded-lg border border-gray-100">
+            <table className="w-full text-left text-[12px]">
+              <thead className="border-b border-gray-100 bg-gray-50/50 text-[10px] font-bold uppercase tracking-widest text-gray-500">
+                <tr>
+                  <th className="px-4 py-2.5">Agent</th>
+                  <th className="px-3 py-2.5 text-right">Open</th>
+                  <th className="px-3 py-2.5 text-right">Resolved</th>
+                  <th className="px-3 py-2.5 text-right">Avg resolution</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {sorted.map((a) => (
+                  <tr
+                    key={a.user_id}
+                    onClick={() =>
+                      navigate(`/support/tickets?assignee=${encodeURIComponent(a.user_id)}`)
+                    }
+                    className="cursor-pointer text-gray-700 hover:bg-gray-50"
+                  >
+                    <td className="px-4 py-2.5 font-semibold text-gray-900">{a.user_name}</td>
+                    <td className="px-3 py-2.5 text-right font-mono">{a.open_count}</td>
+                    <td className="px-3 py-2.5 text-right font-mono text-emerald-700">
+                      {a.resolved_count}
+                    </td>
+                    <td className="px-3 py-2.5 text-right font-mono text-gray-700">
+                      {formatMinutes(a.avg_resolution_minutes)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
     </div>
   )
 }
 
-// ── Weekly tab (legacy — kept) ───────────────────────────────────────────
+// ── Weekly report (legacy) ──────────────────────────────────────────────────
 
-function WeeklyTab({ orgId }: { orgId: string }) {
+function WeeklyView({ orgId }: { orgId: string }) {
   const { weeklyReport, loadWeeklyReport } = useSupportStore()
 
   useEffect(() => {
@@ -654,64 +535,75 @@ function WeeklyTab({ orgId }: { orgId: string }) {
 
   if (!weeklyReport) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-2xl border border-white/60 bg-white py-20 shadow-sm">
-        <ArrowTrendingUpIcon className="mb-3 h-10 w-10 text-gray-300" />
-        <p className="text-sm text-gray-400">No weekly report available yet</p>
-      </div>
+      <Card title="Weekly report">
+        <div className="flex flex-col items-center justify-center py-16">
+          <ArrowTrendingUpIcon className="mb-3 h-10 w-10 text-gray-300" />
+          <p className="text-sm text-gray-400">No weekly report available yet</p>
+        </div>
+      </Card>
     )
   }
 
+  const intentData: ChartDatum[] = weeklyReport.top_intents.map((item, i) => ({
+    name: item.intent,
+    value: item.count,
+    color: PALETTE[i % PALETTE.length],
+  }))
+
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-        <h3 className="mb-1 text-sm font-bold text-gray-900">Weekly Summary</h3>
-        <p className="mb-4 text-xs text-gray-400">
-          {new Date(weeklyReport.period_start).toLocaleDateString()} –{' '}
-          {new Date(weeklyReport.period_end).toLocaleDateString()}
-        </p>
+      <Card
+        title="Weekly summary"
+        subtitle={`${new Date(weeklyReport.period_start).toLocaleDateString()} to ${new Date(
+          weeklyReport.period_end
+        ).toLocaleDateString()}`}
+      >
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <MiniStat label="Conversations" value={weeklyReport.total_conversations} />
-          <MiniStat label="Autonomous" value={weeklyReport.autonomous_resolutions} />
-          <MiniStat label="Escalations" value={weeklyReport.escalations} />
-          <MiniStat
+          <KpiTile label="Conversations" value={weeklyReport.total_conversations} />
+          <KpiTile label="Autonomous" value={weeklyReport.autonomous_resolutions} />
+          <KpiTile label="Escalations" value={weeklyReport.escalations} />
+          <KpiTile
             label="Avg CSAT"
-            value={weeklyReport.avg_csat ? `${weeklyReport.avg_csat.toFixed(1)}` : '—'}
+            value={weeklyReport.avg_csat ? weeklyReport.avg_csat.toFixed(1) : '0.0'}
           />
         </div>
-      </div>
+      </Card>
 
-      {weeklyReport.top_intents.length > 0 && (
-        <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-          <h3 className="mb-3 text-sm font-bold text-gray-900">Top Intents</h3>
-          <div className="space-y-2">
-            {weeklyReport.top_intents.map((item) => (
-              <div key={item.intent} className="flex items-center justify-between text-sm">
-                <span className="text-gray-600">{item.intent}</span>
-                <span className="font-medium text-gray-800">{item.count}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      {intentData.length > 0 && (
+        <Card title="Top intents">
+          <DistributionChart data={intentData} type="bar" />
+        </Card>
       )}
 
-      <div className="rounded-2xl border border-white/60 bg-white p-5 shadow-sm">
-        <h3 className="mb-3 text-sm font-bold text-gray-900">Knowledge Improvement</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">KB drafts created</span>
-            <span className="font-medium text-gray-800">{weeklyReport.kb_drafts_created}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-gray-500">KB drafts approved</span>
-            <span className="font-medium text-gray-800">{weeklyReport.kb_drafts_approved}</span>
-          </div>
+      <Card title="Knowledge improvement">
+        <div className="grid grid-cols-2 gap-3">
+          <KpiTile label="KB drafts created" value={weeklyReport.kb_drafts_created} />
+          <KpiTile label="KB drafts approved" value={weeklyReport.kb_drafts_approved} />
         </div>
-      </div>
+      </Card>
     </div>
   )
 }
 
-// ── Shared bits ──────────────────────────────────────────────────────────
+// ── Shared bits ─────────────────────────────────────────────────────────────
+
+function Card({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string
+  subtitle?: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+      {subtitle && <p className="mt-0.5 text-[11px] text-gray-500">{subtitle}</p>}
+      <div className="mt-3">{children}</div>
+    </div>
+  )
+}
 
 function SectionSpinner() {
   return (
@@ -740,45 +632,8 @@ function SectionError({ message, onRetry }: { message: string; onRetry: () => vo
   )
 }
 
-function SortableTh({
-  children,
-  active,
-  onClick,
-  className,
-}: {
-  children: React.ReactNode
-  active: boolean
-  onClick: () => void
-  className?: string
-}) {
-  return (
-    <th
-      onClick={onClick}
-      className={cn(
-        'cursor-pointer select-none hover:bg-gray-100',
-        active && 'text-[#020308]',
-        className
-      )}
-    >
-      <span className="inline-flex items-center gap-1">
-        {children}
-        {active && <span aria-hidden>▾</span>}
-      </span>
-    </th>
-  )
-}
-
-function MiniStat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <p className="text-lg font-bold text-gray-900">{value}</p>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">{label}</p>
-    </div>
-  )
-}
-
-function formatMinutes(min: number): string {
-  if (!Number.isFinite(min) || min <= 0) return '—'
+function formatMinutes(min: number | null | undefined): string {
+  if (!min || !Number.isFinite(min) || min <= 0) return '0m'
   if (min < 60) return `${Math.round(min)}m`
   const h = Math.floor(min / 60)
   const m = Math.round(min - h * 60)
@@ -788,16 +643,12 @@ function formatMinutes(min: number): string {
   return rh > 0 ? `${d}d ${rh}h` : `${d}d`
 }
 
-// Distinct, colour-blind-friendly palette for queue donut slices.
-const QUEUE_PALETTE = [
-  '#0ea5e9',
-  '#10b981',
-  '#f59e0b',
-  '#8b5cf6',
-  '#ec4899',
-  '#6366f1',
-  '#84cc16',
-  '#f97316',
-]
+function prettyCategory(c: string): string {
+  if (!c) return 'Unclassified'
+  return c
+    .split('_')
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ')
+}
 
-export { SupportAnalyticsPage, SupportAnalyticsPanel }
+export { SupportAnalyticsPage }

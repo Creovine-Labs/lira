@@ -13,25 +13,18 @@ import {
   CodeBracketSquareIcon,
   PlusIcon,
   TrashIcon,
-  XMarkIcon,
 } from '@heroicons/react/24/outline'
-import { useOrgStore } from '@/app/store'
+import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import {
   createTrigger,
   updateTrigger,
   deleteTrigger,
+  testFireTrigger,
   type ProactiveTrigger,
   type ProactiveChannel,
   type TriggerCondition,
 } from '@/services/api/support-api'
-import {
-  getSlackStatus,
-  getTwilioStatus,
-  connectTwilio,
-  getWebPushVapidKey,
-  getWebPushStatus,
-} from '@/services/api'
 import { cn } from '@/lib'
 
 const TABS = [
@@ -45,421 +38,18 @@ const CHANNEL_OPTIONS: Array<{
   key: ProactiveChannel
   label: string
   description: string
-  setupType: 'none' | 'twilio' | 'slack' | 'web_push' | 'mobile_push'
 }> = [
   {
     key: 'email',
     label: 'Email',
     description: 'Send to the customer email address in Lira.',
-    setupType: 'none',
   },
   {
     key: 'widget',
     label: 'In-app widget',
     description: 'Show the outreach inside the embedded Lira widget.',
-    setupType: 'none',
-  },
-  {
-    key: 'sms',
-    label: 'SMS',
-    description: 'Text the customer phone number in Lira.',
-    setupType: 'twilio',
-  },
-  {
-    key: 'slack',
-    label: 'Slack DM',
-    description: 'DM a matching Slack user, or post to the default Slack channel.',
-    setupType: 'slack',
-  },
-  {
-    key: 'web_push',
-    label: 'Web push',
-    description: 'Browser push notifications for web customers.',
-    setupType: 'web_push',
-  },
-  {
-    key: 'mobile_push',
-    label: 'Mobile push',
-    description: 'Push to your iOS or Android app users.',
-    setupType: 'mobile_push',
   },
 ]
-
-// ── Channel Setup Modal ───────────────────────────────────────────────────────
-
-function WebPushSetupModal({
-  orgId,
-  onClose,
-  onConnected,
-}: {
-  orgId: string
-  onClose: () => void
-  onConnected: () => void
-}) {
-  const [vapidKey, setVapidKey] = useState('')
-  const [checking, setChecking] = useState(false)
-  const [copiedKey, setCopiedKey] = useState(false)
-  const [copiedSw, setCopiedSw] = useState(false)
-  const [copiedSnippet, setCopiedSnippet] = useState(false)
-  const backdropRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    getWebPushVapidKey(orgId)
-      .then((r) => setVapidKey(r.publicKey))
-      .catch(() => {})
-  }, [orgId])
-
-  const swContent = `// Save this file as /lira-sw.js at the root of your website
-self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? {}
-  event.waitUntil(
-    self.registration.showNotification(data.title ?? 'New message', {
-      body: data.body ?? '',
-      icon: '/favicon.ico',
-    })
-  )
-})`
-
-  const snippet = `<!-- Add this once, after your Lira widget script -->
-<script>
-(function () {
-  var VAPID_KEY = '${vapidKey || 'YOUR_VAPID_PUBLIC_KEY'}';
-  var ORG_ID   = '${orgId}';
-  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-  navigator.serviceWorker.register('/lira-sw.js').then(function (reg) {
-    return Notification.requestPermission().then(function (perm) {
-      if (perm !== 'granted') return;
-      return reg.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: VAPID_KEY
-      }).then(function (sub) {
-        var json = sub.toJSON();
-        return fetch('https://api.creovine.com/lira/v1/support/push/subscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orgId: ORG_ID,
-            endpoint: json.endpoint,
-            p256dh: json.keys.p256dh,
-            auth: json.keys.auth,
-            visitorId: localStorage.getItem('lira_visitor_id') || undefined
-          })
-        });
-      });
-    });
-  });
-})();
-</script>`
-
-  const handleCheckConnection = async () => {
-    setChecking(true)
-    try {
-      const status = await getWebPushStatus(orgId)
-      if (status.connected) {
-        toast.success(
-          `Connected — ${status.subscriptionCount} push subscriber${status.subscriptionCount !== 1 ? 's' : ''}`
-        )
-        onConnected()
-      } else {
-        toast.error('No push subscriptions yet. Complete the steps below first.')
-      }
-    } catch {
-      toast.error('Could not check status')
-    } finally {
-      setChecking(false)
-    }
-  }
-
-  const copy = (text: string, setter: (v: boolean) => void) => {
-    navigator.clipboard.writeText(text).then(() => {
-      setter(true)
-      setTimeout(() => setter(false), 2000)
-    })
-  }
-
-  return (
-    <div
-      ref={backdropRef}
-      onClick={(e) => {
-        if (e.target === backdropRef.current) onClose()
-      }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-    >
-      <div className="w-full max-w-lg rounded-2xl border border-white/60 bg-white shadow-xl flex flex-col max-h-[90vh]">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 shrink-0">
-          <h3 className="text-sm font-bold text-gray-900">Set up Web Push</h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100">
-            <XMarkIcon className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="overflow-y-auto px-5 py-4 space-y-4">
-          <p className="text-xs text-gray-500 leading-5">
-            Web push lets Lira send browser notifications to your customers even when they are not
-            on your site. Complete these <strong>3 steps</strong> once — all future subscribers are
-            stored automatically.
-          </p>
-
-          {/* Step 1 */}
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
-            <p className="text-xs font-bold text-gray-800">Step 1 — Add the service worker file</p>
-            <p className="text-xs text-gray-500 leading-5">
-              Create a file called{' '}
-              <code className="rounded bg-gray-100 px-1 py-0.5 text-[11px]">lira-sw.js</code> at the
-              root of your website (e.g.{' '}
-              <code className="text-[11px]">https://yourdomain.com/lira-sw.js</code>). Paste this
-              content:
-            </p>
-            <div className="relative rounded-lg bg-gray-900 px-3 py-3">
-              <pre className="overflow-x-auto text-[10px] leading-5 text-gray-100 whitespace-pre">
-                {swContent}
-              </pre>
-              <button
-                onClick={() => copy(swContent, setCopiedSw)}
-                className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-semibold text-gray-300 hover:bg-gray-700"
-              >
-                {copiedSw ? 'Copied' : 'Copy'}
-              </button>
-            </div>
-          </div>
-
-          {/* Step 2 */}
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
-            <p className="text-xs font-bold text-gray-800">
-              Step 2 — Add the subscription snippet to your site
-            </p>
-            <p className="text-xs text-gray-500 leading-5">
-              Add this script tag to your site's HTML, <strong>after</strong> the Lira widget
-              script. It requests permission and registers each visitor's browser with Lira
-              automatically.
-            </p>
-            {vapidKey ? (
-              <>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-semibold text-gray-500">
-                    Your VAPID public key:
-                  </span>
-                  <code className="flex-1 truncate rounded bg-gray-100 px-2 py-0.5 text-[10px] text-gray-700">
-                    {vapidKey}
-                  </code>
-                  <button
-                    onClick={() => copy(vapidKey, setCopiedKey)}
-                    className="shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold text-[#020308] hover:bg-gray-50"
-                  >
-                    {copiedKey ? 'Copied' : 'Copy key'}
-                  </button>
-                </div>
-                <div className="relative rounded-lg bg-gray-900 px-3 py-3">
-                  <pre className="overflow-x-auto text-[10px] leading-5 text-gray-100 whitespace-pre">
-                    {snippet}
-                  </pre>
-                  <button
-                    onClick={() => copy(snippet, setCopiedSnippet)}
-                    className="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[10px] font-semibold text-gray-300 hover:bg-gray-700"
-                  >
-                    {copiedSnippet ? 'Copied' : 'Copy'}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <p className="text-[11px] text-gray-400">Loading your VAPID key…</p>
-            )}
-          </div>
-
-          {/* Step 3 */}
-          <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 space-y-2">
-            <p className="text-xs font-bold text-gray-800">Step 3 — Verify connection</p>
-            <p className="text-xs text-gray-500 leading-5">
-              Open your site in a browser, allow the notification prompt. Then click the button
-              below — once at least one subscription is registered, the Web Push channel is marked
-              as connected.
-            </p>
-            <button
-              onClick={handleCheckConnection}
-              disabled={checking}
-              className="w-full rounded-xl bg-[#020308] py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
-            >
-              {checking ? 'Checking…' : 'Check connection'}
-            </button>
-          </div>
-
-          <a
-            href="https://docs.liraintelligence.com/platform/customer-support/proactive#web-push"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block text-center text-[11px] font-semibold text-[#020308] hover:underline"
-          >
-            Full setup guide →
-          </a>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ChannelSetupModal({
-  channelKey,
-  orgId,
-  onClose,
-  onConnected,
-}: {
-  channelKey: ProactiveChannel
-  orgId: string
-  onClose: () => void
-  onConnected: () => void
-}) {
-  const option = CHANNEL_OPTIONS.find((o) => o.key === channelKey)!
-  const [accountSid, setAccountSid] = useState('')
-  const [authToken, setAuthToken] = useState('')
-  const [fromNumber, setFromNumber] = useState('')
-  const [saving, setSaving] = useState(false)
-  const backdropRef = useRef<HTMLDivElement>(null)
-
-  if (channelKey === 'web_push') {
-    return <WebPushSetupModal orgId={orgId} onClose={onClose} onConnected={onConnected} />
-  }
-
-  const handleBackdrop = (e: React.MouseEvent) => {
-    if (e.target === backdropRef.current) onClose()
-  }
-
-  const handleTwilioConnect = async () => {
-    if (!accountSid.trim() || !authToken.trim() || !fromNumber.trim()) return
-    setSaving(true)
-    try {
-      await connectTwilio(orgId, {
-        accountSid: accountSid.trim(),
-        authToken: authToken.trim(),
-        fromNumber: fromNumber.trim(),
-      })
-      toast.success('Twilio connected')
-      onConnected()
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to connect Twilio')
-    } finally {
-      setSaving(false)
-    }
-  }
-
-  return (
-    <div
-      ref={backdropRef}
-      onClick={handleBackdrop}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
-    >
-      <div className="w-full max-w-sm rounded-2xl border border-white/60 bg-white shadow-xl">
-        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-          <h3 className="text-sm font-bold text-gray-900">Set up {option.label}</h3>
-          <button onClick={onClose} className="rounded-lg p-1 text-gray-400 hover:bg-gray-100">
-            <XMarkIcon className="h-4 w-4" />
-          </button>
-        </div>
-        <div className="px-5 py-4">
-          {option.setupType === 'twilio' && (
-            <div className="space-y-3">
-              <p className="text-xs text-gray-500">
-                Connect your Twilio account to send SMS. You can find these in the{' '}
-                <a
-                  href="https://console.twilio.com"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-semibold text-[#020308] hover:underline"
-                >
-                  Twilio Console
-                </a>
-                .
-              </p>
-              <div>
-                <label
-                  htmlFor="twilio-account-sid"
-                  className="mb-1 block text-xs font-semibold text-gray-500"
-                >
-                  Account SID
-                </label>
-                <input
-                  id="twilio-account-sid"
-                  type="text"
-                  value={accountSid}
-                  onChange={(e) => setAccountSid(e.target.value)}
-                  placeholder="ACxxxxxxxxxxxxxxxx"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="twilio-auth-token"
-                  className="mb-1 block text-xs font-semibold text-gray-500"
-                >
-                  Auth Token
-                </label>
-                <input
-                  id="twilio-auth-token"
-                  type="password"
-                  value={authToken}
-                  onChange={(e) => setAuthToken(e.target.value)}
-                  placeholder="Your auth token"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
-                />
-              </div>
-              <div>
-                <label
-                  htmlFor="twilio-from-number"
-                  className="mb-1 block text-xs font-semibold text-gray-500"
-                >
-                  From Number
-                </label>
-                <input
-                  id="twilio-from-number"
-                  type="text"
-                  value={fromNumber}
-                  onChange={(e) => setFromNumber(e.target.value)}
-                  placeholder="+15550001234"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm focus:border-[#020308] focus:outline-none"
-                />
-              </div>
-              <button
-                onClick={handleTwilioConnect}
-                disabled={saving || !accountSid.trim() || !authToken.trim() || !fromNumber.trim()}
-                className="w-full rounded-xl bg-[#020308] py-2 text-xs font-semibold text-white hover:bg-[#020308] disabled:opacity-50 transition"
-              >
-                {saving ? 'Connecting…' : 'Connect Twilio'}
-              </button>
-            </div>
-          )}
-          {option.setupType === 'slack' && (
-            <div className="space-y-3">
-              <p className="text-xs text-gray-500">
-                Slack requires OAuth authorization. Go to Integrations to connect your Slack
-                workspace.
-              </p>
-              <a
-                href="/org/integrations"
-                className="block w-full rounded-xl bg-[#020308] py-2 text-center text-xs font-semibold text-white hover:bg-[#020308] transition"
-              >
-                Go to Integrations → Slack
-              </a>
-            </div>
-          )}
-          {option.setupType === 'mobile_push' && (
-            <div className="space-y-3">
-              <p className="text-xs text-gray-500 leading-5">
-                Mobile push requires push credentials (APNs for iOS, FCM for Android) and your app
-                to send device tokens to Lira. See the setup guide for the full integration steps.
-              </p>
-              <a
-                href="https://docs.liraintelligence.com/platform/customer-support/proactive#mobile-push"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full rounded-xl bg-[#020308] py-2 text-center text-xs font-semibold text-white hover:bg-[#020308] transition"
-              >
-                View Mobile Push Setup Guide
-              </a>
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function channelLabel(channel: ProactiveChannel | string) {
   return CHANNEL_OPTIONS.find((option) => option.key === channel)?.label ?? channel
@@ -851,7 +441,6 @@ function SupportProactivePage() {
         {/* Header */}
         <div className="mb-5 flex items-start justify-between">
           <div>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Proactive</h1>
             <p className="mt-1 text-sm text-gray-400">
               Configure automated triggers and proactive customer outreach
@@ -876,14 +465,15 @@ function SupportProactivePage() {
 function SupportProactivePanel() {
   const [activeTab, setProactiveTab] = useState<TabKey>('triggers')
   const { currentOrgId } = useOrgStore()
+  const { userEmail } = useAuthStore()
   const { triggers, triggersLoading, loadTriggers, outreachLogs, loadOutreachLogs } =
     useSupportStore()
-  const [slackConnected, setSlackConnected] = useState(false)
-  const [twilioConnected, setTwilioConnected] = useState(false)
-  const [webPushConnected, setWebPushConnected] = useState(false)
+  // Per-trigger "Test fire" panel state
+  const [testingId, setTestingId] = useState<string | null>(null)
+  const [testEmail, setTestEmail] = useState('')
+  const [testSending, setTestSending] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
   const [creating, setCreating] = useState(false)
-  const [setupModal, setSetupModal] = useState<ProactiveChannel | null>(null)
   const [form, setForm] = useState({
     name: '',
     event_type: '',
@@ -898,59 +488,16 @@ function SupportProactivePanel() {
     if (!currentOrgId) return
     loadTriggers(currentOrgId)
     loadOutreachLogs(currentOrgId)
-    getSlackStatus(currentOrgId)
-      .then((status) => setSlackConnected(status.connected))
-      .catch(() => setSlackConnected(false))
-    getTwilioStatus(currentOrgId)
-      .then((status) => setTwilioConnected(status.connected))
-      .catch(() => setTwilioConnected(false))
-    getWebPushStatus(currentOrgId)
-      .then((status) => setWebPushConnected(status.connected))
-      .catch(() => setWebPushConnected(false))
   }, [currentOrgId, loadTriggers, loadOutreachLogs])
 
-  const refreshIntegrations = useCallback(() => {
-    if (!currentOrgId) return
-    getSlackStatus(currentOrgId)
-      .then((s) => setSlackConnected(s.connected))
-      .catch(() => setSlackConnected(false))
-    getTwilioStatus(currentOrgId)
-      .then((s) => setTwilioConnected(s.connected))
-      .catch(() => setTwilioConnected(false))
-    getWebPushStatus(currentOrgId)
-      .then((s) => setWebPushConnected(s.connected))
-      .catch(() => setWebPushConnected(false))
-  }, [currentOrgId])
-
-  const isChannelReady = useCallback(
-    (key: ProactiveChannel) => {
-      const option = CHANNEL_OPTIONS.find((o) => o.key === key)!
-      if (option.setupType === 'twilio') return twilioConnected
-      if (option.setupType === 'slack') return slackConnected
-      if (option.setupType === 'web_push') return webPushConnected
-      if (option.setupType === 'mobile_push') return false // requires native app integration
-      return true
-    },
-    [twilioConnected, slackConnected, webPushConnected]
-  )
-
-  const handleChannelClick = useCallback(
-    (key: ProactiveChannel) => {
-      const option = CHANNEL_OPTIONS.find((o) => o.key === key)!
-      const ready = isChannelReady(key)
-      if (!ready && option.setupType !== 'none') {
-        setSetupModal(key)
-        return
-      }
-      setForm((f) => ({
-        ...f,
-        channels: f.channels.includes(key)
-          ? f.channels.filter((c) => c !== key)
-          : [...f.channels, key],
-      }))
-    },
-    [isChannelReady]
-  )
+  const handleChannelClick = useCallback((key: ProactiveChannel) => {
+    setForm((f) => ({
+      ...f,
+      channels: f.channels.includes(key)
+        ? f.channels.filter((c) => c !== key)
+        : [...f.channels, key],
+    }))
+  }, [])
 
   const handleCreate = useCallback(async () => {
     if (!currentOrgId || !form.name.trim() || !form.event_type.trim()) return
@@ -1014,6 +561,36 @@ function SupportProactivePanel() {
     [currentOrgId, loadTriggers]
   )
 
+  const openTest = useCallback(
+    (triggerId: string) => {
+      setTestingId((cur) => (cur === triggerId ? null : triggerId))
+      setTestEmail((cur) => cur || userEmail || '')
+    },
+    [userEmail]
+  )
+
+  const handleTestFire = useCallback(
+    async (triggerId: string) => {
+      if (!currentOrgId || !testEmail.trim()) return
+      setTestSending(true)
+      try {
+        const res = await testFireTrigger(currentOrgId, triggerId, testEmail.trim())
+        toast.success(
+          res.sandbox
+            ? `Sandbox: outreach previewed (not sent). Switch to production to send for real.`
+            : `Test outreach sent to ${testEmail.trim()}`
+        )
+        setTestingId(null)
+        loadOutreachLogs(currentOrgId)
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'Failed to send test')
+      } finally {
+        setTestSending(false)
+      }
+    },
+    [currentOrgId, testEmail, loadOutreachLogs]
+  )
+
   // While loading, show spinner
   if (triggersLoading) {
     return (
@@ -1042,22 +619,6 @@ function SupportProactivePanel() {
   // ── Normal view: at least one trigger exists (or create form just opened) ──
   return (
     <>
-      {/* Channel setup modal */}
-      {setupModal && currentOrgId && (
-        <ChannelSetupModal
-          channelKey={setupModal}
-          orgId={currentOrgId}
-          onClose={() => setSetupModal(null)}
-          onConnected={() => {
-            setSetupModal(null)
-            refreshIntegrations()
-            setForm((f) => ({
-              ...f,
-              channels: f.channels.includes(setupModal) ? f.channels : [...f.channels, setupModal],
-            }))
-          }}
-        />
-      )}
       {/* Action bar */}
       {activeTab === 'triggers' && (
         <div className="mb-4 flex items-center justify-end">
@@ -1157,9 +718,6 @@ function SupportProactivePanel() {
                 <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                   {CHANNEL_OPTIONS.map((option) => {
                     const selected = form.channels.includes(option.key)
-                    const ready = isChannelReady(option.key)
-                    const needsSetup = !ready && option.setupType !== 'none'
-                    const isConnected = ready && option.setupType !== 'none'
                     return (
                       <button
                         key={option.key}
@@ -1183,16 +741,6 @@ function SupportProactivePanel() {
                         <span className="mt-0.5 block text-[11px] leading-4 text-gray-400">
                           {option.description}
                         </span>
-                        {isConnected && (
-                          <span className="mt-1 block text-[10px] font-semibold text-green-600">
-                            Connected
-                          </span>
-                        )}
-                        {needsSetup && (
-                          <span className="mt-1 block text-[10px] font-semibold text-amber-600">
-                            Tap to connect →
-                          </span>
-                        )}
                       </button>
                     )
                   })}
@@ -1293,6 +841,12 @@ function SupportProactivePanel() {
                 </div>
                 <div className="flex shrink-0 items-center gap-2">
                   <button
+                    onClick={() => openTest(trigger.trigger_id)}
+                    className="rounded-lg bg-[#020308] px-2.5 py-1 text-[10px] font-bold uppercase text-white transition hover:bg-gray-800"
+                  >
+                    Test fire
+                  </button>
+                  <button
                     onClick={() => handleToggle(trigger)}
                     className={cn(
                       'rounded-lg px-2.5 py-1 text-[10px] font-bold uppercase transition',
@@ -1311,6 +865,36 @@ function SupportProactivePanel() {
                   </button>
                 </div>
               </div>
+
+              {testingId === trigger.trigger_id && (
+                <div className="mt-3 rounded-xl border border-gray-100 bg-gray-50/70 p-3">
+                  <p className="mb-2 text-xs text-gray-500">
+                    Send a one-off test of this outreach. Choose where it lands.
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      type="email"
+                      value={testEmail}
+                      onChange={(e) => setTestEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      className="min-w-0 flex-1 rounded-lg border border-gray-200 px-3 py-1.5 text-xs text-gray-800 focus:border-[#020308] focus:outline-none"
+                    />
+                    <button
+                      onClick={() => handleTestFire(trigger.trigger_id)}
+                      disabled={testSending || !testEmail.trim()}
+                      className="rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                    >
+                      {testSending ? 'Sending…' : 'Send test'}
+                    </button>
+                    <button
+                      onClick={() => setTestingId(null)}
+                      className="rounded-lg px-3 py-1.5 text-xs font-medium text-gray-400 hover:text-gray-600"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

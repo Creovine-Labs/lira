@@ -1,10 +1,21 @@
 export type LiraRenderMode = 'bubble' | 'fullscreen'
 
+export type LiraRenderLayout = 'messenger' | 'support_center'
+
 export type LiraPosition = 'bottom-right' | 'bottom-left'
 
 export type LiraConfig = {
   orgId: string
   mode?: LiraRenderMode
+  /**
+   * Fullscreen layout (only applies with `mode: 'fullscreen'` /
+   * `mountSupportPage`). `messenger` (default) renders the Home/Chat
+   * conversational surface. `support_center` renders the answer-first,
+   * button-driven help page: a describe-your-issue input with inline AI
+   * answers, KB source cards, suggestion buttons, opt-in chat, and ticket
+   * escalation.
+   */
+  layout?: LiraRenderLayout
   target?: string | HTMLElement
   position?: LiraPosition
   primaryColor?: string

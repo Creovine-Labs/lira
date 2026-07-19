@@ -94,10 +94,16 @@ export const credentials = {
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const token = credentials.getToken()
 
+  // Only advertise a JSON body when there actually is one. Fastify rejects an
+  // empty body when Content-Type is 'application/json' ("Body cannot be empty
+  // when content-type is set to 'application/json'"), which was 400-ing every
+  // bodyless request — notably DELETE (delete user / delete org).
+  const hasBody = init?.body !== undefined && init?.body !== null
+
   const res = await fetch(`${env.VITE_API_URL}${path}`, {
     ...init,
     headers: {
-      'Content-Type': 'application/json',
+      ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(init?.headers ?? {}),
     },
@@ -1530,37 +1536,6 @@ export async function saveSlackMemberMapping(
       body: JSON.stringify({ userId, externalId, externalEmail }),
     }
   )
-}
-
-// ── Twilio SMS Integration API ───────────────────────────────────────────────
-
-export interface TwilioStatus {
-  connected: boolean
-  from_number?: string
-  connected_at?: string
-}
-
-export async function getTwilioStatus(orgId: string): Promise<TwilioStatus> {
-  return apiFetch<TwilioStatus>(
-    `/lira/v1/integrations/twilio/status?orgId=${encodeURIComponent(orgId)}`
-  )
-}
-
-export async function connectTwilio(
-  orgId: string,
-  input: { accountSid: string; authToken: string; fromNumber: string }
-): Promise<void> {
-  await apiFetch<void>(`/lira/v1/integrations/twilio?orgId=${encodeURIComponent(orgId)}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  })
-}
-
-export async function disconnectTwilio(orgId: string): Promise<void> {
-  await apiFetch<void>(`/lira/v1/integrations/twilio?orgId=${encodeURIComponent(orgId)}`, {
-    method: 'DELETE',
-  })
 }
 
 // ── Web Push API ──────────────────────────────────────────────────────────────

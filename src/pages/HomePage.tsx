@@ -1039,17 +1039,33 @@ interface HomePageProps {
 }
 
 function HomePage({ defaultView }: HomePageProps) {
-  const { token, emailVerified } = useAuthStore()
+  const { token, emailVerified, clearCredentials } = useAuthStore()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const inviteCode = searchParams.get('invite')?.trim() || null
 
-  // Authenticated but email not verified — go to OTP page
-  if (token && emailVerified === false) {
-    return <Navigate to="/verify-email" replace />
-  }
+  // A concierge invite link is for a NEW prospect to create a fresh account.
+  // A leftover/stale session in this browser (e.g. a deleted user's token, or
+  // a previous tester) must NOT bounce them into the authenticated app and on
+  // to "/onboarding". When an invite code is present, drop any existing session
+  // and show the gated signup form.
+  useEffect(() => {
+    if (inviteCode && token) {
+      credentials.clear()
+      clearCredentials()
+    }
+  }, [inviteCode, token, clearCredentials])
 
-  // Authenticated and verified — redirect to dashboard
-  if (token) {
-    return <Navigate to="/dashboard" replace />
+  // Only honor an existing session when there's NO invite code in the URL.
+  if (!inviteCode) {
+    // Authenticated but email not verified — go to OTP page
+    if (token && emailVerified === false) {
+      return <Navigate to="/verify-email" replace />
+    }
+    // Authenticated and verified — redirect to dashboard
+    if (token) {
+      return <Navigate to="/dashboard" replace />
+    }
   }
 
   function handleLogin(isNew: boolean, emailVerified?: boolean) {

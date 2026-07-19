@@ -13,6 +13,13 @@ const FOOTER_GROUPS = [
     ],
   },
   {
+    title: 'Industries',
+    links: [
+      { label: 'Fintech', href: '/for/fintech' },
+      { label: 'Hospitality', href: '/for/hospitality' },
+    ],
+  },
+  {
     title: 'Resources',
     links: [
       { label: 'Resources', href: '/resources' },
@@ -96,7 +103,7 @@ export function MarketingFooter() {
             </p>
           </div>
 
-          <div className="grid gap-8 sm:grid-cols-3">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {FOOTER_GROUPS.map((group) => (
               <div key={group.title}>
                 <h2 className="text-xs font-black uppercase tracking-wider text-gray-950">

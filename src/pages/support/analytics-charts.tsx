@@ -1,227 +1,269 @@
-// Minimal SVG chart primitives for the analytics surface.
+// Recharts-based chart primitives for the analytics surface.
 //
-// Hand-rolled (no recharts/victory) because the chart needs here are simple
-// and the bundle weight matters. Each primitive is responsive (uses
-// viewBox + width=100%) and self-contained.
+// All charts are responsive (ResponsiveContainer) and share one palette so
+// the page reads as a single system rather than a scatter of boxes.
 
 import { type ReactNode } from 'react'
+import {
+  Bar,
+  BarChart,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  PolarAngleAxis,
+  RadialBar,
+  RadialBarChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts'
 
-// ── Big number row tile ─────────────────────────────────────────────────
+// Shared, colour-blind-friendly palette.
+export const PALETTE = [
+  '#0ea5e9',
+  '#10b981',
+  '#f59e0b',
+  '#8b5cf6',
+  '#ec4899',
+  '#6366f1',
+  '#84cc16',
+  '#f97316',
+  '#14b8a6',
+  '#ef4444',
+]
 
-interface MetricTileProps {
+export type ChartType = 'bar' | 'pie'
+
+export interface ChartDatum {
+  name: string
+  value: number
+  color?: string
+}
+
+// ── Compact KPI tile (small backlog counts) ──────────────────────────────
+
+interface KpiTileProps {
   label: string
   value: ReactNode
-  tooltip?: string
-  tone?: 'default' | 'warning' | 'danger'
-  delta?: ReactNode
+  tone?: 'default' | 'warning' | 'danger' | 'good'
 }
 
-const TONE_RING: Record<NonNullable<MetricTileProps['tone']>, string> = {
-  default: 'ring-gray-200',
-  warning: 'ring-amber-300/60',
-  danger: 'ring-rose-300/60',
-}
-
-export function MetricTile({ label, value, tooltip, tone = 'default', delta }: MetricTileProps) {
-  return (
-    <div
-      title={tooltip}
-      className={`rounded-2xl border border-white/60 bg-white p-4 shadow-sm ring-1 ring-inset ${TONE_RING[tone]}`}
-    >
-      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
-      <p className="mt-1 text-2xl font-bold tracking-tight text-gray-900">{value}</p>
-      {delta && <p className="mt-0.5 text-[11px] text-gray-500">{delta}</p>}
-    </div>
-  )
-}
-
-// ── Horizontal bar chart (one bar per row, label + value + bar) ─────────
-
-export interface BarDatum {
-  label: string
-  value: number
-  colorClass?: string
-}
-
-export function HorizontalBars({ data, max }: { data: BarDatum[]; max?: number }) {
-  const effectiveMax = max ?? Math.max(1, ...data.map((d) => d.value))
-  return (
-    <div className="space-y-1.5">
-      {data.map((d) => {
-        const pct = (d.value / effectiveMax) * 100
-        return (
-          <div key={d.label} className="flex items-center gap-3 text-[12px]">
-            <span className="w-24 shrink-0 truncate text-gray-600" title={d.label}>
-              {d.label}
-            </span>
-            <div className="relative h-5 flex-1 overflow-hidden rounded-md bg-gray-100">
-              <div
-                className={`absolute inset-y-0 left-0 ${d.colorClass ?? 'bg-[#020308]'}`}
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-            <span className="w-10 shrink-0 text-right font-mono text-[11px] text-gray-700">
-              {d.value}
-            </span>
-          </div>
-        )
-      })}
-    </div>
-  )
-}
-
-// ── Donut chart (single ring of proportional slices) ────────────────────
-
-export interface DonutSlice {
-  label: string
-  value: number
-  color: string
-}
-
-export function Donut({ slices, total: totalProp }: { slices: DonutSlice[]; total?: number }) {
-  const total = totalProp ?? slices.reduce((s, x) => s + x.value, 0)
-  if (total === 0) {
-    return (
-      <div className="flex h-[140px] items-center justify-center rounded-md bg-gray-50 text-[11px] text-gray-400">
-        No data
-      </div>
-    )
-  }
-  const radius = 56
-  const stroke = 16
-  const circumference = 2 * Math.PI * radius
-
-  // Pre-compute the cumulative dashoffset for each slice so the render
-  // stays pure (react-hooks/immutability flags mid-render reassignment).
-  const drawn = slices.reduce<{
-    acc: number
-    out: { slice: DonutSlice; dash: number; offset: number }[]
-  }>(
-    (carry, s) => {
-      const dash = (s.value / total) * circumference
-      carry.out.push({ slice: s, dash, offset: carry.acc })
-      carry.acc += dash
-      return carry
-    },
-    { acc: 0, out: [] }
-  ).out
-
-  return (
-    <div className="flex items-center gap-5">
-      <svg width="140" height="140" viewBox="0 0 140 140" role="img" aria-label="Distribution">
-        <g transform="translate(70, 70) rotate(-90)">
-          <circle r={radius} fill="none" stroke="#f3f4f6" strokeWidth={stroke} />
-          {drawn.map(({ slice, dash, offset }) => (
-            <circle
-              key={slice.label}
-              r={radius}
-              fill="none"
-              stroke={slice.color}
-              strokeWidth={stroke}
-              strokeDasharray={`${dash} ${circumference}`}
-              strokeDashoffset={-offset}
-            />
-          ))}
-        </g>
-        <text
-          x="70"
-          y="74"
-          textAnchor="middle"
-          fontSize="20"
-          fontWeight="700"
-          fill="#020308"
-          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        >
-          {total}
-        </text>
-      </svg>
-      <ul className="space-y-1 text-[12px]">
-        {slices.map((s) => (
-          <li key={s.label} className="flex items-center gap-2">
-            <span className="h-2.5 w-2.5 rounded-sm" style={{ background: s.color }} />
-            <span className="text-gray-700">{s.label}</span>
-            <span className="ml-2 font-mono text-[11px] text-gray-400">{s.value}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
-}
-
-// ── Sparkline-style large stat with hint ────────────────────────────────
-//
-// The §5.1 response only returns the current snapshot — no historical
-// series — so we render a "stat with context" rather than a true sparkline.
-// When backend ships history, swap this for an SVG polyline.
-
-interface StatCardProps {
-  label: string
-  value: string
-  hint: string
-  tooltip?: string
-  tone?: 'default' | 'good' | 'warning' | 'danger'
-}
-
-const STAT_TONE: Record<NonNullable<StatCardProps['tone']>, string> = {
-  default: 'text-[#020308]',
+const KPI_TONE: Record<NonNullable<KpiTileProps['tone']>, string> = {
+  default: 'text-gray-900',
   good: 'text-emerald-700',
   warning: 'text-amber-700',
   danger: 'text-rose-700',
 }
 
-export function StatCard({ label, value, hint, tooltip, tone = 'default' }: StatCardProps) {
+export function KpiTile({ label, value, tone = 'default' }: KpiTileProps) {
   return (
-    <div title={tooltip} className="rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
-      <p className={`mt-1 text-2xl font-bold tracking-tight ${STAT_TONE[tone]}`}>{value}</p>
-      <p className="mt-1 text-[11px] text-gray-500">{hint}</p>
+      <p className={`mt-1 text-2xl font-bold tracking-tight ${KPI_TONE[tone]}`}>{value}</p>
     </div>
   )
 }
 
-// ── Hit-rate gauge (semicircular) ───────────────────────────────────────
+// ── Radial rate gauge (single percentage) ─────────────────────────────────
 
-export function HitGauge({ value, label }: { value: number; label: string }) {
-  // Clamp to [0, 100]
-  const clamped = Math.max(0, Math.min(100, value))
-  const radius = 60
-  const circumference = Math.PI * radius
-  const dash = (clamped / 100) * circumference
-  const color = clamped >= 90 ? '#10b981' : clamped >= 75 ? '#f59e0b' : '#e11d48'
-
+export function RateGauge({
+  value,
+  label,
+  display,
+  caption,
+  color = '#020308',
+}: {
+  value: number // 0..100
+  label: string
+  display: string // centre text, already formatted
+  caption?: string
+  color?: string
+}) {
+  const v = Math.max(0, Math.min(100, value))
+  const data = [{ name: label, value: v }]
   return (
     <div className="flex flex-col items-center">
-      <svg width="160" height="100" viewBox="0 0 160 100" role="img" aria-label={label}>
-        <g transform="translate(80, 80) rotate(-180)">
-          <path
-            d={`M ${-radius} 0 A ${radius} ${radius} 0 0 1 ${radius} 0`}
-            fill="none"
-            stroke="#f3f4f6"
-            strokeWidth={14}
-            strokeLinecap="round"
-          />
-          <path
-            d={`M ${-radius} 0 A ${radius} ${radius} 0 0 1 ${radius} 0`}
-            fill="none"
-            stroke={color}
-            strokeWidth={14}
-            strokeLinecap="round"
-            strokeDasharray={`${dash} ${circumference}`}
-          />
-        </g>
-        <text
-          x="80"
-          y="72"
-          textAnchor="middle"
-          fontSize="22"
-          fontWeight="700"
-          fill="#020308"
-          fontFamily="ui-monospace, SFMono-Regular, Menlo, monospace"
-        >
-          {clamped.toFixed(1)}%
-        </text>
-      </svg>
-      <p className="text-[11px] text-gray-500">{label}</p>
+      <div className="relative h-[150px] w-full">
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            innerRadius="72%"
+            outerRadius="100%"
+            data={data}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+            <RadialBar
+              background={{ fill: '#f1f1ef' }}
+              dataKey="value"
+              cornerRadius={20}
+              fill={color}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
+        <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+          <span className="font-mono text-xl font-bold text-gray-900">{display}</span>
+        </div>
+      </div>
+      <p className="mt-1 text-center text-[12px] font-semibold text-gray-700">{label}</p>
+      {caption && <p className="mt-0.5 text-center text-[11px] text-gray-400">{caption}</p>}
     </div>
+  )
+}
+
+// ── Switchable distribution chart (bar or pie) ────────────────────────────
+
+function ChartTooltip({
+  active,
+  payload,
+}: {
+  active?: boolean
+  payload?: Array<{ name?: string; value?: number; payload?: ChartDatum }>
+}) {
+  if (!active || !payload || payload.length === 0) return null
+  const p = payload[0]
+  const name = p.payload?.name ?? p.name
+  return (
+    <div className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11px] shadow-md">
+      <span className="font-semibold text-gray-700">{name}</span>
+      <span className="ml-2 font-mono text-gray-900">{p.value}</span>
+    </div>
+  )
+}
+
+export function DistributionChart({
+  data,
+  type,
+  height = 240,
+}: {
+  data: ChartDatum[]
+  type: ChartType
+  height?: number
+}) {
+  const total = data.reduce((s, d) => s + d.value, 0)
+  if (total === 0) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-lg bg-gray-50 text-[12px] text-gray-400"
+        style={{ height }}
+      >
+        Nothing to chart yet
+      </div>
+    )
+  }
+
+  if (type === 'pie') {
+    return (
+      <ResponsiveContainer width="100%" height={height}>
+        <PieChart>
+          <Pie
+            data={data}
+            dataKey="value"
+            nameKey="name"
+            innerRadius="55%"
+            outerRadius="85%"
+            paddingAngle={2}
+            stroke="none"
+          >
+            {data.map((d, i) => (
+              <Cell key={d.name} fill={d.color ?? PALETTE[i % PALETTE.length]} />
+            ))}
+          </Pie>
+          <Tooltip content={<ChartTooltip />} />
+          <Legend
+            iconType="circle"
+            iconSize={8}
+            formatter={(val) => <span className="text-[12px] text-gray-600">{val}</span>}
+          />
+        </PieChart>
+      </ResponsiveContainer>
+    )
+  }
+
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} margin={{ top: 8, right: 8, bottom: 0, left: -16 }}>
+        <XAxis
+          dataKey="name"
+          tick={{ fontSize: 11, fill: '#6b7280' }}
+          axisLine={{ stroke: '#e5e7eb' }}
+          tickLine={false}
+          interval={0}
+        />
+        <YAxis
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: '#9ca3af' }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip content={<ChartTooltip />} cursor={{ fill: 'rgba(2,3,8,0.04)' }} />
+        <Bar dataKey="value" radius={[6, 6, 0, 0]} maxBarSize={56}>
+          {data.map((d, i) => (
+            <Cell key={d.name} fill={d.color ?? PALETTE[i % PALETTE.length]} />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ── Grouped horizontal bar chart (multi-series, e.g. categories/agents) ────
+
+export interface SeriesDef {
+  key: string
+  label: string
+  color: string
+}
+
+export function GroupedBars({
+  data,
+  series,
+  height = 320,
+}: {
+  data: Array<Record<string, string | number>>
+  series: SeriesDef[]
+  height?: number
+}) {
+  if (data.length === 0) {
+    return (
+      <div
+        className="flex items-center justify-center rounded-lg bg-gray-50 text-[12px] text-gray-400"
+        style={{ height: 160 }}
+      >
+        Nothing to chart yet
+      </div>
+    )
+  }
+  return (
+    <ResponsiveContainer width="100%" height={height}>
+      <BarChart data={data} layout="vertical" margin={{ top: 4, right: 16, bottom: 4, left: 8 }}>
+        <XAxis
+          type="number"
+          allowDecimals={false}
+          tick={{ fontSize: 11, fill: '#9ca3af' }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <YAxis
+          type="category"
+          dataKey="name"
+          width={120}
+          tick={{ fontSize: 11, fill: '#374151' }}
+          axisLine={false}
+          tickLine={false}
+        />
+        <Tooltip cursor={{ fill: 'rgba(2,3,8,0.04)' }} />
+        <Legend
+          iconType="circle"
+          iconSize={8}
+          formatter={(val) => <span className="text-[12px] text-gray-600">{val}</span>}
+        />
+        {series.map((s) => (
+          <Bar key={s.key} dataKey={s.key} name={s.label} fill={s.color} radius={[0, 4, 4, 0]} />
+        ))}
+      </BarChart>
+    </ResponsiveContainer>
   )
 }

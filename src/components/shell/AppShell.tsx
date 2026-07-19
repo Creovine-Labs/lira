@@ -54,7 +54,6 @@ import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/s
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
-import { AvailabilityToggle } from '@/components/shell/AvailabilityToggle'
 import { cn } from '@/lib'
 import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
@@ -153,53 +152,67 @@ const NAV_CORE: NavEntry[] = [
   // { to: '/meetings', icon: MicrophoneIcon, label: 'Meetings' },
 ]
 
-const SUPPORT_NAV_ACTIVATED: NavLeaf[] = [
-  // The operator inbox leads the stack — it's the daily driver: a 3-pane
-  // workspace for reading, composing, and triaging every customer
-  // conversation. Tickets sit right under it as the escalation queue.
-  { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Inbox' },
-  { to: '/support/tickets', icon: TicketIcon, label: 'Tickets' },
-  { to: '/support/customers', icon: UsersIcon, label: 'Customers' },
-  { to: '/support/actions', icon: ClipboardDocumentListIcon, label: 'Actions' },
-  { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
-  { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
-  // "Customer portal" is the management surface for the public /portal/:orgId
-  // pages (Phase 4). Sits below Analytics — operators visit rarely (to share
-  // the URL or preview the customer experience) so it doesn't deserve top
-  // billing, but it must be discoverable.
-  { to: '/support/portal', icon: GlobeAltIcon, label: 'Customer portal' },
-  // Queues + SLA policies are admin/config surfaces (Phase 4 §1.2). Live
-  // under the rarely-touched stack with portal/outbox. Operators visit
-  // once to set up, then rarely.
-  { to: '/support/queues', icon: QueueListIcon, label: 'Queues' },
-  { to: '/support/sla-policies', icon: ShieldExclamationIcon, label: 'SLA policies' },
-  // "Outbox" is the Phase 6 integration-delivery log (Slack / Linear /
-  // webhook back-channels). Rarely visited — only when an integration is
-  // misbehaving — so it sits just under Portal in the rarely-touched stack.
-  { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Outreach' },
-  // 'Configuration' sidebar item removed 2026-05-24 — its content
-  // (widget secret + identified-visitor docs + mobile placeholder) was
-  // consolidated into /settings → Support sub-tabs (Secret + Mobile).
-  // The /support/configuration route now redirects to /settings.
-]
+// ── Sidebar IA (2026-06-10 restructure) ──────────────────────────────────────
+// The previous shape was a flat 10-item Support list + a Workspace group +
+// an availability toggle in the header. Operators faced a wall and the
+// daily-driver pages (Inbox, Tickets) got the same visual weight as
+// once-a-quarter admin surfaces (Queues, SLA policies, integration logs).
+//
+// Reorganised by visit frequency, not by data-model affinity:
+//   - WORK  → things you touch daily (open by default)
+//   - GROW  → things you tune weekly (open by default)
+//   - ADMIN → things you set up once and rarely revisit (collapsed by default)
+//
+// Routes stay the same to keep links working; only labels and grouping moved.
+
+const NAV_WORK: NavGroup = {
+  label: 'Work',
+  icon: ChatBubbleLeftEllipsisIcon,
+  children: [
+    { to: '/support/inbox', icon: ChatBubbleLeftEllipsisIcon, label: 'Inbox' },
+    { to: '/support/tickets', icon: TicketIcon, label: 'Tickets' },
+    { to: '/support/customers', icon: UsersIcon, label: 'Customers' },
+  ],
+}
+
+const NAV_GROW: NavGroup = {
+  label: 'Grow',
+  icon: ChartBarIcon,
+  children: [
+    // KB feeds AI answer quality more than any other surface — promote it
+    // out of the old "Workspace" admin bucket into the weekly-driver zone.
+    { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
+    { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
+    { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
+  ],
+}
+
+const NAV_ADMIN: NavGroup = {
+  label: 'Admin',
+  icon: FolderOpenIcon,
+  children: [
+    { to: '/org/members', icon: UsersIcon, label: 'Members' },
+    { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
+    { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
+    // Customer portal is really a config / preview surface (operators
+    // visit it to share the URL or preview the customer view), so it
+    // belongs in Admin not Work.
+    { to: '/support/portal', icon: GlobeAltIcon, label: 'Customer portal' },
+    { to: '/support/queues', icon: QueueListIcon, label: 'Queues' },
+    { to: '/support/sla-policies', icon: ShieldExclamationIcon, label: 'SLA policies' },
+    { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
+    // 'Outreach' → 'Delivery log' — the old label suggested an outbound
+    // marketing surface; it's actually the integration delivery audit
+    // (Slack / Linear / webhook back-channels). Renamed for clarity.
+    { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Delivery log' },
+    { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
+  ],
+}
 
 const SUPPORT_NAV_INACTIVE: NavLeaf = {
   to: '/support/activate',
   icon: ChatBubbleLeftEllipsisIcon,
   label: 'Customer Support',
-}
-
-const NAV_WORKSPACE: NavGroup = {
-  label: 'Workspace',
-  icon: FolderOpenIcon,
-  children: [
-    { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
-    { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
-    { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
-    { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
-    { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
-    { to: '/org/members', icon: UsersIcon, label: 'Members' },
-  ],
 }
 
 const BOTTOM_NAV = [{ to: '/settings', icon: Cog6ToothIcon, label: 'Settings' }]
@@ -833,7 +846,14 @@ function AppShell() {
   const navigate = useNavigate()
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true)
-  const [expanded, setExpanded] = useState<Set<string>>(new Set(['Workspace']))
+  // Accordion semantics: at most ONE group open at a time. Clicking a
+  // closed group opens it (and closes any other open one); clicking the
+  // open group closes it. Initialised to null; the location-driven
+  // useEffect below picks the group that matches the current route on
+  // mount and on every navigation, so a refresh always lands with the
+  // right group open (or all closed on Home / Settings / pre-activation
+  // surfaces).
+  const [expanded, setExpanded] = useState<string | null>(null)
   const { token, emailVerified, clearCredentials } = useAuthStore()
   const { organizations, setOrganizations, currentOrgId, clear } = useOrgStore()
   const [orgLoading, setOrgLoading] = useState(organizations.length === 0)
@@ -882,12 +902,14 @@ function AppShell() {
 
   // Build nav with conditional Support entry
   const supportActivated = supportConfig?.activated ?? false
+  // Pre-activation: Home + a single "Customer Support" CTA that routes to
+  // the activation flow. The Work / Grow / Admin groups only appear once
+  // support is on, since most of their entries depend on activated state.
   const navEntries = useMemo<NavEntry[]>(
-    () => [
-      ...NAV_CORE,
-      ...(supportActivated ? SUPPORT_NAV_ACTIVATED : [SUPPORT_NAV_INACTIVE]),
-      NAV_WORKSPACE,
-    ],
+    () =>
+      supportActivated
+        ? [...NAV_CORE, NAV_WORK, NAV_GROW, NAV_ADMIN]
+        : [...NAV_CORE, SUPPORT_NAV_INACTIVE, NAV_ADMIN],
     [supportActivated]
   )
 
@@ -909,13 +931,24 @@ function AppShell() {
       markSupportSeen()
       if (currentOrgId) markEscalationAlertsRead(currentOrgId).catch(() => {})
     }
-    // Auto-expand the nav group that contains the active route
-    navEntries.forEach((entry) => {
-      if (isNavGroup(entry) && entry.children.some((c) => isNavSectionActive(p, c.to))) {
-        setExpanded((prev) => new Set([...prev, entry.label]))
-      }
-    })
-  }, [location.pathname, markMeetingsSeen, markSupportSeen, currentOrgId, supportActivated])
+  }, [location.pathname, markMeetingsSeen, markSupportSeen, currentOrgId])
+
+  // Accordion: open exactly the group whose child matches the current
+  // route. On Home / Settings / pre-activation pages (where no group
+  // child matches) — set null so every group renders collapsed. This is
+  // what makes refresh behaviour predictable: the visible state of the
+  // sidebar is a pure function of the current URL. Synced by adjusting
+  // state during render (not in an effect) so it applies before paint.
+  const navSyncKey = `${location.pathname}|${supportActivated}`
+  const [syncedNavKey, setSyncedNavKey] = useState<string | null>(null)
+  if (syncedNavKey !== navSyncKey) {
+    setSyncedNavKey(navSyncKey)
+    const matchingGroup = navEntries.find(
+      (entry): entry is NavGroup =>
+        isNavGroup(entry) && entry.children.some((c) => isNavSectionActive(location.pathname, c.to))
+    )
+    setExpanded(matchingGroup ? matchingGroup.label : null)
+  }
 
   function handleSignOut() {
     clearCredentials()
@@ -1029,14 +1062,12 @@ function AppShell() {
                     </NavLink>
                   )
                 }
-                const isOpen = expanded.has(entry.label)
+                const isOpen = expanded === entry.label
+                // Accordion: clicking an open group closes it (null);
+                // clicking a closed group opens it AND closes any other
+                // group that was open.
                 const toggleGroup = () =>
-                  setExpanded((prev) => {
-                    const next = new Set(prev)
-                    if (next.has(entry.label)) next.delete(entry.label)
-                    else next.add(entry.label)
-                    return next
-                  })
+                  setExpanded((prev) => (prev === entry.label ? null : entry.label))
                 return (
                   <div key={entry.label}>
                     <div className="flex items-center rounded-xl hover:bg-gray-100 transition-colors">
@@ -1045,7 +1076,7 @@ function AppShell() {
                           to={entry.to}
                           onClick={() => {
                             setSidebarOpen(false)
-                            setExpanded((prev) => new Set([...prev, entry.label]))
+                            setExpanded(entry.label)
                           }}
                           className={({ isActive }) =>
                             cn(
@@ -1202,7 +1233,7 @@ function AppShell() {
                 </NavLink>
               )
             }
-            const isOpen = expanded.has(entry.label)
+            const isOpen = expanded === entry.label
             const hasActive = entry.children.some((c) =>
               isNavSectionActive(location.pathname, c.to)
             )
@@ -1212,7 +1243,7 @@ function AppShell() {
                   <button
                     title={entry.label}
                     onClick={() => {
-                      setExpanded((prev) => new Set([...prev, entry.label]))
+                      setExpanded(entry.label)
                       setSidebarCollapsed(false)
                       if (entry.children.length > 0) navigate(entry.children[0].to)
                     }}
@@ -1229,19 +1260,14 @@ function AppShell() {
               )
             }
             const toggleGroup = () =>
-              setExpanded((prev) => {
-                const next = new Set(prev)
-                if (next.has(entry.label)) next.delete(entry.label)
-                else next.add(entry.label)
-                return next
-              })
+              setExpanded((prev) => (prev === entry.label ? null : entry.label))
             return (
               <div key={entry.label}>
                 <div className="flex items-center rounded-xl hover:bg-gray-100 transition-colors">
                   {entry.to ? (
                     <NavLink
                       to={entry.to}
-                      onClick={() => setExpanded((prev) => new Set([...prev, entry.label]))}
+                      onClick={() => setExpanded(entry.label)}
                       className={({ isActive }) =>
                         cn(
                           'flex flex-1 items-center gap-2.5 px-3 py-2 text-[13px] font-medium transition-colors',
@@ -1365,9 +1391,13 @@ function AppShell() {
             <TopbarOrgSwitcher />
           </div>
 
-          {/* Right — availability + notifications + user */}
+          {/* Right — notifications + user. The Availability toggle was
+              removed 2026-06-10: Lira is autonomous-first (the AI is
+              always available; human escalation is async), so a human-
+              agent presence indicator misframed the product. If a customer
+              org wants a "team online" badge on their widget, that's a
+              per-org Settings → Widget toggle, not a top-of-app state. */}
           <div className="flex items-center gap-2">
-            <AvailabilityToggle />
             <NotificationBell />
             <UserMenu onSignOut={handleSignOut} />
           </div>

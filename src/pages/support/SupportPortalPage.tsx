@@ -39,7 +39,6 @@ export function SupportPortalPage() {
     <div className="min-h-full bg-[#ebebeb] px-5 py-7">
       <div className="mx-auto max-w-3xl">
         <header className="mb-6">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Support</p>
           <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Customer portal</h1>
           <p className="mt-1 text-sm text-gray-500">
             The public surface where your customers track their tickets, read your replies, and send

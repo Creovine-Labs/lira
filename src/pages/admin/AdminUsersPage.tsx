@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { toast } from 'sonner'
 import {
   MagnifyingGlassIcon,
   TrashIcon,
@@ -76,8 +77,13 @@ export function AdminUsersPage() {
       setUsers((prev) => prev.filter((u) => u.id !== userId))
       setDeleteConfirm(null)
       if (selectedUser?.id === userId) setSelectedUser(null)
-    } catch {
-      /* ignore */
+      toast.success('User deleted')
+    } catch (err) {
+      // Surface the backend reason (e.g. "Cannot delete a super-admin") instead
+      // of failing silently. apiFetch throws "<status>: <message>".
+      const msg =
+        err instanceof Error ? err.message.replace(/^\d+:\s*/, '') : 'Could not delete user'
+      toast.error(msg)
     } finally {
       setDeleting(false)
     }

@@ -487,6 +487,23 @@ class LiraSupportWidget {
    *  so visitors aren't misled by a stale local list. */
   private conversationsOffline = false
 
+  // ── Answer-first support page (layout: 'support_center') state ────────────
+  // Distinct from the messenger chat state above. The support page is a
+  // sequence of structured turns rendered as one growing column; the visitor
+  // drives it with buttons until they opt into free-text chat.
+  private scTurns: import('./types').SupportCenterTurn[] = []
+  private scConvId: string | null = null
+  private scLoading = false
+  /** Once true, the free-text composer is shown (visitor clicked "I'd rather type"). */
+  private scChatMode = false
+  private scTicketNumber: string | null = null
+  private scDraft = ''
+  /** Top KB entries for the "Popular articles" home section (from widget config). */
+  private scArticles: Array<{ id: string; title: string; category?: string; snippet?: string }> = []
+  /** The identified visitor's tickets for the sidebar (from the verified tickets API). */
+  private scTickets: Array<{ ticket_number?: string; subject?: string; status?: string }> = []
+  private scTicketsFetched = false
+
   // DOM references
   private host: HTMLElement
   private shadow: ShadowRoot
@@ -611,7 +628,11 @@ class LiraSupportWidget {
     window.addEventListener(LIRA_RUNTIME_CONTEXT_EVENT, this.runtimeContextHandler)
     this.latestRuntimeContext = readLiraRuntimeContext() ?? null
 
-    if (this.isFullscreen()) {
+    if (this.isSupportCenter()) {
+      this.view = 'support-center'
+      this.render()
+      void this.scFetchTickets()
+    } else if (this.isFullscreen()) {
       this.openHome()
     } else {
       this.render()
@@ -798,6 +819,25 @@ class LiraSupportWidget {
     return this.config.mode === 'fullscreen'
   }
 
+  /**
+   * Answer-first support page (only meaningful in fullscreen mode). This is the
+   * DEFAULT for full-page embeds — a fullscreen embed renders the support
+   * center unless it explicitly opts into the legacy messenger via
+   * `layout: 'messenger'`.
+   */
+  private isSupportCenter(): boolean {
+    return this.isFullscreen() && this.config.layout !== 'messenger'
+  }
+
+  /** Append a SANDBOX pill to a bubble-widget header when the org is in sandbox. */
+  private maybeAppendSandboxBadge(header: HTMLElement): void {
+    if (this.config.environment !== 'sandbox') return
+    const badge = document.createElement('span')
+    badge.className = 'lira-header-sandbox'
+    badge.textContent = 'SANDBOX'
+    header.appendChild(badge)
+  }
+
   private resolveMountTarget(): HTMLElement {
     if (!this.isFullscreen()) return document.body
 
@@ -930,6 +970,16 @@ class LiraSupportWidget {
           this.config.homeCards = data.home_cards
           needsRerender = true
         }
+        if (Array.isArray(data.popular_articles)) {
+          this.scArticles = data.popular_articles
+          if (this.isSupportCenter()) needsRerender = true
+        }
+        if (data.environment === 'sandbox' || data.environment === 'production') {
+          if (this.config.environment !== data.environment) {
+            this.config.environment = data.environment
+            needsRerender = true
+          }
+        }
         if (needsRerender) this.render()
       })
       .catch(() => {
@@ -964,12 +1014,622 @@ class LiraSupportWidget {
       this.renderChat()
     } else if (this.view === 'csat') {
       this.renderCsat()
+    } else if (this.view === 'support-center') {
+      this.renderSupportCenter()
     }
 
     // Persist messages to localStorage after every render that has messages
     if (this.messages.length > 0) {
       this.persistMessages()
     }
+  }
+
+  // ── Answer-first support page (layout: 'support_center') ──────────────────
+  //
+  // Renders as one growing column: a describe-your-issue hero at the top, then
+  // one block per AI turn (answer + KB source cards + suggestion buttons +
+  // resolution controls). Free-text chat is opt-in; ticket escalation is the
+  // fallback. The whole surface talks to the REST /support/center endpoints,
+  // NOT the chat WebSocket — it's a different interaction model.
+
+  private scApiBase(): string {
+    return `https://api.creovine.com/lira/v1/support/center/${this.config.orgId}`
+  }
+
+  private scIdentityPayload(): Record<string, string> {
+    const out: Record<string, string> = {}
+    if (this.config.visitorEmail) out.email = this.config.visitorEmail
+    if (this.config.visitorName) out.name = this.config.visitorName
+    if (this.config.visitorSig) out.sig = this.config.visitorSig
+    if (this.visitorId) out.visitorId = this.visitorId
+    return out
+  }
+
+  /** Send one issue/question to the support-center turn endpoint. */
+  private async scAsk(query: string): Promise<void> {
+    const trimmed = query.trim()
+    if (!trimmed || this.scLoading) return
+    this.scDraft = ''
+    this.scLoading = true
+    // Optimistically record the question so it shows immediately above the
+    // pending answer.
+    this.scTurns.push({
+      convId: this.scConvId ?? '',
+      reply: '',
+      interpretations: [],
+      suggestions: [],
+      sources: [],
+      status: 'answered',
+      offerTicket: false,
+      _question: trimmed,
+      _pending: true,
+    })
+    this.render()
+
+    try {
+      const res = await fetch(`${this.scApiBase()}/turn`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: trimmed,
+          convId: this.scConvId ?? undefined,
+          ...this.scIdentityPayload(),
+        }),
+      })
+      if (!res.ok) throw new Error(`turn failed: ${res.status}`)
+      const turn = (await res.json()) as import('./types').SupportCenterTurn
+      this.scConvId = turn.convId
+      // Replace the pending placeholder with the real turn, keeping the question.
+      const pending = this.scTurns[this.scTurns.length - 1]
+      this.scTurns[this.scTurns.length - 1] = { ...turn, _question: pending._question }
+    } catch {
+      const pending = this.scTurns[this.scTurns.length - 1]
+      this.scTurns[this.scTurns.length - 1] = {
+        convId: this.scConvId ?? '',
+        reply:
+          "Sorry — I couldn't reach support just now. Please try again in a moment, or create a ticket and the team will follow up.",
+        interpretations: [],
+        suggestions: [],
+        sources: [],
+        status: 'cannot_answer',
+        offerTicket: true,
+        _question: pending._question,
+      }
+    } finally {
+      this.scLoading = false
+      this.render()
+    }
+  }
+
+  /** Ask the backend to draft + file a ticket from this conversation. */
+  private async scEscalate(): Promise<void> {
+    if (!this.scConvId || this.scLoading) return
+    this.scLoading = true
+    this.render()
+    try {
+      const res = await fetch(`${this.scApiBase()}/escalate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ convId: this.scConvId, ...this.scIdentityPayload() }),
+      })
+      if (!res.ok) throw new Error(`escalate failed: ${res.status}`)
+      const data = (await res.json()) as { ticket_number?: string }
+      this.scTicketNumber = data.ticket_number ?? 'your ticket'
+    } catch {
+      this.scTicketNumber = null
+    } finally {
+      this.scLoading = false
+      this.render()
+    }
+  }
+
+  /** Load the identified visitor's tickets for the sidebar. Verified only. */
+  private async scFetchTickets(): Promise<void> {
+    if (this.scTicketsFetched) return
+    const email = this.config.visitorEmail
+    const sig = this.config.visitorSig
+    if (!email || !sig) return
+    this.scTicketsFetched = true
+    try {
+      const params = `?email=${encodeURIComponent(email)}&sig=${encodeURIComponent(sig)}`
+      const res = await fetch(
+        `https://api.creovine.com/lira/v1/support/tickets/verified/${this.config.orgId}/tickets${params}`
+      )
+      if (!res.ok) return
+      const data = (await res.json()) as {
+        tickets?: Array<{ ticket_number?: string; subject?: string; status?: string }>
+      }
+      this.scTickets = data.tickets ?? []
+      if (this.isSupportCenter()) this.render()
+    } catch {
+      /* tickets are best-effort — sidebar just omits them */
+    }
+  }
+
+  private scButton(label: string, onClick: () => void, variant = 'suggest'): HTMLElement {
+    const b = document.createElement('button')
+    b.className = `lira-sc-pill lira-sc-pill-${variant}`
+    b.textContent = label
+    b.disabled = this.scLoading
+    b.onclick = onClick
+    return b
+  }
+
+  /** Return to the help-center home (clears the active conversation). */
+  private scReset(): void {
+    this.scTurns = []
+    this.scConvId = null
+    this.scTicketNumber = null
+    this.scChatMode = false
+    this.scDraft = ''
+    this.render()
+  }
+
+  private renderSupportCenter(): void {
+    const orgName = this.config.orgName || 'Support'
+    const isHome = this.scTurns.length === 0 && !this.scTicketNumber
+    const greetName = this.config.visitorName?.trim().split(/\s+/)[0]
+
+    const root = document.createElement('div')
+    root.className = 'lira-sc'
+
+    // ── Top bar ──────────────────────────────────────────────────────────
+    const topbar = document.createElement('div')
+    topbar.className = 'lira-sc-topbar'
+    const brand = document.createElement('button')
+    brand.type = 'button'
+    brand.className = 'lira-sc-brand'
+    brand.onclick = () => this.scReset()
+    const mark = document.createElement('span')
+    mark.className = 'lira-sc-mark'
+    if (this.config.logoUrl) {
+      mark.innerHTML = `<img src="${this.config.logoUrl}" alt="${orgName}" />`
+    } else {
+      mark.textContent = orgName.charAt(0).toUpperCase()
+    }
+    const brandText = document.createElement('span')
+    brandText.className = 'lira-sc-brand-text'
+    brandText.innerHTML = `<strong>${orgName}</strong><span>Help Center</span>`
+    brand.append(mark, brandText)
+    topbar.appendChild(brand)
+    if (this.config.environment === 'sandbox') {
+      const badge = document.createElement('span')
+      badge.className = 'lira-sc-sandbox'
+      badge.textContent = 'SANDBOX'
+      brand.appendChild(badge)
+    }
+    if (greetName) {
+      const acct = document.createElement('span')
+      acct.className = 'lira-sc-acct-chip'
+      const initials = (this.config.visitorName ?? '')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase() ?? '')
+        .join('')
+      acct.innerHTML = `<span class="lira-sc-acct-ava">${initials}</span><span>${greetName}</span>`
+      topbar.appendChild(acct)
+    }
+    root.appendChild(topbar)
+
+    const scroll = document.createElement('div')
+    scroll.className = 'lira-sc-scroll'
+
+    // ── Hero (home) or crumb bar (active) ────────────────────────────────
+    if (isHome) {
+      const hero = document.createElement('section')
+      hero.className = 'lira-sc-hero'
+      const inner = document.createElement('div')
+      inner.className = 'lira-sc-hero-inner'
+      const h1 = document.createElement('h1')
+      h1.className = 'lira-sc-hero-title'
+      h1.textContent = greetName
+        ? `Hello ${greetName}, what can we help with?`
+        : 'How can we help you?'
+      inner.appendChild(h1)
+
+      const form = document.createElement('form')
+      form.className = 'lira-sc-search'
+      form.innerHTML = `<svg class="lira-sc-search-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="m20 20-3.2-3.2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>`
+      const input = document.createElement('input')
+      input.type = 'text'
+      input.className = 'lira-sc-search-input'
+      input.placeholder = 'Describe your issue or search for help…'
+      input.value = this.scDraft
+      input.disabled = this.scLoading
+      input.oninput = () => {
+        this.scDraft = input.value
+      }
+      const submit = document.createElement('button')
+      submit.type = 'submit'
+      submit.className = 'lira-sc-search-btn'
+      submit.textContent = 'Search'
+      submit.disabled = this.scLoading
+      form.onsubmit = (e) => {
+        e.preventDefault()
+        void this.scAsk(input.value)
+      }
+      form.append(input, submit)
+      inner.appendChild(form)
+
+      // Quick chips from org-configured topics (if any).
+      const cards = this.config.homeCards ?? []
+      if (cards.length > 0) {
+        const chips = document.createElement('div')
+        chips.className = 'lira-sc-popular'
+        const lbl = document.createElement('span')
+        lbl.className = 'lira-sc-popular-label'
+        lbl.textContent = 'Popular:'
+        chips.appendChild(lbl)
+        for (const card of cards.slice(0, 5)) {
+          const chip = document.createElement('button')
+          chip.type = 'button'
+          chip.className = 'lira-sc-chip'
+          chip.textContent = card.title
+          chip.disabled = this.scLoading
+          chip.onclick = () => void this.scAsk(card.prompt || card.title)
+          chips.appendChild(chip)
+        }
+        inner.appendChild(chips)
+      }
+
+      hero.appendChild(inner)
+      scroll.appendChild(hero)
+    }
+
+    // ── Centered content (main + aside) ──────────────────────────────────
+    const content = document.createElement('div')
+    content.className = 'lira-sc-content'
+
+    if (!isHome) {
+      const crumb = document.createElement('div')
+      crumb.className = 'lira-sc-crumb'
+      const back = document.createElement('button')
+      back.type = 'button'
+      back.className = 'lira-sc-back'
+      back.innerHTML = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M19 12H5m6 6-6-6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg> Help center`
+      back.onclick = () => this.scReset()
+      crumb.appendChild(back)
+      content.appendChild(crumb)
+    }
+
+    const aside = this.buildSupportAside()
+    const layout = document.createElement('div')
+    layout.className = aside ? 'lira-sc-layout has-aside' : 'lira-sc-layout'
+    const main = document.createElement('div')
+    main.className = 'lira-sc-main'
+
+    if (isHome) {
+      const home = this.buildSupportHomeSections()
+      if (home) main.appendChild(home)
+    } else {
+      for (const turn of this.scTurns) {
+        main.appendChild(this.buildSupportTurnBlock(turn))
+      }
+      if (this.scTicketNumber) {
+        const tc = document.createElement('div')
+        tc.className = 'lira-sc-ticket'
+        tc.innerHTML =
+          `<strong>Ticket ${this.scTicketNumber} created.</strong>` +
+          `<span>Our team will follow up. You can track it in the Tickets section.</span>`
+        main.appendChild(tc)
+      }
+      if (this.scChatMode && !this.scTicketNumber) {
+        const composer = document.createElement('form')
+        composer.className = 'lira-sc-composer'
+        const cinput = document.createElement('input')
+        cinput.type = 'text'
+        cinput.className = 'lira-sc-composer-input'
+        cinput.placeholder = `Message ${orgName}…`
+        cinput.value = this.scDraft
+        cinput.disabled = this.scLoading
+        cinput.oninput = () => {
+          this.scDraft = cinput.value
+        }
+        const csend = document.createElement('button')
+        csend.type = 'submit'
+        csend.className = 'lira-sc-composer-send'
+        csend.textContent = 'Send'
+        csend.disabled = this.scLoading
+        composer.onsubmit = (e) => {
+          e.preventDefault()
+          void this.scAsk(cinput.value)
+        }
+        composer.append(cinput, csend)
+        main.appendChild(composer)
+      }
+    }
+
+    layout.appendChild(main)
+    if (aside) layout.appendChild(aside)
+    content.appendChild(layout)
+    scroll.appendChild(content)
+    root.appendChild(scroll)
+
+    // Footer
+    const footer = document.createElement('div')
+    footer.className = 'lira-sc-footer'
+    footer.innerHTML = `<img src="${LIRA_LOGO_URL}" alt="" /> Powered by <strong>Lira</strong>`
+    root.appendChild(footer)
+
+    this.shadow.appendChild(root)
+
+    // Keep the latest answer in view once a conversation is active.
+    if (!isHome) {
+      requestAnimationFrame(() => {
+        scroll.scrollTop = scroll.scrollHeight
+      })
+    }
+  }
+
+  /** Home sections shown before any question: browse topics + popular articles. */
+  private buildSupportHomeSections(): HTMLElement | null {
+    const cards = this.config.homeCards ?? []
+    const articles = this.scArticles ?? []
+    if (cards.length === 0 && articles.length === 0) return null
+
+    const wrap = document.createElement('div')
+    wrap.className = 'lira-sc-home'
+
+    // Neutral default icon tile (no emoji defaults — orgs may set card.icon).
+    const defaultTopicIcon =
+      '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2V3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 8h6M9 12h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>'
+
+    // Browse topics (org-configured home cards)
+    if (cards.length > 0) {
+      const sec = document.createElement('section')
+      sec.className = 'lira-sc-section'
+      const head = document.createElement('div')
+      head.className = 'lira-sc-section-head'
+      head.innerHTML =
+        `<h2 class="lira-sc-section-title">Browse help topics</h2>` +
+        `<p class="lira-sc-section-sub">Pick a topic, or ask the assistant directly.</p>`
+      sec.appendChild(head)
+      const grid = document.createElement('div')
+      grid.className = 'lira-sc-topics'
+      for (const card of cards) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'lira-sc-topic'
+        btn.disabled = this.scLoading
+        btn.innerHTML =
+          `<span class="lira-sc-topic-icon">${card.icon || defaultTopicIcon}</span>` +
+          `<span class="lira-sc-topic-title">${card.title}</span>` +
+          (card.body ? `<span class="lira-sc-topic-blurb">${card.body}</span>` : '') +
+          `<span class="lira-sc-topic-cta">Get help <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>`
+        btn.onclick = () => void this.scAsk(card.prompt || card.title)
+        grid.appendChild(btn)
+      }
+      sec.appendChild(grid)
+      wrap.appendChild(sec)
+    }
+
+    // Popular articles (top KB entries)
+    if (articles.length > 0) {
+      const sec = document.createElement('section')
+      sec.className = 'lira-sc-section'
+      const head = document.createElement('div')
+      head.className = 'lira-sc-section-head'
+      head.innerHTML =
+        `<h2 class="lira-sc-section-title">Popular articles</h2>` +
+        `<p class="lira-sc-section-sub">The questions people ask most.</p>`
+      sec.appendChild(head)
+      const list = document.createElement('div')
+      list.className = 'lira-sc-articles'
+      for (const a of articles) {
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'lira-sc-article'
+        btn.disabled = this.scLoading
+        btn.innerHTML =
+          `<span class="lira-sc-article-plus"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>` +
+          `<span class="lira-sc-article-main"><span class="lira-sc-article-title">${a.title}</span>` +
+          (a.snippet ? `<span class="lira-sc-article-snippet">${a.snippet}</span>` : '') +
+          `</span>` +
+          (a.category ? `<span class="lira-sc-article-cat">${a.category}</span>` : '')
+        btn.onclick = () => void this.scAsk(a.title)
+        list.appendChild(btn)
+      }
+      sec.appendChild(list)
+      wrap.appendChild(sec)
+    }
+
+    return wrap
+  }
+
+  /** Right-hand sidebar: account context (when provided) + the visitor's tickets. */
+  private buildSupportAside(): HTMLElement | null {
+    const accountRows = this.buildSupportAccountRows()
+    const tickets = this.scTickets ?? []
+    if (accountRows.length === 0 && tickets.length === 0) return null
+
+    const aside = document.createElement('aside')
+    aside.className = 'lira-sc-aside'
+
+    if (accountRows.length > 0) {
+      const card = document.createElement('section')
+      card.className = 'lira-sc-card'
+      const h = document.createElement('h3')
+      h.className = 'lira-sc-card-title'
+      h.textContent = 'Your account'
+      card.appendChild(h)
+      for (const row of accountRows) {
+        const r = document.createElement('div')
+        r.className = 'lira-sc-acct-row'
+        r.innerHTML = `<span>${row.label}</span><strong>${row.value}</strong>`
+        card.appendChild(r)
+      }
+      aside.appendChild(card)
+    }
+
+    if (tickets.length > 0) {
+      const card = document.createElement('section')
+      card.className = 'lira-sc-card'
+      const h = document.createElement('h3')
+      h.className = 'lira-sc-card-title'
+      h.textContent = 'Your tickets'
+      card.appendChild(h)
+      for (const t of tickets.slice(0, 6)) {
+        const row = document.createElement('div')
+        row.className = 'lira-sc-ticket-row'
+        row.innerHTML =
+          `<span class="lira-sc-ticket-no">${t.ticket_number ?? ''}</span>` +
+          `<span class="lira-sc-ticket-subj">${t.subject ?? 'Ticket'}</span>` +
+          (t.status ? `<span class="lira-sc-ticket-st">${t.status}</span>` : '')
+        card.appendChild(row)
+      }
+      aside.appendChild(card)
+    }
+
+    return aside
+  }
+
+  /**
+   * Derive account-summary rows for the sidebar from the host-provided context
+   * (demo profile, or a `setContext` snapshot). Curated to a few clean fields
+   * so we never dump raw internal keys into the UI.
+   */
+  private buildSupportAccountRows(): Array<{ label: string; value: string }> {
+    const ctx = (this.config.demoContext ?? {}) as Record<string, unknown>
+    const rows: Array<{ label: string; value: string }> = []
+    const str = (v: unknown): string | null =>
+      v === null || v === undefined || v === '' ? null : String(v)
+
+    const planLabel = str(ctx.plan_label) ?? str(ctx.plan)
+    if (planLabel) rows.push({ label: 'Plan', value: planLabel })
+    const nextInvoice = str(ctx.next_invoice_date)
+    if (nextInvoice) rows.push({ label: 'Next invoice', value: nextInvoice })
+    const lastInvoice = str(ctx.last_invoice_amount_usd)
+    if (lastInvoice) rows.push({ label: 'Last invoice', value: `$${lastInvoice}` })
+    const card = ctx.card as { brand?: string; last4?: string } | undefined
+    if (card?.last4)
+      rows.push({ label: 'Card', value: `${card.brand ?? 'Card'} ···· ${card.last4}` })
+    const seats = str(ctx.team_seats)
+    if (seats) rows.push({ label: 'Team', value: `${seats} seats` })
+    const status = str(ctx.subscription_status)
+    if (status) rows.push({ label: 'Status', value: status })
+    return rows
+  }
+
+  private buildSupportTurnBlock(turn: import('./types').SupportCenterTurn): HTMLElement {
+    const block = document.createElement('div')
+    block.className = 'lira-sc-turn'
+
+    // The visitor's question
+    if (turn._question) {
+      const q = document.createElement('div')
+      q.className = 'lira-sc-question'
+      q.textContent = turn._question
+      block.appendChild(q)
+    }
+
+    // Pending state
+    if (turn._pending) {
+      const pending = document.createElement('div')
+      pending.className = 'lira-sc-answer lira-sc-pending'
+      pending.innerHTML =
+        '<span class="lira-sc-dot"></span><span class="lira-sc-dot"></span><span class="lira-sc-dot"></span>'
+      block.appendChild(pending)
+      return block
+    }
+
+    // AI answer
+    const answer = document.createElement('div')
+    answer.className = 'lira-sc-answer'
+    const ava = document.createElement('span')
+    ava.className = 'lira-sc-answer-ava'
+    ava.innerHTML = `<img src="${LIRA_LOGO_URL}" alt="Lira" />`
+    const body = document.createElement('div')
+    body.className = 'lira-sc-answer-body lira-rich-text'
+    this.renderRichTextInto(body, turn.reply)
+    answer.append(ava, body)
+    block.appendChild(answer)
+
+    // Source cards
+    if (turn.sources.length > 0) {
+      const srcWrap = document.createElement('div')
+      srcWrap.className = 'lira-sc-sources'
+      const lbl = document.createElement('div')
+      lbl.className = 'lira-sc-sources-label'
+      lbl.textContent = 'Related articles'
+      srcWrap.appendChild(lbl)
+      for (const s of turn.sources) {
+        const card = document.createElement(s.url ? 'a' : 'div')
+        card.className = 'lira-sc-source'
+        if (s.url && card instanceof HTMLAnchorElement) {
+          card.href = s.url
+          card.target = '_blank'
+          card.rel = 'noopener'
+        }
+        card.innerHTML =
+          `<span class="lira-sc-source-title">${s.title}</span>` +
+          (s.category ? `<span class="lira-sc-source-cat">${s.category}</span>` : '')
+        srcWrap.appendChild(card)
+      }
+      block.appendChild(srcWrap)
+    }
+
+    // Interpretation buttons ("Is this what you mean?")
+    if (turn.interpretations.length > 0) {
+      const interp = document.createElement('div')
+      interp.className = 'lira-sc-buttons'
+      const lbl = document.createElement('div')
+      lbl.className = 'lira-sc-buttons-label'
+      lbl.textContent = 'Is this what you mean?'
+      interp.appendChild(lbl)
+      const row = document.createElement('div')
+      row.className = 'lira-sc-button-row'
+      for (const label of turn.interpretations) {
+        row.appendChild(this.scButton(label, () => void this.scAsk(label), 'interp'))
+      }
+      interp.appendChild(row)
+      block.appendChild(interp)
+    }
+
+    // Suggestion buttons (next steps)
+    if (turn.suggestions.length > 0) {
+      const sug = document.createElement('div')
+      sug.className = 'lira-sc-buttons'
+      const row = document.createElement('div')
+      row.className = 'lira-sc-button-row'
+      for (const label of turn.suggestions) {
+        row.appendChild(this.scButton(label, () => void this.scAsk(label), 'suggest'))
+      }
+      sug.appendChild(row)
+      block.appendChild(sug)
+    }
+
+    // Resolution / fallback controls — only on the latest turn, when no ticket yet.
+    const isLatest = this.scTurns[this.scTurns.length - 1] === turn
+    if (isLatest && !this.scTicketNumber) {
+      const controls = document.createElement('div')
+      controls.className = 'lira-sc-controls'
+
+      if (turn.offerTicket) {
+        controls.appendChild(
+          this.scButton('Create a ticket', () => void this.scEscalate(), 'ticket')
+        )
+      }
+      if (!this.scChatMode) {
+        controls.appendChild(
+          this.scButton(
+            "I'd rather type it",
+            () => {
+              this.scChatMode = true
+              this.render()
+            },
+            'ghost'
+          )
+        )
+      } else if (!turn.offerTicket) {
+        controls.appendChild(
+          this.scButton('Still need help — open a ticket', () => void this.scEscalate(), 'ticket')
+        )
+      }
+      block.appendChild(controls)
+    }
+
+    return block
   }
 
   private renderLauncher(): void {
@@ -1462,6 +2122,7 @@ class LiraSupportWidget {
       <div class="lira-header-subtitle"><span class="lira-online-dot"></span> Online</div>
     `
     header.appendChild(headerInfo)
+    this.maybeAppendSandboxBadge(header)
 
     const actions = document.createElement('div')
     actions.className = 'lira-header-actions'
@@ -1537,8 +2198,7 @@ class LiraSupportWidget {
     const subtitle = document.createElement('p')
     subtitle.className = 'lira-home-subtitle'
     subtitle.textContent =
-      this.config.homeSubtitle?.trim() ||
-      'Search the knowledge base, get account help, or start a conversation with support.'
+      this.config.homeSubtitle?.trim() || 'Ask a question or start a conversation with our team.'
     hero.appendChild(subtitle)
 
     const primary = document.createElement('button')
@@ -1552,26 +2212,23 @@ class LiraSupportWidget {
 
     const cards = document.createElement('div')
     cards.className = 'lira-home-cards'
+    // Generic, org-agnostic fallback for embeds whose config predates
+    // configurable home cards. NEVER Lira-branded or feature-specific — this
+    // shows on the customer's own site, so it must read as generic support.
     const prompts: WidgetHomeCard[] = this.config.homeCards?.length
       ? this.config.homeCards
       : [
           {
             icon: '01',
-            title: 'Install Lira',
-            body: 'Get the SDK and embed snippets for your app.',
-            prompt: 'How do I integrate the Lira support SDK on my app?',
+            title: 'Ask a question',
+            body: 'Get a quick answer from our help content.',
+            prompt: 'I have a question.',
           },
           {
             icon: '02',
-            title: 'See what it can do',
-            body: 'Conversations, tickets, actions, and handoff.',
-            prompt: 'What can Lira do for a B2B support team?',
-          },
-          {
-            icon: '03',
-            title: 'Account help',
-            body: 'Login, password reset, invites, and billing.',
-            prompt: 'I need help with my Lira account.',
+            title: 'Browse help',
+            body: 'Find guides and answers.',
+            prompt: 'What can you help me with?',
           },
         ]
 
@@ -1647,6 +2304,7 @@ class LiraSupportWidget {
       <div class="lira-header-subtitle"><span class="lira-online-dot"></span> Online</div>
     `
     header.appendChild(headerInfo)
+    this.maybeAppendSandboxBadge(header)
 
     const actions = document.createElement('div')
     actions.className = 'lira-header-actions'
@@ -1803,6 +2461,7 @@ class LiraSupportWidget {
       <div class="lira-header-subtitle">${subtitle}</div>
     `
     header.appendChild(headerInfo)
+    this.maybeAppendSandboxBadge(header)
 
     const actions = document.createElement('div')
     actions.className = 'lira-header-actions'
@@ -1899,6 +2558,7 @@ class LiraSupportWidget {
       <div class="lira-header-subtitle"><span class="lira-online-dot"></span> Online</div>
     `
     header.appendChild(headerInfo)
+    this.maybeAppendSandboxBadge(header)
 
     // Header action buttons
     const actions = document.createElement('div')
@@ -2150,6 +2810,7 @@ class LiraSupportWidget {
       <div class="lira-header-subtitle"><span class="lira-online-dot"></span> Online</div>
     `
     header.appendChild(headerInfo)
+    this.maybeAppendSandboxBadge(header)
 
     const actions = document.createElement('div')
     actions.className = 'lira-header-actions'
@@ -4751,6 +5412,9 @@ function readConfigFromScript(el: HTMLScriptElement): WidgetConfig | null {
   return {
     orgId,
     mode: el.dataset.mode === 'fullscreen' ? 'fullscreen' : 'bubble',
+    // Fullscreen embeds default to the support center; explicit
+    // data-layout="messenger" opts back into the legacy chat surface.
+    layout: el.dataset.layout === 'messenger' ? 'messenger' : 'support_center',
     target: el.dataset.target,
     position: (el.dataset.position as WidgetConfig['position']) ?? 'bottom-right',
     primaryColor: el.dataset.color ?? '#1A1A1A',

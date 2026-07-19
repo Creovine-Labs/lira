@@ -59,6 +59,16 @@ export interface SupportConfig {
   greeting_message?: string
   sla_hours?: number
   widget_color?: string
+  // Pilot / regulated-industry controls
+  environment?: 'sandbox' | 'production'
+  currency?: string
+  locale?: string
+  financial_advice_refusal?: boolean
+  sla_acknowledge_hours?: number
+  sla_resolution_hours?: number
+  kb_stale_after_days?: number
+  /** ISO timestamp the widget last fetched config (embed is live). Powers "Verify connection". */
+  last_widget_seen_at?: string
   /** Per-org HMAC secret for verified visitor identity. Owner/admin only. */
   widget_secret?: string
   max_conversations_per_month: number
@@ -756,6 +766,18 @@ export async function deleteTrigger(orgId: string, triggerId: string): Promise<v
   await supportFetch<void>(
     `/lira/v1/support/webhooks/orgs/${encodeURIComponent(orgId)}/triggers/${encodeURIComponent(triggerId)}`,
     { method: 'DELETE' }
+  )
+}
+
+/** Fire one trigger's outreach to a chosen email (test/demo). Sandbox previews only. */
+export async function testFireTrigger(
+  orgId: string,
+  triggerId: string,
+  email: string
+): Promise<{ ok: boolean; sandbox: boolean; channel: 'email' | 'voice' }> {
+  return supportFetch<{ ok: boolean; sandbox: boolean; channel: 'email' | 'voice' }>(
+    `/lira/v1/support/webhooks/orgs/${encodeURIComponent(orgId)}/triggers/${encodeURIComponent(triggerId)}/test`,
+    { method: 'POST', body: JSON.stringify({ email }) }
   )
 }
 

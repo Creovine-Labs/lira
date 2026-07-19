@@ -6,6 +6,7 @@ import { MailCheck, MessageSquareText, PlugZap, Workflow } from 'lucide-react'
 import { SEO } from '@/components/SEO'
 import { PublicLiraWidget } from '@/components/PublicLiraWidget'
 import { DemoEntryModal, MarketingFooter, MarketingNavbar } from '@/components/marketing'
+import { LiveAgentDemo } from './LiveAgentDemo'
 import {
   ArrowRight,
   ArrowUpRight,
@@ -174,39 +175,6 @@ const mobileSteps = [
     description:
       "When Lira's proactive engine fires a mobile_push trigger, it sends a push notification directly to the customer's device.",
     icon: BellRinging,
-  },
-]
-
-const heroWorkflowCards = [
-  {
-    title: 'Refund processed',
-    status: 'Order #179892',
-    Icon: PlugZap,
-    position: 'eh-flow-card-one',
-  },
-  {
-    title: 'Customer notified',
-    status: 'Email and SMS sent',
-    Icon: MessageSquareText,
-    position: 'eh-flow-card-two',
-  },
-  {
-    title: 'Delivery rerouted',
-    status: 'Courier updated',
-    Icon: Workflow,
-    position: 'eh-flow-card-three',
-  },
-  {
-    title: 'Account unlocked',
-    status: 'Access restored',
-    Icon: UserCircleCheck,
-    position: 'eh-flow-card-four',
-  },
-  {
-    title: 'Ticket resolved',
-    status: 'SLA completed',
-    Icon: MailCheck,
-    position: 'eh-flow-card-five',
   },
 ]
 
@@ -972,7 +940,7 @@ function Styles() {
         background: #111;
       }
 
-      /* Background image */
+      /* Background image — full-bleed, fills the hero edge-to-edge (no bars). */
       .eh-hero-bg-img {
         position: absolute;
         inset: 0;
@@ -993,23 +961,23 @@ function Styles() {
       .eh-overlay-right {
         background: linear-gradient(
           to right,
-          rgba(0, 0, 0, 0) 25%,
-          rgba(0, 0, 0, 0.55) 52%,
-          rgba(0, 0, 0, 0.88) 100%
+          rgba(0, 0, 0, 0) 40%,
+          rgba(0, 0, 0, 0.35) 65%,
+          rgba(0, 0, 0, 0.72) 100%
         );
       }
       .eh-overlay-top {
         background: linear-gradient(
           to bottom,
-          rgba(0, 0, 0, 0.35) 0%,
-          rgba(0, 0, 0, 0) 20%
+          rgba(0, 0, 0, 0.28) 0%,
+          rgba(0, 0, 0, 0) 22%
         );
       }
       .eh-overlay-bottom {
         background: linear-gradient(
           to bottom,
-          rgba(0, 0, 0, 0) 60%,
-          rgba(0, 0, 0, 0.55) 100%
+          rgba(0, 0, 0, 0) 68%,
+          rgba(0, 0, 0, 0.4) 100%
         );
       }
 
@@ -1437,31 +1405,6 @@ export function LandingPageV4() {
         <div className="eh-overlay eh-overlay-top" />
         <div className="eh-overlay eh-overlay-bottom" />
 
-        <div className="eh-holo-workflow" aria-hidden="true">
-          <svg className="eh-holo-lines" viewBox="0 0 820 620" preserveAspectRatio="none">
-            <path d="M377 215 C350 158 334 72 318 47" />
-            <path d="M377 215 C318 190 258 154 220 141" />
-            <path d="M377 215 C337 232 331 270 324 261" />
-            <path d="M377 215 C452 160 560 112 538 103" />
-            <path d="M377 215 C500 326 602 514 578 529" />
-          </svg>
-          <div className="eh-holo-node">
-            <img src="/lira_mark_white.webp" alt="" className="eh-holo-mark" />
-          </div>
-          {heroWorkflowCards.map(({ title, status, Icon, position }) => (
-            <div className={`eh-flow-card ${position}`} key={title}>
-              <span className="eh-flow-card-icon">
-                <Icon size={15} />
-              </span>
-              <span className="eh-flow-card-copy">
-                <span className="eh-flow-card-title">{title}</span>
-                <span className="eh-flow-card-status">{status}</span>
-              </span>
-              <span className="eh-flow-badge">Completed</span>
-            </div>
-          ))}
-        </div>
-
         {/* Split content */}
         <div className="eh-content">
           <div className="eh-left">
@@ -1559,6 +1502,8 @@ export function LandingPageV4() {
       <SetupJourney />
 
       <WhyChooseSection />
+
+      <LiveAgentDemo />
 
       <MobileAppSection />
 
