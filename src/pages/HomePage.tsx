@@ -234,6 +234,14 @@ function GoogleIcon() {
 
 // ── Auth panel ────────────────────────────────────────────────────────────────
 
+// Guards HomePage's invite-session-clearing effect. Module-level (not a
+// useRef) so LoginForm's signup / Google handlers can mark the freshly
+// created session as "not stale" BEFORE calling setCredentials — react-router
+// v7 defers the /verify-email navigation in a transition, so HomePage
+// re-renders with the new token while still mounted and would otherwise wipe
+// the credentials the signup itself just created. Reset on HomePage mount.
+const clearedInviteSessionRef = { current: false }
+
 function LoginForm({
   onLogin,
   initialView,
@@ -347,6 +355,9 @@ function LoginForm({
       }
 
       const res = await apiGoogleLogin(response.credential, inviteCode ?? undefined)
+      // This session was created by THIS page — the invite-session-clearing
+      // effect in HomePage must not treat it as a stale leftover and wipe it.
+      clearedInviteSessionRef.current = true
       setCredentials(
         res.token,
         res.user.email,
@@ -434,6 +445,9 @@ function LoginForm({
         invitedCompany || undefined,
         inviteCode ?? undefined
       )
+      // This session was created by THIS page — the invite-session-clearing
+      // effect in HomePage must not treat it as a stale leftover and wipe it.
+      clearedInviteSessionRef.current = true
       setCredentials(
         res.token,
         res.user.email,
@@ -1052,15 +1066,33 @@ function HomePage({ defaultView }: HomePageProps) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const inviteCode = searchParams.get('invite')?.trim() || null
-  const clearedInviteSessionRef = useRef(false)
+  // Token as it existed when this page MOUNTED. A token that only appears
+  // after mount was created by a signup performed on this very page
+  // (react-router v7 defers the /verify-email navigation in a transition, so
+  // this component re-renders with the fresh token before it unmounts) — that
+  // session must never be cleared.
+  const mountTokenRef = useRef(token)
+
+  // Fresh mount — a "session just created here" marker can only belong to a
+  // previous mount's signup and must not suppress stale-session clearing now.
+  useEffect(() => {
+    clearedInviteSessionRef.current = false
+  }, [])
 
   // A concierge invite link is for a NEW prospect to create a fresh account.
   // A leftover/stale session in this browser (e.g. a deleted user's token, or
   // a previous tester) must NOT bounce them into the authenticated app and on
   // to "/onboarding". When an invite code is present, drop any existing session
-  // and show the gated signup form.
+  // and show the gated signup form. Only a token that was ALREADY present at
+  // mount is stale — a token that appeared afterwards belongs to the signup
+  // happening on this page (see mountTokenRef / clearedInviteSessionRef).
   useEffect(() => {
-    if (inviteCode && token && !clearedInviteSessionRef.current) {
+    if (
+      inviteCode &&
+      token &&
+      token === mountTokenRef.current &&
+      !clearedInviteSessionRef.current
+    ) {
       clearedInviteSessionRef.current = true
       credentials.clear()
       clearCredentials()
