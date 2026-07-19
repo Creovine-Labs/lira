@@ -327,6 +327,20 @@ function clearStoredMessages(
 
 // ── Widget class ──────────────────────────────────────────────────────────────
 
+// Shown when the org has hit its sandbox/monthly testing cap. Rendered as a
+// normal assistant bubble so visitors never see a raw error for a limit hit.
+const LIMIT_REACHED_MESSAGE =
+  'This assistant has reached its testing limit for the month. Please try again later or contact support by email.'
+
+/** True when a backend error is a usage-limit hit (429 / SANDBOX_LIMIT). */
+function isLimitError(code?: string, body?: string): boolean {
+  if (code === 'SANDBOX_LIMIT') return true
+  return (
+    typeof body === 'string' &&
+    /(sandbox|testing|usage|monthly)[^.]*limit|limit reached/i.test(body)
+  )
+}
+
 class LiraSupportWidget {
   private config: WidgetConfig
   private view: WidgetView = 'launcher'
@@ -1066,6 +1080,10 @@ class LiraSupportWidget {
     })
     this.render()
 
+    // Set when the backend rejects the turn for a usage-limit reason (HTTP
+    // 429 or a SANDBOX_LIMIT-coded error) — renders a graceful cap message
+    // instead of the generic "couldn't reach support" fallback.
+    let limitHit = false
     try {
       const res = await fetch(`${this.scApiBase()}/turn`, {
         method: 'POST',
@@ -1076,7 +1094,19 @@ class LiraSupportWidget {
           ...this.scIdentityPayload(),
         }),
       })
-      if (!res.ok) throw new Error(`turn failed: ${res.status}`)
+      if (!res.ok) {
+        let errCode: string | undefined
+        let errBody: string | undefined
+        try {
+          const err = (await res.json()) as { code?: string; error?: string }
+          errCode = err.code
+          errBody = err.error
+        } catch {
+          /* non-JSON error body */
+        }
+        limitHit = res.status === 429 || isLimitError(errCode, errBody)
+        throw new Error(`turn failed: ${res.status}`)
+      }
       const turn = (await res.json()) as import('./types').SupportCenterTurn
       this.scConvId = turn.convId
       // Replace the pending placeholder with the real turn, keeping the question.
@@ -1086,13 +1116,14 @@ class LiraSupportWidget {
       const pending = this.scTurns[this.scTurns.length - 1]
       this.scTurns[this.scTurns.length - 1] = {
         convId: this.scConvId ?? '',
-        reply:
-          "Sorry — I couldn't reach support just now. Please try again in a moment, or create a ticket and the team will follow up.",
+        reply: limitHit
+          ? LIMIT_REACHED_MESSAGE
+          : "Sorry — I couldn't reach support just now. Please try again in a moment, or create a ticket and the team will follow up.",
         interpretations: [],
         suggestions: [],
         sources: [],
         status: 'cannot_answer',
-        offerTicket: true,
+        offerTicket: !limitHit,
         _question: pending._question,
       }
     } finally {
@@ -5026,7 +5057,11 @@ class LiraSupportWidget {
         this.appendChatMessage({
           id: `err_${Date.now()}`,
           role: 'lira',
-          body: msg.body ?? 'Something went wrong. Please try again.',
+          // Limit hits (sandbox/monthly caps) get a graceful assistant-style
+          // message instead of a raw backend error.
+          body: isLimitError(msg.code, msg.body)
+            ? LIMIT_REACHED_MESSAGE
+            : (msg.body ?? 'Something went wrong. Please try again.'),
           timestamp: new Date().toISOString(),
         })
         break

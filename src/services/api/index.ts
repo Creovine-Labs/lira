@@ -2614,6 +2614,14 @@ export interface AdminOrgItem {
   limits: Record<string, number>
 }
 
+/** One widget-serving host recorded by domain telemetry (advisory signal only). */
+export interface AdminOrgDomain {
+  host: string
+  count: number
+  last_seen?: string
+  dev_like?: boolean
+}
+
 export interface AdminOrgDetail extends AdminOrgItem {
   members: {
     user_id: string
@@ -2623,6 +2631,13 @@ export interface AdminOrgDetail extends AdminOrgItem {
     name?: string
     emailVerified?: boolean
   }[]
+  // ── Sandbox/live fields — optional so the UI stays safe if the backend lags ──
+  environment?: 'sandbox' | 'production'
+  went_live_at?: string | null
+  production_domain?: string | null
+  /** Widget seen on a production-like domain while the org is still in sandbox. */
+  production_integration_detected?: boolean
+  domains?: AdminOrgDomain[]
 }
 
 export interface AdminUser {
@@ -2655,6 +2670,13 @@ export async function adminListOrganizations(): Promise<AdminOrgItem[]> {
 
 export async function adminGetOrganization(orgId: string): Promise<AdminOrgDetail> {
   return apiFetch(`/v1/platform/admin/lira/organizations/${encodeURIComponent(orgId)}`)
+}
+
+/** Admin override — push a live org back into sandbox (incident rollback). */
+export async function adminForceSandbox(orgId: string): Promise<{ environment: 'sandbox' }> {
+  return apiFetch(`/v1/platform/admin/orgs/${encodeURIComponent(orgId)}/force-sandbox`, {
+    method: 'POST',
+  })
 }
 
 export async function adminDeleteOrganization(orgId: string): Promise<void> {
@@ -2764,11 +2786,15 @@ export interface PlanEntitlements {
   advancedAnalytics: boolean
 }
 
+export type PlanRequestType = 'PLAN_CHANGE' | 'SANDBOX_EXTENSION'
+
 export interface PlanChangeRequestInfo {
   id: string
   fromTier: string
   toTier: string
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  /** Absent on older backend payloads — treat as 'PLAN_CHANGE'. */
+  type?: PlanRequestType
   createdAt: string
 }
 
@@ -2798,12 +2824,25 @@ export async function cancelPlanChangeRequest(id: string): Promise<{ cancelled: 
   return apiFetch(`/v1/plan/change-request/${id}/cancel`, { method: 'POST' })
 }
 
+/** Ask the Lira team to raise this org's sandbox testing caps for the month. */
+export async function requestSandboxExtension(
+  orgId: string,
+  note?: string
+): Promise<{ request: PlanChangeRequestInfo }> {
+  return apiFetch('/v1/plan/sandbox-extension', {
+    method: 'POST',
+    body: JSON.stringify({ orgId, ...(note ? { note } : {}) }),
+  })
+}
+
 export interface AdminPlanChangeRequest {
   id: string
   tenantId: string
   orgId: string
   fromTier: string
   toTier: string
+  /** Absent on older backend payloads — treat as 'PLAN_CHANGE'. */
+  type?: PlanRequestType
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
   requestedByUserId: string
   note: string | null

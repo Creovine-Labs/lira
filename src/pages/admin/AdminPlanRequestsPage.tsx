@@ -17,10 +17,12 @@ const STATUS_STYLES: Record<AdminPlanChangeRequest['status'], string> = {
 }
 
 /**
- * Plan change requests — the approval queue for customer-initiated
- * upgrades/downgrades. Approval applies the plan tier + limits to the
- * tenant/org immediately (downgrades defer limit cuts to the next monthly
- * usage reset). Billing is settled manually until Paddle automation lands.
+ * Plan requests — the approval queue for customer-initiated plan
+ * upgrades/downgrades AND sandbox cap extensions (same request pipeline,
+ * distinguished by `type`). Approving a plan change applies the tier +
+ * limits immediately (downgrades defer limit cuts to the next monthly usage
+ * reset); approving a sandbox extension raises the org's sandbox testing
+ * caps. Billing is settled manually until Paddle automation lands.
  */
 export function AdminPlanRequestsPage() {
   const [requests, setRequests] = useState<AdminPlanChangeRequest[]>([])
@@ -62,9 +64,11 @@ export function AdminPlanRequestsPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Plan requests</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Customer-initiated plan changes. Approving applies the tier and limits — settle billing
-          manually until Paddle automation is live. On downgrades, feature gates lock immediately;
-          usage caps defer to the org's next monthly reset if the org is over the new cap.
+          Customer-initiated plan changes and sandbox extensions. Approving a plan change applies
+          the tier and limits — settle billing manually until Paddle automation is live; on
+          downgrades, feature gates lock immediately and usage caps defer to the org's next monthly
+          reset if the org is over the new cap. Approving a sandbox extension raises the org's
+          sandbox testing caps for the month.
         </p>
       </div>
 
@@ -107,56 +111,74 @@ export function AdminPlanRequestsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {requests.map((r) => (
-                <tr key={r.id}>
-                  <td className="px-4 py-3 font-medium text-gray-900">
-                    {r.fromTier} → {r.toTier}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className="font-mono text-xs text-gray-600">{r.orgId}</span>
-                  </td>
-                  <td className="max-w-[220px] truncate px-4 py-3 text-gray-500">
-                    {r.note ?? '—'}
-                  </td>
-                  <td className="px-4 py-3 text-gray-500">
-                    {new Date(r.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        'rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1',
-                        STATUS_STYLES[r.status]
-                      )}
-                    >
-                      {r.status}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    {r.status === 'PENDING' ? (
-                      <div className="flex justify-end gap-2">
-                        <button
-                          disabled={busyId === r.id}
-                          onClick={() => decide(r.id, 'reject')}
-                          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50"
+              {requests.map((r) => {
+                // Older backend payloads omit `type` — treat them as plan changes.
+                const isExtension = r.type === 'SANDBOX_EXTENSION'
+                return (
+                  <tr key={r.id}>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className={cn(
+                            'rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1',
+                            isExtension
+                              ? 'bg-sky-50 text-sky-700 ring-sky-200'
+                              : 'bg-gray-50 text-gray-600 ring-gray-200'
+                          )}
                         >
-                          Reject
-                        </button>
-                        <button
-                          disabled={busyId === r.id}
-                          onClick={() => decide(r.id, 'approve')}
-                          className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-700 disabled:opacity-50"
-                        >
-                          Approve
-                        </button>
+                          {isExtension ? 'Sandbox extension' : 'Plan change'}
+                        </span>
+                        <span className="font-medium text-gray-900">
+                          {isExtension ? r.fromTier : `${r.fromTier} → ${r.toTier}`}
+                        </span>
                       </div>
-                    ) : (
-                      <span className="text-xs text-gray-400">
-                        {r.decidedAt ? new Date(r.decidedAt).toLocaleDateString() : '—'}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span className="font-mono text-xs text-gray-600">{r.orgId}</span>
+                    </td>
+                    <td className="max-w-[220px] truncate px-4 py-3 text-gray-500">
+                      {r.note ?? '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {new Date(r.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[11px] font-semibold ring-1',
+                          STATUS_STYLES[r.status]
+                        )}
+                      >
+                        {r.status}
                       </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {r.status === 'PENDING' ? (
+                        <div className="flex justify-end gap-2">
+                          <button
+                            disabled={busyId === r.id}
+                            onClick={() => decide(r.id, 'reject')}
+                            className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:border-red-300 hover:text-red-600 disabled:opacity-50"
+                          >
+                            Reject
+                          </button>
+                          <button
+                            disabled={busyId === r.id}
+                            onClick={() => decide(r.id, 'approve')}
+                            className="rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-700 disabled:opacity-50"
+                          >
+                            Approve
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">
+                          {r.decidedAt ? new Date(r.decidedAt).toLocaleDateString() : '—'}
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         </div>

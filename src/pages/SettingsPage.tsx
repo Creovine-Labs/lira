@@ -48,6 +48,7 @@ import {
   getMyPlan,
   requestPlanChange,
   cancelPlanChangeRequest,
+  requestSandboxExtension,
   type MyPlan,
   type PlanTier,
   type PlanEntitlements,
@@ -241,9 +242,16 @@ function PlanUsageBar({ used, limit, label }: { used: number; limit: number; lab
   )
 }
 
+// Sandbox testing caps shown while an org is in sandbox. Display values only —
+// the enforced values live in the backend SANDBOX_MAX_CONVERSATIONS_PER_MONTH /
+// SANDBOX_MAX_AI_REPLIES_PER_MONTH env defaults (see SANDBOX_VS_LIVE_DESIGN.md).
+const SANDBOX_CONVERSATIONS_CAP = 500
+const SANDBOX_AI_REPLIES_CAP = 500
+
 function SubscriptionSection() {
   const { currentOrgId } = useOrgStore()
   const [plan, setPlan] = useState<MyPlan | null>(null)
+  const [environment, setEnvironment] = useState<'sandbox' | 'production'>('production')
   const [usage, setUsage] = useState<{
     conversations: number
     conversationsMax: number
@@ -260,6 +268,7 @@ function SubscriptionSection() {
       setPlan(p)
       if (currentOrgId) {
         const cfg = await getSupportConfig(currentOrgId)
+        setEnvironment(cfg.environment ?? 'production')
         setUsage({
           conversations: cfg.conversations_this_month ?? 0,
           conversationsMax: cfg.max_conversations_per_month ?? 0,
@@ -296,13 +305,34 @@ function SubscriptionSection() {
 
   const handleCancel = async () => {
     if (!plan?.pendingRequest) return
+    const isExtension = plan.pendingRequest.type === 'SANDBOX_EXTENSION'
     setBusy(true)
     try {
       await cancelPlanChangeRequest(plan.pendingRequest.id)
-      toast.success('Plan change request cancelled')
+      toast.success(
+        isExtension ? 'Sandbox extension request cancelled' : 'Plan change request cancelled'
+      )
       await load()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Could not cancel request')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleSandboxExtension = async () => {
+    if (!currentOrgId) return
+    setBusy(true)
+    try {
+      await requestSandboxExtension(currentOrgId)
+      toast.success('Sandbox extension requested — the Lira team will review it shortly.')
+      await load()
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message.replace(/^\d+:\s*/, '')
+          : 'Could not request sandbox extension'
+      )
     } finally {
       setBusy(false)
     }
@@ -347,26 +377,62 @@ function SubscriptionSection() {
           </div>
         </div>
 
-        {usage && (
-          <div className="mt-5 space-y-3 border-t pt-4">
-            <PlanUsageBar
-              label="Conversations this month"
-              used={usage.conversations}
-              limit={usage.conversationsMax}
-            />
-            <PlanUsageBar
-              label="AI replies this month"
-              used={usage.aiReplies}
-              limit={usage.aiRepliesMax}
-            />
-          </div>
-        )}
+        {usage &&
+          (environment === 'sandbox' ? (
+            <div className="mt-5 space-y-3 border-t pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium text-foreground">Sandbox testing usage — free</p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={busy || !!plan.pendingRequest}
+                  onClick={handleSandboxExtension}
+                >
+                  {plan.pendingRequest?.type === 'SANDBOX_EXTENSION'
+                    ? 'Extension requested'
+                    : 'Request sandbox extension'}
+                </Button>
+              </div>
+              <PlanUsageBar
+                label="Conversations this month"
+                used={usage.conversations}
+                limit={SANDBOX_CONVERSATIONS_CAP}
+              />
+              <PlanUsageBar
+                label="AI replies this month"
+                used={usage.aiReplies}
+                limit={SANDBOX_AI_REPLIES_CAP}
+              />
+              <p className="text-xs text-muted-foreground">
+                Going live applies your plan's limits and starts billing.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-5 space-y-3 border-t pt-4">
+              <PlanUsageBar
+                label="Conversations this month"
+                used={usage.conversations}
+                limit={usage.conversationsMax}
+              />
+              <PlanUsageBar
+                label="AI replies this month"
+                used={usage.aiReplies}
+                limit={usage.aiRepliesMax}
+              />
+            </div>
+          ))}
 
         {plan.pendingRequest && (
           <div className="mt-5 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
             <p className="text-sm text-amber-800">
-              Change to <strong>{TIER_LABELS[plan.pendingRequest.toTier as PlanTier]}</strong>{' '}
-              requested — awaiting review by the Lira team.
+              {plan.pendingRequest.type === 'SANDBOX_EXTENSION' ? (
+                <>Sandbox extension requested — awaiting review by the Lira team.</>
+              ) : (
+                <>
+                  Change to <strong>{TIER_LABELS[plan.pendingRequest.toTier as PlanTier]}</strong>{' '}
+                  requested — awaiting review by the Lira team.
+                </>
+              )}
             </p>
             <Button variant="outline" size="sm" disabled={busy} onClick={handleCancel}>
               Cancel

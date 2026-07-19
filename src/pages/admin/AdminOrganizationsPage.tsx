@@ -1,11 +1,18 @@
 import { useEffect, useState } from 'react'
-import { PlusIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline'
+import {
+  PlusIcon,
+  XMarkIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
+  ArrowUturnLeftIcon,
+} from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
 import {
   adminListOrganizations,
   adminGetOrganization,
   adminDeleteOrganization,
   adminCreateOrgForUser,
+  adminForceSandbox,
 } from '@/services/api'
 import type { AdminOrgItem, AdminOrgDetail } from '@/services/api'
 import { cn } from '@/lib'
@@ -43,6 +50,7 @@ export function AdminOrganizationsPage() {
   const [detailLoading, setDetailLoading] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<AdminOrgDetail | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [forcingSandbox, setForcingSandbox] = useState(false)
   const [provisionOpen, setProvisionOpen] = useState(false)
   const [provisionEmail, setProvisionEmail] = useState('')
   const [provisionTenant, setProvisionTenant] = useState('')
@@ -103,6 +111,31 @@ export function AdminOrganizationsPage() {
       /* ignore */
     } finally {
       setDetailLoading(false)
+    }
+  }
+
+  async function handleForceSandbox() {
+    if (!selected) return
+    if (
+      !window.confirm(
+        `Force ${selected.name} back to sandbox? Real outbound sends will be suppressed and sandbox testing caps re-apply. This does not erase the went-live date.`
+      )
+    ) {
+      return
+    }
+    setForcingSandbox(true)
+    try {
+      await adminForceSandbox(selected.org_id)
+      setSelected((prev) => (prev ? { ...prev, environment: 'sandbox' } : prev))
+      toast.success('Organization forced back to sandbox')
+    } catch (err) {
+      const msg =
+        err instanceof Error
+          ? err.message.replace(/^\d+:\s*/, '')
+          : 'Could not force back to sandbox'
+      toast.error(msg)
+    } finally {
+      setForcingSandbox(false)
     }
   }
 
@@ -377,6 +410,45 @@ export function AdminOrganizationsPage() {
                   <p className="mt-1 text-sm text-gray-500">{selected.industry}</p>
                 )}
 
+                {/* Environment (sandbox/live) */}
+                {selected.environment && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        'inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                        selected.environment === 'sandbox'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-emerald-100 text-emerald-700'
+                      )}
+                    >
+                      {selected.environment === 'sandbox' ? 'Sandbox' : 'Live'}
+                    </span>
+                    {selected.went_live_at && (
+                      <span className="text-xs text-gray-400">
+                        Went live {new Date(selected.went_live_at).toLocaleDateString()}
+                      </span>
+                    )}
+                  </div>
+                )}
+                {selected.production_domain && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Production domain:{' '}
+                    <span className="font-mono text-gray-700">{selected.production_domain}</span>
+                  </p>
+                )}
+
+                {/* Production integration while still in sandbox — the "they
+                    shipped us to their real app for free" signal. Advisory,
+                    not authoritative (Origin/Referer based). */}
+                {selected.production_integration_detected && (
+                  <div className="mt-3 flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5">
+                    <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
+                    <p className="text-xs font-medium text-amber-800">
+                      Widget detected on a production-like domain while this org is in sandbox.
+                    </p>
+                  </div>
+                )}
+
                 {/* Organization ID — exists from creation (before support
                     activation); shown for direct backend/terminal lookups */}
                 <div className="mt-4 border-t border-gray-100 pt-4">
@@ -423,6 +495,38 @@ export function AdminOrganizationsPage() {
                   </div>
                 </div>
 
+                {/* Domains the widget has been seen on (advisory telemetry) */}
+                {selected.domains && selected.domains.length > 0 && (
+                  <div className="mt-5 border-t border-gray-100 pt-4">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                      Domains ({selected.domains.length})
+                    </p>
+                    <ul className="mt-2 space-y-1.5">
+                      {selected.domains.map((d) => (
+                        <li
+                          key={d.host}
+                          className="flex items-center justify-between gap-2 text-xs"
+                          title={
+                            d.last_seen
+                              ? `Last seen ${new Date(d.last_seen).toLocaleString()}`
+                              : undefined
+                          }
+                        >
+                          <span
+                            className={cn(
+                              'truncate font-mono',
+                              d.dev_like ? 'text-gray-400' : 'font-semibold text-gray-900'
+                            )}
+                          >
+                            {d.host}
+                          </span>
+                          <span className="shrink-0 text-gray-400">{d.count.toLocaleString()}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
                 {/* Members */}
                 <div className="mt-5 border-t border-gray-100 pt-4">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
@@ -441,6 +545,20 @@ export function AdminOrganizationsPage() {
                     ))}
                   </ul>
                 </div>
+
+                {/* Environment override */}
+                {selected.environment === 'production' && (
+                  <div className="mt-5 border-t border-gray-100 pt-4">
+                    <button
+                      onClick={handleForceSandbox}
+                      disabled={forcingSandbox}
+                      className="flex items-center gap-1.5 text-sm font-medium text-amber-600 hover:text-amber-800 disabled:opacity-50"
+                    >
+                      <ArrowUturnLeftIcon className="h-4 w-4" />
+                      {forcingSandbox ? 'Forcing back to sandbox…' : 'Force back to sandbox'}
+                    </button>
+                  </div>
+                )}
 
                 {/* Delete action */}
                 <div className="mt-5 border-t border-gray-100 pt-4">

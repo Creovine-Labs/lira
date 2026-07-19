@@ -26,7 +26,7 @@ import {
   updateSupportConfig,
   HANDOFF_TRIGGER_DEFAULTS,
 } from '@/services/api/support-api'
-import { getMobilePushStatus } from '@/services/api'
+import { getMobilePushStatus, getMyPlan, type MyPlan, type PlanTier } from '@/services/api'
 import type { SupportConfig, HandoffTriggersConfig } from '@/services/api/support-api'
 
 // ── Copy button helper ────────────────────────────────────────────────────────
@@ -376,7 +376,6 @@ function HandoffTriggersSection({
 
 // ── Pilot & compliance controls (sandbox, currency, refusal, CBN SLA, KB freshness) ──
 type PilotDraft = {
-  environment: 'sandbox' | 'production'
   currency: string
   financial_advice_refusal: boolean
   sla_acknowledge_hours: number
@@ -384,9 +383,132 @@ type PilotDraft = {
   kb_stale_after_days: number
 }
 
+const PLAN_TIER_LABELS: Record<PlanTier, string> = {
+  FREE: 'Free',
+  PRO: 'Pro',
+  SCALE: 'Scale',
+  ENTERPRISE: 'Enterprise',
+}
+
+/**
+ * Go-live confirmation — going live is the commercial event (billing starts,
+ * plan limits replace sandbox caps), so it requires typing the org name.
+ */
+function GoLiveModal({
+  orgName,
+  busy,
+  onConfirm,
+  onClose,
+}: {
+  orgName: string
+  busy: boolean
+  onConfirm: () => void
+  onClose: () => void
+}) {
+  const [plan, setPlan] = useState<MyPlan | null>(null)
+  const [planLoading, setPlanLoading] = useState(true)
+  const [typed, setTyped] = useState('')
+
+  useEffect(() => {
+    getMyPlan()
+      .then(setPlan)
+      .catch(() => setPlan(null))
+      .finally(() => setPlanLoading(false))
+  }, [])
+
+  const nameMatches = typed.trim() === orgName.trim() && orgName.trim().length > 0
+  const price =
+    plan === null
+      ? null
+      : plan.entitlements.basePriceUsd === null
+        ? 'Custom pricing'
+        : `$${plan.entitlements.basePriceUsd}/mo`
+  const included =
+    plan === null
+      ? null
+      : plan.entitlements.includedConversationsPerMonth === 0
+        ? 'Unlimited conversations'
+        : `${plan.entitlements.includedConversationsPerMonth.toLocaleString()} conversations / mo included`
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        role="presentation"
+        className="absolute inset-0 bg-black/40"
+        onClick={() => !busy && onClose()}
+      />
+      <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+        <h3 className="text-base font-semibold text-gray-900">Go live</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Switch this workspace from sandbox to production.
+        </p>
+
+        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+          {planLoading ? (
+            <p className="text-sm text-gray-400">Loading your plan…</p>
+          ) : plan ? (
+            <>
+              <p className="text-sm font-semibold text-gray-900">
+                {PLAN_TIER_LABELS[plan.tier]} plan
+                {price ? <span className="ml-2 font-normal text-gray-500">{price}</span> : null}
+              </p>
+              {included && <p className="mt-0.5 text-xs text-gray-500">{included}</p>}
+            </>
+          ) : (
+            <p className="text-sm text-gray-500">
+              Plan details are unavailable right now — your invited plan applies when you go live.
+            </p>
+          )}
+        </div>
+
+        <p className="mt-3 text-sm text-gray-700">
+          Going live starts your billing period. Sandbox testing limits are replaced by your
+          plan&apos;s volume.
+        </p>
+
+        <div className="mt-4">
+          <label
+            htmlFor="golive-confirm-name"
+            className="mb-1 block text-xs font-semibold uppercase tracking-wider text-gray-500"
+          >
+            Type <span className="normal-case text-gray-900">{orgName}</span> to confirm
+          </label>
+          <input
+            id="golive-confirm-name"
+            type="text"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            disabled={busy}
+            placeholder={orgName}
+            autoComplete="off"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#020308] focus:ring-2 focus:ring-[#020308]/10"
+          />
+        </div>
+
+        <div className="mt-5 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            disabled={busy}
+            className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={busy || !nameMatches}
+            className="rounded-xl bg-[#020308] px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            {busy ? 'Going live…' : 'Go live'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function PilotControlsSection({ orgId, config }: { orgId: string; config: SupportConfig | null }) {
+  const orgName = useOrgStore((s) => s.organizations.find((o) => o.org_id === orgId)?.name ?? '')
   const fromConfig = (): PilotDraft => ({
-    environment: config?.environment ?? 'production',
     currency: config?.currency ?? 'USD',
     financial_advice_refusal: config?.financial_advice_refusal !== false,
     sla_acknowledge_hours: config?.sla_acknowledge_hours ?? 24,
@@ -396,11 +518,20 @@ function PilotControlsSection({ orgId, config }: { orgId: string; config: Suppor
   const [draft, setDraft] = useState<PilotDraft>(fromConfig)
   const [saved, setSaved] = useState<PilotDraft>(fromConfig)
   const [saving, setSaving] = useState(false)
+  // Environment is applied immediately (with confirmation), separate from the
+  // draft/save flow — going live is a deliberate commercial event, not a
+  // setting to batch with SLA tweaks.
+  const [environment, setEnvironment] = useState<'sandbox' | 'production'>(
+    config?.environment ?? 'production'
+  )
+  const [envBusy, setEnvBusy] = useState(false)
+  const [goLiveOpen, setGoLiveOpen] = useState(false)
   // Re-seed once the config loads in.
   useEffect(() => {
     const next = fromConfig()
     setDraft(next)
     setSaved(next)
+    setEnvironment(config?.environment ?? 'production')
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config])
 
@@ -412,7 +543,6 @@ function PilotControlsSection({ orgId, config }: { orgId: string; config: Suppor
     setSaving(true)
     try {
       await updateSupportConfig(orgId, {
-        environment: draft.environment,
         currency: draft.currency.trim().toUpperCase() || 'USD',
         financial_advice_refusal: draft.financial_advice_refusal,
         sla_acknowledge_hours: draft.sla_acknowledge_hours,
@@ -428,7 +558,40 @@ function PilotControlsSection({ orgId, config }: { orgId: string; config: Suppor
     }
   }
 
-  const isSandbox = draft.environment === 'sandbox'
+  const applyEnvironment = async (next: 'sandbox' | 'production') => {
+    setEnvBusy(true)
+    try {
+      await updateSupportConfig(orgId, { environment: next })
+      setEnvironment(next)
+      setGoLiveOpen(false)
+      toast.success(
+        next === 'production'
+          ? "You're live — your plan's limits now apply and your billing period has started."
+          : 'Back in sandbox — real sends are suppressed and testing caps apply.'
+      )
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to change environment')
+    } finally {
+      setEnvBusy(false)
+    }
+  }
+
+  const handleEnvClick = (next: 'sandbox' | 'production') => {
+    if (next === environment || envBusy) return
+    if (next === 'production') {
+      setGoLiveOpen(true)
+      return
+    }
+    if (
+      window.confirm(
+        'Return this workspace to sandbox? Real outbound sends will be suppressed and the widget will show a SANDBOX badge.'
+      )
+    ) {
+      void applyEnvironment('sandbox')
+    }
+  }
+
+  const isSandbox = environment === 'sandbox'
 
   return (
     <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
@@ -443,20 +606,22 @@ function PilotControlsSection({ orgId, config }: { orgId: string; config: Suppor
       </div>
 
       <div className="divide-y divide-gray-100">
-        {/* Environment */}
+        {/* Environment — applied immediately; going live requires typed confirmation */}
         <div className="flex items-center justify-between gap-4 px-5 py-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-800">Environment</p>
             <p className="mt-0.5 text-xs text-gray-400">
               In <span className="font-medium">sandbox</span>, no real emails are sent (previewed
-              only) and the widget shows a SANDBOX badge. Flip to production to go live.
+              only) and the widget shows a SANDBOX badge. Going live starts your billing period and
+              applies your plan&apos;s limits.
             </p>
           </div>
           <div className="flex flex-none items-center gap-1 rounded-lg bg-gray-100 p-1">
             <button
               type="button"
-              onClick={() => set('environment', 'sandbox')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+              disabled={envBusy}
+              onClick={() => handleEnvClick('sandbox')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${
                 isSandbox
                   ? 'bg-white text-[#020308] shadow-sm'
                   : 'text-gray-400 hover:text-gray-600'
@@ -466,8 +631,9 @@ function PilotControlsSection({ orgId, config }: { orgId: string; config: Suppor
             </button>
             <button
               type="button"
-              onClick={() => set('environment', 'production')}
-              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+              disabled={envBusy}
+              onClick={() => handleEnvClick('production')}
+              className={`rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 ${
                 !isSandbox
                   ? 'bg-white text-[#020308] shadow-sm'
                   : 'text-gray-400 hover:text-gray-600'
@@ -555,6 +721,15 @@ function PilotControlsSection({ orgId, config }: { orgId: string; config: Suppor
           {saving ? 'Saving…' : dirty ? 'Save changes' : 'Saved'}
         </button>
       </div>
+
+      {goLiveOpen && (
+        <GoLiveModal
+          orgName={orgName}
+          busy={envBusy}
+          onConfirm={() => void applyEnvironment('production')}
+          onClose={() => setGoLiveOpen(false)}
+        />
+      )}
     </div>
   )
 }
