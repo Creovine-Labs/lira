@@ -63,8 +63,8 @@ export function AdminPlanRequestsPage() {
         <h1 className="text-xl font-semibold text-gray-900">Plan requests</h1>
         <p className="mt-1 text-sm text-gray-500">
           Customer-initiated plan changes. Approving applies the tier and limits — settle billing
-          manually until Paddle automation is live. Downgrade limits take effect at the org's next
-          monthly usage reset.
+          manually until Paddle automation is live. On downgrades, feature gates lock immediately;
+          usage caps defer to the org's next monthly reset if the org is over the new cap.
         </p>
       </div>
 

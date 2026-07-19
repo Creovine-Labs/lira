@@ -378,7 +378,8 @@ function SubscriptionSection() {
       <Section icon={CreditCardIcon} title="Change plan">
         <p className="mb-4 text-sm text-muted-foreground">
           Pick a plan and the Lira team will review and apply the change. Upgrades take effect on
-          approval; downgrade limits apply from your next monthly usage reset.
+          approval. On a downgrade, paid features lock when the change is applied, while your
+          current usage limits stay in place until your next monthly reset.
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {plan.allTiers.map(({ tier, entitlements }) => {
