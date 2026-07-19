@@ -74,6 +74,7 @@ import {
 } from '@/services/api/support-api'
 import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
+import { GoLiveModal } from '@/components/settings/GoLiveModal'
 
 interface VoiceOption {
   id: VoiceId
@@ -1146,6 +1147,117 @@ function AccountSection() {
 
 // ── Support Settings section ──────────────────────────────────────────────────
 
+// ── Support → Environment card ────────────────────────────────────────────
+// The sandbox ↔ production switch. Lives at the top of Settings → Support
+// (before the tab strip) so it's impossible to miss — pilot feedback was
+// that the old Pilot Controls surface (on the unrouted SupportSettingsPage)
+// couldn't be found at all. Environment changes apply immediately: going
+// live requires the typed-org-name GoLiveModal (billing starts), returning
+// to sandbox is a simple confirm.
+function SupportEnvironmentCard() {
+  const { currentOrgId, organizations } = useOrgStore()
+  const orgName = organizations.find((o) => o.org_id === currentOrgId)?.name ?? ''
+  const { config, updateConfig } = useSupportStore()
+  const [envBusy, setEnvBusy] = useState(false)
+  const [goLiveOpen, setGoLiveOpen] = useState(false)
+
+  const environment = config?.environment ?? 'production'
+  const isSandbox = environment === 'sandbox'
+
+  const applyEnvironment = async (next: 'sandbox' | 'production') => {
+    if (!currentOrgId) return
+    setEnvBusy(true)
+    try {
+      // Store updateConfig refreshes the shared config, so the shell's
+      // SANDBOX pill and the widget badge stay in sync automatically.
+      await updateConfig(currentOrgId, { environment: next })
+      setGoLiveOpen(false)
+      toast.success(
+        next === 'production'
+          ? "You're live — your plan's limits now apply and your billing period has started."
+          : 'Back in sandbox — real sends are suppressed and testing caps apply.'
+      )
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to change environment')
+    } finally {
+      setEnvBusy(false)
+    }
+  }
+
+  const handleEnvClick = (next: 'sandbox' | 'production') => {
+    if (next === environment || envBusy) return
+    if (next === 'production') {
+      setGoLiveOpen(true)
+      return
+    }
+    if (
+      window.confirm(
+        'Return this workspace to sandbox? Real outbound sends will be suppressed and the widget will show a SANDBOX badge.'
+      )
+    ) {
+      void applyEnvironment('sandbox')
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-900">Environment</h2>
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider',
+                isSandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'
+              )}
+            >
+              {isSandbox ? 'SANDBOX' : 'LIVE'}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            In <span className="font-medium">sandbox</span>, no real emails are sent (previewed
+            only) and the widget shows a SANDBOX badge. Going live starts your billing period and
+            applies your plan&apos;s limits.
+          </p>
+        </div>
+        <div className="flex flex-none items-center gap-1 self-start rounded-lg bg-gray-100 p-1 sm:self-auto">
+          <button
+            type="button"
+            disabled={envBusy}
+            onClick={() => handleEnvClick('sandbox')}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60',
+              isSandbox ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            )}
+          >
+            Sandbox
+          </button>
+          <button
+            type="button"
+            disabled={envBusy}
+            onClick={() => handleEnvClick('production')}
+            className={cn(
+              'rounded-md px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60',
+              !isSandbox ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-gray-400 hover:text-gray-600'
+            )}
+          >
+            Production
+          </button>
+        </div>
+      </div>
+
+      {goLiveOpen && (
+        <GoLiveModal
+          orgName={orgName}
+          busy={envBusy}
+          onConfirm={() => void applyEnvironment('production')}
+          onClose={() => setGoLiveOpen(false)}
+        />
+      )}
+    </div>
+  )
+}
+
 function SupportSettingsSection() {
   const { currentOrgId, organizations } = useOrgStore()
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
@@ -1394,6 +1506,9 @@ function SupportSettingsSection() {
 
   return (
     <div className="space-y-4 pb-24">
+      {/* Environment (sandbox ↔ production) — always visible, above the tabs */}
+      <SupportEnvironmentCard />
+
       {/* Tab bar + top Save button */}
       <div className="flex items-center gap-2">
         <div className="flex flex-1 gap-1 rounded-xl border border-gray-200 bg-gray-50 p-1">

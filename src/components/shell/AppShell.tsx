@@ -205,7 +205,9 @@ const NAV_ADMIN: NavGroup = {
     // marketing surface; it's actually the integration delivery audit
     // (Slack / Linear / webhook back-channels). Renamed for clarity.
     { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Delivery log' },
-    { to: '/org/usage', icon: ChartBarIcon, label: 'Usage' },
+    // 'Usage' removed 2026-07-19 — the /org/usage page was retired (no route
+    // exists for it), so the link 404'd. Usage numbers live in Settings →
+    // Subscription.
   ],
 }
 
@@ -1387,8 +1389,20 @@ function AppShell() {
           </div>
 
           {/* Center — persistent org switcher (always visible) */}
-          <div className="flex flex-1 items-center">
+          <div className="flex flex-1 items-center gap-2">
             <TopbarOrgSwitcher />
+            {/* Persistent environment reminder — pilot feedback was that
+                nothing on the dashboard itself said the org was still in
+                sandbox. Links to Settings → Support, where the switch lives. */}
+            {supportConfig?.activated && supportConfig.environment === 'sandbox' && (
+              <NavLink
+                to="/settings"
+                title="This workspace is in sandbox — real sends are suppressed. Switch environments in Settings → Support."
+                className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold tracking-wider text-amber-800 transition hover:bg-amber-200"
+              >
+                SANDBOX
+              </NavLink>
+            )}
           </div>
 
           {/* Right — notifications + user. The Availability toggle was
