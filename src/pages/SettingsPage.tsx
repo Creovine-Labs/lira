@@ -21,11 +21,13 @@ import {
   KeyIcon,
   LockClosedIcon,
   MicrophoneIcon,
+  PresentationChartLineIcon,
   ShieldCheckIcon,
   SparklesIcon,
   UserCircleIcon,
 } from '@heroicons/react/24/outline'
 import { toast } from 'sonner'
+import { env } from '@/env'
 import {
   useUserPrefsStore,
   useAuthStore,
@@ -43,16 +45,31 @@ import {
   changePassword,
   deleteAccount,
   leaveOrganization,
+  getMyPlan,
+  requestPlanChange,
+  cancelPlanChangeRequest,
+  type MyPlan,
+  type PlanTier,
+  type PlanEntitlements,
 } from '@/services/api'
 import {
   deleteAgentCapability,
   listAgentCapabilities,
   listAgentActionRuns,
+  getSupportConfig,
+  deleteWhatsAppChannelConfig,
+  getWhatsAppAnalyticsSummary,
+  getWhatsAppChannelConfig,
+  listWhatsAppAnalyticsEvents,
   rotateWidgetSecret,
+  updateWhatsAppChannelConfig,
   upsertAgentCapability,
   type AgentCapabilityConfig,
   type AgentActionRun,
   type AgentActionRunStatus,
+  type WhatsAppAnalyticsEvent,
+  type WhatsAppAnalyticsSummary,
+  type WhatsAppChannelConfig,
 } from '@/services/api/support-api'
 import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
@@ -163,6 +180,241 @@ function LockedRow({ label, description }: { label: string; description: string 
         <p className="text-xs">{description}</p>
       </div>
       <LockClosedIcon className="h-4 w-4 shrink-0" />
+    </div>
+  )
+}
+
+// ── Subscription section ─────────────────────────────────────────────────────
+
+const TIER_LABELS: Record<PlanTier, string> = {
+  FREE: 'Free',
+  PRO: 'Pro',
+  SCALE: 'Scale',
+  ENTERPRISE: 'Enterprise',
+}
+
+function tierPrice(e: PlanEntitlements): string {
+  if (e.basePriceUsd === null) return 'Custom'
+  if (e.basePriceUsd === 0) return '$0'
+  return `$${e.basePriceUsd}/mo`
+}
+
+function entitlementLines(e: PlanEntitlements): string[] {
+  const conv =
+    e.includedConversationsPerMonth === 0
+      ? 'Unlimited conversations'
+      : `${e.includedConversationsPerMonth.toLocaleString()} conversations / mo`
+  const overage = e.overagePer1000Usd !== null ? `$${e.overagePer1000Usd} per extra 1,000` : null
+  return [
+    conv,
+    ...(overage ? [overage] : []),
+    `${e.languages} languages`,
+    ...(e.whatsappBusinessApi ? ['WhatsApp Business API'] : []),
+    ...(e.multipleDomains ? ['Multiple domains'] : []),
+    ...(e.brandingRemoval ? ['Branding removed'] : []),
+    ...(e.prioritySupport ? ['Priority support'] : []),
+    ...(e.advancedAnalytics ? ['Advanced analytics & exports'] : []),
+  ]
+}
+
+function PlanUsageBar({ used, limit, label }: { used: number; limit: number; label: string }) {
+  const unlimited = limit === 0
+  const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span>{label}</span>
+        <span className="font-medium text-foreground">
+          {used.toLocaleString()} / {unlimited ? 'Unlimited' : limit.toLocaleString()}
+        </span>
+      </div>
+      <div className="mt-1 h-2 overflow-hidden rounded-full bg-gray-100">
+        <div
+          className={cn(
+            'h-full rounded-full transition-all',
+            pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-400' : 'bg-emerald-500'
+          )}
+          style={{ width: unlimited ? '4%' : `${pct}%` }}
+        />
+      </div>
+    </div>
+  )
+}
+
+function SubscriptionSection() {
+  const { currentOrgId } = useOrgStore()
+  const [plan, setPlan] = useState<MyPlan | null>(null)
+  const [usage, setUsage] = useState<{
+    conversations: number
+    conversationsMax: number
+    aiReplies: number
+    aiRepliesMax: number
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const p = await getMyPlan()
+      setPlan(p)
+      if (currentOrgId) {
+        const cfg = await getSupportConfig(currentOrgId)
+        setUsage({
+          conversations: cfg.conversations_this_month ?? 0,
+          conversationsMax: cfg.max_conversations_per_month ?? 0,
+          aiReplies: cfg.ai_replies_this_month ?? 0,
+          aiRepliesMax: cfg.max_ai_replies_per_month ?? 0,
+        })
+      }
+    } catch {
+      // plan endpoint unavailable — leave section empty-stated
+    } finally {
+      setLoading(false)
+    }
+  }, [currentOrgId])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const handleRequest = async (toTier: PlanTier) => {
+    if (!currentOrgId || !plan) return
+    setBusy(true)
+    try {
+      await requestPlanChange({ toTier, orgId: currentOrgId })
+      toast.success(
+        `${TIER_LABELS[toTier]} plan requested — the Lira team will review and apply it.`
+      )
+      await load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not request plan change')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleCancel = async () => {
+    if (!plan?.pendingRequest) return
+    setBusy(true)
+    try {
+      await cancelPlanChangeRequest(plan.pendingRequest.id)
+      toast.success('Plan change request cancelled')
+      await load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not cancel request')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <Section icon={ShieldCheckIcon} title="Subscription">
+        <div className="flex items-center justify-center py-10">
+          <div className="h-6 w-6 animate-spin rounded-full border-[3px] border-gray-200 border-t-gray-900" />
+        </div>
+      </Section>
+    )
+  }
+
+  if (!plan) {
+    return (
+      <Section icon={ShieldCheckIcon} title="Subscription">
+        <p className="text-sm text-muted-foreground">
+          Plan information is unavailable right now. Try again shortly.
+        </p>
+      </Section>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <Section icon={ShieldCheckIcon} title="Current plan">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <p className="text-2xl font-semibold text-foreground">
+              {TIER_LABELS[plan.tier]}
+              <span className="ml-2 text-sm font-normal text-muted-foreground">
+                {tierPrice(plan.entitlements)}
+              </span>
+            </p>
+            <ul className="mt-2 space-y-0.5 text-sm text-muted-foreground">
+              {entitlementLines(plan.entitlements).map((line) => (
+                <li key={line}>• {line}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {usage && (
+          <div className="mt-5 space-y-3 border-t pt-4">
+            <PlanUsageBar
+              label="Conversations this month"
+              used={usage.conversations}
+              limit={usage.conversationsMax}
+            />
+            <PlanUsageBar
+              label="AI replies this month"
+              used={usage.aiReplies}
+              limit={usage.aiRepliesMax}
+            />
+          </div>
+        )}
+
+        {plan.pendingRequest && (
+          <div className="mt-5 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <p className="text-sm text-amber-800">
+              Change to <strong>{TIER_LABELS[plan.pendingRequest.toTier as PlanTier]}</strong>{' '}
+              requested — awaiting review by the Lira team.
+            </p>
+            <Button variant="outline" size="sm" disabled={busy} onClick={handleCancel}>
+              Cancel
+            </Button>
+          </div>
+        )}
+      </Section>
+
+      <Section icon={CreditCardIcon} title="Change plan">
+        <p className="mb-4 text-sm text-muted-foreground">
+          Pick a plan and the Lira team will review and apply the change. Upgrades take effect on
+          approval; downgrade limits apply from your next monthly usage reset.
+        </p>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {plan.allTiers.map(({ tier, entitlements }) => {
+            const isCurrent = tier === plan.tier
+            const isPendingTarget = plan.pendingRequest?.toTier === tier
+            return (
+              <div
+                key={tier}
+                className={cn(
+                  'flex flex-col rounded-xl border p-4',
+                  isCurrent ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
+                )}
+              >
+                <p className="font-semibold text-foreground">{TIER_LABELS[tier]}</p>
+                <p className="text-sm text-muted-foreground">{tierPrice(entitlements)}</p>
+                <ul className="mt-2 flex-1 space-y-0.5 text-xs text-muted-foreground">
+                  {entitlementLines(entitlements)
+                    .slice(0, 4)
+                    .map((line) => (
+                      <li key={line}>• {line}</li>
+                    ))}
+                </ul>
+                <Button
+                  className="mt-3"
+                  size="sm"
+                  variant={isCurrent ? 'outline' : 'default'}
+                  disabled={busy || isCurrent || !!plan.pendingRequest || isPendingTarget}
+                  onClick={() => handleRequest(tier)}
+                >
+                  {isCurrent ? 'Current plan' : isPendingTarget ? 'Requested' : 'Request change'}
+                </Button>
+              </div>
+            )
+          })}
+        </div>
+      </Section>
     </div>
   )
 }
@@ -901,6 +1153,7 @@ function SupportSettingsSection() {
     | 'widget'
     | 'secret'
     | 'channels'
+    | 'whatsapp'
     | 'portal'
     | 'behavior'
     | 'escalation'
@@ -930,6 +1183,7 @@ function SupportSettingsSection() {
     { key: 'widget' as const, label: 'Web SDK', icon: CodeBracketIcon },
     { key: 'secret' as const, label: 'Secret', icon: KeyIcon },
     { key: 'channels' as const, label: 'Channels', icon: EnvelopeIcon },
+    { key: 'whatsapp' as const, label: 'WhatsApp', icon: DevicePhoneMobileIcon },
     { key: 'portal' as const, label: 'Hosted', icon: GlobeAltIcon },
     { key: 'behavior' as const, label: 'Behavior', icon: Cog6ToothIcon },
     { key: 'escalation' as const, label: 'Escalation', icon: ExclamationTriangleIcon },
@@ -1363,6 +1617,9 @@ function SupportSettingsSection() {
           </div>
         </div>
       )}
+
+      {/* ── WhatsApp tab ── */}
+      {activeTab === 'whatsapp' && <SupportWhatsAppTab orgId={currentOrgId!} />}
 
       {/* ── Hosted fallback tab ── */}
       {activeTab === 'portal' && (
@@ -1860,6 +2117,662 @@ function SupportSettingsSection() {
           </Button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/**
+ * Meta-side prerequisites the CUSTOMER completes before Lira can operate
+ * their WhatsApp channel. Shown as a guided checklist so onboarding needs
+ * no back-and-forth with the Lira team.
+ */
+const WHATSAPP_PREREQUISITES: Array<{ label: string; detail: string }> = [
+  {
+    label: 'Meta Business Portfolio',
+    detail: 'Create or confirm your Business Manager account at business.facebook.com.',
+  },
+  {
+    label: 'WhatsApp Business Account (WABA)',
+    detail: 'Create/connect a WABA and note its WABA ID.',
+  },
+  {
+    label: 'Production phone number',
+    detail:
+      'Add and verify the number customers will message. A number already used in the WhatsApp app must be migrated first.',
+  },
+  {
+    label: 'Business verification & display name',
+    detail: 'Complete Meta business verification and submit your display name for review.',
+  },
+  {
+    label: 'System-user access token',
+    detail:
+      'Generate a token with whatsapp_business_messaging + whatsapp_business_management permissions, scoped to your WABA and number.',
+  },
+  {
+    label: 'Message templates',
+    detail:
+      'Create and submit outbound templates in Meta (acknowledgement, ticket updates, handoff, CSAT). Add approved names to the template allowlist below.',
+  },
+]
+
+function SupportWhatsAppTab({ orgId }: { orgId: string }) {
+  const planTier = useAuthStore((s) => s.planTier)
+  const whatsappEntitled = planTier === 'SCALE' || planTier === 'ENTERPRISE'
+  const [config, setConfig] = useState<WhatsAppChannelConfig | null>(null)
+  const [summary, setSummary] = useState<WhatsAppAnalyticsSummary | null>(null)
+  const [events, setEvents] = useState<WhatsAppAnalyticsEvent[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [enabled, setEnabled] = useState(false)
+  const [ingestEnabled, setIngestEnabled] = useState(false)
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false)
+  const [realSendEnabled, setRealSendEnabled] = useState(false)
+  const [environment, setEnvironment] = useState<'sandbox' | 'production'>('sandbox')
+  const [wabaId, setWabaId] = useState('')
+  const [phoneNumberId, setPhoneNumberId] = useState('')
+  const [displayPhoneNumber, setDisplayPhoneNumber] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [graphApiVersion, setGraphApiVersion] = useState('v23.0')
+  const [allowedTemplates, setAllowedTemplates] = useState('')
+  const [optOutKeywords, setOptOutKeywords] = useState('stop, unsubscribe')
+  const [accessToken, setAccessToken] = useState('')
+  const [appSecret, setAppSecret] = useState('')
+  const [verifyToken, setVerifyToken] = useState('')
+
+  const callbackUrl = `${env.VITE_API_URL}/lira/v1/support/whatsapp/webhook/${encodeURIComponent(
+    orgId
+  )}`
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    try {
+      const [channelConfig, analytics, recentEvents] = await Promise.all([
+        getWhatsAppChannelConfig(orgId),
+        getWhatsAppAnalyticsSummary(orgId, 30).catch(() => null),
+        listWhatsAppAnalyticsEvents(orgId, { limit: 8 }).catch(() => []),
+      ])
+      setConfig(channelConfig)
+      setSummary(analytics)
+      setEvents(recentEvents)
+      setEnabled(channelConfig?.enabled ?? false)
+      setIngestEnabled(channelConfig?.ingest_enabled ?? false)
+      setAutoReplyEnabled(channelConfig?.auto_reply_enabled ?? false)
+      setRealSendEnabled(channelConfig?.real_send_enabled ?? false)
+      setEnvironment(channelConfig?.environment ?? 'sandbox')
+      setWabaId(channelConfig?.waba_id ?? '')
+      setPhoneNumberId(channelConfig?.phone_number_id ?? '')
+      setDisplayPhoneNumber(channelConfig?.display_phone_number ?? '')
+      setDisplayName(channelConfig?.display_name ?? '')
+      setGraphApiVersion(channelConfig?.graph_api_version ?? 'v23.0')
+      setAllowedTemplates((channelConfig?.allowed_template_names ?? []).join(', '))
+      setOptOutKeywords((channelConfig?.opt_out_keywords ?? ['stop', 'unsubscribe']).join(', '))
+      setAccessToken('')
+      setAppSecret('')
+      setVerifyToken('')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load WhatsApp settings')
+    } finally {
+      setLoading(false)
+    }
+  }, [orgId])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const handleSave = useCallback(async () => {
+    setSaving(true)
+    try {
+      const updated = await updateWhatsAppChannelConfig(orgId, {
+        enabled,
+        ingest_enabled: ingestEnabled,
+        auto_reply_enabled: autoReplyEnabled,
+        real_send_enabled: realSendEnabled,
+        environment,
+        waba_id: wabaId.trim() || undefined,
+        phone_number_id: phoneNumberId.trim() || undefined,
+        display_phone_number: displayPhoneNumber.trim() || undefined,
+        display_name: displayName.trim() || undefined,
+        graph_api_version: graphApiVersion.trim() || 'v23.0',
+        allowed_template_names: allowedTemplates
+          .split(',')
+          .map((item) => item.trim())
+          .filter(Boolean),
+        opt_out_keywords: optOutKeywords
+          .split(',')
+          .map((item) => item.trim().toLowerCase())
+          .filter(Boolean),
+        access_token: accessToken.trim() || undefined,
+        app_secret: appSecret.trim() || undefined,
+        verify_token: verifyToken.trim() || undefined,
+      })
+      setConfig(updated)
+      setAccessToken('')
+      setAppSecret('')
+      setVerifyToken('')
+      toast.success('WhatsApp settings saved')
+      const [analytics, recentEvents] = await Promise.all([
+        getWhatsAppAnalyticsSummary(orgId, 30).catch(() => null),
+        listWhatsAppAnalyticsEvents(orgId, { limit: 8 }).catch(() => []),
+      ])
+      setSummary(analytics)
+      setEvents(recentEvents)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save WhatsApp settings')
+    } finally {
+      setSaving(false)
+    }
+  }, [
+    accessToken,
+    allowedTemplates,
+    appSecret,
+    autoReplyEnabled,
+    displayName,
+    displayPhoneNumber,
+    enabled,
+    environment,
+    graphApiVersion,
+    ingestEnabled,
+    optOutKeywords,
+    orgId,
+    phoneNumberId,
+    realSendEnabled,
+    verifyToken,
+    wabaId,
+  ])
+
+  const handleDelete = useCallback(async () => {
+    if (!window.confirm('Delete WhatsApp config and encrypted credentials for this org?')) return
+    setSaving(true)
+    try {
+      await deleteWhatsAppChannelConfig(orgId)
+      toast.success('WhatsApp config deleted')
+      await load()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete WhatsApp config')
+    } finally {
+      setSaving(false)
+    }
+  }, [load, orgId])
+
+  // Plan gate — the WhatsApp Business API channel is a Scale/Enterprise
+  // entitlement (the backend enforces this too; this is the friendly surface).
+  if (!whatsappEntitled) {
+    return (
+      <div className="rounded-xl border border-dashed px-5 py-8 text-center">
+        <p className="text-sm font-semibold text-foreground">
+          WhatsApp Business API is available on the Scale plan
+        </p>
+        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+          Your organization is on the {planTier ?? 'Free'} plan. Upgrade to Scale to run the AI
+          agent inside WhatsApp — request the change in Settings → Subscription and the Lira team
+          will apply it.
+        </p>
+        <div className="mx-auto mt-5 max-w-md rounded-lg border bg-gray-50 p-4 text-left">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            What you'll set up once upgraded
+          </p>
+          <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+            {WHATSAPP_PREREQUISITES.map((item) => (
+              <li key={item.label}>• {item.label}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
+  if (loading) {
+    return (
+      <div className="rounded-lg border px-4 py-6 text-sm text-muted-foreground">
+        Loading WhatsApp settings…
+      </div>
+    )
+  }
+
+  const totals = summary?.totals ?? {}
+  const metricItems = [
+    ['Inbound', totals.inbound_messages ?? 0],
+    ['Auto replies', totals.auto_replies ?? 0],
+    ['Outbound', totals.outbound_sends ?? 0],
+    ['Failures', totals.outbound_failed ?? 0],
+    ['Escalations', totals.escalations ?? 0],
+    ['Duplicates', totals.webhook_duplicates ?? 0],
+  ] as const
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-emerald-950">WhatsApp Cloud API</p>
+            <p className="mt-1 max-w-2xl text-xs leading-relaxed text-emerald-900/80">
+              Configure your organization's Meta assets, control ingestion and AI rollout, and track
+              channel health without exposing raw credentials in the dashboard.
+            </p>
+          </div>
+          <span
+            className={cn(
+              'rounded-full px-2.5 py-1 text-[11px] font-semibold',
+              enabled
+                ? 'bg-emerald-700 text-white'
+                : 'bg-white text-emerald-800 ring-1 ring-emerald-200'
+            )}
+          >
+            {enabled ? 'Enabled' : 'Disabled'}
+          </span>
+        </div>
+      </div>
+
+      {/* Guided setup: everything the customer completes on the Meta side
+          before the channel can go live — no back-and-forth required. */}
+      {!enabled && (
+        <details className="rounded-xl border bg-gray-50/60 px-4 py-3" open>
+          <summary className="cursor-pointer text-sm font-semibold text-foreground">
+            Before you start: what you'll need from Meta
+          </summary>
+          <ol className="mt-3 space-y-2.5">
+            {WHATSAPP_PREREQUISITES.map((item, i) => (
+              <li key={item.label} className="flex gap-3 text-sm">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-semibold text-white">
+                  {i + 1}
+                </span>
+                <span>
+                  <span className="font-medium text-foreground">{item.label}</span>{' '}
+                  <span className="text-muted-foreground">— {item.detail}</span>
+                </span>
+              </li>
+            ))}
+          </ol>
+          <p className="mt-3 text-xs text-muted-foreground">
+            Once you have these, fill in the Meta assets below, copy the webhook callback URL into
+            your Meta app, and enable the channel. Real outbound sends stay off until you explicitly
+            enable them.
+          </p>
+        </details>
+      )}
+
+      <div className="grid gap-3 md:grid-cols-2">
+        <WhatsAppToggle
+          label="Channel enabled"
+          description="Allows Meta webhook verification and event processing for this org."
+          checked={enabled}
+          onChange={setEnabled}
+        />
+        <div className="rounded-lg border px-4 py-3">
+          <p className="text-sm font-medium text-foreground">Environment</p>
+          <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1">
+            {(['sandbox', 'production'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setEnvironment(value)}
+                className={cn(
+                  'rounded-md px-3 py-1.5 text-xs font-semibold capitalize transition',
+                  environment === value
+                    ? 'bg-white text-gray-950 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-900'
+                )}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+        </div>
+        <WhatsAppToggle
+          label="Ingest conversations"
+          description="Creates Lira support conversations from inbound WhatsApp text messages."
+          checked={ingestEnabled}
+          onChange={setIngestEnabled}
+        />
+        <WhatsAppToggle
+          label="AI auto-replies"
+          description="Runs RAG, classification, agent replies, and escalation after ingestion."
+          checked={autoReplyEnabled}
+          onChange={setAutoReplyEnabled}
+        />
+        <WhatsAppToggle
+          label="Real Meta sends"
+          description="Calls Meta Graph API instead of dry-run payload generation."
+          checked={realSendEnabled}
+          onChange={setRealSendEnabled}
+          danger
+        />
+      </div>
+
+      <div className="rounded-lg border px-4 py-4">
+        <div className="mb-3 flex items-center gap-2">
+          <DevicePhoneMobileIcon className="h-4 w-4 text-gray-500" />
+          <p className="text-sm font-semibold text-foreground">Meta Assets</p>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2">
+          <WhatsAppField
+            label="WABA ID"
+            value={wabaId}
+            onChange={setWabaId}
+            placeholder="123456789"
+          />
+          <WhatsAppField
+            label="Phone Number ID"
+            value={phoneNumberId}
+            onChange={setPhoneNumberId}
+            placeholder="987654321"
+          />
+          <WhatsAppField
+            label="Display phone"
+            value={displayPhoneNumber}
+            onChange={setDisplayPhoneNumber}
+            placeholder="+2348012345678"
+          />
+          <WhatsAppField
+            label="Display name"
+            value={displayName}
+            onChange={setDisplayName}
+            placeholder="Riverly"
+          />
+          <WhatsAppField
+            label="Graph API version"
+            value={graphApiVersion}
+            onChange={setGraphApiVersion}
+            placeholder="v23.0"
+          />
+          <WhatsAppField
+            label="Allowed templates"
+            value={allowedTemplates}
+            onChange={setAllowedTemplates}
+            placeholder="support_acknowledgement, ticket_created"
+          />
+          <div className="md:col-span-2">
+            <WhatsAppField
+              label="Opt-out keywords"
+              value={optOutKeywords}
+              onChange={setOptOutKeywords}
+              placeholder="stop, unsubscribe"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-lg border px-4 py-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <KeyIcon className="h-4 w-4 text-gray-500" />
+            <p className="text-sm font-semibold text-foreground">Encrypted Credentials</p>
+          </div>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <SecretBadge label="Token" ok={config?.has_access_token} />
+            <SecretBadge label="App secret" ok={config?.has_app_secret} />
+            <SecretBadge label="Verify token" ok={config?.has_verify_token} />
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-3">
+          <WhatsAppField
+            label="Access token"
+            value={accessToken}
+            onChange={setAccessToken}
+            placeholder={
+              config?.has_access_token ? 'Stored. Enter to replace.' : 'Paste Meta token'
+            }
+            type="password"
+          />
+          <WhatsAppField
+            label="App secret"
+            value={appSecret}
+            onChange={setAppSecret}
+            placeholder={config?.has_app_secret ? 'Stored. Enter to replace.' : 'Paste app secret'}
+            type="password"
+          />
+          <WhatsAppField
+            label="Verify token"
+            value={verifyToken}
+            onChange={setVerifyToken}
+            placeholder={
+              config?.has_verify_token ? 'Stored. Enter to replace.' : 'Shared verify token'
+            }
+            type="password"
+          />
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          Credentials are write-only here. Saved values are encrypted server-side and only shown as
+          presence checks.
+        </p>
+      </div>
+
+      <div className="rounded-lg border px-4 py-4">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-semibold text-foreground">Webhook Setup</p>
+            <p className="text-xs text-muted-foreground">
+              Use these values in Riverly&apos;s Meta app.
+            </p>
+          </div>
+          {config?.webhook_verified_at && (
+            <span className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
+              Verified
+            </span>
+          )}
+        </div>
+        <div className="space-y-2">
+          <CopyLine label="Callback URL" value={callbackUrl} />
+          <CopyLine
+            label="Verify token"
+            value={
+              config?.has_verify_token
+                ? 'Stored encrypted. Use the token shared with Riverly.'
+                : 'Not stored yet'
+            }
+            copyValue={verifyToken || undefined}
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border px-4 py-4">
+        <div className="mb-3 flex items-center gap-2">
+          <PresentationChartLineIcon className="h-4 w-4 text-gray-500" />
+          <p className="text-sm font-semibold text-foreground">Last 30 Days</p>
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          {metricItems.map(([label, value]) => (
+            <div key={label} className="rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                {label}
+              </p>
+              <p className="mt-1 text-lg font-semibold text-gray-950">{value}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+            Recent events
+          </p>
+          {events.length === 0 ? (
+            <p className="rounded-lg border border-dashed px-3 py-3 text-xs text-muted-foreground">
+              No WhatsApp events recorded yet.
+            </p>
+          ) : (
+            events.map((event) => (
+              <div
+                key={event.event_id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs"
+              >
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-800">{event.type.replace(/_/g, ' ')}</p>
+                  <p className="text-gray-400">
+                    {new Date(event.created_at).toLocaleString()}
+                    {event.recipient_last4 ? ` · *${event.recipient_last4}` : ''}
+                  </p>
+                </div>
+                <span
+                  className={cn(
+                    'rounded-full px-2 py-0.5 font-semibold',
+                    event.ok === false
+                      ? 'bg-red-50 text-red-700'
+                      : event.dry_run
+                        ? 'bg-amber-50 text-amber-700'
+                        : 'bg-gray-100 text-gray-600'
+                  )}
+                >
+                  {event.ok === false
+                    ? 'failed'
+                    : event.dry_run
+                      ? 'dry-run'
+                      : (event.status ?? 'ok')}
+                </span>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3">
+        <Button
+          size="sm"
+          type="button"
+          onClick={handleDelete}
+          disabled={saving || !config}
+          className="bg-white text-red-700 ring-1 ring-red-200 hover:bg-red-50 disabled:opacity-50"
+        >
+          Delete Config
+        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            type="button"
+            onClick={() => void load()}
+            disabled={saving}
+            className="bg-white text-gray-700 ring-1 ring-gray-200 hover:bg-gray-50 disabled:opacity-50"
+          >
+            Refresh
+          </Button>
+          <Button
+            size="sm"
+            type="button"
+            onClick={handleSave}
+            disabled={saving}
+            className="bg-[#1A1A1A] text-white hover:bg-[#333] disabled:opacity-50"
+          >
+            {saving ? 'Saving…' : 'Save WhatsApp'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function WhatsAppToggle({
+  label,
+  description,
+  checked,
+  onChange,
+  danger,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  danger?: boolean
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(!checked)}
+      className={cn(
+        'flex items-start justify-between gap-3 rounded-lg border px-4 py-3 text-left transition',
+        checked
+          ? danger
+            ? 'border-amber-200 bg-amber-50/60'
+            : 'border-emerald-200 bg-emerald-50/60'
+          : 'hover:bg-gray-50'
+      )}
+    >
+      <div>
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{description}</p>
+      </div>
+      <span
+        className={cn(
+          'mt-0.5 inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition',
+          checked ? (danger ? 'bg-amber-600' : 'bg-emerald-600') : 'bg-gray-300'
+        )}
+      >
+        <span
+          className={cn(
+            'h-4 w-4 rounded-full bg-white shadow transition',
+            checked ? 'translate-x-4' : 'translate-x-0'
+          )}
+        />
+      </span>
+    </button>
+  )
+}
+
+function WhatsAppField({
+  label,
+  value,
+  onChange,
+  placeholder,
+  type = 'text',
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+  placeholder?: string
+  type?: 'text' | 'password'
+}) {
+  return (
+    <label className="block">
+      <span className="text-xs font-semibold text-gray-500">{label}</span>
+      <input
+        type={type}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        placeholder={placeholder}
+        className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+      />
+    </label>
+  )
+}
+
+function SecretBadge({ label, ok }: { label: string; ok?: boolean }) {
+  return (
+    <span
+      className={cn(
+        'rounded-full px-2 py-0.5 text-[11px] font-semibold',
+        ok ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+      )}
+    >
+      {label}: {ok ? 'stored' : 'missing'}
+    </span>
+  )
+}
+
+function CopyLine({
+  label,
+  value,
+  copyValue,
+}: {
+  label: string
+  value: string
+  copyValue?: string
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
+      <span className="w-24 shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+        {label}
+      </span>
+      <code className="min-w-0 flex-1 break-all font-mono text-xs text-gray-800">{value}</code>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard.writeText(copyValue ?? value)
+          toast.success(`${label} copied`)
+        }}
+        disabled={!copyValue && value.startsWith('Not stored')}
+        className="rounded-md px-2 py-1 text-[11px] font-semibold text-gray-500 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        Copy
+      </button>
     </div>
   )
 }
@@ -2671,20 +3584,7 @@ function SettingsPage() {
           {activeTab === 'organization' && <OrgSettingsPage />}
           {activeTab === 'calendar' && <CalendarSyncSection />}
           {activeTab === 'support' && <SupportSettingsSection />}
-          {activeTab === 'subscription' && (
-            <Section icon={ShieldCheckIcon} title="Subscription" disabled>
-              <LockedRow
-                label="Manage Plan"
-                description="View and upgrade your current subscription plan."
-              />
-              <div className="mt-2">
-                <LockedRow
-                  label="Usage"
-                  description="Track minutes used and remaining in your plan."
-                />
-              </div>
-            </Section>
-          )}
+          {activeTab === 'subscription' && <SubscriptionSection />}
           {activeTab === 'billing' && (
             <Section icon={CreditCardIcon} title="Billing & License" disabled>
               <LockedRow label="Invoices" description="View and download past invoices." />

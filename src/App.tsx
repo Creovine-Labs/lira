@@ -66,6 +66,7 @@ import {
   AdminDemoOpsPage,
   AdminManagementPage,
   AdminInvitesPage,
+  AdminPlanRequestsPage,
 } from '@/pages/admin'
 import { PortalAccessPage, PortalTicketsPage, PortalTicketDetailPage } from '@/pages/portal'
 import {
@@ -278,6 +279,7 @@ function App() {
           <Route path="email" element={<AdminEmailPage />} />
           <Route path="demo-ops" element={<AdminDemoOpsPage />} />
           <Route path="invites" element={<AdminInvitesPage />} />
+          <Route path="plan-requests" element={<AdminPlanRequestsPage />} />
           <Route path="admins" element={<AdminManagementPage />} />
         </Route>
 

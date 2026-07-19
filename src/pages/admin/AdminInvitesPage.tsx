@@ -307,7 +307,7 @@ function InviteRow({
 function CreateInviteModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
   const [company, setCompany] = useState('')
   const [email, setEmail] = useState('')
-  const [planTier, setPlanTier] = useState<InvitePlanTier>('STARTER')
+  const [planTier, setPlanTier] = useState<InvitePlanTier>('FREE')
   const [surfaceHint, setSurfaceHint] = useState<InviteSurfaceHint | ''>('')
   const [notes, setNotes] = useState('')
   const [expiresInDays, setExpiresInDays] = useState(30)
@@ -423,9 +423,10 @@ function CreateInviteModal({ onClose, onCreated }: { onClose: () => void; onCrea
                     onChange={(e) => setPlanTier(e.target.value as InvitePlanTier)}
                     className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-slate-900"
                   >
-                    <option value="STARTER">Starter</option>
-                    <option value="GROWTH">Growth</option>
-                    <option value="ENTERPRISE">Enterprise</option>
+                    <option value="FREE">Free</option>
+                    <option value="PRO">Pro — $29/mo</option>
+                    <option value="SCALE">Scale — $99/mo</option>
+                    <option value="ENTERPRISE">Enterprise — custom</option>
                   </select>
                 </Field>
                 <Field label="Surface (hint)">

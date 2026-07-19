@@ -693,7 +693,7 @@ export async function getAuthMe(): Promise<{
     accountId: string | null
     emailVerified: boolean | null
     createdAt: string
-    planTier: 'STARTER' | 'GROWTH' | 'ENTERPRISE'
+    planTier: 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE'
   }
 }> {
   return apiFetch('/v1/auth/me')
@@ -2743,8 +2743,103 @@ export async function adminDemoteUser(userId: string): Promise<AdminUser> {
 
 // ── Concierge onboarding invites ─────────────────────────────────────────────
 
-export type InvitePlanTier = 'STARTER' | 'GROWTH' | 'ENTERPRISE'
+export type InvitePlanTier = 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE'
 export type InviteSurfaceHint = 'WEB' | 'MOBILE' | 'BOTH'
+
+// ── Plans & entitlements ─────────────────────────────────────────────────────
+
+export type PlanTier = 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE'
+
+export interface PlanEntitlements {
+  basePriceUsd: number | null
+  includedConversationsPerMonth: number
+  includedAiRepliesPerMonth: number
+  overagePer1000Usd: number | null
+  languages: number
+  multipleDomains: boolean
+  whatsappBusinessApi: boolean
+  brandingRemoval: boolean
+  prioritySupport: boolean
+  customIntegrations: boolean
+  advancedAnalytics: boolean
+}
+
+export interface PlanChangeRequestInfo {
+  id: string
+  fromTier: string
+  toTier: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  createdAt: string
+}
+
+export interface MyPlan {
+  tier: PlanTier
+  entitlements: PlanEntitlements
+  allTiers: Array<{ tier: PlanTier; entitlements: PlanEntitlements }>
+  pendingRequest: PlanChangeRequestInfo | null
+}
+
+export async function getMyPlan(): Promise<MyPlan> {
+  return apiFetch('/v1/plan')
+}
+
+export async function requestPlanChange(payload: {
+  toTier: PlanTier
+  orgId: string
+  note?: string
+}): Promise<{ request: PlanChangeRequestInfo }> {
+  return apiFetch('/v1/plan/change-request', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function cancelPlanChangeRequest(id: string): Promise<{ cancelled: boolean }> {
+  return apiFetch(`/v1/plan/change-request/${id}/cancel`, { method: 'POST' })
+}
+
+export interface AdminPlanChangeRequest {
+  id: string
+  tenantId: string
+  orgId: string
+  fromTier: string
+  toTier: string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  requestedByUserId: string
+  note: string | null
+  decisionNote: string | null
+  decidedAt: string | null
+  createdAt: string
+}
+
+export async function adminListPlanRequests(
+  status?: AdminPlanChangeRequest['status']
+): Promise<{ requests: AdminPlanChangeRequest[] }> {
+  const qs = status ? `?status=${status}` : ''
+  return apiFetch(`/v1/platform/admin/plan-requests${qs}`)
+}
+
+export async function adminDecidePlanRequest(
+  id: string,
+  decision: 'approve' | 'reject',
+  note?: string
+): Promise<{ request: AdminPlanChangeRequest }> {
+  return apiFetch(`/v1/platform/admin/plan-requests/${id}/${decision}`, {
+    method: 'POST',
+    body: JSON.stringify({ note }),
+  })
+}
+
+export async function adminSetTenantPlan(payload: {
+  tenantId: string
+  orgId: string
+  planTier: PlanTier
+}): Promise<{ tier: PlanTier; direction: string }> {
+  return apiFetch(`/v1/platform/admin/tenants/${payload.tenantId}/plan`, {
+    method: 'POST',
+    body: JSON.stringify({ planTier: payload.planTier, orgId: payload.orgId }),
+  })
+}
 
 export interface InviteStatus {
   id: string

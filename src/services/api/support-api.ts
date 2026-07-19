@@ -121,7 +121,7 @@ export interface CustomerProfile {
 }
 
 export type ConversationStatus = 'open' | 'pending' | 'resolved' | 'escalated'
-export type ConversationChannel = 'email' | 'chat' | 'voice' | 'portal'
+export type ConversationChannel = 'email' | 'chat' | 'voice' | 'portal' | 'whatsapp'
 export type MessageRole = 'customer' | 'lira' | 'agent' | 'system'
 export type Sentiment = 'positive' | 'neutral' | 'negative' | 'urgent'
 
@@ -386,6 +386,84 @@ export interface WeeklyReport {
   kb_drafts_approved: number
 }
 
+export interface WhatsAppChannelConfig {
+  org_id: string
+  enabled: boolean
+  ingest_enabled: boolean
+  auto_reply_enabled: boolean
+  real_send_enabled: boolean
+  environment: 'sandbox' | 'production'
+  waba_id?: string
+  phone_number_id?: string
+  display_phone_number?: string
+  display_name?: string
+  graph_api_version: string
+  default_queue_id?: string
+  handoff_team_id?: string
+  allowed_template_names?: string[]
+  opt_out_keywords?: string[]
+  webhook_verified_at?: string
+  connected_by?: string
+  created_at: string
+  updated_at: string
+  has_access_token: boolean
+  has_app_secret: boolean
+  has_verify_token: boolean
+}
+
+export interface WhatsAppChannelConfigInput {
+  enabled?: boolean
+  ingest_enabled?: boolean
+  auto_reply_enabled?: boolean
+  real_send_enabled?: boolean
+  environment?: 'sandbox' | 'production'
+  waba_id?: string
+  phone_number_id?: string
+  display_phone_number?: string
+  display_name?: string
+  graph_api_version?: string
+  default_queue_id?: string
+  handoff_team_id?: string
+  allowed_template_names?: string[]
+  opt_out_keywords?: string[]
+  webhook_verified_at?: string
+  access_token?: string
+  app_secret?: string
+  verify_token?: string
+}
+
+export type WhatsAppAnalyticsEventType =
+  | 'webhook_duplicate'
+  | 'inbound_message'
+  | 'status_update'
+  | 'conversation_ingested'
+  | 'auto_reply'
+  | 'outbound_send'
+
+export interface WhatsAppAnalyticsSummary {
+  org_id: string
+  period_start: string
+  period_end: string
+  totals: Record<string, number>
+  daily: Array<{ day: string; counters: Record<string, number> }>
+}
+
+export interface WhatsAppAnalyticsEvent {
+  event_id: string
+  org_id: string
+  type: WhatsAppAnalyticsEventType
+  day: string
+  conv_id?: string
+  message_id?: string
+  recipient_hash?: string
+  recipient_last4?: string
+  status?: string
+  dry_run?: boolean
+  ok?: boolean
+  data: Record<string, unknown>
+  created_at: string
+}
+
 // ── Fetch wrapper ─────────────────────────────────────────────────────────────
 
 async function supportFetch<T>(path: string, init?: RequestInit): Promise<T> {
@@ -451,6 +529,66 @@ export async function rotateWidgetSecret(orgId: string): Promise<string> {
     { method: 'POST' }
   )
   return data.widget_secret
+}
+
+// ── WhatsApp Channel API ─────────────────────────────────────────────────────
+
+export async function getWhatsAppChannelConfig(
+  orgId: string
+): Promise<WhatsAppChannelConfig | null> {
+  try {
+    return await supportFetch<WhatsAppChannelConfig>(
+      `/lira/v1/support/whatsapp/orgs/${encodeURIComponent(orgId)}/config`
+    )
+  } catch (err) {
+    if (err instanceof Error && err.message.startsWith('404:')) return null
+    throw err
+  }
+}
+
+export async function updateWhatsAppChannelConfig(
+  orgId: string,
+  updates: WhatsAppChannelConfigInput
+): Promise<WhatsAppChannelConfig> {
+  return supportFetch<WhatsAppChannelConfig>(
+    `/lira/v1/support/whatsapp/orgs/${encodeURIComponent(orgId)}/config`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    }
+  )
+}
+
+export async function deleteWhatsAppChannelConfig(orgId: string): Promise<void> {
+  await supportFetch<{ ok: boolean }>(
+    `/lira/v1/support/whatsapp/orgs/${encodeURIComponent(orgId)}/config`,
+    { method: 'DELETE' }
+  )
+}
+
+export async function getWhatsAppAnalyticsSummary(
+  orgId: string,
+  days = 30
+): Promise<WhatsAppAnalyticsSummary> {
+  return supportFetch<WhatsAppAnalyticsSummary>(
+    `/lira/v1/support/whatsapp/orgs/${encodeURIComponent(orgId)}/analytics?days=${encodeURIComponent(
+      String(days)
+    )}`
+  )
+}
+
+export async function listWhatsAppAnalyticsEvents(
+  orgId: string,
+  opts: { limit?: number; type?: WhatsAppAnalyticsEventType } = {}
+): Promise<WhatsAppAnalyticsEvent[]> {
+  const params = new URLSearchParams()
+  if (opts.limit) params.set('limit', String(opts.limit))
+  if (opts.type) params.set('type', opts.type)
+  const qs = params.toString() ? `?${params.toString()}` : ''
+  const data = await supportFetch<{ events: WhatsAppAnalyticsEvent[] }>(
+    `/lira/v1/support/whatsapp/orgs/${encodeURIComponent(orgId)}/events${qs}`
+  )
+  return data.events
 }
 
 // ── Customer API ──────────────────────────────────────────────────────────────

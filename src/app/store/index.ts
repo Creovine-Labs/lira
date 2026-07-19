@@ -18,11 +18,11 @@ interface AuthSlice {
   userPicture: string | null
   userRole: string | null
   /**
-   * The tenant's plan tier, resolved from the invite consumed at signup.
-   * Drives Enterprise-only feature gates (e.g. additional ticket CC recipients).
-   * Falls back to STARTER when /me hasn't loaded yet.
+   * The tenant's canonical plan tier (FREE/PRO/SCALE/ENTERPRISE), written
+   * at invite consumption and by plan changes. Drives plan feature gates.
+   * Null until /me has loaded.
    */
-  planTier: 'STARTER' | 'GROWTH' | 'ENTERPRISE' | null
+  planTier: 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE' | null
   emailVerified: boolean | null
   setCredentials: (
     token: string,
@@ -37,7 +37,7 @@ interface AuthSlice {
   setUserPicture: (picture: string) => void
   setUserName: (name: string) => void
   setUserEmail: (email: string) => void
-  setPlanTier: (tier: 'STARTER' | 'GROWTH' | 'ENTERPRISE') => void
+  setPlanTier: (tier: 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE') => void
   clearCredentials: () => void
 }
 
