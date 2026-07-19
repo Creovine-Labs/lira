@@ -377,6 +377,24 @@ export function AdminOrganizationsPage() {
                   <p className="mt-1 text-sm text-gray-500">{selected.industry}</p>
                 )}
 
+                {/* Organization ID — exists from creation (before support
+                    activation); shown for direct backend/terminal lookups */}
+                <div className="mt-4 border-t border-gray-100 pt-4">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                    Organization ID
+                  </p>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(selected.org_id)
+                      toast.success('Organization ID copied')
+                    }}
+                    title="Click to copy"
+                    className="mt-2 w-full truncate rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-left font-mono text-xs text-gray-700 transition hover:border-gray-200 hover:bg-gray-100"
+                  >
+                    {selected.org_id}
+                  </button>
+                </div>
+
                 {/* Usage breakdown */}
                 <div className="mt-5 border-t border-gray-100 pt-4">
                   <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">

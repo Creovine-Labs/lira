@@ -20,7 +20,7 @@
     "preview": "vite preview",
     "build:widget": "vite build --config vite.widget.config.ts",
     "build:sdk": "node scripts/clean-sdk.cjs && tsc -p tsconfig.sdk.json && vite build --config vite.sdk.config.ts && node scripts/write-sdk-package.cjs",
-    "deploy:widget": "npm run build:widget && aws s3 cp dist/widget/widget.js s3://lira-widget-cdn/v1/widget.js --content-type application/javascript --cache-control 'public, max-age=3600' && aws cloudfront create-invalidation --distribution-id EZMZM7JYD11HG --paths '/v1/*'",
+    "deploy:widget": "npm run build:widget && AWS_PROFILE=creovine-new aws s3 cp dist/widget/widget.js s3://creovine-lira-widget-cdn/v1/widget.js --content-type application/javascript --cache-control 'public, max-age=3600' && AWS_PROFILE=creovine-new aws cloudfront create-invalidation --distribution-id E1E1C9C29XQ5V4 --paths '/v1/*'",
     "dev:portal": "vite --config vite.portal.config.ts",
     "build:portal": "vite build --config vite.portal.config.ts",
     "prepare": "husky",

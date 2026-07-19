@@ -414,7 +414,9 @@ export const useNotifStore = create<NotifSlice>()(
       markMeetingsSeen: () => set({ meetingSeenAt: Date.now() }),
       markSupportSeen: () => set({ supportSeenAt: Date.now() }),
     }),
-    { name: 'lira-notif' }
+    // v2: key renamed after the July 2026 backend rebuild so stale cached
+    // notifications from the old (wiped) environment self-clear.
+    { name: 'lira-notif-v2' }
   )
 )
 

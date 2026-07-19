@@ -5,7 +5,9 @@ const envSchema = z.object({
   VITE_WS_URL: z.string().default('wss://api.creovine.com/lira/v1/ws'),
   VITE_GOOGLE_LOGIN_CLIENT_ID: z.string().default(''),
   VITE_DEMO_ORG_ID: z.string().default(''),
-  VITE_LIRA_PUBLIC_ORG_ID: z.string().default('org-6153b031-ef97-46a7-88d5-ce91427e2dd1'),
+  // Lira's own org (rebuilt July 2026) — powers the public widget on the
+  // marketing site and must match LIRA_INTERNAL_ORG_ID on the backend.
+  VITE_LIRA_PUBLIC_ORG_ID: z.string().default('org-556fc4d1-9f29-4114-bb0e-da83ddab6c70'),
   VITE_DEMO_WIDGET_SECRET: z
     .string()
     .default('')
