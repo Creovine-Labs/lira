@@ -73,6 +73,13 @@ export interface SupportConfig {
   widget_secret?: string
   max_conversations_per_month: number
   max_ai_replies_per_month: number
+  pending_max_conversations_per_month?: number
+  pending_max_ai_replies_per_month?: number
+  pending_plan_tier?: string
+  llm_calls_this_month?: number
+  sandbox_max_conversations_per_month?: number
+  sandbox_max_ai_replies_per_month?: number
+  sandbox_max_llm_calls_per_month?: number
   conversations_this_month: number
   ai_replies_this_month: number
   onboarding_completed: boolean

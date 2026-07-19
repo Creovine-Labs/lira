@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate, Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import {
@@ -21,6 +21,8 @@ import {
   sendOtp,
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
+
+const PENDING_INVITE_ORG_NAME_KEY = 'lira:pending-invite-org-name'
 
 // ── Brand graphic ─────────────────────────────────────────────────────────────
 
@@ -282,8 +284,14 @@ function LoginForm({
             company: result.prospectCompany,
             planTier: result.planTier,
           })
+          if (result.prospectCompany?.trim()) {
+            sessionStorage.setItem(PENDING_INVITE_ORG_NAME_KEY, result.prospectCompany.trim())
+          } else {
+            sessionStorage.removeItem(PENDING_INVITE_ORG_NAME_KEY)
+          }
           if (result.prospectEmail) setEmail(result.prospectEmail)
         } else {
+          sessionStorage.removeItem(PENDING_INVITE_ORG_NAME_KEY)
           setInviteInfo({ state: 'invalid', reason: result.reason })
         }
       } catch {
@@ -418,11 +426,12 @@ function LoginForm({
     setError(null)
     setErrorAction(null)
     try {
+      const invitedCompany = inviteInfo?.state === 'valid' ? inviteInfo.company?.trim() : undefined
       const res = await apiSignup(
         name.trim(),
         email.trim(),
         password.trim(),
-        undefined,
+        invitedCompany || undefined,
         inviteCode ?? undefined
       )
       setCredentials(
@@ -1043,6 +1052,7 @@ function HomePage({ defaultView }: HomePageProps) {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const inviteCode = searchParams.get('invite')?.trim() || null
+  const clearedInviteSessionRef = useRef(false)
 
   // A concierge invite link is for a NEW prospect to create a fresh account.
   // A leftover/stale session in this browser (e.g. a deleted user's token, or
@@ -1050,7 +1060,8 @@ function HomePage({ defaultView }: HomePageProps) {
   // to "/onboarding". When an invite code is present, drop any existing session
   // and show the gated signup form.
   useEffect(() => {
-    if (inviteCode && token) {
+    if (inviteCode && token && !clearedInviteSessionRef.current) {
+      clearedInviteSessionRef.current = true
       credentials.clear()
       clearCredentials()
     }

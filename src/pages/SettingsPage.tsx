@@ -247,9 +247,11 @@ function PlanUsageBar({ used, limit, label }: { used: number; limit: number; lab
 // SANDBOX_MAX_AI_REPLIES_PER_MONTH env defaults (see SANDBOX_VS_LIVE_DESIGN.md).
 const SANDBOX_CONVERSATIONS_CAP = 500
 const SANDBOX_AI_REPLIES_CAP = 500
+const SANDBOX_LLM_CALLS_CAP = 2000
 
 function SubscriptionSection() {
   const { currentOrgId } = useOrgStore()
+  const navigate = useNavigate()
   const [plan, setPlan] = useState<MyPlan | null>(null)
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>('production')
   const [usage, setUsage] = useState<{
@@ -257,6 +259,10 @@ function SubscriptionSection() {
     conversationsMax: number
     aiReplies: number
     aiRepliesMax: number
+    llmCalls: number
+    llmCallsMax: number
+    sandboxConversationsMax: number
+    sandboxAiRepliesMax: number
   } | null>(null)
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
@@ -264,7 +270,7 @@ function SubscriptionSection() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const p = await getMyPlan()
+      const p = await getMyPlan(currentOrgId ?? undefined)
       setPlan(p)
       if (currentOrgId) {
         const cfg = await getSupportConfig(currentOrgId)
@@ -274,6 +280,11 @@ function SubscriptionSection() {
           conversationsMax: cfg.max_conversations_per_month ?? 0,
           aiReplies: cfg.ai_replies_this_month ?? 0,
           aiRepliesMax: cfg.max_ai_replies_per_month ?? 0,
+          llmCalls: cfg.llm_calls_this_month ?? 0,
+          llmCallsMax: cfg.sandbox_max_llm_calls_per_month ?? SANDBOX_LLM_CALLS_CAP,
+          sandboxConversationsMax:
+            cfg.sandbox_max_conversations_per_month ?? SANDBOX_CONVERSATIONS_CAP,
+          sandboxAiRepliesMax: cfg.sandbox_max_ai_replies_per_month ?? SANDBOX_AI_REPLIES_CAP,
         })
       }
     } catch {
@@ -338,6 +349,23 @@ function SubscriptionSection() {
     }
   }
 
+  const sandboxConversationLimit =
+    environment === 'sandbox'
+      ? (usage?.sandboxConversationsMax ?? SANDBOX_CONVERSATIONS_CAP)
+      : SANDBOX_CONVERSATIONS_CAP
+  const sandboxAiReplyLimit =
+    environment === 'sandbox'
+      ? (usage?.sandboxAiRepliesMax ?? SANDBOX_AI_REPLIES_CAP)
+      : SANDBOX_AI_REPLIES_CAP
+  const sandboxExtension = plan?.sandboxExtension
+  const sandboxExtensionLimitReached =
+    Boolean(sandboxExtension) && sandboxExtension!.remainingThisMonth <= 0
+  const sandboxExtensionActive =
+    environment === 'sandbox' &&
+    (sandboxConversationLimit > SANDBOX_CONVERSATIONS_CAP ||
+      sandboxAiReplyLimit > SANDBOX_AI_REPLIES_CAP ||
+      (usage?.llmCallsMax ?? SANDBOX_LLM_CALLS_CAP) > SANDBOX_LLM_CALLS_CAP)
+
   if (loading) {
     return (
       <Section icon={ShieldCheckIcon} title="Subscription">
@@ -377,6 +405,31 @@ function SubscriptionSection() {
           </div>
         </div>
 
+        {currentOrgId && (
+          <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-amber-950">
+                  Launch status: {environment === 'sandbox' ? 'Sandbox' : 'Live'}
+                </p>
+                <p className="mt-0.5 text-xs leading-relaxed text-amber-900/80">
+                  {environment === 'sandbox'
+                    ? 'You are testing for free. Open Support Settings when you are ready to switch this org to live.'
+                    : 'This org is live. Open Support Settings if you need to review launch controls or force a sandbox rollback.'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                onClick={() => navigate('/support/settings')}
+              >
+                Open go-live controls
+              </Button>
+            </div>
+          </div>
+        )}
+
         {usage &&
           (environment === 'sandbox' ? (
             <div className="mt-5 space-y-3 border-t pt-4">
@@ -385,26 +438,43 @@ function SubscriptionSection() {
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={busy || !!plan.pendingRequest}
+                  disabled={busy || !!plan.pendingRequest || sandboxExtensionLimitReached}
                   onClick={handleSandboxExtension}
                 >
                   {plan.pendingRequest?.type === 'SANDBOX_EXTENSION'
                     ? 'Extension requested'
-                    : 'Request sandbox extension'}
+                    : sandboxExtensionLimitReached
+                      ? 'Extension limit reached'
+                      : 'Request sandbox extension'}
                 </Button>
               </div>
+              {sandboxExtensionActive && (
+                <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                  Sandbox extension active. This org can now test up to{' '}
+                  <strong>{sandboxConversationLimit.toLocaleString()}</strong> conversations,{' '}
+                  <strong>{sandboxAiReplyLimit.toLocaleString()}</strong> AI replies, and{' '}
+                  <strong>{(usage?.llmCallsMax ?? SANDBOX_LLM_CALLS_CAP).toLocaleString()}</strong>{' '}
+                  LLM calls this month.
+                </div>
+              )}
               <PlanUsageBar
                 label="Conversations this month"
                 used={usage.conversations}
-                limit={SANDBOX_CONVERSATIONS_CAP}
+                limit={sandboxConversationLimit}
               />
               <PlanUsageBar
                 label="AI replies this month"
                 used={usage.aiReplies}
-                limit={SANDBOX_AI_REPLIES_CAP}
+                limit={sandboxAiReplyLimit}
+              />
+              <PlanUsageBar
+                label="LLM calls this month"
+                used={usage.llmCalls}
+                limit={usage.llmCallsMax}
               />
               <p className="text-xs text-muted-foreground">
-                Going live applies your plan's limits and starts billing.
+                Going live applies your plan's limits and starts billing. Sandbox extensions are
+                limited to {sandboxExtension?.limitPerMonth ?? 2} request(s) per month.
               </p>
             </div>
           ) : (

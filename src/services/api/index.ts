@@ -2803,10 +2803,16 @@ export interface MyPlan {
   entitlements: PlanEntitlements
   allTiers: Array<{ tier: PlanTier; entitlements: PlanEntitlements }>
   pendingRequest: PlanChangeRequestInfo | null
+  sandboxExtension?: {
+    usedThisMonth: number
+    limitPerMonth: number
+    remainingThisMonth: number
+  }
 }
 
-export async function getMyPlan(): Promise<MyPlan> {
-  return apiFetch('/v1/plan')
+export async function getMyPlan(orgId?: string): Promise<MyPlan> {
+  const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : ''
+  return apiFetch(`/v1/plan${qs}`)
 }
 
 export async function requestPlanChange(payload: {

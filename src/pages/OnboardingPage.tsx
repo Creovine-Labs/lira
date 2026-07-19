@@ -18,6 +18,8 @@ import {
 } from '@/services/api'
 import { LiraLogo } from '@/components/LiraLogo'
 
+const PENDING_INVITE_ORG_NAME_KEY = 'lira:pending-invite-org-name'
+
 const INDUSTRIES = [
   'Technology',
   'Healthcare',
@@ -394,7 +396,10 @@ function OnboardingPage() {
   const [createdOrgName, setCreatedOrgName] = useState('')
 
   // Create org state
-  const [orgName, setOrgName] = useState('')
+  const [orgName, setOrgName] = useState(() => {
+    if (typeof window === 'undefined') return ''
+    return sessionStorage.getItem(PENDING_INVITE_ORG_NAME_KEY) ?? ''
+  })
   const [industry, setIndustry] = useState('')
   const [industryCustom, setIndustryCustom] = useState('')
   const [website, setWebsite] = useState('')
@@ -438,6 +443,7 @@ function OnboardingPage() {
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       setCreatedOrgName(organization.name)
+      sessionStorage.removeItem(PENDING_INVITE_ORG_NAME_KEY)
       setStep('success')
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create organization')
