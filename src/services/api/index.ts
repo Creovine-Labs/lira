@@ -2803,6 +2803,8 @@ export interface MyPlan {
   entitlements: PlanEntitlements
   allTiers: Array<{ tier: PlanTier; entitlements: PlanEntitlements }>
   pendingRequest: PlanChangeRequestInfo | null
+  billingExempt?: boolean
+  platformOwned?: boolean
   sandboxExtension?: {
     usedThisMonth: number
     limitPerMonth: number
@@ -2888,9 +2890,14 @@ export interface PaddlePortalSession {
   }
 }
 
-/** Paddle.js init config (publishable token + environment). */
-export async function getBillingConfig(): Promise<BillingConfig> {
-  return apiFetch<BillingConfig>('/v1/billing/config')
+/**
+ * Paddle.js init config for an org (publishable token + environment). The env
+ * is resolved per-org on the backend — a sandbox org gets the sandbox account
+ * and token, a production org the live one — so the checkout overlay bills the
+ * correct Paddle account.
+ */
+export async function getBillingConfig(orgId: string): Promise<BillingConfig> {
+  return apiFetch<BillingConfig>(`/v1/billing/config?orgId=${encodeURIComponent(orgId)}`)
 }
 
 /** Current tenant's Paddle billing/subscription status. */

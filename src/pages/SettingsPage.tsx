@@ -301,11 +301,15 @@ function SubscriptionSection() {
     try {
       const p = await getMyPlan(currentOrgId ?? undefined)
       setPlan(p)
-      try {
-        setBilling(await getBillingStatus(currentOrgId ?? undefined))
-      } catch {
-        // billing endpoint unavailable — hide the Paddle status row
+      if (p.billingExempt || p.platformOwned) {
         setBilling(null)
+      } else {
+        try {
+          setBilling(await getBillingStatus(currentOrgId ?? undefined))
+        } catch {
+          // billing endpoint unavailable — hide the Paddle status row
+          setBilling(null)
+        }
       }
       if (currentOrgId) {
         try {
@@ -402,7 +406,7 @@ function SubscriptionSection() {
     try {
       const interval = billing?.billingInterval ?? 'month'
       const checkout = await createBillingCheckout({ orgId: currentOrgId, tier, interval })
-      await openPaddleCheckout(checkout.transactionId, () => {
+      await openPaddleCheckout(checkout.transactionId, currentOrgId, () => {
         toast.success('Payment received — your plan will update shortly.')
         setTimeout(() => void load(), 3000)
       })
@@ -447,6 +451,7 @@ function SubscriptionSection() {
     (sandboxConversationLimit > SANDBOX_CONVERSATIONS_CAP ||
       sandboxAiReplyLimit > SANDBOX_AI_REPLIES_CAP ||
       (usage?.llmCallsMax ?? SANDBOX_LLM_CALLS_CAP) > SANDBOX_LLM_CALLS_CAP)
+  const billingExempt = Boolean(plan?.billingExempt || plan?.platformOwned)
 
   if (loading) {
     return (
@@ -476,9 +481,14 @@ function SubscriptionSection() {
             <p className="text-2xl font-semibold text-foreground">
               {TIER_LABELS[plan.tier]}
               <span className="ml-2 text-sm font-normal text-muted-foreground">
-                {tierPrice(plan.entitlements)}
+                {billingExempt ? 'Internal' : tierPrice(plan.entitlements)}
               </span>
             </p>
+            {billingExempt && (
+              <p className="mt-1 text-xs font-semibold uppercase tracking-wide text-emerald-700">
+                Platform-owned · billing exempt
+              </p>
+            )}
             <ul className="mt-2 space-y-0.5 text-sm text-muted-foreground">
               {entitlementLines(plan.entitlements).map((line) => (
                 <li key={line}>• {line}</li>
@@ -531,7 +541,9 @@ function SubscriptionSection() {
                 <p className="mt-0.5 text-xs leading-relaxed text-amber-900/80">
                   {environment === 'sandbox'
                     ? 'You are testing for free. Open Support Settings when you are ready to switch this org to live.'
-                    : 'This org is live. Open Support Settings if you need to review launch controls or force a sandbox rollback.'}
+                    : billingExempt
+                      ? 'This Lira-owned workspace is live with internal usage rules. Sandbox and customer billing controls do not apply.'
+                      : 'This org is live. Open Support Settings if you need to review launch controls or force a sandbox rollback.'}
                 </p>
               </div>
               <Button
@@ -591,8 +603,9 @@ function SubscriptionSection() {
                 limit={usage.llmCallsMax}
               />
               <p className="text-xs text-muted-foreground">
-                Going live applies your plan's limits and starts billing. Sandbox extensions are
-                limited to {sandboxExtension?.limitPerMonth ?? 2} request(s) per month.
+                {billingExempt
+                  ? 'This internal workspace does not use customer billing or sandbox extensions.'
+                  : `Going live applies your plan's limits and starts billing. Sandbox extensions are limited to ${sandboxExtension?.limitPerMonth ?? 2} request(s) per month.`}
               </p>
             </div>
           ) : (
@@ -634,64 +647,78 @@ function SubscriptionSection() {
         )}
       </Section>
 
-      <Section icon={CreditCardIcon} title="Change plan">
-        <p className="mb-4 text-sm text-muted-foreground">
-          {canManage
-            ? 'Pro and Scale are self-serve — pick a plan, pay through the secure Paddle checkout, and it activates automatically. Enterprise and downgrades to Free are reviewed and applied by the Lira team.'
-            : 'Only org owners and admins can change plans. Ask an admin of this organization if you need a different plan.'}
-        </p>
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {plan.allTiers.map(({ tier, entitlements }) => {
-            const isCurrent = tier === plan.tier
-            const isPendingTarget = plan.pendingRequest?.toTier === tier
-            // PRO/SCALE upgrades go through Paddle checkout; FREE (downgrade)
-            // and ENTERPRISE (custom) keep the request/approve flow.
-            const isPaidCheckout = tier === 'PRO' || tier === 'SCALE'
-            const billingActive = billing?.subscriptionStatus === 'active'
-            return (
-              <div
-                key={tier}
-                className={cn(
-                  'flex flex-col rounded-xl border p-4',
-                  isCurrent ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
-                )}
-              >
-                <p className="font-semibold text-foreground">{TIER_LABELS[tier]}</p>
-                <p className="text-sm text-muted-foreground">{tierPrice(entitlements)}</p>
-                <ul className="mt-2 flex-1 space-y-0.5 text-xs text-muted-foreground">
-                  {entitlementLines(entitlements)
-                    .slice(0, 4)
-                    .map((line) => (
-                      <li key={line}>• {line}</li>
-                    ))}
-                </ul>
-                {isCurrent ? (
-                  <Button className="mt-3" size="sm" variant="outline" disabled>
-                    Current plan
-                  </Button>
-                ) : isPaidCheckout ? (
-                  <Button
-                    className="mt-3"
-                    size="sm"
-                    disabled={busy || !canManage}
-                    onClick={() => handleCheckout(tier as 'PRO' | 'SCALE')}
+      <Section icon={CreditCardIcon} title={billingExempt ? 'Billing' : 'Change plan'}>
+        {billingExempt ? (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
+            <p className="text-sm font-semibold text-emerald-950">
+              This is a Lira-owned internal organization.
+            </p>
+            <p className="mt-1 text-sm text-emerald-900/80">
+              It stays live with Enterprise-level features, unlimited usage caps, no overage
+              charging, and no Paddle subscription.
+            </p>
+          </div>
+        ) : (
+          <>
+            <p className="mb-4 text-sm text-muted-foreground">
+              {canManage
+                ? 'Pro and Scale are self-serve — pick a plan, pay through the secure Paddle checkout, and it activates automatically. Enterprise and downgrades to Free are reviewed and applied by the Lira team.'
+                : 'Only org owners and admins can change plans. Ask an admin of this organization if you need a different plan.'}
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {plan.allTiers.map(({ tier, entitlements }) => {
+                const isCurrent = tier === plan.tier
+                const isPendingTarget = plan.pendingRequest?.toTier === tier
+                // PRO/SCALE upgrades go through Paddle checkout; FREE (downgrade)
+                // and ENTERPRISE (custom) keep the request/approve flow.
+                const isPaidCheckout = tier === 'PRO' || tier === 'SCALE'
+                const billingActive = billing?.subscriptionStatus === 'active'
+                return (
+                  <div
+                    key={tier}
+                    className={cn(
+                      'flex flex-col rounded-xl border p-4',
+                      isCurrent ? 'border-gray-900 bg-gray-50' : 'border-gray-200'
+                    )}
                   >
-                    {billingActive ? 'Switch to this plan' : 'Subscribe'}
-                  </Button>
-                ) : (
-                  <Button
-                    className="mt-3"
-                    size="sm"
-                    disabled={busy || !canManage || !!plan.pendingRequest || isPendingTarget}
-                    onClick={() => handleRequest(tier)}
-                  >
-                    {isPendingTarget ? 'Requested' : 'Request change'}
-                  </Button>
-                )}
-              </div>
-            )
-          })}
-        </div>
+                    <p className="font-semibold text-foreground">{TIER_LABELS[tier]}</p>
+                    <p className="text-sm text-muted-foreground">{tierPrice(entitlements)}</p>
+                    <ul className="mt-2 flex-1 space-y-0.5 text-xs text-muted-foreground">
+                      {entitlementLines(entitlements)
+                        .slice(0, 4)
+                        .map((line) => (
+                          <li key={line}>• {line}</li>
+                        ))}
+                    </ul>
+                    {isCurrent ? (
+                      <Button className="mt-3" size="sm" variant="outline" disabled>
+                        Current plan
+                      </Button>
+                    ) : isPaidCheckout ? (
+                      <Button
+                        className="mt-3"
+                        size="sm"
+                        disabled={busy || !canManage}
+                        onClick={() => handleCheckout(tier as 'PRO' | 'SCALE')}
+                      >
+                        {billingActive ? 'Switch to this plan' : 'Subscribe'}
+                      </Button>
+                    ) : (
+                      <Button
+                        className="mt-3"
+                        size="sm"
+                        disabled={busy || !canManage || !!plan.pendingRequest || isPendingTarget}
+                        onClick={() => handleRequest(tier)}
+                      >
+                        {isPendingTarget ? 'Requested' : 'Request change'}
+                      </Button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
       </Section>
     </div>
   )
@@ -3099,7 +3126,9 @@ const WHATSAPP_PREREQUISITES: Array<{ label: string; detail: string }> = [
 
 function SupportWhatsAppTab({ orgId }: { orgId: string }) {
   const planTier = useAuthStore((s) => s.planTier)
-  const whatsappEntitled = planTier === 'SCALE' || planTier === 'ENTERPRISE'
+  const [orgPlan, setOrgPlan] = useState<MyPlan | null>(null)
+  const whatsappEntitled =
+    orgPlan?.entitlements.whatsappBusinessApi ?? (planTier === 'SCALE' || planTier === 'ENTERPRISE')
   const [config, setConfig] = useState<WhatsAppChannelConfig | null>(null)
   const [summary, setSummary] = useState<WhatsAppAnalyticsSummary | null>(null)
   const [events, setEvents] = useState<WhatsAppAnalyticsEvent[]>([])
@@ -3133,6 +3162,7 @@ function SupportWhatsAppTab({ orgId }: { orgId: string }) {
         getWhatsAppAnalyticsSummary(orgId, 30).catch(() => null),
         listWhatsAppAnalyticsEvents(orgId, { limit: 8 }).catch(() => []),
       ])
+      setOrgPlan(await getMyPlan(orgId).catch(() => null))
       setConfig(channelConfig)
       setSummary(analytics)
       setEvents(recentEvents)

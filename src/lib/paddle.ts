@@ -42,8 +42,12 @@ declare global {
 }
 
 let scriptPromise: Promise<void> | null = null
-let initPromise: Promise<void> | null = null
-let cachedConfig: BillingConfig | null = null
+
+// The token/env Paddle.js is currently initialized with. An org billing on a
+// different env (sandbox vs live) needs a re-Initialize with that env's token,
+// so we track what we last initialized and only re-init when it changes.
+let initializedToken: string | null = null
+let initializedEnv: BillingConfig['environment'] | null = null
 
 // One completion listener at a time — set right before we open a checkout.
 let pendingCompletion: (() => void) | null = null
@@ -72,59 +76,59 @@ function injectScript(): Promise<void> {
 }
 
 /**
- * Ensure Paddle.js is loaded and initialized. Config (publishable token +
- * environment) is fetched once from the backend and cached. Throws a friendly
- * Error the caller can toast when Paddle is not configured (empty token).
+ * Ensure Paddle.js is loaded and initialized for a SPECIFIC org. Config
+ * (publishable token + environment) is fetched per-org from the backend, so a
+ * sandbox org initializes the sandbox account and a live org the live one. If
+ * the previously initialized env/token differs from this org's, Paddle.js is
+ * re-Initialized with the correct one. Throws a friendly Error the caller can
+ * toast when Paddle is not configured (empty token).
  */
-export async function ensurePaddle(): Promise<void> {
-  if (initPromise) return initPromise
-
-  initPromise = (async () => {
-    if (!cachedConfig) {
-      cachedConfig = await getBillingConfig()
-    }
-    if (!cachedConfig.clientToken) {
-      throw new Error('Billing is not available yet. Please contact the Lira team to enable it.')
-    }
-    await injectScript()
-    if (!window.Paddle) {
-      throw new Error('Could not initialize Paddle. Please try again.')
-    }
-    window.Paddle.Environment.set(cachedConfig.environment)
-    window.Paddle.Initialize({
-      token: cachedConfig.clientToken,
-      eventCallback: (event) => {
-        if (event?.name === 'checkout.completed') {
-          if (pendingCompletion) {
-            const cb = pendingCompletion
-            pendingCompletion = null
-            cb()
-          }
-          // Auto-dismiss the overlay shortly after success so the customer
-          // doesn't have to hit Close manually — they briefly see Paddle's
-          // confirmation, then the page toast takes over.
-          setTimeout(() => window.Paddle?.Checkout?.close?.(), 1500)
+export async function ensurePaddle(orgId: string): Promise<void> {
+  const config = await getBillingConfig(orgId)
+  if (!config.clientToken) {
+    throw new Error('Billing is not available yet. Please contact the Lira team to enable it.')
+  }
+  await injectScript()
+  if (!window.Paddle) {
+    throw new Error('Could not initialize Paddle. Please try again.')
+  }
+  // Already initialized for this exact env + token — nothing to do.
+  if (initializedToken === config.clientToken && initializedEnv === config.environment) {
+    return
+  }
+  window.Paddle.Environment.set(config.environment)
+  window.Paddle.Initialize({
+    token: config.clientToken,
+    eventCallback: (event) => {
+      if (event?.name === 'checkout.completed') {
+        if (pendingCompletion) {
+          const cb = pendingCompletion
+          pendingCompletion = null
+          cb()
         }
-      },
-    })
-  })().catch((err) => {
-    // Reset so a later retry (e.g. after configuring Paddle) can re-init.
-    initPromise = null
-    throw err
+        // Auto-dismiss the overlay shortly after success so the customer
+        // doesn't have to hit Close manually — they briefly see Paddle's
+        // confirmation, then the page toast takes over.
+        setTimeout(() => window.Paddle?.Checkout?.close?.(), 1500)
+      }
+    },
   })
-
-  return initPromise
+  initializedToken = config.clientToken
+  initializedEnv = config.environment
 }
 
 /**
- * Open the Paddle checkout overlay for a backend-created transaction. The
- * optional onComplete fires when Paddle emits `checkout.completed`.
+ * Open the Paddle checkout overlay for a backend-created transaction. Paddle.js
+ * is initialized against the org's own env first, so a sandbox org opens the
+ * sandbox overlay (test cards) and a live org the live one. The optional
+ * onComplete fires when Paddle emits `checkout.completed`.
  */
 export async function openPaddleCheckout(
   transactionId: string,
+  orgId: string,
   onComplete?: () => void
 ): Promise<void> {
-  await ensurePaddle()
+  await ensurePaddle(orgId)
   if (!window.Paddle) {
     throw new Error('Could not initialize Paddle. Please try again.')
   }

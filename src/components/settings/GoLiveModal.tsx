@@ -60,7 +60,10 @@ export function GoLiveModal({
 
   // PRO/SCALE go-live collects payment first (unless already subscribed).
   const isPaidTier = plan?.tier === 'PRO' || plan?.tier === 'SCALE'
-  const needsPayment = Boolean(isPaidTier && orgId && billing?.subscriptionStatus !== 'active')
+  const isBillingExempt = Boolean(plan?.billingExempt || plan?.platformOwned)
+  const needsPayment = Boolean(
+    isPaidTier && !isBillingExempt && orgId && billing?.subscriptionStatus !== 'active'
+  )
 
   const handleConfirm = async () => {
     if (!needsPayment) {
@@ -76,7 +79,7 @@ export function GoLiveModal({
         tier: plan.tier as 'PRO' | 'SCALE',
         interval,
       })
-      await openPaddleCheckout(checkout.transactionId, () => {
+      await openPaddleCheckout(checkout.transactionId, orgId, () => {
         toast.success('Payment received — taking your workspace live.')
         onConfirm()
       })
@@ -94,9 +97,11 @@ export function GoLiveModal({
   const price =
     plan === null
       ? null
-      : plan.entitlements.basePriceUsd === null
-        ? 'Custom pricing'
-        : `$${plan.entitlements.basePriceUsd}/mo`
+      : isBillingExempt
+        ? 'Billing exempt'
+        : plan.entitlements.basePriceUsd === null
+          ? 'Custom pricing'
+          : `$${plan.entitlements.basePriceUsd}/mo`
   const included =
     plan === null
       ? null
@@ -136,9 +141,11 @@ export function GoLiveModal({
         </div>
 
         <p className="mt-3 text-sm text-gray-700">
-          {needsPayment
-            ? "Going live on the paid plan collects payment through Paddle's secure checkout, then starts your billing period. Sandbox testing limits are replaced by your plan's volume."
-            : "Going live starts your billing period. Sandbox testing limits are replaced by your plan's volume."}
+          {isBillingExempt
+            ? 'This is a Lira-owned internal workspace. Going live keeps it in production with unlimited internal usage and no customer billing.'
+            : needsPayment
+              ? "Going live on the paid plan collects payment through Paddle's secure checkout, then starts your billing period. Sandbox testing limits are replaced by your plan's volume."
+              : "Going live starts your billing period. Sandbox testing limits are replaced by your plan's volume."}
         </p>
 
         <div className="mt-4">
