@@ -32,7 +32,7 @@ interface PaddleInitializeOptions {
 interface PaddleGlobal {
   Environment: PaddleEnvironment
   Initialize: (options: PaddleInitializeOptions) => void
-  Checkout: { open: (options: PaddleCheckoutOpenOptions) => void }
+  Checkout: { open: (options: PaddleCheckoutOpenOptions) => void; close?: () => void }
 }
 
 declare global {
@@ -94,10 +94,16 @@ export async function ensurePaddle(): Promise<void> {
     window.Paddle.Initialize({
       token: cachedConfig.clientToken,
       eventCallback: (event) => {
-        if (event?.name === 'checkout.completed' && pendingCompletion) {
-          const cb = pendingCompletion
-          pendingCompletion = null
-          cb()
+        if (event?.name === 'checkout.completed') {
+          if (pendingCompletion) {
+            const cb = pendingCompletion
+            pendingCompletion = null
+            cb()
+          }
+          // Auto-dismiss the overlay shortly after success so the customer
+          // doesn't have to hit Close manually — they briefly see Paddle's
+          // confirmation, then the page toast takes over.
+          setTimeout(() => window.Paddle?.Checkout?.close?.(), 1500)
         }
       },
     })
