@@ -42,6 +42,12 @@ export interface WidgetConfig {
   voiceEnabled?: boolean
   preChatFormEnabled?: boolean
   preChatFormFields?: string[]
+  /**
+   * Plan entitlement (from the server config). When true, the org is on a
+   * paid tier with the branding-removal entitlement and the widget hides its
+   * "Powered by" footer.
+   */
+  brandingRemoval?: boolean
   /** HMAC signature for identified visitors */
   visitorEmail?: string
   visitorName?: string

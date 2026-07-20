@@ -998,11 +998,31 @@ class LiraSupportWidget {
             needsRerender = true
           }
         }
+        if (typeof data.branding_removal === 'boolean') {
+          if (this.config.brandingRemoval !== data.branding_removal) {
+            this.config.brandingRemoval = data.branding_removal
+            needsRerender = true
+          }
+        }
         if (needsRerender) this.render()
       })
       .catch(() => {
         /* ignore */
       })
+  }
+
+  /**
+   * Append the "Powered by" footer to a widget window, unless the org's plan
+   * carries the branding-removal entitlement (paid tiers), in which case the
+   * footer is omitted entirely.
+   */
+  private appendPoweredBy(win: HTMLElement): void {
+    if (this.config.brandingRemoval) return
+    const powered = document.createElement('div')
+    powered.className = 'lira-powered'
+    powered.innerHTML =
+      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
+    win.appendChild(powered)
   }
 
   // ── Rendering ─────────────────────────────────────────────────────────────
@@ -1402,11 +1422,13 @@ class LiraSupportWidget {
     scroll.appendChild(content)
     root.appendChild(scroll)
 
-    // Footer
-    const footer = document.createElement('div')
-    footer.className = 'lira-sc-footer'
-    footer.innerHTML = `<img src="${LIRA_LOGO_URL}" alt="" /> Powered by <strong>Lira</strong>`
-    root.appendChild(footer)
+    // Footer — omitted on paid tiers with the branding-removal entitlement.
+    if (!this.config.brandingRemoval) {
+      const footer = document.createElement('div')
+      footer.className = 'lira-sc-footer'
+      footer.innerHTML = `<img src="${LIRA_LOGO_URL}" alt="" /> Powered by <strong>Lira</strong>`
+      root.appendChild(footer)
+    }
 
     this.shadow.appendChild(root)
 
@@ -2204,11 +2226,7 @@ class LiraSupportWidget {
       home.appendChild(this.buildHeroWelcomeEl())
       win.appendChild(home)
       win.appendChild(this.buildWidgetTabs('home'))
-      const powered = document.createElement('div')
-      powered.className = 'lira-powered'
-      powered.innerHTML =
-        'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
-      win.appendChild(powered)
+      this.appendPoweredBy(win)
       this.shadow.appendChild(win)
       this.renderLauncher()
       return
@@ -2322,11 +2340,7 @@ class LiraSupportWidget {
 
     win.appendChild(this.buildWidgetTabs('home'))
 
-    const powered = document.createElement('div')
-    powered.className = 'lira-powered'
-    powered.innerHTML =
-      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
-    win.appendChild(powered)
+    this.appendPoweredBy(win)
 
     this.shadow.appendChild(win)
     this.renderLauncher()
@@ -2476,11 +2490,7 @@ class LiraSupportWidget {
     win.appendChild(formWrap)
 
     // Powered by
-    const powered = document.createElement('div')
-    powered.className = 'lira-powered'
-    powered.innerHTML =
-      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
-    win.appendChild(powered)
+    this.appendPoweredBy(win)
 
     this.shadow.appendChild(win)
     if (!this.isFullscreen()) this.renderLauncher()
@@ -2566,11 +2576,7 @@ class LiraSupportWidget {
     win.appendChild(list)
     win.appendChild(this.buildWidgetTabs('chat'))
 
-    const powered = document.createElement('div')
-    powered.className = 'lira-powered'
-    powered.innerHTML =
-      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
-    win.appendChild(powered)
+    this.appendPoweredBy(win)
 
     this.shadow.appendChild(win)
     if (!this.isFullscreen()) this.renderLauncher()
@@ -2818,11 +2824,7 @@ class LiraSupportWidget {
     // input were a visual duplication that confused visitors. Keep tabs
     // on Home + Chat-list only.
 
-    const powered = document.createElement('div')
-    powered.className = 'lira-powered'
-    powered.innerHTML =
-      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
-    win.appendChild(powered)
+    this.appendPoweredBy(win)
 
     this.shadow.appendChild(win)
 
@@ -2923,11 +2925,7 @@ class LiraSupportWidget {
 
     win.appendChild(csat)
 
-    const powered = document.createElement('div')
-    powered.className = 'lira-powered'
-    powered.innerHTML =
-      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
-    win.appendChild(powered)
+    this.appendPoweredBy(win)
 
     this.shadow.appendChild(win)
     if (!this.isFullscreen()) this.renderLauncher()

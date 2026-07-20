@@ -80,6 +80,8 @@ export interface SupportConfig {
   pending_max_conversations_per_month?: number
   pending_max_ai_replies_per_month?: number
   pending_plan_tier?: string
+  /** Plan entitlement: paid tiers drop the "Powered by Lira" branding. */
+  branding_removal?: boolean
   llm_calls_this_month?: number
   sandbox_max_conversations_per_month?: number
   sandbox_max_ai_replies_per_month?: number
