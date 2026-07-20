@@ -1,5 +1,14 @@
 import { useEffect, useState } from 'react'
-import { getMyPlan, type MyPlan, type PlanTier } from '@/services/api'
+import { toast } from 'sonner'
+import {
+  getMyPlan,
+  getBillingStatus,
+  createBillingCheckout,
+  type MyPlan,
+  type PlanTier,
+  type BillingStatus,
+} from '@/services/api'
+import { openPaddleCheckout } from '@/lib/paddle'
 
 const PLAN_TIER_LABELS: Record<PlanTier, string> = {
   FREE: 'Free',
@@ -12,32 +21,76 @@ const PLAN_TIER_LABELS: Record<PlanTier, string> = {
  * Go-live confirmation — going live is the commercial event (billing starts,
  * plan limits replace sandbox caps), so it requires typing the org name.
  *
+ * On a paid plan (PRO/SCALE) without an active subscription, confirming first
+ * opens the Paddle checkout: payment is collected as part of going live, and
+ * only after `checkout.completed` do we run onConfirm (the environment switch).
+ * FREE go-live is unchanged — no checkout. Enterprise falls back to no checkout
+ * (custom billing is arranged out-of-band).
+ *
  * Relocated from pages/support/SupportSettingsPage.tsx (which is no longer
  * routed) so the routed Settings surface can reuse it.
  */
 export function GoLiveModal({
   orgName,
+  orgId,
   busy,
   onConfirm,
   onClose,
 }: {
   orgName: string
+  orgId?: string
   busy: boolean
   onConfirm: () => void
   onClose: () => void
 }) {
   const [plan, setPlan] = useState<MyPlan | null>(null)
+  const [billing, setBilling] = useState<BillingStatus | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
   const [typed, setTyped] = useState('')
+  const [paying, setPaying] = useState(false)
 
   useEffect(() => {
-    getMyPlan()
-      .then(setPlan)
-      .catch(() => setPlan(null))
+    Promise.all([getMyPlan(orgId).catch(() => null), getBillingStatus(orgId).catch(() => null)])
+      .then(([p, b]) => {
+        setPlan(p)
+        setBilling(b)
+      })
       .finally(() => setPlanLoading(false))
-  }, [])
+  }, [orgId])
+
+  // PRO/SCALE go-live collects payment first (unless already subscribed).
+  const isPaidTier = plan?.tier === 'PRO' || plan?.tier === 'SCALE'
+  const needsPayment = Boolean(isPaidTier && orgId && billing?.subscriptionStatus !== 'active')
+
+  const handleConfirm = async () => {
+    if (!needsPayment) {
+      onConfirm()
+      return
+    }
+    if (!orgId || !plan) return
+    setPaying(true)
+    try {
+      const interval = billing?.billingInterval ?? 'month'
+      const checkout = await createBillingCheckout({
+        orgId,
+        tier: plan.tier as 'PRO' | 'SCALE',
+        interval,
+      })
+      await openPaddleCheckout(checkout.transactionId, () => {
+        toast.success('Payment received — taking your workspace live.')
+        onConfirm()
+      })
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message.replace(/^\d+:\s*/, '') : 'Could not start checkout'
+      )
+    } finally {
+      setPaying(false)
+    }
+  }
 
   const nameMatches = typed.trim() === orgName.trim() && orgName.trim().length > 0
+  const disabled = busy || paying
   const price =
     plan === null
       ? null
@@ -56,7 +109,7 @@ export function GoLiveModal({
       <div
         role="presentation"
         className="absolute inset-0 bg-black/40"
-        onClick={() => !busy && onClose()}
+        onClick={() => !disabled && onClose()}
       />
       <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-semibold text-gray-900">Go live</h3>
@@ -83,8 +136,9 @@ export function GoLiveModal({
         </div>
 
         <p className="mt-3 text-sm text-gray-700">
-          Going live starts your billing period. Sandbox testing limits are replaced by your
-          plan&apos;s volume.
+          {needsPayment
+            ? "Going live on the paid plan collects payment through Paddle's secure checkout, then starts your billing period. Sandbox testing limits are replaced by your plan's volume."
+            : "Going live starts your billing period. Sandbox testing limits are replaced by your plan's volume."}
         </p>
 
         <div className="mt-4">
@@ -99,7 +153,7 @@ export function GoLiveModal({
             type="text"
             value={typed}
             onChange={(e) => setTyped(e.target.value)}
-            disabled={busy}
+            disabled={disabled}
             placeholder={orgName}
             autoComplete="off"
             className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none focus:border-[#020308] focus:ring-2 focus:ring-[#020308]/10"
@@ -109,17 +163,23 @@ export function GoLiveModal({
         <div className="mt-5 flex justify-end gap-2">
           <button
             onClick={onClose}
-            disabled={busy}
+            disabled={disabled}
             className="rounded-xl border border-gray-200 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
-            onClick={onConfirm}
-            disabled={busy || !nameMatches}
+            onClick={() => void handleConfirm()}
+            disabled={disabled || !nameMatches}
             className="rounded-xl bg-[#020308] px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
           >
-            {busy ? 'Going live…' : 'Go live'}
+            {busy
+              ? 'Going live…'
+              : paying
+                ? 'Opening checkout…'
+                : needsPayment
+                  ? 'Set up billing & go live'
+                  : 'Go live'}
           </button>
         </div>
       </div>

@@ -48,10 +48,17 @@ import {
   requestPlanChange,
   cancelPlanChangeRequest,
   requestSandboxExtension,
+  getBillingStatus,
+  createBillingCheckout,
+  createBillingPortalSession,
+  resolvePortalUrl,
   type MyPlan,
   type PlanTier,
   type PlanEntitlements,
+  type BillingStatus,
+  type SubscriptionStatus,
 } from '@/services/api'
+import { openPaddleCheckout } from '@/lib/paddle'
 import {
   deleteAgentCapability,
   listAgentCapabilities,
@@ -203,6 +210,19 @@ function tierPrice(e: PlanEntitlements): string {
   return `$${e.basePriceUsd}/mo`
 }
 
+const SUBSCRIPTION_BADGE: Record<SubscriptionStatus, { label: string; className: string }> = {
+  active: { label: 'Active', className: 'bg-emerald-100 text-emerald-700' },
+  past_due: { label: 'Past due', className: 'bg-amber-100 text-amber-800' },
+  canceled: { label: 'Canceled', className: 'bg-gray-100 text-gray-600' },
+  none: { label: 'No subscription', className: 'bg-gray-100 text-gray-500' },
+}
+
+function formatBillingDate(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })
+}
+
 function entitlementLines(e: PlanEntitlements): string[] {
   const conv =
     e.includedConversationsPerMonth === 0
@@ -257,6 +277,7 @@ function SubscriptionSection() {
   const userId = useAuthStore((s) => s.userId)
   const navigate = useNavigate()
   const [plan, setPlan] = useState<MyPlan | null>(null)
+  const [billing, setBilling] = useState<BillingStatus | null>(null)
   // Only org owners/admins may request plan changes — members get a
   // read-only view. Defaults true so a failed role lookup never locks
   // an admin out; the backend still enforces the role on every POST.
@@ -280,6 +301,12 @@ function SubscriptionSection() {
     try {
       const p = await getMyPlan(currentOrgId ?? undefined)
       setPlan(p)
+      try {
+        setBilling(await getBillingStatus(currentOrgId ?? undefined))
+      } catch {
+        // billing endpoint unavailable — hide the Paddle status row
+        setBilling(null)
+      }
       if (currentOrgId) {
         try {
           const members = await listOrgMembers(currentOrgId)
@@ -364,6 +391,46 @@ function SubscriptionSection() {
     }
   }
 
+  // Self-serve Paddle checkout for PRO/SCALE — the plan is applied server-side
+  // by the Paddle webhook, so we re-fetch a few seconds after completion.
+  const handleCheckout = async (tier: 'PRO' | 'SCALE') => {
+    if (!currentOrgId) {
+      toast.error('Select an organization before subscribing.')
+      return
+    }
+    setBusy(true)
+    try {
+      const interval = billing?.billingInterval ?? 'month'
+      const checkout = await createBillingCheckout({ orgId: currentOrgId, tier, interval })
+      await openPaddleCheckout(checkout.transactionId, () => {
+        toast.success('Payment received — your plan will update shortly.')
+        setTimeout(() => void load(), 3000)
+      })
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message.replace(/^\d+:\s*/, '') : 'Could not start checkout'
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  const handleManageBilling = async () => {
+    setBusy(true)
+    try {
+      const session = await createBillingPortalSession(currentOrgId ?? undefined)
+      const url = resolvePortalUrl(session)
+      if (!url) throw new Error('Could not open the billing portal. Please try again.')
+      window.open(url, '_blank', 'noopener,noreferrer')
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message.replace(/^\d+:\s*/, '') : 'Could not open billing portal'
+      )
+    } finally {
+      setBusy(false)
+    }
+  }
+
   const sandboxConversationLimit =
     environment === 'sandbox'
       ? (usage?.sandboxConversationsMax ?? SANDBOX_CONVERSATIONS_CAP)
@@ -419,6 +486,40 @@ function SubscriptionSection() {
             </ul>
           </div>
         </div>
+
+        {billing && (
+          <div className="mt-5 flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border border-gray-200 bg-white px-4 py-3">
+            <span
+              className={cn(
+                'rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                SUBSCRIPTION_BADGE[billing.subscriptionStatus].className
+              )}
+            >
+              {SUBSCRIPTION_BADGE[billing.subscriptionStatus].label}
+            </span>
+            {billing.subscriptionStatus === 'active' && billing.paddleCurrentPeriodEndsAt && (
+              <span className="text-xs text-muted-foreground">
+                {billing.paddleCancelAtPeriodEnd ? 'Access until' : 'Next billing'}{' '}
+                {formatBillingDate(billing.paddleCurrentPeriodEndsAt)}
+              </span>
+            )}
+            {billing.paddleCancelAtPeriodEnd && (
+              <span className="text-xs font-medium text-amber-700">Cancels at period end</span>
+            )}
+            {billing.paddleCustomerId && canManage && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="ml-auto"
+                disabled={busy}
+                onClick={handleManageBilling}
+              >
+                Manage billing
+              </Button>
+            )}
+          </div>
+        )}
 
         {currentOrgId && (
           <div className="mt-5 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
@@ -536,13 +637,17 @@ function SubscriptionSection() {
       <Section icon={CreditCardIcon} title="Change plan">
         <p className="mb-4 text-sm text-muted-foreground">
           {canManage
-            ? 'Pick a plan and the Lira team will review and apply the change. Upgrades take effect on approval. On a downgrade, paid features lock when the change is applied, while your current usage limits stay in place until your next monthly reset.'
-            : 'Only org owners and admins can request plan changes. Ask an admin of this organization if you need a different plan.'}
+            ? 'Pro and Scale are self-serve — pick a plan, pay through the secure Paddle checkout, and it activates automatically. Enterprise and downgrades to Free are reviewed and applied by the Lira team.'
+            : 'Only org owners and admins can change plans. Ask an admin of this organization if you need a different plan.'}
         </p>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           {plan.allTiers.map(({ tier, entitlements }) => {
             const isCurrent = tier === plan.tier
             const isPendingTarget = plan.pendingRequest?.toTier === tier
+            // PRO/SCALE upgrades go through Paddle checkout; FREE (downgrade)
+            // and ENTERPRISE (custom) keep the request/approve flow.
+            const isPaidCheckout = tier === 'PRO' || tier === 'SCALE'
+            const billingActive = billing?.subscriptionStatus === 'active'
             return (
               <div
                 key={tier}
@@ -560,17 +665,29 @@ function SubscriptionSection() {
                       <li key={line}>• {line}</li>
                     ))}
                 </ul>
-                <Button
-                  className="mt-3"
-                  size="sm"
-                  variant={isCurrent ? 'outline' : 'default'}
-                  disabled={
-                    busy || !canManage || isCurrent || !!plan.pendingRequest || isPendingTarget
-                  }
-                  onClick={() => handleRequest(tier)}
-                >
-                  {isCurrent ? 'Current plan' : isPendingTarget ? 'Requested' : 'Request change'}
-                </Button>
+                {isCurrent ? (
+                  <Button className="mt-3" size="sm" variant="outline" disabled>
+                    Current plan
+                  </Button>
+                ) : isPaidCheckout ? (
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    disabled={busy || !canManage}
+                    onClick={() => handleCheckout(tier as 'PRO' | 'SCALE')}
+                  >
+                    {billingActive ? 'Switch to this plan' : 'Subscribe'}
+                  </Button>
+                ) : (
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    disabled={busy || !canManage || !!plan.pendingRequest || isPendingTarget}
+                    onClick={() => handleRequest(tier)}
+                  >
+                    {isPendingTarget ? 'Requested' : 'Request change'}
+                  </Button>
+                )}
               </div>
             )
           })}
@@ -1282,6 +1399,7 @@ function SupportEnvironmentCard() {
       {goLiveOpen && (
         <GoLiveModal
           orgName={orgName}
+          orgId={currentOrgId ?? undefined}
           busy={envBusy}
           onConfirm={() => void applyEnvironment('production')}
           onClose={() => setGoLiveOpen(false)}

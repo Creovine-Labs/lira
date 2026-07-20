@@ -2841,6 +2841,113 @@ export async function requestSandboxExtension(
   })
 }
 
+// ── Billing (Paddle) ─────────────────────────────────────────────────────────
+//
+// Self-serve checkout for PRO/SCALE: the frontend asks the backend to mint a
+// Paddle transaction, opens the Paddle.js overlay, and the plan is applied
+// server-side by the Paddle webhook. The request/approve flow (getMyPlan /
+// requestPlanChange) still handles Enterprise + FREE downgrades.
+
+export interface BillingConfig {
+  /** Paddle publishable client token — empty when Paddle is not configured. */
+  clientToken: string
+  environment: 'sandbox' | 'production'
+}
+
+export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'none'
+
+export interface BillingStatus {
+  planTier: PlanTier
+  paddleCustomerId: string | null
+  paddleSubscriptionId: string | null
+  subscriptionStatus: SubscriptionStatus
+  billingInterval: 'month' | 'year' | null
+  paddleCurrentPeriodEndsAt: string | null
+  paddleCancelAtPeriodEnd: boolean
+  paddleStatusSyncedAt: string | null
+}
+
+export interface BillingCheckout {
+  transactionId: string
+  checkoutUrl: string
+  customerId: string
+  priceId: string
+}
+
+/**
+ * Paddle customer portal session. Mirrors Paddle's API object — the
+ * general/overview URL lives at `urls.general.overview`; other deep links
+ * (cancel/update per subscription) live under `urls.subscriptions[]`.
+ */
+export interface PaddlePortalSession {
+  id: string
+  customer_id: string
+  urls?: {
+    general?: { overview?: string }
+    [key: string]: unknown
+  }
+}
+
+/** Paddle.js init config (publishable token + environment). */
+export async function getBillingConfig(): Promise<BillingConfig> {
+  return apiFetch<BillingConfig>('/v1/billing/config')
+}
+
+/** Current tenant's Paddle billing/subscription status. */
+export async function getBillingStatus(orgId?: string): Promise<BillingStatus> {
+  const qs = orgId ? `?orgId=${encodeURIComponent(orgId)}` : ''
+  const data = await apiFetch<{ billing: BillingStatus }>(`/v1/billing/status${qs}`)
+  return data.billing
+}
+
+/** Create a Paddle checkout transaction for a paid plan (PRO/SCALE). */
+export async function createBillingCheckout(payload: {
+  orgId: string
+  tier: 'PRO' | 'SCALE'
+  interval: 'month' | 'year'
+}): Promise<BillingCheckout> {
+  const data = await apiFetch<{ checkout: BillingCheckout }>('/v1/billing/checkout', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+  return data.checkout
+}
+
+/** Create a Paddle customer portal session (manage payment method / cancel). */
+export async function createBillingPortalSession(orgId?: string): Promise<PaddlePortalSession> {
+  const data = await apiFetch<{ portalSession: PaddlePortalSession }>(
+    '/v1/billing/portal-session',
+    {
+      method: 'POST',
+      body: JSON.stringify(orgId ? { orgId } : {}),
+    }
+  )
+  return data.portalSession
+}
+
+/**
+ * Best-effort extraction of the overview URL from a Paddle portal session.
+ * Prefers `urls.general.overview`; otherwise returns the first https URL found
+ * anywhere in the object (Paddle occasionally reshapes this payload).
+ */
+export function resolvePortalUrl(session: PaddlePortalSession): string | null {
+  const overview = session.urls?.general?.overview
+  if (typeof overview === 'string' && overview.startsWith('https')) return overview
+  let found: string | null = null
+  const walk = (value: unknown): void => {
+    if (found) return
+    if (typeof value === 'string') {
+      if (value.startsWith('https://')) found = value
+      return
+    }
+    if (value && typeof value === 'object') {
+      for (const v of Object.values(value as Record<string, unknown>)) walk(v)
+    }
+  }
+  walk(session.urls)
+  return found
+}
+
 export interface AdminPlanChangeRequest {
   id: string
   tenantId: string
