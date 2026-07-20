@@ -7,6 +7,7 @@ import {
   BuildingOffice2Icon,
   // CalendarDaysIcon removed alongside the commented-out 'Calendar Sync' tab.
   ChatBubbleLeftEllipsisIcon,
+  BoltIcon,
   ClipboardDocumentIcon,
   ClipboardDocumentCheckIcon,
   CodeBracketIcon,
@@ -85,6 +86,8 @@ import { ExportButton } from './support/ExportButton'
 import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 import { GoLiveModal } from '@/components/settings/GoLiveModal'
+import { SupportMcpConnector } from '@/components/settings/SupportMcpConnector'
+import { SupportToolPacksPanel } from '@/pages/support/SupportToolPacksPage'
 
 interface VoiceOption {
   id: VoiceId
@@ -2026,10 +2029,15 @@ function SupportSettingsSection() {
     },
     {
       key: 'behavior',
-      label: 'AI behavior',
+      label: 'Behavior',
       icon: SparklesIcon,
-      description:
-        'How the AI replies, when it holds back, and which actions it is allowed to take.',
+      description: 'How Lira replies and when it holds back — auto-reply, confidence, and limits.',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      icon: BoltIcon,
+      description: 'Connect your systems and choose what Lira is allowed to do for a customer.',
     },
     {
       key: 'escalation',
@@ -2953,13 +2961,32 @@ function SupportSettingsSection() {
       )}
 
       {/* ── AI behavior: capabilities — server-side action/resource registration ── */}
-      {activeTab === 'behavior' && (
-        <div className="space-y-4">
-          <SupportGroupHeading
-            title="Capabilities"
-            hint="Register the server-side actions and resources the agent may use."
-          />
-          <SupportCapabilitiesTab orgId={currentOrgId!} />
+      {/* ── Actions tab: connect systems + choose what the AI can do ── */}
+      {activeTab === 'actions' && (
+        <div className="space-y-6">
+          <div className="space-y-3">
+            <SupportGroupHeading
+              title="Connect a system"
+              hint="Let Lira take real actions by calling your own systems. MCP is the recommended path — your tools run under your own auth, and every call still passes Lira's policy, confirmation/step-up, audit and metering."
+            />
+            <SupportMcpConnector />
+          </div>
+
+          <div className="space-y-3">
+            <SupportGroupHeading
+              title="REST adapter (alternative)"
+              hint="No MCP server yet? Connect a REST API that follows Lira's convention, or a thin adapter in front of your real API. Best for simpler APIs."
+            />
+            <SupportToolPacksPanel />
+          </div>
+
+          <div className="space-y-3">
+            <SupportGroupHeading
+              title="Advanced — manually registered actions (SDK)"
+              hint="Declare a server-side action by name so the AI knows it exists. Most orgs use MCP above instead; this is for actions wired up through the SDK."
+            />
+            <SupportCapabilitiesTab orgId={currentOrgId!} />
+          </div>
         </div>
       )}
 
@@ -3054,7 +3081,13 @@ function SupportSettingsSection() {
 }
 
 /** Grouped Support-settings tab keys (post-consolidation). */
-type SupportSettingsTabKey = 'connect' | 'channels' | 'behavior' | 'escalation' | 'health'
+type SupportSettingsTabKey =
+  | 'connect'
+  | 'channels'
+  | 'behavior'
+  | 'actions'
+  | 'escalation'
+  | 'health'
 
 /**
  * Maps the pre-consolidation tab keys (one tab per feature) to the grouped
@@ -3070,7 +3103,9 @@ const LEGACY_SUPPORT_TAB_MAP: Record<string, SupportSettingsTabKey> = {
   whatsapp: 'channels',
   portal: 'channels',
   behavior: 'behavior',
-  capabilities: 'behavior',
+  actions: 'actions',
+  // 'capabilities' used to live under the behavior tab; it now lives under Actions.
+  capabilities: 'actions',
   escalation: 'escalation',
   health: 'health',
   audit: 'health',
