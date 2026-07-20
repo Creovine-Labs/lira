@@ -67,6 +67,7 @@ const PLANS: Plan[] = [
     featuresLead: 'Everything in Free, plus:',
     features: [
       'All conversation flows: lead qualification, intake, registration',
+      'AI read actions — the agent checks live status for the customer (e.g. “what plan am I on”)',
       '5 languages',
       'Analytics dashboard (questions + leads)',
       'CRM / webhook lead delivery',
@@ -85,6 +86,8 @@ const PLANS: Plan[] = [
     cta: { label: 'Speak to an expert', href: '/contact' },
     featuresLead: 'Everything in Pro, plus:',
     features: [
+      'AI that takes actions, not just answers — with built-in approval & audit',
+      'Agent runtime: expose your app’s actions to the AI (SDK or action packs)',
       'AI agent inside WhatsApp (WhatsApp Business API)*',
       'Priority support',
       'Custom integrations',
