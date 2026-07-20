@@ -593,12 +593,19 @@ function OnboardingPage() {
             )}
 
             {/* Step: attribution ("how did you hear about us") — optional.
-                Both Continue and Skip land the user on /dashboard where the
+                The attribution step stays on the /onboarding URL until the
+                user finishes it (Continue) or skips it — it is never rendered
+                at /dashboard, so it can't make the real dashboard look broken
+                or intercept deep links to /settings, /org/knowledge, etc.
+                Only on done do we replace-navigate to /dashboard, where the
                 embedded Lira onboarding widget greets them and walks them
-                through setup conversationally (instead of dumping them in
-                /support/activate). Continue POSTs the selection; Skip is a
-                no-op API-wise. */}
-            {step === 'attribution' && <AttributionStep onDone={() => navigate('/dashboard')} />}
+                through setup conversationally. `replace` drops the completed
+                onboarding flow from history so Back can't re-open this step or
+                let the user re-run org creation. Continue POSTs the selection;
+                Skip is a no-op API-wise. */}
+            {step === 'attribution' && (
+              <AttributionStep onDone={() => navigate('/dashboard', { replace: true })} />
+            )}
 
             {/* Step: org-name */}
             {step === 'org-name' && (

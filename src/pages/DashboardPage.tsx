@@ -163,7 +163,12 @@ function SetupChecklist({
   memberCount: number
 }) {
   const supportActivated = supportConfig?.activated ?? false
-  const widgetInstalled = Boolean(supportConfig?.last_widget_seen_at)
+  // Only a real external install completes this step. `last_widget_seen_at`
+  // is tripped by the dashboard's OWN embedded onboarding widget (it loads
+  // from the Lira app host), so keying off it marked this done too early.
+  // `widget_seen_external_at` is set only when the widget loads from a
+  // non-Lira host — i.e. the customer embedded the snippet on their own site.
+  const widgetInstalled = Boolean(supportConfig?.widget_seen_external_at)
   const knowledgeConnected = knowledgePages > 0
   const supportEmailConfigured = Boolean(
     supportConfig?.email_enabled &&

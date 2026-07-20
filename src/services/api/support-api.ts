@@ -69,6 +69,10 @@ export interface SupportConfig {
   kb_stale_after_days?: number
   /** ISO timestamp the widget last fetched config (embed is live). Powers "Verify connection". */
   last_widget_seen_at?: string
+  /** ISO timestamp the widget was first seen on a NON-Lira-app host (a real
+   * external install). The dashboard's own onboarding widget never sets this.
+   * Powers the "Install the chat widget" launch-checklist step. */
+  widget_seen_external_at?: string
   /** Per-org HMAC secret for verified visitor identity. Owner/admin only. */
   widget_secret?: string
   max_conversations_per_month: number
