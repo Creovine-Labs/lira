@@ -3,6 +3,7 @@ import { toast } from 'sonner'
 import {
   CreditCardIcon,
   CheckCircleIcon,
+  BuildingLibraryIcon,
   ExclamationTriangleIcon,
   PuzzlePieceIcon,
   XMarkIcon,
@@ -35,7 +36,38 @@ interface PackCatalogEntry {
 }
 
 const CATALOG: PackCatalogEntry[] = [
-  // Payment provider packs will be added here once a payment platform decision is made
+  {
+    id: 'fintech',
+    name: 'Banking / Fintech actions',
+    vendor: 'Your API',
+    description:
+      'Let the AI resolve issues in-chat — freeze a lost card, check a failed transfer, open a dispute, ' +
+      'change a limit, switch a plan — by calling your own API. Enter your endpoint + key below; your key ' +
+      'stays server-side and the verified customer is passed as the X-Lira-Customer header. Money-moving ' +
+      'actions automatically require the customer to re-authenticate (step-up) before running. Your API ' +
+      'implements a simple REST convention (see the guide) — e.g. POST /cards/:id/freeze, POST /disputes, ' +
+      'POST /account/plan, GET /transactions/:id.',
+    tools: [
+      'fintech_transaction_status',
+      'fintech_freeze_card',
+      'fintech_unfreeze_card',
+      'fintech_report_card_lost',
+      'fintech_open_dispute',
+      'fintech_change_limit',
+      'fintech_switch_plan',
+      'fintech_kyc_status',
+    ],
+    fields: [
+      {
+        key: 'api_base_url',
+        label: 'API base URL',
+        placeholder: 'https://api.yourbank.com/lira-support',
+      },
+      { key: 'api_key', label: 'API key (Bearer)', placeholder: 'sk_live_…', secret: true },
+    ],
+    icon: BuildingLibraryIcon,
+    helpUrl: 'https://docs.liraintelligence.com/platform/customer-support/ai-actions',
+  },
 ]
 
 function SupportToolPacksPage() {
