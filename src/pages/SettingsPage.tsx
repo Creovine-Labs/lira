@@ -90,7 +90,7 @@ import { SupportMcpConnector } from '@/components/settings/SupportMcpConnector'
 import { SupportToolPacksPanel } from '@/pages/support/SupportToolPacksPage'
 import {
   SettingsShell,
-  PillTabs,
+  SideNav,
   SCard,
   SRow,
   Toggle as SToggle,
@@ -2140,755 +2140,776 @@ function SupportSettingsSection() {
       {/* Environment (sandbox ↔ production) — always visible, above the tabs */}
       <SupportEnvironmentCard />
 
-      <PillTabs tabs={SUPPORT_TABS} active={activeTab} onChange={setActiveTab} />
-
-      {/* ── Get connected: Web SDK ── */}
-      {activeTab === 'connect' && (
-        <>
-          <SCard
-            title="Install Lira"
-            hint="Add Lira to your product — pick the method that fits your stack."
-          >
-            <CodeTabs
-              methods={[
-                {
-                  key: 'widget',
-                  label: 'Web widget',
-                  desc: 'A floating chat launcher for any page. The quickest way to go live.',
-                  code: widgetEmbedSnippet,
-                },
-                {
-                  key: 'fullpage',
-                  label: 'Full page',
-                  desc: 'A full support experience on your own route (e.g. /support). Recommended for logged-in products.',
-                  code: fullPageEmbedSnippet,
-                },
-                {
-                  key: 'js',
-                  label: 'JavaScript',
-                  desc: 'Identify signed-in users and pass live context like plan, route, or billing status.',
-                  code: jsSdkSnippet,
-                },
-                {
-                  key: 'npm',
-                  label: 'npm',
-                  desc: 'Typed imports and registered actions for React, Next.js, Vue, or any bundled app.',
-                  code: npmSdkSnippet,
-                },
-              ]}
-            />
-          </SCard>
-
-          <SCard title="Appearance & greeting" hint="How the widget looks, and its first message.">
-            <div className="pb-3.5">
-              <p className="mb-2 text-[13px] font-semibold text-gray-900">Brand color</p>
-              <div className="flex items-center gap-3">
-                <input
-                  type="color"
-                  value={widgetColor}
-                  onChange={(e) => setWidgetColor(e.target.value)}
-                  className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
+        <SideNav tabs={SUPPORT_TABS} active={activeTab} onChange={setActiveTab} />
+        <div className="min-w-0 flex-1">
+          {/* ── Get connected: Web SDK ── */}
+          {activeTab === 'connect' && (
+            <>
+              <SCard
+                title="Install Lira"
+                hint="Add Lira to your product — pick the method that fits your stack."
+              >
+                <CodeTabs
+                  methods={[
+                    {
+                      key: 'widget',
+                      label: 'Web widget',
+                      desc: 'A floating chat launcher for any page. The quickest way to go live.',
+                      code: widgetEmbedSnippet,
+                    },
+                    {
+                      key: 'fullpage',
+                      label: 'Full page',
+                      desc: 'A full support experience on your own route (e.g. /support). Recommended for logged-in products.',
+                      code: fullPageEmbedSnippet,
+                    },
+                    {
+                      key: 'js',
+                      label: 'JavaScript',
+                      desc: 'Identify signed-in users and pass live context like plan, route, or billing status.',
+                      code: jsSdkSnippet,
+                    },
+                    {
+                      key: 'npm',
+                      label: 'npm',
+                      desc: 'Typed imports and registered actions for React, Next.js, Vue, or any bundled app.',
+                      code: npmSdkSnippet,
+                    },
+                  ]}
                 />
-                <input
-                  type="text"
-                  value={widgetColor}
-                  onChange={(e) => {
-                    if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value)) setWidgetColor(e.target.value)
-                  }}
-                  maxLength={7}
-                  className="w-28 rounded-xl border border-gray-200 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-gray-900"
-                />
-                <div className="h-9 flex-1 rounded-lg" style={{ background: widgetColor }} />
-              </div>
-            </div>
-            <SField label="Greeting message" hint="The opening message shown when chat loads.">
-              <textarea
-                value={greetingMessage}
-                onChange={(e) => setGreetingMessage(e.target.value)}
-                rows={2}
-                placeholder="Hello! How can I help you today?"
-                className={cn(fieldInputCls, 'resize-none')}
-              />
-            </SField>
-          </SCard>
+              </SCard>
 
-          <SCard title="Developer options">
-            <Disclosure
-              title="Signing secret for logged-in customers"
-              desc="Verify identified visitors with an HMAC signature so Lira can trust who they are."
-            >
-              <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
-            </Disclosure>
-            <Disclosure title="Mobile SDKs" desc="Native iOS and Android — on the roadmap.">
-              <SupportMobileTab />
-            </Disclosure>
-          </SCard>
-        </>
-      )}
-
-      {/* ── Health & audit ── */}
-      {activeTab === 'health' && (
-        <>
-          <SCard
-            title="Integration health"
-            hint="Run diagnostics on demand to confirm your setup is working."
-          >
-            <SupportHealthTab orgId={currentOrgId!} />
-          </SCard>
-          <SCard
-            title="Agent audit log"
-            hint="Every resource and action the agent used while helping customers."
-          >
-            <SupportAuditTab orgId={currentOrgId!} />
-          </SCard>
-        </>
-      )}
-
-      {/* ── Channels: core channels ── */}
-      {activeTab === 'channels' && (
-        <SCard title="Where customers reach you" hint="Turn a channel on to configure it.">
-          <SRow
-            label="Web chat"
-            desc="The floating widget and full-page support on your site or app."
-            control={<SToggle checked={chatEnabled} onChange={setChatEnabled} label="Web chat" />}
-          />
-          <SRow
-            label="Voice"
-            desc="Spoken support powered by Lira's voice."
-            control={<SToggle checked={voiceEnabled} onChange={setVoiceEnabled} label="Voice" />}
-          />
-          <div className="border-t border-gray-100 py-3.5">
-            <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-gray-900">Email</p>
-                <p className="mt-0.5 text-xs text-gray-400">Receive and answer customer emails.</p>
-              </div>
-              <SToggle checked={emailEnabled} onChange={setEmailEnabled} label="Email" />
-            </div>
-            {config.email_address && (
-              <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
-                <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                  Your Lira support address
-                </p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 truncate font-mono text-xs text-gray-800">
-                    {config.email_address}
-                  </code>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigator.clipboard.writeText(config.email_address ?? '')
-                      toast.success('Copied!')
-                    }}
-                    className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-500 transition hover:bg-gray-200"
-                  >
-                    Copy
-                  </button>
+              <SCard
+                title="Appearance & greeting"
+                hint="How the widget looks, and its first message."
+              >
+                <div className="pb-3.5">
+                  <p className="mb-2 text-[13px] font-semibold text-gray-900">Brand color</p>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={widgetColor}
+                      onChange={(e) => setWidgetColor(e.target.value)}
+                      className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+                    />
+                    <input
+                      type="text"
+                      value={widgetColor}
+                      onChange={(e) => {
+                        if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))
+                          setWidgetColor(e.target.value)
+                      }}
+                      maxLength={7}
+                      className="w-28 rounded-xl border border-gray-200 bg-white px-3 py-2 font-mono text-sm outline-none focus:border-gray-900"
+                    />
+                    <div className="h-9 flex-1 rounded-lg" style={{ background: widgetColor }} />
+                  </div>
                 </div>
-                <p className="mt-1 text-[11px] text-gray-400">
-                  Share with customers or set as a forwarding destination.
-                </p>
-              </div>
-            )}
-            {emailEnabled && (
-              <div className="mt-3">
-                <SField
-                  label="Custom address (optional)"
-                  hint="Forward this address to your Lira support address in your email provider."
-                >
-                  <input
-                    type="email"
-                    value={customSupportEmail}
-                    onChange={(e) => setCustomSupportEmail(e.target.value)}
-                    placeholder="support@yourcompany.com"
-                    className={fieldInputCls}
+                <SField label="Greeting message" hint="The opening message shown when chat loads.">
+                  <textarea
+                    value={greetingMessage}
+                    onChange={(e) => setGreetingMessage(e.target.value)}
+                    rows={2}
+                    placeholder="Hello! How can I help you today?"
+                    className={cn(fieldInputCls, 'resize-none')}
                   />
                 </SField>
-                {customSupportEmail.trim() && config.email_address && (
-                  <Callout>
-                    Create a forwarding rule from <strong>{customSupportEmail.trim()}</strong> to{' '}
-                    <strong className="font-mono">{config.email_address}</strong>.
-                  </Callout>
-                )}
-              </div>
-            )}
-          </div>
-        </SCard>
-      )}
+              </SCard>
 
-      {/* ── Channels: WhatsApp ── */}
-      {activeTab === 'channels' && (
-        <SCard title="WhatsApp Business" hint="Answer on a WhatsApp number too.">
-          <Disclosure
-            title="Set up WhatsApp"
-            desc="Meta credentials, message templates, and webhook."
-          >
-            <SupportWhatsAppTab orgId={currentOrgId!} />
-          </Disclosure>
-        </SCard>
-      )}
+              <SCard title="Developer options">
+                <Disclosure
+                  title="Signing secret for logged-in customers"
+                  desc="Verify identified visitors with an HMAC signature so Lira can trust who they are."
+                >
+                  <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
+                </Disclosure>
+                <Disclosure title="Mobile SDKs" desc="Native iOS and Android — on the roadmap.">
+                  <SupportMobileTab />
+                </Disclosure>
+              </SCard>
+            </>
+          )}
 
-      {/* ── Channels: hosted page (formerly the "Hosted" / portal tab) ── */}
-      {activeTab === 'channels' && (
-        <SCard
-          title="Lira-hosted page"
-          hint="A ready-made support page if you can't embed the widget yet."
-        >
-          <Disclosure
-            title="Set up hosted page & branding"
-            desc="Page address, custom domain, branding, and features."
-          >
-            <Callout>
-              For production, prefer embedding the Web SDK inside your own{' '}
-              <code className="font-mono">/support</code> route — it keeps your URL and app shell.
-              Use this hosted page as a no-code fallback.
-            </Callout>
+          {/* ── Health & audit ── */}
+          {activeTab === 'health' && (
+            <>
+              <SCard
+                title="Integration health"
+                hint="Run diagnostics on demand to confirm your setup is working."
+              >
+                <SupportHealthTab orgId={currentOrgId!} />
+              </SCard>
+              <SCard
+                title="Agent audit log"
+                hint="Every resource and action the agent used while helping customers."
+              >
+                <SupportAuditTab orgId={currentOrgId!} />
+              </SCard>
+            </>
+          )}
 
-            {/* Access */}
-            <div className="rounded-lg border px-4 py-3 space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Hosted Support Portal</p>
-                  <p className="text-xs text-muted-foreground">
-                    Optional Lira-hosted fallback page for customers without an SDK integration.
-                  </p>
-                </div>
-                <label aria-label="Toggle support portal" className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={portalEnabled}
-                    onChange={(e) => setPortalEnabled(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                </label>
-              </div>
-
-              {portalEnabled && (
-                <div className="space-y-3 border-t border-gray-100 pt-3">
-                  {/* Slug */}
-                  <div>
-                    <label
-                      htmlFor="portal-slug-input"
-                      className="block text-xs font-semibold text-gray-500"
-                    >
-                      Portal URL
-                    </label>
-                    <div className="mt-1 flex items-center">
-                      <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
-                        support.liraintelligence.com/
-                      </span>
-                      <input
-                        id="portal-slug-input"
-                        type="text"
-                        value={portalSlug}
-                        onChange={(e) =>
-                          setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
-                        }
-                        placeholder="my-company"
-                        className="flex-1 rounded-r-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
-                      />
-                    </div>
-                  </div>
-
-                  {config.portal_slug && (
-                    <a
-                      href={`https://support.liraintelligence.com/${config.portal_slug}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
-                    >
-                      <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                      Open portal
-                    </a>
-                  )}
-
-                  {/* Custom domain */}
-                  <div className="border-t border-gray-100 pt-3">
-                    <label
-                      htmlFor="portal-custom-domain"
-                      className="block text-xs font-semibold text-gray-500"
-                    >
-                      Custom Domain <span className="font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <input
-                      id="portal-custom-domain"
-                      type="text"
-                      value={customDomain}
-                      onChange={(e) =>
-                        setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
-                      }
-                      placeholder="support.yourcompany.com"
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
-                    />
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Add a CNAME from your domain to{' '}
-                      <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
-                        support.liraintelligence.com
-                      </code>
-                      , then enter it above.
-                    </p>
-                    {config.custom_domain && (
-                      <a
-                        href={`https://${config.custom_domain}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
-                      >
-                        <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                        Open {config.custom_domain}
-                      </a>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {!portalEnabled && (
-                <p className="text-xs text-muted-foreground">
-                  Enable the hosted fallback to configure its URL, branding, and features.
-                </p>
-              )}
-            </div>
-
-            {/* Branding */}
-            {portalEnabled && (
-              <>
-                <div className="rounded-lg border px-4 py-3 space-y-3">
-                  <p className="text-sm font-medium text-foreground">Branding</p>
-                  <p className="text-xs text-muted-foreground">
-                    Customize the portal to match your brand.
-                  </p>
-
-                  {/* Portal color */}
-                  <div>
-                    <label
-                      htmlFor="portal-brand-color-text"
-                      className="block text-xs font-semibold text-gray-500 mb-2"
-                    >
-                      Brand Color
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="color"
-                        value={portalColor}
-                        onChange={(e) => setPortalColor(e.target.value)}
-                        className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
-                      />
-                      <input
-                        id="portal-brand-color-text"
-                        type="text"
-                        value={portalColor}
-                        onChange={(e) => {
-                          if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))
-                            setPortalColor(e.target.value)
-                        }}
-                        maxLength={7}
-                        className="w-28 rounded-xl border border-input bg-background px-3 py-1.5 font-mono text-sm outline-none focus:border-gray-900"
-                      />
-                      <div className="h-9 flex-1 rounded-lg" style={{ background: portalColor }} />
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {[
-                        '#3730a3',
-                        '#1d4ed8',
-                        '#0891b2',
-                        '#059669',
-                        '#d97706',
-                        '#dc2626',
-                        '#7c3aed',
-                        '#db2777',
-                        '#1a1a2e',
-                      ].map((c) => (
-                        <button
-                          key={c}
-                          type="button"
-                          onClick={() => setPortalColor(c)}
-                          className={cn(
-                            'h-7 w-7 rounded-md border-2 transition',
-                            portalColor === c
-                              ? 'border-gray-900 scale-110'
-                              : 'border-transparent hover:scale-105'
-                          )}
-                          style={{ background: c }}
-                        />
-                      ))}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Used for header, buttons, and chat bubbles. Defaults to your widget color.
-                    </p>
-                  </div>
-
-                  {/* Logo */}
-                  <div className="border-t border-gray-100 pt-3">
-                    <label
-                      htmlFor="portal-logo-url"
-                      className="block text-xs font-semibold text-gray-500"
-                    >
-                      Logo URL <span className="font-normal text-gray-400">(optional)</span>
-                    </label>
-                    <input
-                      id="portal-logo-url"
-                      type="url"
-                      value={portalLogoUrl}
-                      onChange={(e) => setPortalLogoUrl(e.target.value.trim())}
-                      placeholder="https://yourcompany.com/logo.png"
-                      className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
-                    />
-                    {portalLogoUrl && (
-                      <div className="mt-2 flex items-center gap-3">
-                        <img
-                          src={portalLogoUrl}
-                          alt="Logo preview"
-                          className="h-8 max-w-[120px] object-contain rounded"
-                          onError={(e) => {
-                            ;(e.target as HTMLImageElement).style.display = 'none'
-                          }}
-                        />
-                        <span className="text-xs text-muted-foreground">Preview</span>
-                      </div>
-                    )}
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      Shown in the portal header. Use a transparent PNG or SVG.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Portal Greeting */}
-                <div className="rounded-lg border px-4 py-3">
-                  <p className="mb-1 text-sm font-medium text-foreground">Portal Greeting</p>
-                  <textarea
-                    value={portalGreeting}
-                    onChange={(e) => setPortalGreeting(e.target.value)}
-                    rows={2}
-                    placeholder={config.greeting_message ?? 'Hello! How can I help you today?'}
-                    className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900 resize-none"
-                  />
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Opening message on the portal. Leave blank to use your widget greeting.
-                  </p>
-                </div>
-
-                {/* Features */}
-                <div className="rounded-lg border px-4 py-3 space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Portal Features</p>
-                    <p className="text-xs text-muted-foreground">
-                      Choose which capabilities customers see on the portal.
-                    </p>
-                  </div>
-                  <div className="space-y-2.5">
-                    {(
-                      [
-                        {
-                          id: 'p-chat',
-                          label: 'Live Chat',
-                          desc: 'Real-time chat with Lira AI',
-                          value: portalChatEnabled,
-                          set: setPortalChatEnabled,
-                        },
-                        {
-                          id: 'p-voice',
-                          label: 'Voice',
-                          desc: 'Talk via voice call',
-                          value: portalVoiceEnabled,
-                          set: setPortalVoiceEnabled,
-                        },
-                        {
-                          id: 'p-tickets',
-                          label: 'Submit a Request',
-                          desc: 'Submit a support ticket',
-                          value: portalTicketsEnabled,
-                          set: setPortalTicketsEnabled,
-                        },
-                        {
-                          id: 'p-track',
-                          label: 'Track Tickets',
-                          desc: 'View and follow up on past requests',
-                          value: portalTrackEnabled,
-                          set: setPortalTrackEnabled,
-                        },
-                      ] as const
-                    ).map((f) => (
-                      <label
-                        key={f.id}
-                        htmlFor={f.id}
-                        aria-label={f.label}
-                        className="flex items-start gap-2.5 cursor-pointer"
-                      >
-                        <input
-                          id={f.id}
-                          type="checkbox"
-                          checked={f.value}
-                          onChange={(e) => f.set(e.target.checked)}
-                          className="mt-0.5 h-4 w-4 rounded border-gray-300"
-                        />
-                        <div>
-                          <span className="text-sm font-medium text-gray-700">{f.label}</span>
-                          <p className="text-xs text-muted-foreground">{f.desc}</p>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Customer Login */}
-                <div className="rounded-lg border px-4 py-3 space-y-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Customer Login</p>
-                    <p className="text-xs text-muted-foreground">
-                      How customers identify themselves on the portal.
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2.5 space-y-0.5">
-                    <p className="text-xs font-semibold text-emerald-800">Magic Link — Active</p>
-                    <p className="text-xs text-emerald-700">
-                      Customers enter their email and receive a one-time sign-in link. No password
-                      required.
-                    </p>
-                  </div>
-
-                  <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 space-y-0.5 opacity-60">
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs font-semibold text-gray-700">
-                        Identity Verification / SSO
-                      </p>
-                      <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
-                        Coming soon
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Connect your own auth system. Generate a signed JWT with the customer's email
-                      — the portal trusts it automatically.
-                    </p>
-                  </div>
-                </div>
-              </>
-            )}
-          </Disclosure>
-        </SCard>
-      )}
-
-      {/* ── Behavior tab ── */}
-      {activeTab === 'behavior' && (
-        <>
-          <SCard
-            title="Replies"
-            hint="When Lira answers on its own, and how sure it must be before it does."
-          >
-            <SRow
-              label="Auto-reply"
-              desc="Lira answers customers automatically when it's confident. Off = it drafts a reply for a human to send."
-              control={
-                <SToggle
-                  checked={autoReplyEnabled}
-                  onChange={setAutoReplyEnabled}
-                  label="Auto-reply"
-                />
-              }
-            />
-            <div className="border-t border-gray-100 pt-3.5">
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">Confidence to answer</p>
-                  <p className="mt-0.5 text-xs text-gray-400">
-                    Below this, Lira hands the conversation to a human instead of guessing.
-                  </p>
-                </div>
-                <div className="shrink-0 text-2xl font-extrabold tabular-nums text-gray-900">
-                  {Math.round(confidenceThreshold * 100)}
-                  <span className="text-sm font-semibold text-gray-400">%</span>
-                </div>
-              </div>
-              <div className="mt-3 inline-flex rounded-xl bg-gray-100 p-1">
-                {(
-                  [
-                    ['Cautious', 0.55],
-                    ['Balanced', 0.7],
-                    ['Strict', 0.85],
-                  ] as Array<[string, number]>
-                ).map(([lbl, v]) => (
-                  <button
-                    key={lbl}
-                    type="button"
-                    onClick={() => setConfidenceThreshold(v)}
-                    className={cn(
-                      'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
-                      Math.round(confidenceThreshold * 100) === Math.round(v * 100)
-                        ? 'bg-white text-gray-900 shadow-sm'
-                        : 'text-gray-500 hover:text-gray-800'
-                    )}
-                  >
-                    {lbl}
-                  </button>
-                ))}
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(confidenceThreshold * 100)}
-                onChange={(e) => setConfidenceThreshold(Number(e.target.value) / 100)}
-                className="mt-3 w-full accent-[#1A1A1A]"
+          {/* ── Channels: core channels ── */}
+          {activeTab === 'channels' && (
+            <SCard title="Where customers reach you" hint="Turn a channel on to configure it.">
+              <SRow
+                label="Web chat"
+                desc="The floating widget and full-page support on your site or app."
+                control={
+                  <SToggle checked={chatEnabled} onChange={setChatEnabled} label="Web chat" />
+                }
               />
-              <div className="flex justify-between text-[11px] text-gray-400">
-                <span>Answers more, asks humans less</span>
-                <span>Answers only when very sure</span>
-              </div>
-            </div>
-          </SCard>
-
-          {config && (
-            <SCard title="This month" hint="Usage against your plan. Read-only.">
-              <div className="grid grid-cols-2 gap-3">
-                <StatTile
-                  label="Conversations"
-                  value={config.conversations_this_month ?? 0}
-                  max={config.max_conversations_per_month}
-                />
-                <StatTile
-                  label="AI replies"
-                  value={config.ai_replies_this_month ?? 0}
-                  max={config.max_ai_replies_per_month}
-                />
+              <SRow
+                label="Voice"
+                desc="Spoken support powered by Lira's voice."
+                control={
+                  <SToggle checked={voiceEnabled} onChange={setVoiceEnabled} label="Voice" />
+                }
+              />
+              <div className="border-t border-gray-100 py-3.5">
+                <div className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900">Email</p>
+                    <p className="mt-0.5 text-xs text-gray-400">
+                      Receive and answer customer emails.
+                    </p>
+                  </div>
+                  <SToggle checked={emailEnabled} onChange={setEmailEnabled} label="Email" />
+                </div>
+                {config.email_address && (
+                  <div className="mt-3 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5">
+                    <p className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+                      Your Lira support address
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 truncate font-mono text-xs text-gray-800">
+                        {config.email_address}
+                      </code>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          navigator.clipboard.writeText(config.email_address ?? '')
+                          toast.success('Copied!')
+                        }}
+                        className="shrink-0 rounded-lg px-2 py-1 text-[11px] font-semibold text-gray-500 transition hover:bg-gray-200"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                    <p className="mt-1 text-[11px] text-gray-400">
+                      Share with customers or set as a forwarding destination.
+                    </p>
+                  </div>
+                )}
+                {emailEnabled && (
+                  <div className="mt-3">
+                    <SField
+                      label="Custom address (optional)"
+                      hint="Forward this address to your Lira support address in your email provider."
+                    >
+                      <input
+                        type="email"
+                        value={customSupportEmail}
+                        onChange={(e) => setCustomSupportEmail(e.target.value)}
+                        placeholder="support@yourcompany.com"
+                        className={fieldInputCls}
+                      />
+                    </SField>
+                    {customSupportEmail.trim() && config.email_address && (
+                      <Callout>
+                        Create a forwarding rule from <strong>{customSupportEmail.trim()}</strong>{' '}
+                        to <strong className="font-mono">{config.email_address}</strong>.
+                      </Callout>
+                    )}
+                  </div>
+                )}
               </div>
             </SCard>
           )}
 
-          <SCard title="Advanced" hint="Most teams never touch these. Open only what you need.">
-            <Disclosure
-              title="Always escalate certain topics"
-              desc="Named topics skip the AI and go straight to a human."
-            >
-              <SField
-                label="Topics that always escalate"
-                hint="Comma-separated. Lira routes these to a human no matter how confident it is."
+          {/* ── Channels: WhatsApp ── */}
+          {activeTab === 'channels' && (
+            <SCard title="WhatsApp Business" hint="Answer on a WhatsApp number too.">
+              <Disclosure
+                title="Set up WhatsApp"
+                desc="Meta credentials, message templates, and webhook."
               >
-                <input
-                  type="text"
-                  value={forceEscalateIntents}
-                  onChange={(e) => setForceEscalateIntents(e.target.value)}
-                  placeholder="fraud, account_security, legal"
-                  className={fieldInputCls}
+                <SupportWhatsAppTab orgId={currentOrgId!} />
+              </Disclosure>
+            </SCard>
+          )}
+
+          {/* ── Channels: hosted page (formerly the "Hosted" / portal tab) ── */}
+          {activeTab === 'channels' && (
+            <SCard
+              title="Lira-hosted page"
+              hint="A ready-made support page if you can't embed the widget yet."
+            >
+              <Disclosure
+                title="Set up hosted page & branding"
+                desc="Page address, custom domain, branding, and features."
+              >
+                <Callout>
+                  For production, prefer embedding the Web SDK inside your own{' '}
+                  <code className="font-mono">/support</code> route — it keeps your URL and app
+                  shell. Use this hosted page as a no-code fallback.
+                </Callout>
+
+                {/* Access */}
+                <div className="rounded-lg border px-4 py-3 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">Hosted Support Portal</p>
+                      <p className="text-xs text-muted-foreground">
+                        Optional Lira-hosted fallback page for customers without an SDK integration.
+                      </p>
+                    </div>
+                    <label aria-label="Toggle support portal" className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={portalEnabled}
+                        onChange={(e) => setPortalEnabled(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300"
+                      />
+                    </label>
+                  </div>
+
+                  {portalEnabled && (
+                    <div className="space-y-3 border-t border-gray-100 pt-3">
+                      {/* Slug */}
+                      <div>
+                        <label
+                          htmlFor="portal-slug-input"
+                          className="block text-xs font-semibold text-gray-500"
+                        >
+                          Portal URL
+                        </label>
+                        <div className="mt-1 flex items-center">
+                          <span className="shrink-0 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400">
+                            support.liraintelligence.com/
+                          </span>
+                          <input
+                            id="portal-slug-input"
+                            type="text"
+                            value={portalSlug}
+                            onChange={(e) =>
+                              setPortalSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))
+                            }
+                            placeholder="my-company"
+                            className="flex-1 rounded-r-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                          />
+                        </div>
+                      </div>
+
+                      {config.portal_slug && (
+                        <a
+                          href={`https://support.liraintelligence.com/${config.portal_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
+                        >
+                          <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                          Open portal
+                        </a>
+                      )}
+
+                      {/* Custom domain */}
+                      <div className="border-t border-gray-100 pt-3">
+                        <label
+                          htmlFor="portal-custom-domain"
+                          className="block text-xs font-semibold text-gray-500"
+                        >
+                          Custom Domain{' '}
+                          <span className="font-normal text-gray-400">(optional)</span>
+                        </label>
+                        <input
+                          id="portal-custom-domain"
+                          type="text"
+                          value={customDomain}
+                          onChange={(e) =>
+                            setCustomDomain(e.target.value.toLowerCase().replace(/\s/g, ''))
+                          }
+                          placeholder="support.yourcompany.com"
+                          className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                        />
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Add a CNAME from your domain to{' '}
+                          <code className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px]">
+                            support.liraintelligence.com
+                          </code>
+                          , then enter it above.
+                        </p>
+                        {config.custom_domain && (
+                          <a
+                            href={`https://${config.custom_domain}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-1 inline-flex items-center gap-1 text-xs font-semibold text-[#3730a3] hover:underline"
+                          >
+                            <ArrowTopRightOnSquareIcon className="h-3 w-3" />
+                            Open {config.custom_domain}
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {!portalEnabled && (
+                    <p className="text-xs text-muted-foreground">
+                      Enable the hosted fallback to configure its URL, branding, and features.
+                    </p>
+                  )}
+                </div>
+
+                {/* Branding */}
+                {portalEnabled && (
+                  <>
+                    <div className="rounded-lg border px-4 py-3 space-y-3">
+                      <p className="text-sm font-medium text-foreground">Branding</p>
+                      <p className="text-xs text-muted-foreground">
+                        Customize the portal to match your brand.
+                      </p>
+
+                      {/* Portal color */}
+                      <div>
+                        <label
+                          htmlFor="portal-brand-color-text"
+                          className="block text-xs font-semibold text-gray-500 mb-2"
+                        >
+                          Brand Color
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={portalColor}
+                            onChange={(e) => setPortalColor(e.target.value)}
+                            className="h-9 w-9 cursor-pointer rounded-lg border border-gray-200 p-0.5"
+                          />
+                          <input
+                            id="portal-brand-color-text"
+                            type="text"
+                            value={portalColor}
+                            onChange={(e) => {
+                              if (/^#[0-9a-fA-F]{0,6}$/.test(e.target.value))
+                                setPortalColor(e.target.value)
+                            }}
+                            maxLength={7}
+                            className="w-28 rounded-xl border border-input bg-background px-3 py-1.5 font-mono text-sm outline-none focus:border-gray-900"
+                          />
+                          <div
+                            className="h-9 flex-1 rounded-lg"
+                            style={{ background: portalColor }}
+                          />
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {[
+                            '#3730a3',
+                            '#1d4ed8',
+                            '#0891b2',
+                            '#059669',
+                            '#d97706',
+                            '#dc2626',
+                            '#7c3aed',
+                            '#db2777',
+                            '#1a1a2e',
+                          ].map((c) => (
+                            <button
+                              key={c}
+                              type="button"
+                              onClick={() => setPortalColor(c)}
+                              className={cn(
+                                'h-7 w-7 rounded-md border-2 transition',
+                                portalColor === c
+                                  ? 'border-gray-900 scale-110'
+                                  : 'border-transparent hover:scale-105'
+                              )}
+                              style={{ background: c }}
+                            />
+                          ))}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Used for header, buttons, and chat bubbles. Defaults to your widget color.
+                        </p>
+                      </div>
+
+                      {/* Logo */}
+                      <div className="border-t border-gray-100 pt-3">
+                        <label
+                          htmlFor="portal-logo-url"
+                          className="block text-xs font-semibold text-gray-500"
+                        >
+                          Logo URL <span className="font-normal text-gray-400">(optional)</span>
+                        </label>
+                        <input
+                          id="portal-logo-url"
+                          type="url"
+                          value={portalLogoUrl}
+                          onChange={(e) => setPortalLogoUrl(e.target.value.trim())}
+                          placeholder="https://yourcompany.com/logo.png"
+                          className="mt-1 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm outline-none focus:border-gray-900"
+                        />
+                        {portalLogoUrl && (
+                          <div className="mt-2 flex items-center gap-3">
+                            <img
+                              src={portalLogoUrl}
+                              alt="Logo preview"
+                              className="h-8 max-w-[120px] object-contain rounded"
+                              onError={(e) => {
+                                ;(e.target as HTMLImageElement).style.display = 'none'
+                              }}
+                            />
+                            <span className="text-xs text-muted-foreground">Preview</span>
+                          </div>
+                        )}
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          Shown in the portal header. Use a transparent PNG or SVG.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Portal Greeting */}
+                    <div className="rounded-lg border px-4 py-3">
+                      <p className="mb-1 text-sm font-medium text-foreground">Portal Greeting</p>
+                      <textarea
+                        value={portalGreeting}
+                        onChange={(e) => setPortalGreeting(e.target.value)}
+                        rows={2}
+                        placeholder={config.greeting_message ?? 'Hello! How can I help you today?'}
+                        className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm outline-none focus:border-gray-900 resize-none"
+                      />
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Opening message on the portal. Leave blank to use your widget greeting.
+                      </p>
+                    </div>
+
+                    {/* Features */}
+                    <div className="rounded-lg border px-4 py-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Portal Features</p>
+                        <p className="text-xs text-muted-foreground">
+                          Choose which capabilities customers see on the portal.
+                        </p>
+                      </div>
+                      <div className="space-y-2.5">
+                        {(
+                          [
+                            {
+                              id: 'p-chat',
+                              label: 'Live Chat',
+                              desc: 'Real-time chat with Lira AI',
+                              value: portalChatEnabled,
+                              set: setPortalChatEnabled,
+                            },
+                            {
+                              id: 'p-voice',
+                              label: 'Voice',
+                              desc: 'Talk via voice call',
+                              value: portalVoiceEnabled,
+                              set: setPortalVoiceEnabled,
+                            },
+                            {
+                              id: 'p-tickets',
+                              label: 'Submit a Request',
+                              desc: 'Submit a support ticket',
+                              value: portalTicketsEnabled,
+                              set: setPortalTicketsEnabled,
+                            },
+                            {
+                              id: 'p-track',
+                              label: 'Track Tickets',
+                              desc: 'View and follow up on past requests',
+                              value: portalTrackEnabled,
+                              set: setPortalTrackEnabled,
+                            },
+                          ] as const
+                        ).map((f) => (
+                          <label
+                            key={f.id}
+                            htmlFor={f.id}
+                            aria-label={f.label}
+                            className="flex items-start gap-2.5 cursor-pointer"
+                          >
+                            <input
+                              id={f.id}
+                              type="checkbox"
+                              checked={f.value}
+                              onChange={(e) => f.set(e.target.checked)}
+                              className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                            />
+                            <div>
+                              <span className="text-sm font-medium text-gray-700">{f.label}</span>
+                              <p className="text-xs text-muted-foreground">{f.desc}</p>
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Customer Login */}
+                    <div className="rounded-lg border px-4 py-3 space-y-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Customer Login</p>
+                        <p className="text-xs text-muted-foreground">
+                          How customers identify themselves on the portal.
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-3 py-2.5 space-y-0.5">
+                        <p className="text-xs font-semibold text-emerald-800">
+                          Magic Link — Active
+                        </p>
+                        <p className="text-xs text-emerald-700">
+                          Customers enter their email and receive a one-time sign-in link. No
+                          password required.
+                        </p>
+                      </div>
+
+                      <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2.5 space-y-0.5 opacity-60">
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-semibold text-gray-700">
+                            Identity Verification / SSO
+                          </p>
+                          <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-semibold text-gray-500">
+                            Coming soon
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          Connect your own auth system. Generate a signed JWT with the customer's
+                          email — the portal trusts it automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </Disclosure>
+            </SCard>
+          )}
+
+          {/* ── Behavior tab ── */}
+          {activeTab === 'behavior' && (
+            <>
+              <SCard
+                title="Replies"
+                hint="When Lira answers on its own, and how sure it must be before it does."
+              >
+                <SRow
+                  label="Auto-reply"
+                  desc="Lira answers customers automatically when it's confident. Off = it drafts a reply for a human to send."
+                  control={
+                    <SToggle
+                      checked={autoReplyEnabled}
+                      onChange={setAutoReplyEnabled}
+                      label="Auto-reply"
+                    />
+                  }
                 />
-              </SField>
-            </Disclosure>
-            <Disclosure
-              title="Compliance guardrails"
-              tag="Fintech"
-              desc="Rules for regulated support: advice limits, complaint timing, currency."
-            >
-              <SupportComplianceControls orgId={currentOrgId!} config={config} />
-            </Disclosure>
-          </SCard>
-        </>
-      )}
+                <div className="border-t border-gray-100 pt-3.5">
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">Confidence to answer</p>
+                      <p className="mt-0.5 text-xs text-gray-400">
+                        Below this, Lira hands the conversation to a human instead of guessing.
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-2xl font-extrabold tabular-nums text-gray-900">
+                      {Math.round(confidenceThreshold * 100)}
+                      <span className="text-sm font-semibold text-gray-400">%</span>
+                    </div>
+                  </div>
+                  <div className="mt-3 inline-flex rounded-xl bg-gray-100 p-1">
+                    {(
+                      [
+                        ['Cautious', 0.55],
+                        ['Balanced', 0.7],
+                        ['Strict', 0.85],
+                      ] as Array<[string, number]>
+                    ).map(([lbl, v]) => (
+                      <button
+                        key={lbl}
+                        type="button"
+                        onClick={() => setConfidenceThreshold(v)}
+                        className={cn(
+                          'rounded-lg px-3 py-1.5 text-xs font-semibold transition',
+                          Math.round(confidenceThreshold * 100) === Math.round(v * 100)
+                            ? 'bg-white text-gray-900 shadow-sm'
+                            : 'text-gray-500 hover:text-gray-800'
+                        )}
+                      >
+                        {lbl}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={100}
+                    value={Math.round(confidenceThreshold * 100)}
+                    onChange={(e) => setConfidenceThreshold(Number(e.target.value) / 100)}
+                    className="mt-3 w-full accent-[#1A1A1A]"
+                  />
+                  <div className="flex justify-between text-[11px] text-gray-400">
+                    <span>Answers more, asks humans less</span>
+                    <span>Answers only when very sure</span>
+                  </div>
+                </div>
+              </SCard>
 
-      {/* ── Actions tab: connect systems + choose what the AI can do ── */}
-      {activeTab === 'actions' && (
-        <>
-          <SCard
-            title="Connect a system"
-            hint="Let Lira take real actions by calling your own systems. MCP is the recommended path — your tools run under your own auth, and every call still passes Lira's policy, confirmation/step-up, audit and metering."
-          >
-            <SupportMcpConnector />
-          </SCard>
+              {config && (
+                <SCard title="This month" hint="Usage against your plan. Read-only.">
+                  <div className="grid grid-cols-2 gap-3">
+                    <StatTile
+                      label="Conversations"
+                      value={config.conversations_this_month ?? 0}
+                      max={config.max_conversations_per_month}
+                    />
+                    <StatTile
+                      label="AI replies"
+                      value={config.ai_replies_this_month ?? 0}
+                      max={config.max_ai_replies_per_month}
+                    />
+                  </div>
+                </SCard>
+              )}
 
-          <SCard
-            title="REST adapter"
-            hint="No MCP server yet? Connect a REST API that follows Lira's convention, or a thin adapter in front of your real API. Best for simpler APIs."
-          >
-            <SupportToolPacksPanel />
-          </SCard>
+              <SCard title="Advanced" hint="Most teams never touch these. Open only what you need.">
+                <Disclosure
+                  title="Always escalate certain topics"
+                  desc="Named topics skip the AI and go straight to a human."
+                >
+                  <SField
+                    label="Topics that always escalate"
+                    hint="Comma-separated. Lira routes these to a human no matter how confident it is."
+                  >
+                    <input
+                      type="text"
+                      value={forceEscalateIntents}
+                      onChange={(e) => setForceEscalateIntents(e.target.value)}
+                      placeholder="fraud, account_security, legal"
+                      className={fieldInputCls}
+                    />
+                  </SField>
+                </Disclosure>
+                <Disclosure
+                  title="Compliance guardrails"
+                  tag="Fintech"
+                  desc="Rules for regulated support: advice limits, complaint timing, currency."
+                >
+                  <SupportComplianceControls orgId={currentOrgId!} config={config} />
+                </Disclosure>
+              </SCard>
+            </>
+          )}
 
-          <SCard title="Advanced">
-            <Disclosure
-              title="Manually registered actions"
-              tag="SDK"
-              desc="Declare a server-side action by name so the AI knows it exists. Most orgs use MCP above instead."
-            >
-              <SupportCapabilitiesTab orgId={currentOrgId!} />
-            </Disclosure>
-          </SCard>
-        </>
-      )}
+          {/* ── Actions tab: connect systems + choose what the AI can do ── */}
+          {activeTab === 'actions' && (
+            <>
+              <SCard
+                title="Connect a system"
+                hint="Let Lira take real actions by calling your own systems. MCP is the recommended path — your tools run under your own auth, and every call still passes Lira's policy, confirmation/step-up, audit and metering."
+              >
+                <SupportMcpConnector />
+              </SCard>
 
-      {/* ── Escalation tab ── */}
-      {activeTab === 'escalation' && (
-        <>
-          <SCard
-            title="When a human takes over"
-            hint="Where escalated conversations go, and how fast they should be answered."
-          >
-            <SField
-              label="Escalation email"
-              hint="Lira alerts this address whenever a conversation is escalated."
-            >
-              <input
-                type="email"
-                value={escalationEmail}
-                onChange={(e) => setEscalationEmail(e.target.value)}
-                placeholder="you@company.com"
-                className={fieldInputCls}
-              />
-            </SField>
-            <div className="border-t border-gray-100 py-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[13px] font-semibold text-gray-900">Response time target</p>
-                <span className="text-sm font-bold tabular-nums text-gray-900">{slaHours}h</span>
-              </div>
-              <input
-                type="range"
-                min={1}
-                max={72}
-                value={slaHours}
-                onChange={(e) => setSlaHours(Number(e.target.value))}
-                className="mt-2 w-full accent-[#1A1A1A]"
-              />
-              <p className="mt-1 text-[11.5px] text-gray-400">
-                An escalated ticket is flagged as overdue after this many hours.
-              </p>
-            </div>
-          </SCard>
+              <SCard
+                title="REST adapter"
+                hint="No MCP server yet? Connect a REST API that follows Lira's convention, or a thin adapter in front of your real API. Best for simpler APIs."
+              >
+                <SupportToolPacksPanel />
+              </SCard>
 
-          <SCard title="Notifications" hint="Optional back-channels for your team.">
-            <SField label="Slack channel" hint="Escalation alerts post here.">
-              <input
-                type="text"
-                value={slackChannel}
-                onChange={(e) => setSlackChannel(e.target.value)}
-                placeholder="#support-escalations"
-                className={fieldInputCls}
-              />
-            </SField>
-            <SField
-              label="Linear team"
-              hint="Escalated tickets open as Linear issues in this team."
-            >
-              <input
-                type="text"
-                value={linearTeam}
-                onChange={(e) => setLinearTeam(e.target.value)}
-                placeholder="Team ID or name"
-                className={fieldInputCls}
-              />
-            </SField>
-          </SCard>
+              <SCard title="Advanced">
+                <Disclosure
+                  title="Manually registered actions"
+                  tag="SDK"
+                  desc="Declare a server-side action by name so the AI knows it exists. Most orgs use MCP above instead."
+                >
+                  <SupportCapabilitiesTab orgId={currentOrgId!} />
+                </Disclosure>
+              </SCard>
+            </>
+          )}
 
-          <SCard
-            title="Automatic handoff"
-            hint="Let Lira bring in a human on its own when a conversation goes sideways."
-          >
-            <Disclosure
-              title="When to bring in a human"
-              desc="VIP customers, negative sentiment, repeated failures, and more."
-            >
-              <SupportHandoffControls orgId={currentOrgId!} initial={config.handoff_triggers} />
-            </Disclosure>
-          </SCard>
-        </>
-      )}
+          {/* ── Escalation tab ── */}
+          {activeTab === 'escalation' && (
+            <>
+              <SCard
+                title="When a human takes over"
+                hint="Where escalated conversations go, and how fast they should be answered."
+              >
+                <SField
+                  label="Escalation email"
+                  hint="Lira alerts this address whenever a conversation is escalated."
+                >
+                  <input
+                    type="email"
+                    value={escalationEmail}
+                    onChange={(e) => setEscalationEmail(e.target.value)}
+                    placeholder="you@company.com"
+                    className={fieldInputCls}
+                  />
+                </SField>
+                <div className="border-t border-gray-100 py-3">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[13px] font-semibold text-gray-900">Response time target</p>
+                    <span className="text-sm font-bold tabular-nums text-gray-900">
+                      {slaHours}h
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1}
+                    max={72}
+                    value={slaHours}
+                    onChange={(e) => setSlaHours(Number(e.target.value))}
+                    className="mt-2 w-full accent-[#1A1A1A]"
+                  />
+                  <p className="mt-1 text-[11.5px] text-gray-400">
+                    An escalated ticket is flagged as overdue after this many hours.
+                  </p>
+                </div>
+              </SCard>
 
-      <SaveBar onSave={handleSave} saving={saving} />
+              <SCard title="Notifications" hint="Optional back-channels for your team.">
+                <SField label="Slack channel" hint="Escalation alerts post here.">
+                  <input
+                    type="text"
+                    value={slackChannel}
+                    onChange={(e) => setSlackChannel(e.target.value)}
+                    placeholder="#support-escalations"
+                    className={fieldInputCls}
+                  />
+                </SField>
+                <SField
+                  label="Linear team"
+                  hint="Escalated tickets open as Linear issues in this team."
+                >
+                  <input
+                    type="text"
+                    value={linearTeam}
+                    onChange={(e) => setLinearTeam(e.target.value)}
+                    placeholder="Team ID or name"
+                    className={fieldInputCls}
+                  />
+                </SField>
+              </SCard>
+
+              <SCard
+                title="Automatic handoff"
+                hint="Let Lira bring in a human on its own when a conversation goes sideways."
+              >
+                <Disclosure
+                  title="When to bring in a human"
+                  desc="VIP customers, negative sentiment, repeated failures, and more."
+                >
+                  <SupportHandoffControls orgId={currentOrgId!} initial={config.handoff_triggers} />
+                </Disclosure>
+              </SCard>
+            </>
+          )}
+
+          <SaveBar onSave={handleSave} saving={saving} />
+        </div>
+      </div>
     </SettingsShell>
   )
 }

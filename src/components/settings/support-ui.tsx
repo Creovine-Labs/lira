@@ -32,7 +32,7 @@ export function SettingsShell({
 }) {
   return (
     <div className="-mx-4 -my-6 min-h-full bg-[#ebebeb] px-4 py-7 sm:-mx-6 sm:px-6">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-5xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
@@ -101,6 +101,44 @@ export function PillTabs<K extends string>({
         )
       })}
     </div>
+  )
+}
+
+/** Second-level side nav (vertical on desktop, horizontal scroll on mobile). */
+export function SideNav<K extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: ReadonlyArray<PillTab<K>>
+  active: K
+  onChange: (key: K) => void
+}) {
+  return (
+    <aside className="md:w-52 md:shrink-0">
+      <div className="flex gap-1 overflow-x-auto rounded-2xl border border-white/60 bg-white p-1.5 shadow-sm md:sticky md:top-4 md:flex-col md:gap-0.5">
+        {tabs.map((tab) => {
+          const Icon = tab.icon
+          const isActive = active === tab.key
+          return (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => onChange(tab.key)}
+              className={cn(
+                'flex shrink-0 items-center gap-2.5 whitespace-nowrap rounded-xl px-3 py-2.5 text-[13px] font-semibold transition md:w-full',
+                isActive
+                  ? 'bg-[#1A1A1A] text-white shadow-sm'
+                  : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              <span className="truncate">{tab.label}</span>
+            </button>
+          )
+        })}
+      </div>
+    </aside>
   )
 }
 
