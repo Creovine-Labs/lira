@@ -9,6 +9,7 @@ const DOCS_SLUG_URLS: Record<string, string> = {
   'human-handoff': `${DOCS_BASE_URL}/platform/customer-support`,
   'proactive-outreach': `${DOCS_BASE_URL}/platform/customer-support`,
   'tool-packs': `${DOCS_BASE_URL}/integrations/overview`,
+  'mcp-gateway': `${DOCS_BASE_URL}/integrations/mcp`,
 }
 
 export function getDocsUrl(slug?: string) {

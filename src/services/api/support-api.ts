@@ -1146,6 +1146,121 @@ export async function disableToolPack(orgId: string, packId: string): Promise<vo
   )
 }
 
+// ── MCP Gateway (customer-owned MCP server) ───────────────────────────────────
+
+export type McpRiskTier =
+  | 'read_public'
+  | 'read_private'
+  | 'safe_write'
+  | 'customer_confirm'
+  | 'step_up'
+  | 'admin_approve'
+  | 'human_only'
+
+export type McpAuthScope = 'public' | 'verified_visitor' | 'verified_customer'
+
+export interface McpApprovedTool {
+  source_name: string
+  tool_name: string
+  description: string
+  input_schema: unknown
+  output_schema?: unknown
+  kind: 'action' | 'resource'
+  risk: McpRiskTier
+  auth_scope: McpAuthScope
+  enabled: boolean
+  timeout_ms: number
+  allowed_channels: string[]
+  created_at: string
+  updated_at: string
+}
+
+/** Admin view of an org's MCP server — secrets are never returned (see `has_access_token`). */
+export interface McpServerAdminView {
+  org_id: string
+  server_id: string
+  enabled: boolean
+  environment: 'sandbox' | 'production'
+  server_label: string
+  endpoint_url: string
+  auth_type: 'none' | 'bearer'
+  protocol_version: string
+  approved_tools: McpApprovedTool[]
+  connected_by?: string
+  last_discovered_at?: string
+  created_at: string
+  updated_at: string
+  has_access_token: boolean
+}
+
+/** A tool the remote MCP server advertises — descriptions are sanitized server-side. */
+export interface McpDiscoveredTool {
+  source_name: string
+  description: string
+  input_schema: unknown
+  suggested_tool_name: string
+}
+
+/** Fields an admin maps when approving a discovered tool. */
+export interface McpApprovedToolInput {
+  source_name: string
+  tool_name?: string
+  description?: string
+  input_schema?: unknown
+  output_schema?: unknown
+  kind?: 'action' | 'resource'
+  risk?: McpRiskTier
+  auth_scope?: McpAuthScope
+  enabled?: boolean
+  timeout_ms?: number
+  allowed_channels?: string[]
+}
+
+export interface McpServerUpsertInput {
+  enabled?: boolean
+  environment?: 'sandbox' | 'production'
+  server_label?: string
+  endpoint_url?: string
+  auth_type?: 'none' | 'bearer'
+  protocol_version?: string
+  /** Only sent when (re)setting the bearer credential; never echoed back. */
+  access_token?: string
+  approved_tools?: McpApprovedToolInput[]
+}
+
+export async function getMcpServer(orgId: string): Promise<McpServerAdminView | null> {
+  const data = await supportFetch<{ server: McpServerAdminView | null }>(
+    `/lira/v1/support/mcp/orgs/${encodeURIComponent(orgId)}/server`
+  )
+  return data.server
+}
+
+export async function upsertMcpServer(
+  orgId: string,
+  body: McpServerUpsertInput
+): Promise<McpServerAdminView> {
+  const data = await supportFetch<{ server: McpServerAdminView }>(
+    `/lira/v1/support/mcp/orgs/${encodeURIComponent(orgId)}/server`,
+    { method: 'PUT', body: JSON.stringify(body) }
+  )
+  return data.server
+}
+
+export async function deleteMcpServer(orgId: string): Promise<void> {
+  await supportFetch<void>(`/lira/v1/support/mcp/orgs/${encodeURIComponent(orgId)}/server`, {
+    method: 'DELETE',
+  })
+}
+
+export async function discoverMcpTools(
+  orgId: string
+): Promise<{ tools: McpDiscoveredTool[]; discovered_at: string }> {
+  return supportFetch<{ tools: McpDiscoveredTool[]; discovered_at: string }>(
+    `/lira/v1/support/mcp/orgs/${encodeURIComponent(orgId)}/discover`,
+    { method: 'POST' }
+  )
+}
+
 // ── Support tickets (separate from conversations) ───────────────────────────
 
 /** Structured handoff brief (§6.3) — generated when a ticket is opened. */

@@ -183,6 +183,7 @@ const NAV_GROW: NavGroup = {
     // out of the old "Workspace" admin bucket into the weekly-driver zone.
     { to: '/org/knowledge', icon: BookOpenIcon, label: 'Knowledge Base' },
     { to: '/support/proactive', icon: BellIcon, label: 'Proactive' },
+    { to: '/support/ai-actions', icon: PuzzlePieceIcon, label: 'AI actions' },
     { to: '/support/analytics', icon: ChartBarIcon, label: 'Analytics' },
   ],
 }

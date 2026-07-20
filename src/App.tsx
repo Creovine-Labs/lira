@@ -77,6 +77,7 @@ import {
   SupportInboxPage,
   SupportCustomersPage,
   SupportProactivePage,
+  SupportAiActionsPage,
   SupportAnalyticsPage,
   SupportOutboxPage,
   SupportPortalPage,
@@ -255,6 +256,7 @@ function App() {
           <Route path="/support/inbox" element={<SupportInboxPage />} />
           <Route path="/support/customers" element={<SupportCustomersPage />} />
           <Route path="/support/proactive" element={<SupportProactivePage />} />
+          <Route path="/support/ai-actions" element={<SupportAiActionsPage />} />
           <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
           <Route path="/support/portal" element={<SupportPortalPage />} />
           <Route path="/support/queues" element={<SupportQueuesPage />} />

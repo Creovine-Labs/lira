@@ -334,6 +334,57 @@ export const DOCS: DocEntry[] = [
       },
     ],
   },
+  {
+    slug: 'mcp-gateway',
+    title: 'Connect your MCP server',
+    summary:
+      'Expose your own tools to Lira over the Model Context Protocol and let the AI take real, governed actions under your own auth.',
+    category: 'Tutorial',
+    Icon: Plug,
+    related: ['tool-packs', 'verified-customers', 'human-handoff'],
+    sections: [
+      {
+        title: 'What this is',
+        body: 'The Model Context Protocol (MCP) is the standard way for AI applications to connect to external tools. If you run an MCP server, Lira can import your tools and let the AI use them during support — checking a transaction, freezing a card, scheduling a callback — while every call runs under your own authentication. This is the recommended path for connecting a mature product; the REST tool pack is the simpler alternative for basic APIs.',
+      },
+      {
+        title: 'How Lira keeps it safe',
+        body: 'Lira never lets the model call your server directly. Each tool you approve becomes a normal Lira agent tool and still passes the full runtime before it can run.',
+        bullets: [
+          'Nothing runs until an admin approves it — discovery only lists your tools, it does not enable them.',
+          'You map each tool to a risk level (read, confirm-first, re-auth required, or human-only) and who can use it (anyone, verified visitor, or verified customer).',
+          'Money- and account-adjacent tools can require the customer to re-authenticate (step-up) before the action runs.',
+          'The verified customer identity is sent to your server out-of-band, so the AI cannot impersonate a different customer through the tool inputs.',
+          'Your bearer credential is stored encrypted and sent only to your endpoint; it is never shown back in the dashboard.',
+          'Every call is logged and metered, and the whole server can be disabled or disconnected instantly.',
+        ],
+      },
+      {
+        title: 'Set it up',
+        bullets: [
+          'Open Support → AI actions in the dashboard.',
+          'Under MCP server, choose Connect and enter your endpoint URL and bearer token. In production the endpoint must be HTTPS and cannot point at a private/internal address.',
+          'Connecting saves the server disabled — nothing is live yet.',
+          'Choose Discover tools to load your tool list. Descriptions are sanitized on import.',
+          'For each tool, pick a risk level and audience, then Approve. Approve only the tools you want the AI to use.',
+          'When you are ready, Enable the server from the card. You can toggle individual tools or disable everything at any time.',
+        ],
+      },
+      {
+        title: 'Requirements for your server',
+        bullets: [
+          'A streamable HTTP MCP endpoint that implements initialize, tools/list, and tools/call.',
+          'Bearer-token auth (OAuth 2.1 support is on the roadmap for production enterprise use).',
+          'Tools that scope actions to the customer in the io.lira/customer metadata Lira passes on each call — not to values in the tool arguments.',
+          'Strict input schemas on each tool so inputs are validated on your side too.',
+        ],
+      },
+      {
+        title: 'Plan availability',
+        body: 'MCP actions follow your plan: read-only tools on Pro, and the full approved set on Scale and Enterprise. This keeps action-taking aligned with the tier your organization is on.',
+      },
+    ],
+  },
 ]
 
 export const DOCS_BY_SLUG = Object.fromEntries(DOCS.map((entry) => [entry.slug, entry])) as Record<
