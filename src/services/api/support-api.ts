@@ -513,6 +513,75 @@ async function supportFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// ── CSV export download ───────────────────────────────────────────────────────
+
+export type SupportExportKind = 'conversations' | 'tickets' | 'customers' | 'usage'
+
+export interface SupportExportQuery {
+  from?: string
+  to?: string
+  channel?: string
+  status?: string
+  queue?: string
+  priority?: string
+}
+
+/**
+ * Download a CSV export for an org and trigger a browser file save. Unlike
+ * supportFetch (which JSON-parses), this streams the response to a Blob. Returns
+ * the row count + truncation flag from the response headers so the caller can
+ * toast a summary. Throws a friendly Error on failure.
+ */
+export async function downloadSupportExport(
+  orgId: string,
+  kind: SupportExportKind,
+  query: SupportExportQuery = {}
+): Promise<{ rowCount: number; truncated: boolean }> {
+  const token = credentials.getToken()
+  const qs = new URLSearchParams(
+    Object.entries(query).filter(([, v]) => v != null && v !== '') as [string, string][]
+  ).toString()
+  const path = `/lira/v1/support/exports/orgs/${encodeURIComponent(orgId)}/${kind}.csv${qs ? `?${qs}` : ''}`
+
+  const res = await fetch(`${env.VITE_API_URL}${path}`, {
+    headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+  })
+
+  if (res.status === 401) {
+    credentials.clear()
+    window.dispatchEvent(new CustomEvent('lira:auth-expired'))
+    throw new Error('Session expired — please sign in again.')
+  }
+  if (!res.ok) {
+    let msg = res.statusText
+    try {
+      const b = (await res.json()) as Record<string, string>
+      msg = b['error'] ?? b['message'] ?? msg
+    } catch {
+      // ignore
+    }
+    throw new Error(`Export failed (${res.status}): ${msg}`)
+  }
+
+  const rowCount = Number(res.headers.get('X-Export-Row-Count') ?? '0')
+  const truncated = res.headers.get('X-Export-Truncated') === 'true'
+  const blob = await res.blob()
+  const disposition = res.headers.get('Content-Disposition') ?? ''
+  const nameMatch = /filename="?([^"]+)"?/.exec(disposition)
+  const filename = nameMatch?.[1] ?? `lira-${kind}-${orgId}.csv`
+
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+
+  return { rowCount, truncated }
+}
+
 // ── Config API ────────────────────────────────────────────────────────────────
 
 export async function getSupportConfig(orgId: string): Promise<SupportConfig> {

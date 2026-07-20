@@ -24,6 +24,7 @@ import {
 } from '@/services/api/support-api'
 import { cn } from '@/lib'
 import { Pill, type PillTone } from './Pill'
+import { ExportButton } from './ExportButton'
 
 /**
  * Customers — the workspace's people directory, in the same rail-led layout as
@@ -236,6 +237,7 @@ function SupportCustomersPanel() {
                   className="w-40 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-xs focus:border-[#020308] focus:bg-white focus:outline-none focus:ring-1 focus:ring-[#020308] sm:w-56"
                 />
               </div>
+              <ExportButton orgId={currentOrgId} kind="customers" label="Export" />
               <button
                 type="button"
                 onClick={() => setShowCreate(true)}

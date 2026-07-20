@@ -81,6 +81,7 @@ import {
   type WhatsAppAnalyticsSummary,
   type WhatsAppChannelConfig,
 } from '@/services/api/support-api'
+import { ExportButton } from './support/ExportButton'
 import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 import { GoLiveModal } from '@/components/settings/GoLiveModal'
@@ -610,6 +611,12 @@ function SubscriptionSection() {
             </div>
           ) : (
             <div className="mt-5 space-y-3 border-t pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm font-medium text-foreground">Usage this month</p>
+                {!billingExempt && (
+                  <ExportButton orgId={currentOrgId} kind="usage" label="Export usage evidence" />
+                )}
+              </div>
               <PlanUsageBar
                 label="Conversations this month"
                 used={usage.conversations}

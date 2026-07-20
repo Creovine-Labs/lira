@@ -37,6 +37,7 @@ import {
   type ChartDatum,
   type ChartType,
 } from './analytics-charts'
+import { ExportButton } from './ExportButton'
 
 const NAV = [
   { key: 'overview', label: 'Overview', icon: Squares2X2Icon },
@@ -129,7 +130,11 @@ function SupportAnalyticsPage() {
               <activeNav.icon className="h-4 w-4 text-gray-500 lg:hidden" />
               <h2 className="text-sm font-bold text-gray-900">{activeNav.label}</h2>
             </div>
-            {showToggle && <ChartTypeToggle value={chartType} onChange={setChartType} />}
+            <div className="flex items-center gap-2">
+              <ExportButton orgId={currentOrgId} kind="conversations" label="Conversations" />
+              <ExportButton orgId={currentOrgId} kind="tickets" label="Tickets" />
+              {showToggle && <ChartTypeToggle value={chartType} onChange={setChartType} />}
+            </div>
           </div>
 
           {/* Mobile nav strip */}

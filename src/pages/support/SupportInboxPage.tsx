@@ -35,6 +35,7 @@ import { cn } from '@/lib'
 import { Pill, conversationStatusMeta } from './Pill'
 import { ComposeModal } from './ComposeModal'
 import { AssignControl, ManageTeamsModal } from './teams-ui'
+import { ExportButton } from './ExportButton'
 
 // Assignment-based views (preview Teams). Orthogonal to the status views —
 // "show me what's assigned to me / nobody / a given team".
@@ -500,6 +501,7 @@ function SupportInboxPanel() {
                 </select>
                 <ChevronDownIcon className="pointer-events-none absolute right-1.5 h-3 w-3 text-gray-400" />
               </div>
+              <ExportButton orgId={currentOrgId} kind="conversations" label="CSV" />
               {/* Compose — visible on mobile where the left rail is hidden */}
               <button
                 type="button"

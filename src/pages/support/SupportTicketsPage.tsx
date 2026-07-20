@@ -88,6 +88,7 @@ import {
 import { SlaPill } from './SlaPill'
 import { Pill, priorityMeta, ticketStatusMeta } from './Pill'
 import { AssignControl, ManageTeamsModal } from './teams-ui'
+import { ExportButton } from './ExportButton'
 import { useTeamsPreview } from '@/app/store/teams-preview-store'
 import { cn } from '@/lib'
 
@@ -492,6 +493,7 @@ export function SupportTicketsPage() {
                 />
               </div>
               <ViewToggle view={mode} onChange={setMode} />
+              <ExportButton orgId={currentOrgId} kind="tickets" label="Export" />
               <button
                 onClick={() => setNewTicketPreset({})}
                 className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-[#020308] px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-800 lg:hidden"
