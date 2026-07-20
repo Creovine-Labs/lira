@@ -17,9 +17,11 @@ import {
 } from '@heroicons/react/24/outline'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
+import { getOrgUsage, listOrgMembers } from '@/services/api'
 import {
   getSupportStats,
   listConversations,
+  type SupportConfig,
   type SupportConversation,
   type SupportStats,
 } from '@/services/api/support-api'
@@ -151,7 +153,25 @@ function QuickAction({
   )
 }
 
-function SetupChecklist({ supportActivated }: { supportActivated: boolean }) {
+function SetupChecklist({
+  supportConfig,
+  knowledgePages,
+  memberCount,
+}: {
+  supportConfig: SupportConfig | null
+  knowledgePages: number
+  memberCount: number
+}) {
+  const supportActivated = supportConfig?.activated ?? false
+  const widgetInstalled = Boolean(supportConfig?.last_widget_seen_at)
+  const knowledgeConnected = knowledgePages > 0
+  const supportEmailConfigured = Boolean(
+    supportConfig?.email_enabled &&
+    (supportConfig.email_address ||
+      supportConfig.custom_support_email ||
+      supportConfig.escalation_email)
+  )
+  const teammatesInvited = memberCount > 1
   const steps = [
     {
       label: 'Activate customer support',
@@ -160,22 +180,22 @@ function SetupChecklist({ supportActivated }: { supportActivated: boolean }) {
     },
     {
       label: 'Install the chat widget',
-      done: false,
-      path: '/support/configuration',
+      done: widgetInstalled,
+      path: '/settings?tab=support&supportTab=connect',
     },
     {
       label: 'Connect product knowledge',
-      done: false,
+      done: knowledgeConnected,
       path: '/org/knowledge',
     },
     {
       label: 'Configure support email',
-      done: false,
-      path: '/org/email',
+      done: supportEmailConfigured,
+      path: '/settings?tab=support&supportTab=channels',
     },
     {
       label: 'Invite support teammates',
-      done: false,
+      done: teammatesInvited,
       path: '/org/members',
     },
   ]
@@ -335,10 +355,13 @@ function DashboardPage() {
   const navigate = useNavigate()
   const { token, userName } = useAuthStore()
   const { currentOrgId } = useOrgStore()
-  const supportActivated = useSupportStore((s) => s.config?.activated ?? false)
+  const supportConfig = useSupportStore((s) => s.config)
+  const supportActivated = supportConfig?.activated ?? false
 
   const [supportStats, setSupportStats] = useState<SupportStats | null>(null)
   const [supportConversations, setSupportConversations] = useState<SupportConversation[]>([])
+  const [knowledgePages, setKnowledgePages] = useState(0)
+  const [memberCount, setMemberCount] = useState(0)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -355,17 +378,27 @@ function DashboardPage() {
       currentOrgId && supportActivated
         ? listConversations(currentOrgId, 'open').catch(() => [] as SupportConversation[])
         : Promise.resolve([] as SupportConversation[])
+    const usagePromise = currentOrgId
+      ? getOrgUsage(currentOrgId).catch(() => null)
+      : Promise.resolve(null)
+    const membersPromise = currentOrgId
+      ? listOrgMembers(currentOrgId).catch(() => [])
+      : Promise.resolve([])
 
-    Promise.all([statsPromise, conversationsPromise]).then(([stats, conversations]) => {
-      conversations.sort(
-        (a, b) =>
-          new Date(b.updated_at || b.created_at).getTime() -
-          new Date(a.updated_at || a.created_at).getTime()
-      )
-      setSupportStats(stats)
-      setSupportConversations(conversations)
-      setLoading(false)
-    })
+    Promise.all([statsPromise, conversationsPromise, usagePromise, membersPromise]).then(
+      ([stats, conversations, usage, members]) => {
+        conversations.sort(
+          (a, b) =>
+            new Date(b.updated_at || b.created_at).getTime() -
+            new Date(a.updated_at || a.created_at).getTime()
+        )
+        setSupportStats(stats)
+        setSupportConversations(conversations)
+        setKnowledgePages(usage?.usage.knowledge_pages ?? 0)
+        setMemberCount(members.length)
+        setLoading(false)
+      }
+    )
   }, [token, currentOrgId, navigate, supportActivated])
 
   const firstName = userName?.split(' ')[0]
@@ -427,8 +460,27 @@ function DashboardPage() {
           <div className="grid gap-5 lg:grid-cols-[1fr_300px] lg:items-center">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-widest text-white/40">
-                Support health
+                Launch status
               </p>
+              {supportActivated && (
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span
+                    className={cn(
+                      'inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider',
+                      supportConfig?.environment === 'sandbox'
+                        ? 'bg-amber-300/15 text-amber-200 ring-1 ring-amber-200/25'
+                        : 'bg-emerald-300/15 text-emerald-200 ring-1 ring-emerald-200/25'
+                    )}
+                  >
+                    {supportConfig?.environment === 'sandbox' ? 'Sandbox' : 'Live'}
+                  </span>
+                  {supportConfig?.environment === 'sandbox' && (
+                    <span className="text-xs text-white/45">
+                      Testing mode: real outbound sends are suppressed.
+                    </span>
+                  )}
+                </div>
+              )}
               <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
                 {supportActivated
                   ? 'Lira is watching your customer queue.'
@@ -504,7 +556,11 @@ function DashboardPage() {
               conversations={supportConversations}
               supportActivated={supportActivated}
             />
-            <SetupChecklist supportActivated={supportActivated} />
+            <SetupChecklist
+              supportConfig={supportConfig}
+              knowledgePages={knowledgePages}
+              memberCount={memberCount}
+            />
           </div>
 
           <div className="space-y-4">

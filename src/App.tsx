@@ -260,10 +260,17 @@ function App() {
           <Route path="/support/queues" element={<SupportQueuesPage />} />
           <Route path="/support/sla-policies" element={<SupportSlaPoliciesPage />} />
           <Route path="/support/integrations/outbox" element={<SupportOutboxPage />} />
-          {/* /support/configuration was consolidated into /settings → Support
-              sub-tabs (Secret + Mobile). Keep the route as a redirect so any
-              bookmarks / agent links still work. */}
-          <Route path="/support/configuration" element={<Navigate to="/settings" replace />} />
+          {/* Support configuration lives in one place: /settings?tab=support.
+              Keep old links as redirects so bookmarks and older widget prompts
+              do not open a second settings surface. */}
+          <Route
+            path="/support/configuration"
+            element={<Navigate to="/settings?tab=support&supportTab=connect" replace />}
+          />
+          <Route
+            path="/support/settings"
+            element={<Navigate to="/settings?tab=support" replace />}
+          />
           <Route path="/support/activate" element={<SupportActivatePage />} />
           <Route path="/support/inbox/:id" element={<SupportConversationPage />} />
           <Route path="/support/notifications" element={<SupportNotificationsPage />} />

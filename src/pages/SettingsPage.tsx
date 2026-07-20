@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
   ArrowPathIcon,
@@ -57,6 +57,7 @@ import {
   listAgentCapabilities,
   listAgentActionRuns,
   getSupportConfig,
+  HANDOFF_TRIGGER_DEFAULTS,
   deleteWhatsAppChannelConfig,
   getWhatsAppAnalyticsSummary,
   getWhatsAppChannelConfig,
@@ -67,6 +68,8 @@ import {
   type AgentCapabilityConfig,
   type AgentActionRun,
   type AgentActionRunStatus,
+  type HandoffTriggersConfig,
+  type SupportConfig,
   type WhatsAppAnalyticsEvent,
   type WhatsAppAnalyticsSummary,
   type WhatsAppChannelConfig,
@@ -434,7 +437,7 @@ function SubscriptionSection() {
                 type="button"
                 size="sm"
                 variant="outline"
-                onClick={() => navigate('/support/settings')}
+                onClick={() => navigate('/settings?tab=support')}
               >
                 Open go-live controls
               </Button>
@@ -1235,9 +1238,19 @@ function SupportEnvironmentCard() {
             </span>
           </div>
           <p className="mt-1 text-xs text-gray-500">
-            In <span className="font-medium">sandbox</span>, no real emails are sent (previewed
-            only) and the widget shows a SANDBOX badge. Going live starts your billing period and
-            applies your plan&apos;s limits.
+            {isSandbox ? (
+              <>
+                In <span className="font-medium">sandbox</span>, no real emails are sent (previewed
+                only) and the widget shows a SANDBOX badge. Going live starts your billing period
+                and applies your plan&apos;s limits.
+              </>
+            ) : (
+              <>
+                This workspace is <span className="font-medium">live</span>. Real outbound sends are
+                active, and your plan&apos;s usage limits and billing now apply. You can return to
+                sandbox to pause real sends and resume testing.
+              </>
+            )}
           </p>
         </div>
         <div className="flex flex-none items-center gap-1 self-start rounded-lg bg-gray-100 p-1 sm:self-auto">
@@ -1278,7 +1291,402 @@ function SupportEnvironmentCard() {
   )
 }
 
+type ComplianceDraft = {
+  currency: string
+  financial_advice_refusal: boolean
+  sla_acknowledge_hours: number
+  sla_resolution_hours: number
+  kb_stale_after_days: number
+}
+
+function complianceDraftFromConfig(config: SupportConfig | null): ComplianceDraft {
+  return {
+    currency: config?.currency ?? 'USD',
+    financial_advice_refusal: config?.financial_advice_refusal !== false,
+    sla_acknowledge_hours: config?.sla_acknowledge_hours ?? 24,
+    sla_resolution_hours: config?.sla_resolution_hours ?? 336,
+    kb_stale_after_days: config?.kb_stale_after_days ?? 180,
+  }
+}
+
+function SupportComplianceControls({
+  orgId,
+  config,
+}: {
+  orgId: string
+  config: SupportConfig | null
+}) {
+  const { updateConfig } = useSupportStore()
+  const [draft, setDraft] = useState<ComplianceDraft>(() => complianceDraftFromConfig(config))
+  const [saved, setSaved] = useState<ComplianceDraft>(() => complianceDraftFromConfig(config))
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const next = complianceDraftFromConfig(config)
+    setDraft(next)
+    setSaved(next)
+  }, [config])
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+  const set = <K extends keyof ComplianceDraft>(key: K, value: ComplianceDraft[K]) =>
+    setDraft((current) => ({ ...current, [key]: value }))
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      const next = {
+        currency: draft.currency.trim().toUpperCase() || 'USD',
+        financial_advice_refusal: draft.financial_advice_refusal,
+        sla_acknowledge_hours: draft.sla_acknowledge_hours,
+        sla_resolution_hours: draft.sla_resolution_hours,
+        kb_stale_after_days: draft.kb_stale_after_days,
+      }
+      await updateConfig(orgId, next)
+      setSaved(next)
+      toast.success('Compliance controls saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save compliance controls')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border">
+      <div className="border-b px-4 py-3">
+        <p className="text-sm font-medium text-foreground">Compliance guardrails</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Controls for fintech-style deployments: currency, advice refusal, complaint SLAs, and KB
+          freshness.
+        </p>
+      </div>
+      <div className="divide-y">
+        <ComplianceTextRow
+          label="Currency"
+          description="ISO code the assistant uses for amounts."
+          value={draft.currency}
+          maxLength={3}
+          onChange={(value) => set('currency', value.toUpperCase())}
+        />
+        <ComplianceToggleRow
+          label="Refuse financial / investment advice"
+          description="Recommended for any organization that sells or services financial products."
+          checked={draft.financial_advice_refusal}
+          onChange={(value) => set('financial_advice_refusal', value)}
+        />
+        <ComplianceNumberRow
+          label="Complaint acknowledgement SLA"
+          description="Hours to first response before a complaint is flagged at risk."
+          value={draft.sla_acknowledge_hours}
+          suffix="hours"
+          min={1}
+          max={720}
+          onChange={(value) => set('sla_acknowledge_hours', value)}
+        />
+        <ComplianceNumberRow
+          label="Complaint resolution SLA"
+          description="Hours to resolution before breach. A 14-day target is 336 hours."
+          value={draft.sla_resolution_hours}
+          suffix="hours"
+          min={1}
+          max={8760}
+          onChange={(value) => set('sla_resolution_hours', value)}
+        />
+        <ComplianceNumberRow
+          label="Flag knowledge as stale after"
+          description="Articles older than this window are surfaced for review."
+          value={draft.kb_stale_after_days}
+          suffix="days"
+          min={7}
+          max={3650}
+          onChange={(value) => set('kb_stale_after_days', value)}
+        />
+      </div>
+      <div className="flex justify-end border-t bg-gray-50/60 px-4 py-3">
+        <Button type="button" size="sm" disabled={!dirty || saving} onClick={save}>
+          {saving ? 'Saving...' : dirty ? 'Save guardrails' : 'Saved'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function SupportHandoffControls({
+  orgId,
+  initial,
+}: {
+  orgId: string
+  initial?: HandoffTriggersConfig
+}) {
+  const { updateConfig } = useSupportStore()
+  const merged = (): Required<HandoffTriggersConfig> => ({
+    ...HANDOFF_TRIGGER_DEFAULTS,
+    ...(initial ?? {}),
+  })
+  const [draft, setDraft] = useState<Required<HandoffTriggersConfig>>(merged)
+  const [saved, setSaved] = useState<Required<HandoffTriggersConfig>>(merged)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const next = merged()
+    setDraft(next)
+    setSaved(next)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initial])
+
+  const dirty = JSON.stringify(draft) !== JSON.stringify(saved)
+  const set = <K extends keyof HandoffTriggersConfig>(
+    key: K,
+    value: Required<HandoffTriggersConfig>[K]
+  ) => setDraft((current) => ({ ...current, [key]: value }))
+
+  const save = async () => {
+    setSaving(true)
+    try {
+      await updateConfig(orgId, { handoff_triggers: draft })
+      setSaved(draft)
+      toast.success('Automatic handoff triggers saved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save handoff triggers')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="rounded-lg border">
+      <div className="border-b px-4 py-3">
+        <p className="text-sm font-medium text-foreground">Automatic handoff triggers</p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          When these rules fire, Lira opens a ticket for the team while the AI keeps chatting.
+        </p>
+      </div>
+      <div className="divide-y">
+        <HandoffTriggerRow
+          label="VIP customer"
+          description="A VIP or enterprise customer asks anything beyond a greeting."
+          checked={draft.vip_auto_enabled}
+          onChange={(value) => set('vip_auto_enabled', value)}
+        />
+        <HandoffTriggerRow
+          label="Negative sentiment"
+          description="The customer becomes frustrated or urgent after their first message."
+          checked={draft.sentiment_enabled}
+          onChange={(value) => set('sentiment_enabled', value)}
+        />
+        <HandoffTriggerRow
+          label="Repeated failure"
+          description="The customer keeps returning and the AI is not closing it out."
+          checked={draft.repeated_failure_enabled}
+          onChange={(value) => set('repeated_failure_enabled', value)}
+          threshold={{
+            value: draft.repeated_failure_threshold,
+            suffix: 'messages',
+            min: 2,
+            max: 20,
+            onChange: (value) => set('repeated_failure_threshold', value),
+          }}
+        />
+        <HandoffTriggerRow
+          label="Going in circles"
+          description="The same question gets rephrased without progress."
+          checked={draft.multi_turn_confusion_enabled}
+          onChange={(value) => set('multi_turn_confusion_enabled', value)}
+          threshold={{
+            value: draft.multi_turn_confusion_threshold,
+            suffix: 'similar messages',
+            min: 2,
+            max: 20,
+            onChange: (value) => set('multi_turn_confusion_threshold', value),
+          }}
+        />
+        <HandoffTriggerRow
+          label="SLA pressure"
+          description="A conversation stays open and unresolved past the time window."
+          checked={draft.sla_pressure_enabled}
+          onChange={(value) => set('sla_pressure_enabled', value)}
+          threshold={{
+            value: draft.sla_pressure_minutes,
+            suffix: 'minutes',
+            min: 1,
+            max: 10080,
+            onChange: (value) => set('sla_pressure_minutes', value),
+          }}
+        />
+      </div>
+      <div className="flex items-center justify-between border-t bg-gray-50/60 px-4 py-3">
+        <button
+          type="button"
+          onClick={() => setDraft({ ...HANDOFF_TRIGGER_DEFAULTS })}
+          className="text-xs font-medium text-muted-foreground hover:text-foreground"
+        >
+          Reset to defaults
+        </button>
+        <Button type="button" size="sm" disabled={!dirty || saving} onClick={save}>
+          {saving ? 'Saving...' : dirty ? 'Save triggers' : 'Saved'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+function normalizeNumber(value: string, min: number, max: number): number {
+  const parsed = Number(value)
+  if (Number.isNaN(parsed)) return min
+  return Math.min(max, Math.max(min, Math.round(parsed)))
+}
+
+function ComplianceTextRow({
+  label,
+  description,
+  value,
+  maxLength,
+  onChange,
+}: {
+  label: string
+  description: string
+  value: string
+  maxLength: number
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      </div>
+      <input
+        type="text"
+        value={value}
+        maxLength={maxLength}
+        onChange={(event) => onChange(event.target.value)}
+        className="w-full rounded-xl border border-input bg-background px-3 py-1.5 text-sm uppercase outline-none focus:border-gray-900 sm:w-24"
+      />
+    </div>
+  )
+}
+
+function ComplianceToggleRow({
+  label,
+  description,
+  checked,
+  onChange,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  return (
+    <div className="flex items-start justify-between gap-4 px-4 py-3">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      </div>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(event) => onChange(event.target.checked)}
+        className="mt-1 h-4 w-4 rounded border-gray-300"
+      />
+    </div>
+  )
+}
+
+function ComplianceNumberRow({
+  label,
+  description,
+  value,
+  suffix,
+  min,
+  max,
+  onChange,
+}: {
+  label: string
+  description: string
+  value: number
+  suffix: string
+  min: number
+  max: number
+  onChange: (value: number) => void
+}) {
+  return (
+    <div className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-foreground">{label}</p>
+        <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+      </div>
+      <div className="flex shrink-0 items-center gap-2">
+        <input
+          type="number"
+          min={min}
+          max={max}
+          value={value}
+          onChange={(event) => onChange(normalizeNumber(event.target.value, min, max))}
+          className="w-24 rounded-xl border border-input bg-background px-3 py-1.5 text-center text-sm outline-none focus:border-gray-900"
+        />
+        <span className="text-xs text-muted-foreground">{suffix}</span>
+      </div>
+    </div>
+  )
+}
+
+function HandoffTriggerRow({
+  label,
+  description,
+  checked,
+  onChange,
+  threshold,
+}: {
+  label: string
+  description: string
+  checked: boolean
+  onChange: (checked: boolean) => void
+  threshold?: {
+    value: number
+    suffix: string
+    min: number
+    max: number
+    onChange: (value: number) => void
+  }
+}) {
+  return (
+    <div className="px-4 py-3">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-foreground">{label}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{description}</p>
+        </div>
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          className="mt-1 h-4 w-4 rounded border-gray-300"
+        />
+      </div>
+      {threshold && checked && (
+        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground">
+          <span>Fires after</span>
+          <input
+            type="number"
+            min={threshold.min}
+            max={threshold.max}
+            value={threshold.value}
+            onChange={(event) =>
+              threshold.onChange(normalizeNumber(event.target.value, threshold.min, threshold.max))
+            }
+            className="w-24 rounded-lg border border-input bg-background px-2 py-1 text-center text-xs outline-none focus:border-gray-900"
+          />
+          <span>{threshold.suffix}</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
 function SupportSettingsSection() {
+  const navigate = useNavigate()
+  const location = useLocation()
   const { currentOrgId, organizations } = useOrgStore()
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
   const { config, loadConfig, updateConfig } = useSupportStore()
@@ -1421,9 +1829,11 @@ function SupportSettingsSection() {
   // Grouped tab keys. The old granular keys (widget/secret/mobile/whatsapp/
   // portal/capabilities/audit) still resolve via LEGACY_SUPPORT_TAB_MAP so any
   // stored value, deep link, or internal setActiveTab('widget') keeps working.
-  const [activeTab, setActiveTabState] = useState<SupportSettingsTabKey>('connect')
+  const activeTab = getSupportTabFromSearch(location.search)
+
   const setActiveTab = (key: string) => {
-    setActiveTabState(LEGACY_SUPPORT_TAB_MAP[key] ?? 'connect')
+    const next = LEGACY_SUPPORT_TAB_MAP[key] ?? 'connect'
+    navigate(`/settings?tab=support&supportTab=${next}`, { replace: true })
   }
 
   // Show the "not activated" prompt for both null configs AND for the
@@ -2385,6 +2795,8 @@ function SupportSettingsSection() {
               </div>
             </div>
           )}
+
+          <SupportComplianceControls orgId={currentOrgId!} config={config} />
         </div>
       )}
 
@@ -2402,6 +2814,10 @@ function SupportSettingsSection() {
       {/* ── Escalation tab ── */}
       {activeTab === 'escalation' && (
         <div className="space-y-4">
+          <SupportGroupHeading
+            title="Human handoff"
+            hint="Where escalations go and which conditions automatically open a ticket."
+          />
           <div className="rounded-lg border px-4 py-3">
             <p className="mb-1 text-sm font-medium text-foreground">Escalation Email</p>
             <input
@@ -2461,6 +2877,8 @@ function SupportSettingsSection() {
               Escalated tickets are created as Linear issues in this team
             </p>
           </div>
+
+          <SupportHandoffControls orgId={currentOrgId!} initial={config.handoff_triggers} />
         </div>
       )}
 
@@ -2504,6 +2922,16 @@ const LEGACY_SUPPORT_TAB_MAP: Record<string, SupportSettingsTabKey> = {
   escalation: 'escalation',
   health: 'health',
   audit: 'health',
+}
+
+function getSettingsTabFromSearch(search: string): SettingsTab {
+  const requested = new URLSearchParams(search).get('tab')
+  return SETTINGS_TABS.some((tab) => tab.id === requested) ? (requested as SettingsTab) : 'account'
+}
+
+function getSupportTabFromSearch(search: string): SupportSettingsTabKey {
+  const requested = new URLSearchParams(search).get('supportTab')
+  return requested ? (LEGACY_SUPPORT_TAB_MAP[requested] ?? 'connect') : 'connect'
 }
 
 /** Subheading used inside a grouped Support-settings tab. */
@@ -3944,7 +4372,9 @@ function AuditJsonBlock({ title, value }: { title: string; value?: Record<string
 }
 
 function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>('account')
+  const navigate = useNavigate()
+  const location = useLocation()
+  const activeTab = getSettingsTabFromSearch(location.search)
 
   return (
     <div className="flex flex-col h-full">
@@ -3964,7 +4394,9 @@ function SettingsPage() {
             {SETTINGS_TABS.map((tab) => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => {
+                  navigate(`/settings?tab=${tab.id}`, { replace: true })
+                }}
                 className={cn(
                   'flex shrink-0 items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition-colors whitespace-nowrap',
                   activeTab === tab.id

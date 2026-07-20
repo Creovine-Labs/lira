@@ -1020,20 +1020,41 @@ class LiraSupportWidget {
       this.shadow.removeChild(this.shadow.lastChild)
     }
 
-    if (this.view === 'launcher') {
-      this.renderLauncher()
-    } else if (this.view === 'home') {
-      this.renderHome()
-    } else if (this.view === 'pre-chat') {
-      this.renderPreChatForm()
-    } else if (this.view === 'chat-list') {
-      this.renderChatList()
-    } else if (this.view === 'chat') {
-      this.renderChat()
-    } else if (this.view === 'csat') {
-      this.renderCsat()
-    } else if (this.view === 'support-center') {
-      this.renderSupportCenter()
+    // A throw inside any per-view renderer must never leave the shadow empty
+    // (host with only <style>) — that reads as a "dead" widget with no visible
+    // launcher, and historically was the cause of the empty #lira-support-widget
+    // host. Catch it, surface it loudly, and always fall back to the launcher in
+    // bubble mode so the widget stays openable. (The host is pointer-events:none,
+    // so even a bare shadow can't block the host page — this just restores UI.)
+    try {
+      if (this.view === 'launcher') {
+        this.renderLauncher()
+      } else if (this.view === 'home') {
+        this.renderHome()
+      } else if (this.view === 'pre-chat') {
+        this.renderPreChatForm()
+      } else if (this.view === 'chat-list') {
+        this.renderChatList()
+      } else if (this.view === 'chat') {
+        this.renderChat()
+      } else if (this.view === 'csat') {
+        this.renderCsat()
+      } else if (this.view === 'support-center') {
+        this.renderSupportCenter()
+      }
+    } catch (err) {
+      console.error(`[Lira widget] render failed for view "${this.view}":`, err)
+      if (!this.isFullscreen()) {
+        try {
+          while (this.shadow.lastChild && this.shadow.lastChild !== style) {
+            this.shadow.removeChild(this.shadow.lastChild)
+          }
+          this.view = 'launcher'
+          this.renderLauncher()
+        } catch (fallbackErr) {
+          console.error('[Lira widget] launcher fallback also failed:', fallbackErr)
+        }
+      }
     }
 
     // Persist messages to localStorage after every render that has messages

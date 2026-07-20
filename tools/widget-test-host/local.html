@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Lira Widget — Local Bundle Test</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        color: #101827;
+      }
+      .shell {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 40px 20px 120px;
+      }
+      h1 {
+        font-size: 22px;
+      }
+      .row {
+        display: flex;
+        gap: 10px;
+        margin: 14px 0;
+        flex-wrap: wrap;
+      }
+      button {
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        font: inherit;
+        font-weight: 700;
+        cursor: pointer;
+      }
+      .primary {
+        background: #111827;
+        color: #fff;
+      }
+      .secondary {
+        background: #eef2f7;
+        color: #243041;
+      }
+      #real-mid {
+        position: absolute;
+        top: 360px;
+        left: 480px;
+      }
+      #real-corner {
+        position: fixed;
+        bottom: 26px;
+        right: 26px;
+        z-index: 1;
+      }
+      #out {
+        background: #0b0d12;
+        color: #d6f5d6;
+        border-radius: 8px;
+        padding: 12px 14px;
+        font:
+          12px/1.5 ui-monospace,
+          monospace;
+        white-space: pre-wrap;
+        margin-top: 18px;
+      }
+      .hint {
+        color: #657084;
+        font-size: 13px;
+      }
+      code {
+        background: #eef2f7;
+        border-radius: 5px;
+        padding: 2px 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <h1>Lira Widget — Local Bundle Test</h1>
+      <p class="hint">
+        Loads <code>../../dist/widget/widget.js</code> (run
+        <code>npm run build:widget</code> first). Must be served from
+        <code>http://localhost</code> so the widget has a secure context
+        (<code>crypto.randomUUID</code>). From repo root:
+        <code>python3 -m http.server 8080</code> then open
+        <code>http://localhost:8080/tools/widget-test-host/local.html</code>.
+      </p>
+
+      <div class="row">
+        <button class="primary" id="mount-bubble">Mount bubble</button>
+        <button class="primary" id="mount-dash">Mount dashboard-style (autoOpen)</button>
+        <button class="secondary" id="assert">Run assertions</button>
+        <button class="secondary" id="destroy">Destroy</button>
+      </div>
+
+      <p class="hint">Real page controls used to prove the host does not intercept clicks:</p>
+      <button class="secondary" id="real-mid">Real mid-page button</button>
+      <button class="secondary" id="real-corner">Real corner button (under launcher)</button>
+
+      <div id="out">Ready.</div>
+    </main>
+
+    <script src="../../dist/widget/widget.js"></script>
+    <script>
+      const out = document.getElementById('out')
+      const log = (m) => {
+        out.textContent += '\n' + m
+      }
+      document
+        .getElementById('real-mid')
+        .addEventListener('click', () => log('real-mid clicked OK'))
+      document
+        .getElementById('real-corner')
+        .addEventListener('click', () => log('real-corner clicked OK'))
+
+      document.getElementById('mount-bubble').onclick = () => {
+        window.Lira.destroy?.()
+        window.Lira.mountWidget({ orgId: 'org-local-test', primaryColor: '#111827' })
+        log('mounted bubble')
+      }
+      document.getElementById('mount-dash').onclick = () => {
+        window.Lira.destroy?.()
+        window.Lira.mountWidget({
+          orgId: 'org-local-test',
+          autoOpenFirstVisit: true,
+          visitorName: 'Sarah',
+          primaryColor: '#111827',
+        })
+        log('mounted dashboard-style')
+      }
+      document.getElementById('destroy').onclick = () => {
+        window.Lira.destroy?.()
+        log('destroyed')
+      }
+
+      // Static assertions: host exists, host has pointer-events:none (so it can
+      // never block the page), and a mid-page real element is reachable.
+      document.getElementById('assert').onclick = () => {
+        const host = document.getElementById('lira-support-widget')
+        if (!host) return log('FAIL: no host element')
+        const pe = getComputedStyle(host).pointerEvents
+        const mid = document.getElementById('real-mid').getBoundingClientRect()
+        const hit = document.elementFromPoint(mid.left + 4, mid.top + 4)
+        log('host pointer-events = ' + pe + (pe === 'none' ? '  PASS' : '  FAIL'))
+        log('mid element reachable = ' + (hit && hit.id === 'real-mid' ? 'yes  PASS' : 'no  FAIL'))
+        log('(launcher lives in a CLOSED shadow root — invisible in DevTools by design)')
+      }
+    </script>
+  </body>
+</html>

@@ -782,12 +782,14 @@ function SupportActivatePage() {
               <CheckCircleIcon className="h-9 w-9 text-green-600" />
             </div>
             <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">
-              You&apos;re live!
+              Customer support is ready
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Lira is now handling support for {currentOrg?.name ?? 'your organization'}. Two quick
-              next steps below — start with the Knowledge Base so Lira has something to answer with,
-              then drop the install snippet into your own app.
+              Lira is set up for {currentOrg?.name ?? 'your organization'} in{' '}
+              <span className="font-medium">sandbox</span> — free to test, no real sends yet. Two
+              quick next steps below: start with the Knowledge Base so Lira has something to answer
+              with, then drop the install snippet into your own app. When you&apos;re ready, go live
+              from Settings &rarr; Support &rarr; Environment.
             </p>
           </div>
 

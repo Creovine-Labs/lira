@@ -13,12 +13,23 @@ export function getWidgetStyles(primaryColor: string): string {
       font-size: 14px;
       line-height: 1.5;
       color: #1a1a2e;
+      /* The light-DOM host is an invisible container for a fixed-position
+         overlay widget. It must NEVER capture pointer events across the host
+         page — even if a render is interrupted and the shadow is left empty,
+         or a fixed child leaves gaps around it. Only the actual interactive
+         surfaces below (launcher, chat window, support center) re-enable
+         pointer events. all:initial resets pointer-events back to auto, so
+         this line must come after it. */
+      pointer-events: none;
     }
     :host([data-lira-mode="fullscreen"]) {
       display: block;
       width: 100%;
       height: 100%;
       min-height: 640px;
+      /* Fullscreen embeds fill a container the customer handed us; the whole
+         host area is the widget, so it stays interactive. */
+      pointer-events: auto;
     }
 
     * {
@@ -32,6 +43,7 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-launcher {
       position: fixed;
       z-index: 2147483647;
+      pointer-events: auto;
       width: 56px;
       height: 56px;
       border-radius: 50%;
@@ -117,6 +129,7 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-chat-window {
       position: fixed;
       z-index: 2147483647;
+      pointer-events: auto;
       width: 380px;
       height: 560px;
       max-height: calc(100vh - 100px);
@@ -2272,6 +2285,7 @@ export function getWidgetStyles(primaryColor: string): string {
       --sc-ink: #0b0d12; --sc-ink-soft: #4b5160; --sc-faint: #8a90a0;
       --sc-cream: #fbfaf6; --sc-paper: #ffffff; --sc-fill: #f1efe9;
       --sc-line: rgba(11,13,18,0.10); --sc-line-soft: rgba(11,13,18,0.06);
+      pointer-events: auto;
       display: flex; flex-direction: column; height: 100%; min-height: 640px;
       background: var(--sc-cream); color: var(--sc-ink);
       font-family: "Plus Jakarta Sans", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
