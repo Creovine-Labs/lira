@@ -55,7 +55,9 @@
     }
   },
   "bin": {
-    "lira-init": "./cli.cjs"
+    "lira": "./cli.cjs",
+    "lira-init": "./cli.cjs",
+    "support": "./cli.cjs"
   },
   "publishConfig": {
     "access": "public"
