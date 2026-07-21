@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { useOrgStore } from '@/app/store'
+import { getDocsUrl } from '@/lib/docs'
 import {
   getMcpServer,
   upsertMcpServer,
@@ -75,7 +76,12 @@ const primaryBtn =
 const ghostBtn =
   'rounded-lg border px-3 py-1.5 text-xs font-semibold text-foreground hover:bg-gray-50'
 
-export function SupportMcpConnector() {
+export function SupportMcpConnector({
+  orgEnvironment,
+}: {
+  /** The org's current environment — new MCP servers default to match it. */
+  orgEnvironment?: 'sandbox' | 'production'
+} = {}) {
   const { currentOrgId } = useOrgStore()
   const [server, setServer] = useState<McpServerAdminView | null>(null)
   const [loading, setLoading] = useState(true)
@@ -299,6 +305,7 @@ export function SupportMcpConnector() {
           <McpServerForm
             orgId={currentOrgId}
             existing={server}
+            orgEnvironment={orgEnvironment}
             onClose={() => setEditing(false)}
             onSaved={async () => {
               setEditing(false)
@@ -519,14 +526,15 @@ function DiscoveredToolRow(props: {
 function McpServerForm(props: {
   orgId: string
   existing: McpServerAdminView | null
+  orgEnvironment?: 'sandbox' | 'production'
   onClose: () => void
   onSaved: () => void | Promise<void>
 }) {
-  const { orgId, existing, onClose, onSaved } = props
+  const { orgId, existing, orgEnvironment, onClose, onSaved } = props
   const [label, setLabel] = useState(existing?.server_label ?? '')
   const [endpoint, setEndpoint] = useState(existing?.endpoint_url ?? '')
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>(
-    existing?.environment ?? 'sandbox'
+    existing?.environment ?? orgEnvironment ?? 'sandbox'
   )
   const [authType, setAuthType] = useState<'none' | 'bearer'>(existing?.auth_type ?? 'bearer')
   const [token, setToken] = useState('')
@@ -561,15 +569,31 @@ function McpServerForm(props: {
 
   return (
     <div className="mt-3 space-y-3 border-t pt-3">
+      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
+        These values come from <span className="font-medium text-foreground">your MCP server</span>{' '}
+        — the one your engineering team runs. New to this?{' '}
+        <a
+          href={getDocsUrl('mcp-gateway')}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-foreground underline"
+        >
+          Read the MCP setup guide
+        </a>
+        .
+      </div>
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-foreground">Label</span>
         <input
           type="text"
           value={label}
           onChange={(e) => setLabel(e.target.value)}
-          placeholder="Riverly MCP"
+          placeholder="My MCP server"
           className={inputCls}
         />
+        <span className="mt-1 block text-[11px] text-muted-foreground">
+          A name for you to recognize this connection. Anything you like.
+        </span>
       </label>
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-foreground">Endpoint URL</span>
@@ -582,6 +606,10 @@ function McpServerForm(props: {
           placeholder="https://mcp.yourcompany.com/mcp"
           className={`${inputCls} font-mono`}
         />
+        <span className="mt-1 block text-[11px] text-muted-foreground">
+          The web address of your MCP server (it implements <code>tools/list</code> and{' '}
+          <code>tools/call</code>). Ask whoever set up your server, or see the guide above.
+        </span>
       </label>
       <div className="flex gap-3">
         <label className="block flex-1">
@@ -624,6 +652,10 @@ function McpServerForm(props: {
             placeholder="mcp_live_…"
             className={`${inputCls} font-mono`}
           />
+          <span className="mt-1 block text-[11px] text-muted-foreground">
+            The token your MCP server accepts to prove a request is from Lira. It comes from your
+            server&apos;s config — not from Lira. Stored encrypted; sent only to your endpoint.
+          </span>
         </label>
       )}
       <p className="text-xs text-muted-foreground">

@@ -201,7 +201,7 @@ export const DOCS: DocEntry[] = [
         title: 'Content sources supported in the app',
         bullets: [
           'Uploaded documents for product docs, policy docs, and internal playbooks.',
-          'Connected sources such as GitHub and Google Drive when those sources are available.',
+          'Google Drive sources when your team wants to reuse existing support documents.',
           'Web sources and crawled website content.',
           'Organization description and related company context.',
         ],
@@ -239,7 +239,6 @@ export const DOCS: DocEntry[] = [
         bullets: [
           'Escalation email notifications.',
           'Force-escalate intents for conversations that should always reach a person.',
-          'Slack and Linear destinations for escalation alerts or issue creation.',
           'A visible escalated status in support inbox and customer records.',
         ],
       },
@@ -300,37 +299,36 @@ export const DOCS: DocEntry[] = [
   },
   {
     slug: 'tool-packs',
-    title: 'Connect support integrations and tool packs',
-    summary:
-      'Give Lira the approved systems it needs to look up context and take the right actions.',
+    title: 'Connect support actions and developer tools',
+    summary: 'Give Lira controlled access to the approved actions it can run for customers.',
     category: 'Tutorial',
     Icon: Plug,
     related: ['verified-customers', 'human-handoff', 'knowledge-base'],
     sections: [
       {
-        title: 'What integrations do for support',
-        body: 'Lira can connect to external systems so support is not limited to conversation alone. In the current app, the support setup already surfaces Slack, Linear, HubSpot, and Salesforce connection status, and the wider product includes an integrations area for third-party tools.',
+        title: 'What support actions do',
+        body: 'Lira can call approved APIs, MCP tools, and CLI-backed workflows so support is not limited to conversation alone. Keep these actions narrow, audited, and tied to real customer-support outcomes.',
       },
       {
-        title: 'Useful connection patterns',
+        title: 'Useful action patterns',
         bullets: [
-          'Slack for escalation alerts and team visibility.',
-          'Linear for issue creation and engineering follow-through.',
-          'HubSpot or Salesforce for customer context.',
-          'Additional organization integrations for support agent actions and internal workflows.',
+          'Read customer status or plan details before answering account questions.',
+          'Open a support-side task when a customer needs a follow-up.',
+          'Trigger approved workflows from your backend through API keys or MCP.',
+          'Require human approval before account-changing or money-adjacent actions run.',
         ],
       },
       {
         title: 'Rollout order',
         bullets: [
-          'Start with the systems your support team already checks every day.',
-          'Connect context sources before action-heavy systems if you want a lower-risk launch.',
+          'Start with read-only actions your support team already performs every day.',
+          'Add write actions only after the approval and audit rules are clear.',
           'Add approvals and human review where account-changing actions need tighter control.',
         ],
       },
       {
         title: 'How to keep it trustworthy',
-        body: 'Only connect tools that improve response quality or reduce manual work. A smaller set of well-understood integrations is usually better than a wide surface area that nobody actively manages.',
+        body: 'Only expose actions that improve response quality or reduce manual work. A smaller set of well-understood actions is safer than a wide surface area that nobody actively manages.',
       },
     ],
   },
@@ -423,7 +421,7 @@ export const DOCS: DocEntry[] = [
           `export LIRA_API_KEY=lira_sk_…\n\n` +
           `lira mcp connect --org-id=org_xxx --endpoint=https://mcp.yourcompany.com/mcp\n` +
           `lira mcp discover --org-id=org_xxx\n` +
-          `lira mcp approve --org-id=org_xxx --source-name=riverly.card.freeze --risk=customer_confirm\n` +
+          `lira mcp approve --org-id=org_xxx --source-name=card.freeze --risk=customer_confirm\n` +
           `lira mcp enable --org-id=org_xxx\n\n` +
           `# from your backend, right after the customer authenticated:\n` +
           `lira sessions mint --org-id=org_xxx --email=customer@example.com`,

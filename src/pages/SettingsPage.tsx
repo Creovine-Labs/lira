@@ -1880,8 +1880,6 @@ function SupportSettingsSection() {
   const [autoReplyEnabled, setAutoReplyEnabled] = useState(true)
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.7)
   const [forceEscalateIntents, setForceEscalateIntents] = useState('')
-  const [slackChannel, setSlackChannel] = useState('')
-  const [linearTeam, setLinearTeam] = useState('')
   const [escalationEmail, setEscalationEmail] = useState('')
   const [greetingMessage, setGreetingMessage] = useState('Hello! How can I help you today?')
   const [slaHours, setSlaHours] = useState(4)
@@ -1923,8 +1921,6 @@ function SupportSettingsSection() {
     // 404 for un-activated orgs). Defaulting prevents the .join() crash
     // that blanked this whole tab.
     setForceEscalateIntents((config.force_escalate_intents ?? []).join(', '))
-    setSlackChannel(config.escalation_slack_channel ?? '')
-    setLinearTeam(config.escalation_linear_team ?? '')
     setEscalationEmail(config.escalation_email ?? '')
     setGreetingMessage(config.greeting_message ?? 'Hello! How can I help you today?')
     setSlaHours(config.sla_hours ?? 4)
@@ -1956,8 +1952,6 @@ function SupportSettingsSection() {
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean),
-        escalation_slack_channel: slackChannel || undefined,
-        escalation_linear_team: linearTeam || undefined,
         escalation_email: escalationEmail.trim() || undefined,
         greeting_message: greetingMessage.trim() || undefined,
         sla_hours: slaHours,
@@ -1988,8 +1982,6 @@ function SupportSettingsSection() {
     autoReplyEnabled,
     confidenceThreshold,
     forceEscalateIntents,
-    slackChannel,
-    linearTeam,
     escalationEmail,
     greetingMessage,
     slaHours,
@@ -2065,14 +2057,14 @@ function SupportSettingsSection() {
       label: 'Escalation',
       icon: ExclamationTriangleIcon,
       description:
-        'Where conversations go when a human needs to step in: email, SLA, Slack, and Linear.',
+        'Where conversations go when a human needs to step in: email alerts, SLA targets, and handoff rules.',
     },
     {
       key: 'health',
       label: 'Health & audit',
       icon: ShieldCheckIcon,
       description:
-        'Integration diagnostics plus a log of every action the agent ran on your behalf.',
+        'Connection checks plus a log of every support action the agent ran on your behalf.',
     },
   ]
 
@@ -2242,7 +2234,7 @@ function SupportSettingsSection() {
           {activeTab === 'health' && (
             <>
               <SCard
-                title="Integration health"
+                title="Setup health"
                 hint="Run diagnostics on demand to confirm your setup is working."
               >
                 <SupportHealthTab orgId={currentOrgId!} />
@@ -2814,7 +2806,7 @@ function SupportSettingsSection() {
                 title="Connect a system"
                 hint="Let Lira take real actions by calling your own systems. MCP is the recommended path — your tools run under your own auth, and every call still passes Lira's policy, confirmation/step-up, audit and metering."
               >
-                <SupportMcpConnector />
+                <SupportMcpConnector orgEnvironment={config?.environment ?? 'production'} />
               </SCard>
 
               <SCard
@@ -2918,30 +2910,6 @@ function SupportSettingsSection() {
                     An escalated ticket is flagged as overdue after this many hours.
                   </p>
                 </div>
-              </SCard>
-
-              <SCard title="Notifications" hint="Optional back-channels for your team.">
-                <SField label="Slack channel" hint="Escalation alerts post here.">
-                  <input
-                    type="text"
-                    value={slackChannel}
-                    onChange={(e) => setSlackChannel(e.target.value)}
-                    placeholder="#support-escalations"
-                    className={fieldInputCls}
-                  />
-                </SField>
-                <SField
-                  label="Linear team"
-                  hint="Escalated tickets open as Linear issues in this team."
-                >
-                  <input
-                    type="text"
-                    value={linearTeam}
-                    onChange={(e) => setLinearTeam(e.target.value)}
-                    placeholder="Team ID or name"
-                    className={fieldInputCls}
-                  />
-                </SField>
               </SCard>
 
               <SCard
@@ -3364,7 +3332,7 @@ function SupportWhatsAppTab({ orgId }: { orgId: string }) {
             label="Display name"
             value={displayName}
             onChange={setDisplayName}
-            placeholder="Riverly"
+            placeholder="Your company"
           />
           <WhatsAppField
             label="Graph API version"
@@ -3438,9 +3406,7 @@ function SupportWhatsAppTab({ orgId }: { orgId: string }) {
         <div className="mb-3 flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-semibold text-foreground">Webhook Setup</p>
-            <p className="text-xs text-muted-foreground">
-              Use these values in Riverly&apos;s Meta app.
-            </p>
+            <p className="text-xs text-muted-foreground">Use these values in your Meta app.</p>
           </div>
           {config?.webhook_verified_at && (
             <span className="rounded-full bg-emerald-50 px-2 py-1 text-[11px] font-semibold text-emerald-700">
@@ -3454,7 +3420,7 @@ function SupportWhatsAppTab({ orgId }: { orgId: string }) {
             label="Verify token"
             value={
               config?.has_verify_token
-                ? 'Stored encrypted. Use the token shared with Riverly.'
+                ? 'Stored encrypted. Use the verify token from your Meta app.'
                 : 'Not stored yet'
             }
             copyValue={verifyToken || undefined}
@@ -3903,17 +3869,16 @@ function SupportMobileTab() {
       <DevicePhoneMobileIcon className="mx-auto h-8 w-8 text-gray-400" />
       <p className="mt-3 text-sm font-semibold text-gray-700">Native mobile SDKs coming soon</p>
       <p className="mt-1 mx-auto max-w-md text-xs text-gray-500">
-        Until then, mobile apps can open your own in-app support route in a WebView and mount the
-        full-page Web SDK there. The hosted portal is only a fallback when you cannot ship that
-        route yet.
+        For production mobile apps, build a native support screen on Lira's REST and realtime APIs.
+        The hosted portal remains a fallback for teams that cannot ship an in-app route yet.
       </p>
     </div>
   )
 }
 
-// ── Integration Health tab ───────────────────────────────────────────────────
+// ── Setup Health tab ─────────────────────────────────────────────────────────
 // Lets the operator run live diagnostics against their own org's support
-// integration — same checks Lira runs via lira_check_integration_health — and
+// setup — same checks Lira runs via lira_check_integration_health — and
 // see exactly which piece is misconfigured, with the fix inline.
 
 function SupportHealthTab({ orgId }: { orgId: string }) {
@@ -3944,9 +3909,9 @@ function SupportHealthTab({ orgId }: { orgId: string }) {
   return (
     <div className="space-y-4">
       <div className="rounded-xl border border-blue-100 bg-blue-50/50 px-4 py-3 space-y-1.5">
-        <p className="text-sm font-semibold text-blue-900">Integration Health</p>
+        <p className="text-sm font-semibold text-blue-900">Setup Health</p>
         <p className="text-xs text-blue-900/80 leading-relaxed">
-          Live diagnostics for your support integration. If something looks broken (silent widget,
+          Live diagnostics for your support setup. If something looks broken (silent widget,
           identity not recognised, missing notifications), run this first — every failed check tells
           you what's wrong AND how to fix it. Lira's own AI runs the same checks when customers ask
           about widget issues, so you can also point them here.
@@ -4080,8 +4045,8 @@ function SupportAuditTab({ orgId }: { orgId: string }) {
             <p className="text-sm font-semibold text-gray-900">Agent runtime audit</p>
             <p className="mt-1 max-w-2xl text-xs leading-relaxed text-gray-600">
               Org-admin view of the resources and actions Lira requested while helping customers.
-              This is the first runtime audit surface for tickets, escalations, setup changes,
-              integration health checks, and approved customer actions.
+              This is the first runtime audit surface for tickets, escalations, setup changes, setup
+              health checks, and approved customer actions.
             </p>
           </div>
           <Button size="sm" onClick={load} disabled={loading} className="shrink-0">
