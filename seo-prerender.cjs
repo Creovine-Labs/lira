@@ -32,9 +32,9 @@ const ROUTES = [
     path: '/products/sales',
     title: 'AI Sales Coaching - Real-Time Objection Handling and Deal Intelligence',
     description:
-      'Lira AI listens to every sales call in real time and tells you exactly what to say. AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and automatic CRM updates for Salesforce and HubSpot.',
+      'Lira AI listens to every sales call in real time and tells you exactly what to say. AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and follow-up summaries.',
     keywords:
-      'AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, CRM auto-fill, Salesforce AI, HubSpot AI, sales intelligence, competitive selling AI, revenue intelligence',
+      'AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, sales intelligence, competitive selling AI, revenue intelligence',
   },
   {
     path: '/products/customer-support',
@@ -64,7 +64,7 @@ const ROUTES = [
     path: '/tutorials',
     title: 'Tutorials - Learn Lira Customer Support in Minutes',
     description:
-      'Tutorials and walkthroughs for the Lira support workflows teams use first, including knowledge setup, escalation, proactive support, and integrations.',
+      'Tutorials and walkthroughs for the Lira support workflows teams use first, including knowledge setup, escalation, proactive support, and developer setup.',
     keywords:
       'Lira tutorials, AI customer support tutorial, support workflow tutorial, knowledge base tutorial',
   },
@@ -72,7 +72,7 @@ const ROUTES = [
     path: '/features',
     title: 'Features - Intelligent Customer Support for Modern Teams',
     description:
-      'Explore Lira features for intelligent customer support across chat, email, voice, embedded support pages, knowledge, integrations, and workflow actions.',
+      'Explore Lira features for intelligent customer support across chat, email, voice, embedded support pages, knowledge, API actions, and workflow automation.',
     keywords:
       'intelligent customer support features, support automation software, embedded support page, support knowledge base, support workflows',
   },
@@ -196,11 +196,10 @@ const ROUTES = [
   },
   {
     path: '/docs/tool-packs',
-    title: 'Connect Lira Support Integrations and Tool Packs',
+    title: 'Connect Lira Support Actions and Developer Tools',
     description:
-      'Connect Slack, Linear, HubSpot, Salesforce, and other support systems so Lira can act with context.',
-    keywords:
-      'support integrations, tool packs, Slack support integration, Linear support integration',
+      'Expose approved API, CLI, and MCP workflows so Lira can act with customer-support context.',
+    keywords: 'support actions, developer API, MCP tools, CLI automation, Lira support',
     type: 'article',
   },
   {
@@ -402,7 +401,7 @@ function generateNimbusHtml(orgId, widgetSecret) {
       </a>
       <nav class="nav-links">
         <a href="#product">Product</a>
-        <a href="/integrations">Integrations</a>
+        <a href="#help">Customer help</a>
         <a href="/pricing">Pricing</a>
         <a href="/faq">FAQ</a>
       </nav>
@@ -462,20 +461,18 @@ function generateNimbusHtml(orgId, widgetSecret) {
     </div>
   </section>
 
-  <!-- Integrations -->
-  <section class="bg-slate" id="integrations">
+  <!-- Customer help -->
+  <section class="bg-slate" id="help">
     <div class="container">
-      <div class="section-label">Integrations</div>
-      <h2 class="text-center mt-3">Works with the tools you already use</h2>
+      <div class="section-label">Customer help</div>
+      <h2 class="text-center mt-3">Support for the questions customers ask first</h2>
       <div class="integrations-grid">
-        <div class="int-card"><h3>Stripe</h3><p>Accept cards, ACH, and Apple Pay. Payouts reconciled automatically.</p></div>
-        <div class="int-card"><h3>QuickBooks Online</h3><p>Yes, Nimbus integrates with QuickBooks Online. Two-way sync of invoices, payments, and chart of accounts. Real-time reconciliation — no manual exports needed.</p></div>
-        <div class="int-card"><h3>Xero</h3><p>Push nightly or trigger sync on every invoice.</p></div>
-        <div class="int-card"><h3>Slack</h3><p>Get pinged in #finance when invoices are paid, overdue, or disputed.</p></div>
-        <div class="int-card"><h3>Google Workspace</h3><p>SSO, calendar-based billing, and Drive attachments on invoices.</p></div>
-        <div class="int-card"><h3>Zapier</h3><p>800+ no-code triggers and actions. Build automations we haven't.</p></div>
-        <div class="int-card"><h3>HubSpot</h3><p>Auto-create a Nimbus customer when a HubSpot deal moves to Closed Won.</p></div>
-        <div class="int-card"><h3>Plaid</h3><p>Connect any US, UK, or EU bank account. Balances refreshed every 2 hours.</p></div>
+        <div class="int-card"><h3>Invoices</h3><p>Customers can ask about invoice status, payment links, receipts, and overdue notices.</p></div>
+        <div class="int-card"><h3>Payments</h3><p>Answer card, ACH, refund, failed-payment, and payout timing questions with clear next steps.</p></div>
+        <div class="int-card"><h3>Plans</h3><p>Explain plan limits, billing dates, renewal timing, and upgrade or downgrade options.</p></div>
+        <div class="int-card"><h3>Security</h3><p>Help customers understand login, password reset, account ownership, and two-factor settings.</p></div>
+        <div class="int-card"><h3>Team access</h3><p>Guide admins through inviting teammates, assigning roles, and removing access safely.</p></div>
+        <div class="int-card"><h3>Escalation</h3><p>When an issue needs a person, Lira captures the context and routes it to the support team.</p></div>
       </div>
     </div>
   </section>
@@ -638,7 +635,7 @@ function generateNimbusHtml(orgId, widgetSecret) {
       <div style="margin-top:8px;">Finance &amp; accounting software for growing teams.</div>
       <div class="footer-links">
         <a href="/pricing">Pricing</a>
-        <a href="/integrations">Integrations</a>
+        <a href="/faq">Customer help</a>
         <a href="/faq">FAQ</a>
         <a href="mailto:support@nimbus.finance">support@nimbus.finance</a>
         <a href="/privacy">Privacy Policy</a>
@@ -777,7 +774,7 @@ function nimbusNav() {
       </a>
       <nav class="nav-links">
         <a href="/">Product</a>
-        <a href="/integrations">Integrations</a>
+        <a href="/faq">Customer help</a>
         <a href="/pricing">Pricing</a>
         <a href="/faq">FAQ</a>
       </nav>
@@ -794,7 +791,7 @@ function nimbusFooter(orgId) {
       <div style="margin-top:8px;">Finance &amp; accounting software for growing teams.</div>
       <div class="footer-links">
         <a href="/pricing">Pricing</a>
-        <a href="/integrations">Integrations</a>
+        <a href="/faq">Customer help</a>
         <a href="/faq">FAQ</a>
         <a href="mailto:support@nimbus.finance">support@nimbus.finance</a>
         <a href="/privacy">Privacy Policy</a>
@@ -1043,8 +1040,8 @@ ${nimbusNav()}
         </div>
 
         <div class="faq-item">
-          <h3>Do you integrate with QuickBooks?</h3>
-          <p>Yes, Nimbus integrates with QuickBooks Online. The integration provides two-way sync of invoices, payments, and chart of accounts in real time. Connect QuickBooks under Settings → Integrations → QuickBooks. Available on Growth ($49/month) and Business ($129/month) plans. We also integrate with Xero, FreshBooks, and Wave. See the full <a href="/integrations" style="color:#3730a3;">integrations page</a>.</p>
+          <h3>Can I bring existing billing data into Nimbus?</h3>
+          <p>Yes. Nimbus supports CSV imports for customers, invoices, payments, and opening balances. The import flow validates required fields before anything is saved, and support can help review edge cases before launch.</p>
         </div>
 
         <div class="faq-item">
@@ -1104,7 +1101,7 @@ function run() {
     if (route.path === '/') continue
 
     // Demo route → write the main Nimbus page + dedicated sub-pages so the KB
-    // crawler has separate focused URLs for integrations, pricing, and FAQ.
+    // crawler has separate focused URLs for pricing and FAQ.
     // This mirrors a real multi-page website — no single-page chunk limits.
     if (route.path === '/demo') {
       const routeDir = path.join(DIST, route.path)
@@ -1117,7 +1114,6 @@ function run() {
 
       // Sub-pages: each crawled independently by the KB
       const subPages = [
-        { dir: 'integrations', html: generateNimbusIntegrationsHtml(demoOrgId) },
         { dir: 'pricing', html: generateNimbusPricingHtml(demoOrgId) },
         { dir: 'faq', html: generateNimbusFaqHtml(demoOrgId) },
       ]
