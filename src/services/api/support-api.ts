@@ -1261,6 +1261,55 @@ export async function discoverMcpTools(
   )
 }
 
+// ── Developer API keys (CLI / API automation) ─────────────────────────────────
+
+export type DeveloperKeyScope =
+  | 'mcp:read'
+  | 'mcp:write'
+  | 'support:read'
+  | 'support:write'
+  | 'sessions:mint'
+
+export interface DeveloperKey {
+  org_id: string
+  key_id: string
+  name: string
+  scopes: DeveloperKeyScope[]
+  status: 'active' | 'revoked'
+  created_by_user_id: string
+  created_at: string
+  updated_at: string
+  last_used_at?: string
+  expires_at?: string
+  /** e.g. `lira_sk_org-xxx_abcd_` — the non-secret prefix, safe to display. */
+  token_prefix: string
+}
+
+export async function listDeveloperKeys(orgId: string): Promise<DeveloperKey[]> {
+  const data = await supportFetch<{ keys: DeveloperKey[] }>(
+    `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys`
+  )
+  return data.keys
+}
+
+/** Returns the full one-time token — shown once, never retrievable again. */
+export async function createDeveloperKey(
+  orgId: string,
+  body: { name?: string; scopes?: DeveloperKeyScope[]; expires_at?: string }
+): Promise<{ key: DeveloperKey; token: string }> {
+  return supportFetch<{ key: DeveloperKey; token: string }>(
+    `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys`,
+    { method: 'POST', body: JSON.stringify(body) }
+  )
+}
+
+export async function revokeDeveloperKey(orgId: string, keyId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys/${encodeURIComponent(keyId)}`,
+    { method: 'DELETE' }
+  )
+}
+
 // ── Support tickets (separate from conversations) ───────────────────────────
 
 /** Structured handoff brief (§6.3) — generated when a ticket is opened. */

@@ -87,6 +87,7 @@ import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 import { GoLiveModal } from '@/components/settings/GoLiveModal'
 import { SupportMcpConnector } from '@/components/settings/SupportMcpConnector'
+import { SupportDeveloperKeys } from '@/components/settings/SupportDeveloperKeys'
 import { SupportToolPacksPanel } from '@/pages/support/SupportToolPacksPage'
 import {
   SettingsShell,
@@ -2054,6 +2055,12 @@ function SupportSettingsSection() {
       description: 'Connect your systems and choose what Lira is allowed to do for a customer.',
     },
     {
+      key: 'developers',
+      label: 'Developers',
+      icon: KeyIcon,
+      description: 'API keys and the CLI/API for automating Lira from your own backend.',
+    },
+    {
       key: 'escalation',
       label: 'Escalation',
       icon: ExclamationTriangleIcon,
@@ -2829,6 +2836,50 @@ function SupportSettingsSection() {
             </>
           )}
 
+          {/* ── Developers tab ── */}
+          {activeTab === 'developers' && (
+            <>
+              <SupportDeveloperKeys />
+              <SCard
+                title="Quickstart"
+                hint="Once you've created a key, set it as LIRA_API_KEY and drive Lira from your terminal or CI."
+              >
+                <CodeTabs
+                  methods={[
+                    {
+                      key: 'cli',
+                      label: 'CLI',
+                      desc: 'Connect an MCP server and mint a customer session from the command line.',
+                      code: [
+                        'npm i -g @liraintelligence/support',
+                        '',
+                        'export LIRA_API_KEY=lira_sk_…',
+                        `lira mcp connect --org-id=${config.org_id} \\`,
+                        '  --endpoint=https://mcp.yourcompany.com/mcp',
+                        `lira mcp discover --org-id=${config.org_id}`,
+                        '',
+                        '# from your backend, after the customer logged in:',
+                        `lira sessions mint --org-id=${config.org_id} \\`,
+                        '  --email=customer@example.com',
+                      ].join('\n'),
+                    },
+                    {
+                      key: 'api',
+                      label: 'API',
+                      desc: 'Call the REST API directly from your backend.',
+                      code: [
+                        `curl -X POST https://api.creovine.com/lira/v1/support/sessions/orgs/${config.org_id}/mint \\`,
+                        '  -H "Authorization: Bearer $LIRA_API_KEY" \\',
+                        '  -H "Content-Type: application/json" \\',
+                        '  -d \'{ "customer": { "email": "customer@example.com" }, "ttlSeconds": 900 }\'',
+                      ].join('\n'),
+                    },
+                  ]}
+                />
+              </SCard>
+            </>
+          )}
+
           {/* ── Escalation tab ── */}
           {activeTab === 'escalation' && (
             <>
@@ -2920,6 +2971,7 @@ type SupportSettingsTabKey =
   | 'channels'
   | 'behavior'
   | 'actions'
+  | 'developers'
   | 'escalation'
   | 'health'
 
@@ -2938,6 +2990,7 @@ const LEGACY_SUPPORT_TAB_MAP: Record<string, SupportSettingsTabKey> = {
   portal: 'channels',
   behavior: 'behavior',
   actions: 'actions',
+  developers: 'developers',
   // 'capabilities' used to live under the behavior tab; it now lives under Actions.
   capabilities: 'actions',
   escalation: 'escalation',

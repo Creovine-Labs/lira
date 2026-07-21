@@ -10,6 +10,7 @@ const DOCS_SLUG_URLS: Record<string, string> = {
   'proactive-outreach': `${DOCS_BASE_URL}/platform/customer-support`,
   'tool-packs': `${DOCS_BASE_URL}/integrations/overview`,
   'mcp-gateway': `${DOCS_BASE_URL}/integrations/mcp`,
+  'developer-api': `${DOCS_BASE_URL}/integrations/developer-api`,
 }
 
 export function getDocsUrl(slug?: string) {

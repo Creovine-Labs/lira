@@ -385,6 +385,70 @@ export const DOCS: DocEntry[] = [
       },
     ],
   },
+  {
+    slug: 'developer-api',
+    title: 'Developer API keys & CLI',
+    summary:
+      'Automate Lira from your own backend or CI: create a scoped API key, connect MCP tools, and mint native mobile support sessions.',
+    category: 'Tutorial',
+    Icon: Plug,
+    related: ['mcp-gateway', 'verified-customers', 'tool-packs'],
+    sections: [
+      {
+        title: 'What this is',
+        body: 'For teams that want to script Lira instead of clicking through the dashboard. An org admin creates a scoped API key, and your engineers use it with the Lira CLI or the REST API to connect MCP tools, approve them, and mint support sessions for your customers from your backend.',
+      },
+      {
+        title: 'Create a key',
+        bullets: [
+          'Go to Support → Developers → Create key (owner or admin only).',
+          'Give it a name and pick only the permissions it needs: mcp:read, mcp:write, support:read, support:write, sessions:mint.',
+          'Optionally set an expiry. Copy the key when it is shown — it is displayed once and cannot be retrieved again (only revoked).',
+          'Use it as the LIRA_API_KEY environment variable. Keep it server-side; never ship it in a mobile app or browser.',
+        ],
+      },
+      {
+        title: 'Permissions (scopes)',
+        bullets: [
+          'mcp:read — read your MCP server config and discovered tools.',
+          'mcp:write — connect, approve, enable, and remove MCP tools.',
+          'support:read / support:write — read or update support configuration.',
+          'sessions:mint — start a native support session as any of your customers. High privilege: keep this key on your backend only and revoke it if it leaks.',
+        ],
+      },
+      {
+        title: 'Use the CLI',
+        code:
+          `npm i -g @liraintelligence/support\n` +
+          `export LIRA_API_KEY=lira_sk_…\n\n` +
+          `lira mcp connect --org-id=org_xxx --endpoint=https://mcp.yourcompany.com/mcp\n` +
+          `lira mcp discover --org-id=org_xxx\n` +
+          `lira mcp approve --org-id=org_xxx --source-name=riverly.card.freeze --risk=customer_confirm\n` +
+          `lira mcp enable --org-id=org_xxx\n\n` +
+          `# from your backend, right after the customer authenticated:\n` +
+          `lira sessions mint --org-id=org_xxx --email=customer@example.com`,
+      },
+      {
+        title: 'Or call the API',
+        body: 'Every CLI action maps to a REST endpoint. Authenticate with your key as a bearer token.',
+        code:
+          `curl -X POST https://api.creovine.com/lira/v1/support/sessions/orgs/org_xxx/mint \\\n` +
+          `  -H "Authorization: Bearer $LIRA_API_KEY" \\\n` +
+          `  -H "Content-Type: application/json" \\\n` +
+          `  -d '{ "customer": { "email": "customer@example.com" }, "ttlSeconds": 900 }'`,
+      },
+      {
+        title: 'How session minting stays safe',
+        bullets: [
+          'Your backend is the trusted party — it vouches for its own logged-in customer, the same way the widget verifies identified visitors.',
+          'Tokens are short-lived (up to one hour) and can be revoked.',
+          'For a high-risk action, mint a step-up proof right after the customer re-authenticates (PIN, biometric, or OTP).',
+          'Requests are rate-limited per key, and each signed request can only be used once (replay-protected).',
+          'Keys are stored hashed, scoped to one org, and rejected if used against a different org.',
+        ],
+      },
+    ],
+  },
 ]
 
 export const DOCS_BY_SLUG = Object.fromEntries(DOCS.map((entry) => [entry.slug, entry])) as Record<
