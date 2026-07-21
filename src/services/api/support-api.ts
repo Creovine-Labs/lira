@@ -1159,6 +1159,14 @@ export type McpRiskTier =
 
 export type McpAuthScope = 'public' | 'verified_visitor' | 'verified_customer'
 
+export type McpAuthType = 'none' | 'bearer' | 'oauth2'
+
+export interface McpOAuthConfig {
+  token_url: string
+  client_id?: string
+  scopes?: string[]
+}
+
 export interface McpApprovedTool {
   source_name: string
   tool_name: string
@@ -1171,11 +1179,12 @@ export interface McpApprovedTool {
   enabled: boolean
   timeout_ms: number
   allowed_channels: string[]
+  rate_limit_per_min?: number
   created_at: string
   updated_at: string
 }
 
-/** Admin view of an org's MCP server — secrets are never returned (see `has_access_token`). */
+/** Admin view of an org's MCP server — secrets are never returned (see `has_*`). */
 export interface McpServerAdminView {
   org_id: string
   server_id: string
@@ -1183,14 +1192,17 @@ export interface McpServerAdminView {
   environment: 'sandbox' | 'production'
   server_label: string
   endpoint_url: string
-  auth_type: 'none' | 'bearer'
+  auth_type: McpAuthType
+  oauth?: McpOAuthConfig
   protocol_version: string
   approved_tools: McpApprovedTool[]
+  rate_limit_per_min?: number
   connected_by?: string
   last_discovered_at?: string
   created_at: string
   updated_at: string
   has_access_token: boolean
+  has_client_secret: boolean
 }
 
 /** A tool the remote MCP server advertises — descriptions are sanitized server-side. */
@@ -1199,6 +1211,8 @@ export interface McpDiscoveredTool {
   description: string
   input_schema: unknown
   suggested_tool_name: string
+  /** True if this tool is approved but its definition changed on the server. */
+  changed_since_approval?: boolean
 }
 
 /** Fields an admin maps when approving a discovered tool. */
@@ -1214,6 +1228,7 @@ export interface McpApprovedToolInput {
   enabled?: boolean
   timeout_ms?: number
   allowed_channels?: string[]
+  rate_limit_per_min?: number
 }
 
 export interface McpServerUpsertInput {
@@ -1221,11 +1236,36 @@ export interface McpServerUpsertInput {
   environment?: 'sandbox' | 'production'
   server_label?: string
   endpoint_url?: string
-  auth_type?: 'none' | 'bearer'
+  auth_type?: McpAuthType
   protocol_version?: string
   /** Only sent when (re)setting the bearer credential; never echoed back. */
   access_token?: string
+  rate_limit_per_min?: number
+  /** OAuth 2.1 client-credentials config; client_secret is write-only. */
+  oauth?: {
+    token_url?: string
+    client_id?: string
+    client_secret?: string
+    scopes?: string[]
+  }
   approved_tools?: McpApprovedToolInput[]
+}
+
+export type McpConfigAction =
+  | 'connected'
+  | 'updated'
+  | 'enabled'
+  | 'disabled'
+  | 'tools_approved'
+  | 'tool_removed'
+  | 'discovered'
+  | 'disconnected'
+
+export interface McpConfigEvent {
+  ts: string
+  actor: string
+  action: McpConfigAction
+  detail?: string
 }
 
 export async function getMcpServer(orgId: string): Promise<McpServerAdminView | null> {
@@ -1259,6 +1299,13 @@ export async function discoverMcpTools(
     `/lira/v1/support/mcp/orgs/${encodeURIComponent(orgId)}/discover`,
     { method: 'POST' }
   )
+}
+
+export async function getMcpAudit(orgId: string): Promise<McpConfigEvent[]> {
+  const data = await supportFetch<{ events: McpConfigEvent[] }>(
+    `/lira/v1/support/mcp/orgs/${encodeURIComponent(orgId)}/audit`
+  )
+  return data.events
 }
 
 // ── Developer API keys (CLI / API automation) ─────────────────────────────────

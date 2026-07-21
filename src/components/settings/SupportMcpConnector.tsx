@@ -7,10 +7,12 @@ import {
   upsertMcpServer,
   deleteMcpServer,
   discoverMcpTools,
+  getMcpAudit,
   type McpServerAdminView,
   type McpApprovedTool,
   type McpApprovedToolInput,
   type McpDiscoveredTool,
+  type McpConfigEvent,
   type McpRiskTier,
   type McpAuthScope,
 } from '@/services/api/support-api'
@@ -51,6 +53,14 @@ const SCOPE_OPTIONS: Array<{ value: McpAuthScope; label: string }> = [
 const riskLabel = (r: McpRiskTier) => RISK_OPTIONS.find((o) => o.value === r)?.label ?? r
 const scopeLabel = (s: McpAuthScope) => SCOPE_OPTIONS.find((o) => o.value === s)?.label ?? s
 
+function isHttpsUrl(value: string): boolean {
+  try {
+    return new URL(value).protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
 function toApprovedInput(t: McpApprovedTool): McpApprovedToolInput {
   return {
     source_name: t.source_name,
@@ -88,11 +98,17 @@ export function SupportMcpConnector({
   const [editing, setEditing] = useState(false)
   const [discovered, setDiscovered] = useState<McpDiscoveredTool[]>([])
   const [discovering, setDiscovering] = useState(false)
+  const [audit, setAudit] = useState<McpConfigEvent[]>([])
 
   const refresh = useCallback(async (orgId: string) => {
     setLoading(true)
     try {
-      setServer(await getMcpServer(orgId))
+      const [srv, events] = await Promise.all([
+        getMcpServer(orgId),
+        getMcpAudit(orgId).catch(() => [] as McpConfigEvent[]),
+      ])
+      setServer(srv)
+      setAudit(events)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to load MCP server')
     } finally {
@@ -154,7 +170,12 @@ export function SupportMcpConnector({
   const approveTool = useCallback(
     async (
       disc: McpDiscoveredTool,
-      mapping: { risk: McpRiskTier; auth_scope: McpAuthScope; enabled: boolean }
+      mapping: {
+        risk: McpRiskTier
+        auth_scope: McpAuthScope
+        enabled: boolean
+        rate_limit_per_min?: number
+      }
     ) => {
       if (!currentOrgId || !server) return
       const others = (server.approved_tools ?? [])
@@ -169,6 +190,7 @@ export function SupportMcpConnector({
         risk: mapping.risk,
         auth_scope: mapping.auth_scope,
         enabled: mapping.enabled,
+        rate_limit_per_min: mapping.rate_limit_per_min,
         allowed_channels: ['chat'],
       }
       try {
@@ -301,14 +323,6 @@ export function SupportMcpConnector({
           )}
         </div>
 
-        {server && !editing && server.enabled && (server.approved_tools ?? []).length === 0 && (
-          <div className="mt-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
-            Connected and <strong>on</strong> — but the AI has no tools yet.{' '}
-            <strong>Discover</strong> tools below, then <strong>approve</strong> the ones you want
-            it to use. Nothing runs until you do.
-          </div>
-        )}
-
         {editing && (
           <McpServerForm
             orgId={currentOrgId}
@@ -404,9 +418,48 @@ export function SupportMcpConnector({
           )}
         </div>
       )}
+
+      {server && !editing && audit.length > 0 && (
+        <div className="rounded-lg border px-4 py-3">
+          <p className="text-sm font-medium text-foreground">Recent activity</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground">
+            A log of configuration changes to this server (tool calls are logged separately in
+            Health &amp; audit).
+          </p>
+          <ul className="mt-2 space-y-1.5">
+            {audit.slice(0, 8).map((e, i) => (
+              <li
+                key={`${e.ts}-${i}`}
+                className="flex items-baseline justify-between gap-3 text-xs"
+              >
+                <span className="min-w-0">
+                  <span className="font-semibold text-foreground">{auditLabel(e.action)}</span>
+                  {e.detail && <span className="text-muted-foreground"> — {e.detail}</span>}
+                  <span className="ml-1 text-[10px] text-gray-400">by {e.actor}</span>
+                </span>
+                <span className="shrink-0 text-[10px] text-gray-400">
+                  {new Date(e.ts).toLocaleString()}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   )
 }
+
+const AUDIT_LABELS: Record<string, string> = {
+  connected: 'Connected',
+  updated: 'Updated config',
+  enabled: 'Enabled server',
+  disabled: 'Disabled server',
+  tools_approved: 'Approved tools',
+  tool_removed: 'Removed tool',
+  discovered: 'Discovered tools',
+  disconnected: 'Disconnected',
+}
+const auditLabel = (a: string) => AUDIT_LABELS[a] ?? a
 
 function StatusBadge({
   on,
@@ -451,13 +504,19 @@ function DiscoveredToolRow(props: {
   disc: McpDiscoveredTool
   onApprove: (
     d: McpDiscoveredTool,
-    m: { risk: McpRiskTier; auth_scope: McpAuthScope; enabled: boolean }
+    m: {
+      risk: McpRiskTier
+      auth_scope: McpAuthScope
+      enabled: boolean
+      rate_limit_per_min?: number
+    }
   ) => void | Promise<void>
 }) {
   const { disc, onApprove } = props
   const [risk, setRisk] = useState<McpRiskTier>('customer_confirm')
   const [scope, setScope] = useState<McpAuthScope>('verified_customer')
   const [enabled, setEnabled] = useState(true)
+  const [rateLimit, setRateLimit] = useState('')
   const [saving, setSaving] = useState(false)
   const hint = RISK_OPTIONS.find((r) => r.value === risk)?.hint
 
@@ -466,6 +525,11 @@ function DiscoveredToolRow(props: {
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="font-mono text-[11px] text-foreground">{disc.source_name}</span>
         <span className="text-[10px] text-muted-foreground">→ {disc.suggested_tool_name}</span>
+        {disc.changed_since_approval && (
+          <span className="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-red-700">
+            Changed since approval
+          </span>
+        )}
       </div>
       <p className="mt-0.5 text-xs text-muted-foreground">{disc.description}</p>
       <div className="mt-2 flex flex-wrap items-end gap-2">
@@ -501,6 +565,19 @@ function DiscoveredToolRow(props: {
             ))}
           </select>
         </label>
+        <label className="block">
+          <span className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+            Rate/min
+          </span>
+          <input
+            type="number"
+            min={1}
+            value={rateLimit}
+            onChange={(e) => setRateLimit(e.target.value)}
+            placeholder="60"
+            className={`${selectCls} w-20`}
+          />
+        </label>
         <label className="flex items-center gap-1.5 pb-1.5 text-xs text-muted-foreground">
           <input
             type="checkbox"
@@ -516,7 +593,12 @@ function DiscoveredToolRow(props: {
           onClick={async () => {
             setSaving(true)
             try {
-              await onApprove(disc, { risk, auth_scope: scope, enabled })
+              await onApprove(disc, {
+                risk,
+                auth_scope: scope,
+                enabled,
+                rate_limit_per_min: rateLimit.trim() ? Number(rateLimit) : undefined,
+              })
             } finally {
               setSaving(false)
             }
@@ -544,8 +626,14 @@ function McpServerForm(props: {
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>(
     existing?.environment ?? orgEnvironment ?? 'sandbox'
   )
-  const [authType, setAuthType] = useState<'none' | 'bearer'>(existing?.auth_type ?? 'bearer')
+  const [authType, setAuthType] = useState<'none' | 'bearer' | 'oauth2'>(
+    existing?.auth_type ?? 'bearer'
+  )
   const [token, setToken] = useState('')
+  const [tokenUrl, setTokenUrl] = useState(existing?.oauth?.token_url ?? '')
+  const [clientId, setClientId] = useState(existing?.oauth?.client_id ?? '')
+  const [clientSecret, setClientSecret] = useState('')
+  const [scopes, setScopes] = useState((existing?.oauth?.scopes ?? []).join(' '))
   const [saving, setSaving] = useState(false)
 
   async function save() {
@@ -574,6 +662,20 @@ function McpServerForm(props: {
       toast.error('Enter the bearer token to connect')
       return
     }
+    if (authType === 'oauth2') {
+      if (!tokenUrl.trim() || !isHttpsUrl(tokenUrl)) {
+        toast.error('Enter a valid https OAuth token URL')
+        return
+      }
+      if (!clientId.trim()) {
+        toast.error('Enter the OAuth client ID')
+        return
+      }
+      if (!existing?.has_client_secret && !clientSecret.trim()) {
+        toast.error('Enter the OAuth client secret')
+        return
+      }
+    }
     setSaving(true)
     try {
       await upsertMcpServer(orgId, {
@@ -581,7 +683,17 @@ function McpServerForm(props: {
         endpoint_url: endpoint.trim(),
         environment,
         auth_type: authType,
-        ...(token.trim() ? { access_token: token.trim() } : {}),
+        ...(authType === 'bearer' && token.trim() ? { access_token: token.trim() } : {}),
+        ...(authType === 'oauth2'
+          ? {
+              oauth: {
+                token_url: tokenUrl.trim(),
+                client_id: clientId.trim(),
+                ...(clientSecret.trim() ? { client_secret: clientSecret.trim() } : {}),
+                scopes: scopes.trim() ? scopes.trim().split(/\s+/) : undefined,
+              },
+            }
+          : {}),
         // Turn the server on when first connecting. Safe: no tools are approved
         // yet, so the AI still can't act until each tool is approved below.
         // Editing an existing server preserves its current on/off state.
@@ -644,10 +756,11 @@ function McpServerForm(props: {
           <span className="mb-1 block text-xs font-medium text-foreground">Auth</span>
           <select
             value={authType}
-            onChange={(e) => setAuthType(e.target.value as 'none' | 'bearer')}
+            onChange={(e) => setAuthType(e.target.value as 'none' | 'bearer' | 'oauth2')}
             className={`${selectCls} w-full`}
           >
             <option value="bearer">Bearer token</option>
+            <option value="oauth2">OAuth 2.1</option>
             <option value="none">None</option>
           </select>
         </label>
@@ -670,6 +783,67 @@ function McpServerForm(props: {
             className={`${inputCls} font-mono`}
           />
         </label>
+      )}
+      {authType === 'oauth2' && (
+        <div className="space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p className="text-[11px] text-muted-foreground">
+            Client-credentials flow. Lira mints and refreshes access tokens from your token endpoint
+            — nothing to paste manually.
+          </p>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-foreground">Token URL</span>
+            <input
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={tokenUrl}
+              onChange={(e) => setTokenUrl(e.target.value)}
+              placeholder="https://auth.yourcompany.com/oauth/token"
+              className={`${inputCls} font-mono`}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-foreground">Client ID</span>
+            <input
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={clientId}
+              onChange={(e) => setClientId(e.target.value)}
+              className={inputCls}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-foreground">
+              Client secret{' '}
+              {existing?.has_client_secret && (
+                <span className="text-muted-foreground">(stored — leave blank to keep)</span>
+              )}
+            </span>
+            <input
+              type="password"
+              autoComplete="off"
+              spellCheck={false}
+              value={clientSecret}
+              onChange={(e) => setClientSecret(e.target.value)}
+              className={`${inputCls} font-mono`}
+            />
+          </label>
+          <label className="block">
+            <span className="mb-1 block text-xs font-medium text-foreground">
+              Scopes <span className="text-muted-foreground">(optional, space-separated)</span>
+            </span>
+            <input
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              value={scopes}
+              onChange={(e) => setScopes(e.target.value)}
+              placeholder="mcp.read mcp.call"
+              className={`${inputCls} font-mono`}
+            />
+          </label>
+        </div>
       )}
       <div className="flex gap-2">
         <button type="button" onClick={save} disabled={saving} className={primaryBtn}>
