@@ -183,16 +183,15 @@ export function ProductCustomerSupportPage() {
             Mobile App Integration
           </h2>
           <p className="text-gray-500 mb-12 max-w-md leading-relaxed">
-            Embed the Lira support portal in your iOS or Android app using a WebView, and register
-            for push notifications.
+            Build native in-app support on Lira's mobile API, then register for push notifications.
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 number: '01',
-                title: 'Embed the portal',
+                title: 'Create a support session',
                 description:
-                  'Open a WebView pointing to your Lira support portal URL. Customers get the full chat, ticket, and knowledge-base experience inside your app.',
+                  'Start a signed Lira support session from your backend and render chat, tickets, and knowledge search in your native app UI.',
               },
               {
                 number: '02',

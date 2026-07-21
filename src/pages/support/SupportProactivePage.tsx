@@ -165,7 +165,7 @@ await fetch('${endpoint}', {
 
 // ── Collapsible webhook panel (shown when triggers exist) ──────────────────────
 
-function WebhookIntegrationPanel({ orgId }: { orgId: string }) {
+function BackendEventPanel({ orgId }: { orgId: string }) {
   const [open, setOpen] = useState(false)
   if (!orgId) return null
   return (
@@ -177,7 +177,7 @@ function WebhookIntegrationPanel({ orgId }: { orgId: string }) {
         <div className="flex items-center gap-2">
           <CodeBracketSquareIcon className="h-4 w-4 text-[#020308]" />
           <div>
-            <p className="text-sm font-semibold text-gray-900">Webhook integration</p>
+            <p className="text-sm font-semibold text-gray-900">Backend event endpoint</p>
             <p className="text-xs text-gray-400 mt-0.5">
               Send events from your backend to fire these triggers
             </p>
@@ -655,7 +655,7 @@ function SupportProactivePanel() {
       </div>
 
       {/* Webhook panel (collapsible, always accessible) */}
-      {activeTab === 'triggers' && <WebhookIntegrationPanel orgId={currentOrgId ?? ''} />}
+      {activeTab === 'triggers' && <BackendEventPanel orgId={currentOrgId ?? ''} />}
 
       {/* Create trigger form */}
       {showCreate && (

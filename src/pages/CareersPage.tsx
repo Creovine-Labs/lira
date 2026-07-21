@@ -23,7 +23,7 @@ const culture = [
 const roles = [
   [
     'Product Engineer',
-    'Frontend, integrations, support workflows, and customer-facing product quality.',
+    'Frontend, developer connections, support workflows, and customer-facing product quality.',
   ],
   [
     'AI Support Systems Engineer',

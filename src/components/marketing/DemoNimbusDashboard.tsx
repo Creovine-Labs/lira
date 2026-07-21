@@ -28,14 +28,7 @@ interface DemoNimbusDashboardProps {
   onSignOut: () => void
 }
 
-type NavItem =
-  | 'Dashboard'
-  | 'Invoices'
-  | 'Expenses'
-  | 'Reports'
-  | 'Customers'
-  | 'Integrations'
-  | 'Settings'
+type NavItem = 'Dashboard' | 'Invoices' | 'Expenses' | 'Reports' | 'Customers' | 'Settings'
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -355,6 +348,9 @@ function generateRevenueSeries(seedBase: string, planAmount: number) {
 // ── Component ────────────────────────────────────────────────────────────────
 
 export function DemoNimbusDashboard({ profile, onSignOut }: DemoNimbusDashboardProps) {
+  // Retain the legacy demo integrations view for future reactivation while
+  // keeping it out of the current demo navigation.
+  void IntegrationsView
   const [userMenuOpen, setUserMenuOpen] = useState(false)
   const [activeNav, setActiveNav] = useState<NavItem>('Dashboard')
   const [planModalOpen, setPlanModalOpen] = useState(false)
@@ -556,7 +552,6 @@ export function DemoNimbusDashboard({ profile, onSignOut }: DemoNimbusDashboardP
             { name: 'Expenses', icon: '💳' },
             { name: 'Reports', icon: '📈' },
             { name: 'Customers', icon: '👥' },
-            { name: 'Integrations', icon: '🔌' },
             { name: 'Settings', icon: '⚙️' },
           ] as { name: NavItem; icon: string }[]
         ).map((item) => (
@@ -584,7 +579,6 @@ export function DemoNimbusDashboard({ profile, onSignOut }: DemoNimbusDashboardP
               { name: 'Expenses', icon: '💳' },
               { name: 'Reports', icon: '📈' },
               { name: 'Customers', icon: '👥' },
-              { name: 'Integrations', icon: '🔌' },
               { name: 'Settings', icon: '⚙️' },
             ] as { name: NavItem; icon: string }[]
           ).map((item) => (
@@ -651,7 +645,6 @@ export function DemoNimbusDashboard({ profile, onSignOut }: DemoNimbusDashboardP
             <ReportsView revenueSeries={revenueSeries} invoices={invoices} customers={customers} />
           )}
           {activeNav === 'Customers' && <CustomersView customers={customers} />}
-          {activeNav === 'Integrations' && <IntegrationsView />}
           {activeNav === 'Settings' && (
             <SettingsView
               profile={profile}
@@ -811,31 +804,6 @@ function DashboardView({
               )
             })}
           </ul>
-        </section>
-
-        <section className="ndb-card">
-          <div className="ndb-card-head">
-            <h2>Integrations</h2>
-            <button type="button" className="ndb-link-btn" onClick={() => onJumpTo('Integrations')}>
-              Browse all →
-            </button>
-          </div>
-          <div className="ndb-integ-grid">
-            {INTEGRATIONS.slice(0, 6).map((i) => (
-              <div key={i.name} className="ndb-integ-card">
-                <span className="ndb-integ-dot" style={{ background: i.color }} />
-                <div className="ndb-integ-body">
-                  <div className="ndb-integ-name">{i.name}</div>
-                  <div className="ndb-integ-detail">{i.detail}</div>
-                </div>
-                <span
-                  className={`ndb-pill ${i.status === 'Connected' ? 'ndb-pill-paid' : 'ndb-pill-pending'}`}
-                >
-                  {i.status}
-                </span>
-              </div>
-            ))}
-          </div>
         </section>
       </div>
 

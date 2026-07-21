@@ -52,10 +52,10 @@ const imageReveal: Variants = {
 
 const featureCards = [
   {
-    title: 'Connected Customer Context',
+    title: 'Customer Context That Travels',
     description:
-      'Bring your helpdesk, CRM, Slack, email, and knowledge base together so every reply starts with the full relationship history.',
-    visual: 'integrations',
+      'Bring website chat, email, WhatsApp, knowledge, and verified customer history together so every reply starts with the full relationship context.',
+    visual: 'connections',
   },
   {
     title: 'Relationship-Led Conversations',
@@ -115,7 +115,7 @@ const faqs = [
   },
   {
     q: 'What channels and systems can Lira connect to?',
-    a: 'Lira is built to connect with your website, knowledge base, helpdesk, CRM, Slack, Teams, email, and internal workflows so support does not live in a silo.',
+    a: 'Lira is built to connect with your website, knowledge base, email, WhatsApp, mobile app, API workflows, CLI automation, and MCP tools so support does not live in a silo.',
   },
   {
     q: 'Does Lira support voice and multilingual conversations?',
@@ -150,16 +150,16 @@ const whyChooseLira = [
     icon: RocketLaunch,
     title: 'Fast to launch and built to grow with you',
     description:
-      'You can get started quickly with the widget, then keep expanding with integrations, multilingual support, voice, and smarter routing as your support operation matures.',
+      'You can get started quickly with the widget, then keep expanding with mobile support, API actions, multilingual support, voice, and smarter routing as your operation matures.',
   },
 ]
 
 const mobileSteps = [
   {
     step: '01',
-    title: 'Embed the portal',
+    title: 'Open a native support session',
     description:
-      'Open a WebView pointing to your Lira support portal URL. Customers get the full chat, ticket, and knowledge-base experience inside your iOS or Android app.',
+      'Use the Lira mobile API to create a signed support session and render chat, tickets, and knowledge search inside your own iOS or Android UI.',
     icon: DeviceMobile,
   },
   {
@@ -192,7 +192,7 @@ const setupSteps = [
   [
     '03',
     'Connect context',
-    'Link your helpdesk, CRM, Slack, Linear, GitHub, or Teams so Lira can route work with the full story.',
+    'Connect knowledge sources, customer identity, API actions, and MCP tools so Lira can route work with the full story.',
   ],
 ]
 
@@ -216,9 +216,9 @@ function ButtonLink({
 }
 
 function Visual({ type }: { type: string }) {
-  if (type === 'integrations') {
+  if (type === 'connections') {
     return (
-      <motion.div className="hx-feature-visual hx-visual-integrations" variants={imageReveal}>
+      <motion.div className="hx-feature-visual hx-visual-connections" variants={imageReveal}>
         {[PlugZap, MessageSquareText, Workflow, MailCheck, UserCircleCheck].map((Icon, index) => (
           <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
             <Icon size={24} />
@@ -431,8 +431,7 @@ function MobileAppSection() {
             <span className="hx-gradient-text">Mobile App Integration</span>
           </motion.h2>
           <motion.p className="hx-section-para" style={{ marginLeft: 0 }} variants={fadeUp}>
-            Embed the Lira support portal in your iOS or Android app using a WebView, and register
-            for push notifications.
+            Build native in-app support on Lira's mobile API, then register for push notifications.
           </motion.p>
         </motion.div>
 
@@ -634,31 +633,31 @@ function Styles() {
       .hx-feature-card { padding: 8px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,0.72); display: flex; flex-direction: column; gap: 12px; overflow: hidden; outline: none; transition: transform 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease; }
       .hx-feature-card:hover, .hx-feature-card:focus-visible { animation: none; transform: translateY(-5px); border-color: rgba(2,3,8,0.32); box-shadow: 0 24px 70px rgba(2,3,8,0.12); }
       .hx-feature-visual { min-height: 260px; border-radius: 12px; position: relative; overflow: hidden; background: radial-gradient(circle at 50% 40%, rgba(2,3,8,0.08), transparent 62%), #f3f0e8; }
-      .hx-visual-integrations { --orbit-radius: 134px; }
+      .hx-visual-connections { --orbit-radius: 134px; }
       .hx-feature-visual::before { content: ''; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 0%, rgba(255,255,255,0.5) 46%, transparent 58%); transform: translateX(-120%); opacity: 0; pointer-events: none; }
       .hx-feature-card:hover .hx-feature-visual::before, .hx-feature-card:focus-visible .hx-feature-visual::before { opacity: 1; animation: hx-feature-sweep 1.25s ease; }
       .hx-feature-body { max-width: 420px; padding: 0 20px 20px; display: flex; flex-direction: column; gap: 8px; }
       .hx-feature-body h3 { margin: 0; color: var(--text); font-size: 16px; line-height: 160%; font-weight: 600; }
       .hx-feature-body p { margin: 0; color: rgba(2,3,8,0.7); font-size: 14px; line-height: 160%; }
       .hx-hex { position: absolute; display: grid; place-items: center; width: 98px; height: 86px; color: #020308; background: rgba(255,255,255,0.76); clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%); box-shadow: inset 0 0 60px rgba(2,3,8,0.08); animation: hx-feature-pulse 3.8s ease-in-out infinite; transition: box-shadow 0.35s ease, background 0.35s ease, transform 0.35s ease; }
-      .hx-visual-integrations .hx-hex { left: 50%; top: 50%; right: auto; bottom: auto; margin-left: -49px; margin-top: -43px; animation: hx-feature-orbit 10s linear infinite; transform-origin: 49px 43px; }
-      .hx-visual-integrations .hx-hex svg { animation: hx-feature-icon-spin 10s linear infinite; }
+      .hx-visual-connections .hx-hex { left: 50%; top: 50%; right: auto; bottom: auto; margin-left: -49px; margin-top: -43px; animation: hx-feature-orbit 10s linear infinite; transform-origin: 49px 43px; }
+      .hx-visual-connections .hx-hex svg { animation: hx-feature-icon-spin 10s linear infinite; }
       .hx-hex-1 { left: 50%; top: 50%; transform: translate(-50%, -50%); }
       .hx-hex-2 { left: 28%; top: 28%; }
       .hx-hex-3 { right: 22%; top: 22%; }
       .hx-hex-4 { left: 24%; bottom: 16%; }
       .hx-hex-5 { right: 25%; bottom: 18%; }
-      .hx-visual-integrations .hx-hex-1 { --orbit-angle: 0deg; transform: rotate(0deg) translateX(0); animation: hx-feature-center-pulse 3.8s ease-in-out infinite; }
-      .hx-visual-integrations .hx-hex-1 svg { animation: none; }
-      .hx-visual-integrations .hx-hex-2 { --orbit-angle: 0deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
-      .hx-visual-integrations .hx-hex-3 { --orbit-angle: 90deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
-      .hx-visual-integrations .hx-hex-4 { --orbit-angle: 180deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
-      .hx-visual-integrations .hx-hex-5 { --orbit-angle: 270deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
+      .hx-visual-connections .hx-hex-1 { --orbit-angle: 0deg; transform: rotate(0deg) translateX(0); animation: hx-feature-center-pulse 3.8s ease-in-out infinite; }
+      .hx-visual-connections .hx-hex-1 svg { animation: none; }
+      .hx-visual-connections .hx-hex-2 { --orbit-angle: 0deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
+      .hx-visual-connections .hx-hex-3 { --orbit-angle: 90deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
+      .hx-visual-connections .hx-hex-4 { --orbit-angle: 180deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
+      .hx-visual-connections .hx-hex-5 { --orbit-angle: 270deg; transform: rotate(var(--orbit-angle)) translateX(var(--orbit-radius)); }
       .hx-feature-card:hover .hx-hex, .hx-feature-card:focus-visible .hx-hex { background: rgba(255,255,255,0.94); box-shadow: inset 0 0 60px rgba(2,3,8,0.12), 0 16px 40px rgba(2,3,8,0.14); }
       .hx-feature-card:hover .hx-hex-1, .hx-feature-card:focus-visible .hx-hex-1 { transform: translate(-50%, -50%) scale(1.08); }
-      .hx-feature-card:hover .hx-visual-integrations .hx-hex-1, .hx-feature-card:focus-visible .hx-visual-integrations .hx-hex-1 { transform: rotate(0deg) translateX(0) scale(1.08); }
-      .hx-feature-card:hover .hx-visual-integrations .hx-hex, .hx-feature-card:focus-visible .hx-visual-integrations .hx-hex { animation-duration: 6s; }
-      .hx-feature-card:hover .hx-visual-integrations .hx-hex svg, .hx-feature-card:focus-visible .hx-visual-integrations .hx-hex svg { animation-duration: 6s; }
+      .hx-feature-card:hover .hx-visual-connections .hx-hex-1, .hx-feature-card:focus-visible .hx-visual-connections .hx-hex-1 { transform: rotate(0deg) translateX(0) scale(1.08); }
+      .hx-feature-card:hover .hx-visual-connections .hx-hex, .hx-feature-card:focus-visible .hx-visual-connections .hx-hex { animation-duration: 6s; }
+      .hx-feature-card:hover .hx-visual-connections .hx-hex svg, .hx-feature-card:focus-visible .hx-visual-connections .hx-hex svg { animation-duration: 6s; }
       .hx-mini-message { position: absolute; width: 64%; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: rgba(255,255,255,0.86); color: var(--text); font-size: 13px; line-height: 145%; overflow: hidden; animation: hx-feature-message 4.6s ease-in-out infinite; transition: transform 0.35s ease, border-color 0.35s ease, background 0.35s ease; }
       .hx-mini-one { left: 28px; top: 46px; }
       .hx-mini-two { right: 28px; top: 112px; background: rgba(2,3,8,0.06); animation-delay: 1.15s; }
@@ -875,7 +874,7 @@ function Styles() {
         .hx-section-pad-bottom { padding-bottom: 100px; }
         .hx-section-details { margin-bottom: 36px; }
         .hx-section-title { letter-spacing: 0; }
-        .hx-visual-integrations { --orbit-radius: 104px; }
+        .hx-visual-connections { --orbit-radius: 104px; }
         .hx-mini-message { width: calc(100% - 48px); left: 24px; right: auto; }
         .hx-mini-two { left: 24px; right: auto; top: 122px; }
         .hx-mini-action { bottom: 26px; }
@@ -908,9 +907,9 @@ function Styles() {
         .hx-core img { width: 28px; height: 20px; }
         .hx-chat-preview::after { display: none; }
         .hx-feature-visual { min-height: 220px; }
-        .hx-visual-integrations { --orbit-radius: 82px; }
+        .hx-visual-connections { --orbit-radius: 82px; }
         .hx-hex { width: 80px; height: 70px; }
-        .hx-visual-integrations .hx-hex { margin-left: -40px; margin-top: -35px; transform-origin: 40px 35px; }
+        .hx-visual-connections .hx-hex { margin-left: -40px; margin-top: -35px; transform-origin: 40px 35px; }
         .hx-mini-message, .hx-voice-note { width: calc(100% - 28px); left: 14px; padding: 10px 12px; font-size: 11px; }
         .hx-mini-two, .hx-voice-lira { left: 14px; top: 112px; }
         .hx-type-line { max-width: 100%; }

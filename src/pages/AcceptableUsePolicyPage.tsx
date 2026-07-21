@@ -46,15 +46,15 @@ export function AcceptableUsePolicyPage() {
             </li>
             <li>
               Capturing and qualifying leads from conversations and delivering them to your own
-              email, CRM, or webhook.
+              email or approved webhook.
             </li>
             <li>
               Triaging, escalating, and resolving customer conversations using the inbox and
               ticketing tools, including handoff to your human team.
             </li>
             <li>
-              Connecting authorized integrations (such as WhatsApp / Meta, HubSpot, Salesforce,
-              Slack, Linear, and webhooks) to deliver leads and sync support data.
+              Connecting authorized services such as WhatsApp / Meta, Google Drive knowledge
+              sources, webhooks, API keys, CLI automation, or MCP tools to deliver support safely.
             </li>
             <li>Reviewing analytics about questions asked, leads captured, and resolutions.</li>
           </ul>
@@ -146,20 +146,20 @@ export function AcceptableUsePolicyPage() {
             </li>
           </ul>
 
-          <h3>3.5 Integration Misuse</h3>
+          <h3>3.5 Connected-Service Misuse</h3>
           <ul>
-            <li>Connect third-party integrations using stolen or unauthorized credentials.</li>
+            <li>Connect third-party services using stolen or unauthorized credentials.</li>
             <li>
-              Use integrations to exfiltrate data from third-party services beyond what is necessary
-              for the Service's intended functionality.
+              Use connected services to exfiltrate data beyond what is necessary for the Service's
+              intended functionality.
             </li>
             <li>
-              Violate the terms of service of any third-party platform connected through our
-              integrations.
+              Violate the terms of service of any third-party platform connected through the
+              Service.
             </li>
             <li>
-              Use integration data for purposes not authorized by the data owner or the third-party
-              platform.
+              Use connected-service data for purposes not authorized by the data owner or the
+              third-party platform.
             </li>
           </ul>
 

@@ -43,8 +43,8 @@ export function PrivacyPolicyPage() {
           <p>
             This Privacy Policy explains what personal data we process, why, who we share it with,
             and the rights you have. It applies to our websites, the Lira dashboard, the chat widget
-            and integrations, and anyone whose data we process in connection with the Service. By
-            using the Service you acknowledge the practices described here. If you do not agree,
+            and connected services, and anyone whose data we process in connection with the Service.
+            By using the Service you acknowledge the practices described here. If you do not agree,
             please do not use the Service.
           </p>
           <p>
@@ -224,10 +224,10 @@ export function PrivacyPolicyPage() {
               <strong>Payment provider</strong> — Paddle, as Merchant of Record (Section 3.5).
             </li>
             <li>
-              <strong>Integrations you enable</strong> — when you connect Lira to a third-party tool
-              (e.g., WhatsApp / Meta, a CRM such as HubSpot or Salesforce, Slack, or a webhook), we
-              transmit the relevant data to that tool at your direction. Their handling of the data
-              is governed by their own terms and privacy policies.
+              <strong>Connected services you enable</strong> — when you connect Lira to a
+              third-party service such as WhatsApp / Meta, Google Drive, a webhook endpoint, API
+              key, CLI workflow, or MCP tool, we transmit the relevant data at your direction. Their
+              handling of the data is governed by their own terms and privacy policies.
             </li>
             <li>
               <strong>Legal &amp; safety</strong> — where required by law, legal process, or to

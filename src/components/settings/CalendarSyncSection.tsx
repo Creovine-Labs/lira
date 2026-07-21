@@ -22,7 +22,6 @@ import {
 const PLATFORMS = [
   { id: 'google_meet' as const, label: 'Google Meet', icon: '🟢' },
   { id: 'zoom' as const, label: 'Zoom', icon: '🔵' },
-  { id: 'teams' as const, label: 'Microsoft Teams', icon: '🟣' },
 ]
 
 // ── Component ────────────────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ export function BookDemoPage() {
               <h2 className="bx-section-title">What happens next</h2>
               <p className="bx-section-copy">
                 We review your support setup, send a calendar link, and tailor the demo around the
-                channels and integrations your team actually needs.
+                channels, developer access, and support workflows your team actually needs.
               </p>
               <div style={{ display: 'grid', gap: 12, marginTop: 28 }}>
                 {[

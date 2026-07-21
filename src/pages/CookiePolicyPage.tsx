@@ -170,10 +170,10 @@ export function CookiePolicyPage() {
               cookies are used for anonymized usage reporting.
             </li>
             <li>
-              <strong>Integration OAuth Providers:</strong> When you connect third-party
-              integrations (Linear, Slack, Microsoft Teams, GitHub, Greenhouse, HubSpot,
-              Salesforce), those providers may set their own cookies during the OAuth authorization
-              flow. These cookies are governed by the respective provider's cookie policy.
+              <strong>Connected service providers:</strong> When you connect supported third-party
+              services such as Google Drive or WhatsApp, those providers may set their own cookies
+              during the authorization flow. These cookies are governed by the respective provider's
+              cookie policy.
             </li>
           </ul>
 

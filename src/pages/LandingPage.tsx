@@ -26,7 +26,7 @@ const services = [
     icon: MessageSquareText,
     title: 'Actions, Not Just Answers',
     description:
-      'Other AI tools send a reply and hope. Lira resolves the ticket, updates the CRM, creates the Linear issue, notifies Slack, and follows up with the customer — all in a single autonomous chain.',
+      'Other AI tools send a reply and hope. Lira answers from your knowledge base, opens the ticket, routes the follow-up, and keeps the customer updated in one governed support flow.',
   },
   {
     icon: Workflow,
@@ -38,7 +38,7 @@ const services = [
     icon: BrainCircuit,
     title: 'One Thread. Every Channel.',
     description:
-      'Every other tool starts fresh each session. Lira carries the full relationship history across chat, email, WhatsApp, voice, and your CRM — so customers never repeat themselves.',
+      'Every other tool starts fresh each session. Lira carries the full relationship history across chat, email, WhatsApp, voice, and your product context — so customers never repeat themselves.',
   },
 ]
 
@@ -213,14 +213,14 @@ const SCENARIOS: Scenario[] = [
       {
         id: 2,
         role: 'user',
-        text: 'Oh wow — yeah actually the Slack integration kept failing and I just gave up.',
+        text: 'Oh wow — yeah actually the setup step kept failing and I just gave up.',
         delay: 4200,
         typeSpeed: 38,
       },
       {
         id: 3,
         role: 'lira',
-        text: "That's on us — there was a webhook auth bug affecting new workspaces last week. It's fixed now. Want me to walk you through connecting it? Takes about 90 seconds.",
+        text: "That's on us — there was an auth bug affecting new workspaces last week. It's fixed now. Want me to walk you through finishing setup? Takes about 90 seconds.",
         delay: 7000,
         typeSpeed: 14,
       },
@@ -235,7 +235,7 @@ const SCENARIOS: Scenario[] = [
       {
         id: 6,
         role: 'system',
-        text: 'Trial extended · Slack integration pre-configured',
+        text: 'Trial extended · setup link prepared',
         delay: 15200,
         typeSpeed: 0,
       },
@@ -271,7 +271,7 @@ const SCENARIOS: Scenario[] = [
       {
         id: 4,
         role: 'lira',
-        text: "Fix: go to Settings > Integrations > Export Origins and add your domain. I've highlighted exactly where in the screenshot below.",
+        text: "Fix: go to Settings > Support > Get connected and add your allowed domain. I've highlighted exactly where in the screenshot below.",
         delay: 8200,
         typeSpeed: 14,
       },
@@ -2243,8 +2243,8 @@ export function LandingPage() {
               </motion.h1>
               <motion.p className="hero-copy" variants={revealUp}>
                 Every support tool you use waits for a complaint. Lira monitors your product's event
-                stream, reaches out before problems escalate, and takes real action across your CRM,
-                helpdesk, and Slack — without a human in the loop.
+                stream, reaches out before problems escalate, and takes real action through your
+                approved support workflows — without a human in the loop.
               </motion.p>
               <motion.div className="hero-actions" variants={revealUp}>
                 <Link to="/signup" className="primary-cta">
@@ -2341,7 +2341,7 @@ export function LandingPage() {
               'Onboarding',
               'Renewals',
               'Escalations',
-              'CRM',
+              'API',
             ].map((tag) => (
               <motion.span className="motion-layer" variants={revealUp} key={tag}>
                 {tag}

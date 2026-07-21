@@ -39,9 +39,10 @@ const brandRows = [
 
 const featureCards = [
   {
-    title: 'Seamless Integrations',
-    description: 'Integrate Slack, HubSpot, Zendesk & more - automate data flow instantly.',
-    visual: 'integrations',
+    title: 'Developer-Ready Support',
+    description:
+      'Connect your product with API keys, CLI workflows, MCP tools, and governed actions.',
+    visual: 'connections',
   },
   {
     title: 'AI-Powered Conversations',
@@ -110,7 +111,7 @@ const plans = [
     features: [
       'Unlimited conversations',
       'Advanced AI training',
-      'CRM integrations',
+      'API and MCP access',
       'Multilingual support',
       'Advanced analytics & reports',
       'Priority email support',
@@ -217,7 +218,7 @@ function HeroGraphic() {
         </div>
         <div className="hx-chat-preview hx-chat-right">
           <span>Resolved by Lira</span>
-          <strong>CRM updated</strong>
+          <strong>Support action logged</strong>
         </div>
       </div>
       <div className="hx-hero-card-title">AI Customer Support / Chatbot.</div>
@@ -226,9 +227,9 @@ function HeroGraphic() {
 }
 
 function Visual({ type }: { type: string }) {
-  if (type === 'integrations') {
+  if (type === 'connections') {
     return (
-      <div className="hx-feature-visual hx-visual-integrations">
+      <div className="hx-feature-visual hx-visual-connections">
         {[PlugZap, MessageSquareText, Workflow, MailCheck, ShieldCheck].map((Icon, index) => (
           <span key={index} className={`hx-hex hx-hex-${index + 1}`}>
             <Icon size={24} />

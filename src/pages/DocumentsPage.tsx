@@ -25,7 +25,6 @@ import {
   listConnectedDocuments,
   importConnectedDocument,
   getGoogleAuthUrl,
-  getGitHubAuthUrl,
   type DocumentRecord,
   type ConnectedFile,
   type ConnectedSourceStatus,
@@ -87,7 +86,7 @@ function DocumentsPage() {
   } | null>(null)
   const [connectedLoading, setConnectedLoading] = useState(false)
   const [importingFiles, setImportingFiles] = useState<Set<string>>(new Set())
-  const [activeSource, setActiveSource] = useState<'google_drive' | 'github' | null>(null)
+  const [activeSource, setActiveSource] = useState<'google_drive' | null>(null)
 
   const loadDocs = useCallback(async () => {
     if (!currentOrgId) return
@@ -518,15 +517,15 @@ function DocumentsPage() {
           </div>
 
           {connectedLoading && !connectedSources ? (
-            <div className="grid grid-cols-2 gap-3 px-6 py-6">
-              {[0, 1].map((i) => (
+            <div className="grid gap-3 px-6 py-6">
+              {[0].map((i) => (
                 <div key={i} className="h-24 animate-pulse rounded-xl bg-gray-100" />
               ))}
             </div>
           ) : (
             <div className="p-4">
               {/* Side-by-side source cards */}
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid gap-3">
                 <SourceCard
                   label="Google Drive"
                   icon={GOOGLE_DRIVE_ICON}
@@ -544,27 +543,12 @@ function DocumentsPage() {
                     ).length ?? 0
                   }
                 />
-                <SourceCard
-                  label="GitHub"
-                  icon={GITHUB_ICON}
-                  source={connectedSources?.github}
-                  isActive={activeSource === 'github'}
-                  onToggle={() => setActiveSource((prev) => (prev === 'github' ? null : 'github'))}
-                  onConnect={() => {
-                    if (currentOrgId) window.location.href = getGitHubAuthUrl(currentOrgId)
-                  }}
-                  alreadyImportedCount={
-                    connectedSources?.github?.files.filter((f) =>
-                      documents.some((d) => d.filename === f.name)
-                    ).length ?? 0
-                  }
-                />
               </div>
 
               {/* Expanded file grid for active source */}
               {activeSource && connectedSources?.[activeSource]?.connected && (
                 <SourceFileGrid
-                  label={activeSource === 'google_drive' ? 'Google Drive' : 'GitHub'}
+                  label="Google Drive"
                   files={connectedSources[activeSource]!.files}
                   onImport={handleImport}
                   onImportAll={handleImportAll}
@@ -580,24 +564,13 @@ function DocumentsPage() {
   )
 }
 
-// ── Inline SVG icons for integration logos ───────────────────────────────────
+// ── Inline SVG icons for connected-source logos ───────────────────────────────
 
 const GOOGLE_DRIVE_ICON = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
     <path d="M8 3L2 13h6l6-10H8z" fill="#0F9D58" />
     <path d="M14 3l6 10h-6l-6-10h6z" fill="#4285F4" />
     <path d="M2 13l4 8h12l4-8H2z" fill="#FBBC05" />
-  </svg>
-)
-
-const GITHUB_ICON = (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-    <path
-      fillRule="evenodd"
-      clipRule="evenodd"
-      d="M12 2C6.477 2 2 6.477 2 12c0 4.418 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.009-.868-.013-1.703-2.782.604-3.369-1.34-3.369-1.34-.454-1.154-1.11-1.461-1.11-1.461-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.268 2.75 1.026A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.026 2.747-1.026.546 1.377.202 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.163 22 16.418 22 12c0-5.523-4.477-10-10-10z"
-      fill="#24292F"
-    />
   </svg>
 )
 
@@ -725,7 +698,7 @@ function SourceFileGrid({
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 text-gray-400 transition hover:bg-[#3730a3]/10 hover:text-[#3730a3]"
-                    title={`Open in ${file.repo ? 'GitHub' : 'Google Drive'}`}
+                    title="Open in Google Drive"
                   >
                     <DocumentIcon className="h-5 w-5" />
                   </a>

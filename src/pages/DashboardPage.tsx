@@ -11,7 +11,6 @@ import {
   ExclamationTriangleIcon,
   InboxIcon,
   LifebuoyIcon,
-  PuzzlePieceIcon,
   SparklesIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline'
@@ -596,12 +595,6 @@ function DashboardPage() {
                   label="Configure support email"
                   description="Forward your support inbox into Lira"
                   onClick={() => navigate('/org/email')}
-                />
-                <QuickAction
-                  icon={PuzzlePieceIcon}
-                  label="Connect tools"
-                  description="Link Slack, CRM, and workflows"
-                  onClick={() => navigate('/org/integrations')}
                 />
                 <QuickAction
                   icon={UsersIcon}

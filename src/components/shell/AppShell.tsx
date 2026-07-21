@@ -16,14 +16,11 @@ import {
   EnvelopeIcon,
   ExclamationTriangleIcon,
   FolderOpenIcon,
-  GlobeAltIcon,
-  InboxArrowDownIcon,
   MicrophoneIcon,
   QueueListIcon,
   ShieldExclamationIcon,
   PlusIcon,
   ChartBarIcon,
-  PuzzlePieceIcon,
   ShieldCheckIcon,
   Squares2X2Icon,
   TicketIcon,
@@ -156,7 +153,7 @@ const NAV_CORE: NavEntry[] = [
 // The previous shape was a flat 10-item Support list + a Workspace group +
 // an availability toggle in the header. Operators faced a wall and the
 // daily-driver pages (Inbox, Tickets) got the same visual weight as
-// once-a-quarter admin surfaces (Queues, SLA policies, integration logs).
+// once-a-quarter admin surfaces (Queues, SLA policies, delivery logs).
 //
 // Reorganised by visit frequency, not by data-model affinity:
 //   - WORK  → things you touch daily (open by default)
@@ -192,19 +189,10 @@ const NAV_ADMIN: NavGroup = {
   icon: FolderOpenIcon,
   children: [
     { to: '/org/members', icon: UsersIcon, label: 'Members' },
-    { to: '/org/integrations', icon: PuzzlePieceIcon, label: 'Integrations' },
     { to: '/org/email', icon: EnvelopeIcon, label: 'Email' },
-    // Customer portal is really a config / preview surface (operators
-    // visit it to share the URL or preview the customer view), so it
-    // belongs in Admin not Work.
-    { to: '/support/portal', icon: GlobeAltIcon, label: 'Customer portal' },
     { to: '/support/queues', icon: QueueListIcon, label: 'Queues' },
     { to: '/support/sla-policies', icon: ShieldExclamationIcon, label: 'SLA policies' },
     { to: '/org/tasks', icon: ClipboardDocumentCheckIcon, label: 'Tasks' },
-    // 'Outreach' → 'Delivery log' — the old label suggested an outbound
-    // marketing surface; it's actually the integration delivery audit
-    // (Slack / Linear / webhook back-channels). Renamed for clarity.
-    { to: '/support/integrations/outbox', icon: InboxArrowDownIcon, label: 'Delivery log' },
     // 'Usage' removed 2026-07-19 — the /org/usage page was retired (no route
     // exists for it), so the link 404'd. Usage numbers live in Settings →
     // Subscription.
@@ -629,7 +617,7 @@ function NotificationBell() {
                 subtitle = n.message || 'New tasks extracted from meeting'
                 link = '/org/tasks'
               } else if (n.kind === 'integration_required') {
-                subtitle = n.message || 'Integration required'
+                subtitle = n.message || 'Connection required'
                 link = `/org/tasks/${n.task_id}`
               }
               addNotif({

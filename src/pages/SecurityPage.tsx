@@ -25,7 +25,7 @@ const SECURITY_PILLARS = [
     icon: KeyIcon,
     title: 'Authentication & Access Control',
     description:
-      'We use JWT-based authentication with secure token management. All third-party integrations use OAuth 2.0 with PKCE — we never store your passwords for external services. Role-based access controls ensure team members only see data appropriate to their role.',
+      'We use JWT-based authentication with secure token management. Connected services use scoped OAuth or signed API credentials, and role-based access controls ensure team members only see data appropriate to their role.',
   },
   {
     icon: ServerStackIcon,
@@ -37,7 +37,7 @@ const SECURITY_PILLARS = [
     icon: EyeIcon,
     title: 'Data Privacy by Design',
     description:
-      'We follow privacy-by-design principles. We collect only the data necessary to provide the Service. Integration data is accessed on-demand and not retained beyond what is required. You can disconnect any integration at any time, immediately revoking our access.',
+      'We follow privacy-by-design principles. We collect only the data necessary to provide the Service. Connected-service data is accessed on-demand and not retained beyond what is required.',
   },
   {
     icon: ClipboardDocumentCheckIcon,
@@ -105,16 +105,16 @@ export function SecurityPage() {
 
         {/* Detailed sections */}
         <article className="legal-article">
-          <h2>Integration Security</h2>
+          <h2>Connection Security</h2>
           <p>
-            Lira AI integrates with multiple third-party platforms. Each integration is secured
-            using industry-standard OAuth 2.0 authentication flows:
+            Lira connects to the services needed to operate customer support. Each connection uses
+            scoped authentication and least-privilege access:
           </p>
           <div className="overflow-x-auto">
             <table>
               <thead>
                 <tr>
-                  <th>Integration</th>
+                  <th>Connection</th>
                   <th>Auth Method</th>
                   <th>Scopes</th>
                   <th>Data Access</th>
@@ -122,60 +122,29 @@ export function SecurityPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>Linear</td>
+                  <td>Google Drive</td>
                   <td>OAuth 2.0</td>
-                  <td>Read issues, teams, projects</td>
+                  <td>Selected Drive files used as knowledge sources</td>
                   <td>On-demand only</td>
                 </tr>
                 <tr>
-                  <td>Slack</td>
-                  <td>OAuth 2.0</td>
-                  <td>Channels, messages, users</td>
+                  <td>WhatsApp Business</td>
+                  <td>Meta Cloud API credentials</td>
+                  <td>Messages and delivery events for enabled numbers</td>
                   <td>On-demand only</td>
                 </tr>
                 <tr>
-                  <td>Microsoft Teams</td>
-                  <td>OAuth 2.0 (MSAL)</td>
-                  <td>Channels, messages, user profiles</td>
-                  <td>On-demand only</td>
-                </tr>
-                <tr>
-                  <td>Google Calendar & Drive</td>
-                  <td>OAuth 2.0</td>
-                  <td>Calendar events, Drive files</td>
-                  <td>On-demand only</td>
-                </tr>
-                <tr>
-                  <td>GitHub</td>
-                  <td>OAuth 2.0</td>
-                  <td>Repos, issues, PRs</td>
-                  <td>On-demand only</td>
-                </tr>
-                <tr>
-                  <td>Greenhouse</td>
-                  <td>OAuth 2.0</td>
-                  <td>Jobs, candidates, interviews</td>
-                  <td>On-demand only</td>
-                </tr>
-                <tr>
-                  <td>HubSpot</td>
-                  <td>OAuth 2.0</td>
-                  <td>CRM contacts, deals, companies</td>
-                  <td>On-demand only</td>
-                </tr>
-                <tr>
-                  <td>Salesforce</td>
-                  <td>OAuth 2.0 + PKCE</td>
-                  <td>Contacts, accounts, opportunities, leads</td>
+                  <td>API, CLI, and MCP</td>
+                  <td>Scoped keys and signed requests</td>
+                  <td>Approved support actions only</td>
                   <td>On-demand only</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p>
-            All OAuth tokens are encrypted before storage. Refresh tokens are used to obtain new
-            access tokens as needed. You can revoke access to any integration at any time from your
-            organization settings, which immediately invalidates stored tokens.
+            Stored credentials are encrypted before storage. You can revoke connected access from
+            your workspace settings or by rotating the relevant provider credential.
           </p>
 
           <h2>Data Handling Principles</h2>

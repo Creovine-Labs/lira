@@ -691,8 +691,8 @@ export function LandingPageVariant() {
           <div className="v2-outcomes-head">
             <motion.h2 variants={reveal}>Support becomes invisible infrastructure.</motion.h2>
             <motion.p variants={reveal}>
-              Lira sits across chat, email, WhatsApp, CRM, and helpdesk tools, taking the next best
-              action before churn risk becomes a meeting.
+              Lira sits across chat, email, WhatsApp, knowledge, and support workflows, taking the
+              next best action before churn risk becomes a meeting.
             </motion.p>
           </div>
           <motion.div className="v2-metrics" variants={stagger}>
@@ -730,7 +730,7 @@ export function LandingPageVariant() {
               ],
               [
                 'Autonomous action chains',
-                'Lira can answer, route, refund, update CRM fields, create tasks, and summarize decisions with auditability.',
+                'Lira can answer, route, create approved support actions, and summarize decisions with auditability.',
               ],
               [
                 'Lifetime memory',

@@ -61,7 +61,7 @@ export function TermsOfServicePage() {
             </li>
             <li>
               <strong>Lead capture &amp; qualification:</strong> collecting and qualifying leads
-              from conversations and delivering them to your email, CRM, or webhook.
+              from conversations and delivering them to your email or approved webhook.
             </li>
             <li>
               <strong>Human handoff &amp; operator tools:</strong> escalation to your team, a shared
@@ -76,9 +76,9 @@ export function TermsOfServicePage() {
               resolution metrics.
             </li>
             <li>
-              <strong>Integrations:</strong> optional connections to tools such as WhatsApp (Meta),
-              HubSpot, Salesforce, Slack, Linear, and webhooks to deliver leads and sync support
-              data.
+              <strong>Developer connections:</strong> optional connections such as WhatsApp Business
+              API, MCP tools, API keys, CLI automation, and webhooks used to deliver support
+              features you enable.
             </li>
           </ul>
           <p>
@@ -115,7 +115,7 @@ export function TermsOfServicePage() {
           <p>
             You may create or join a workspace (organization) within the Service. The workspace
             administrator ("<strong>Admin</strong>") controls the workspace's settings, members,
-            integrations, and data. By joining a workspace, you acknowledge that:
+            connected services, and data. By joining a workspace, you acknowledge that:
           </p>
           <ul>
             <li>
@@ -124,7 +124,7 @@ export function TermsOfServicePage() {
               and analytics.
             </li>
             <li>
-              The Admin may connect or disconnect integrations that process data on behalf of the
+              The Admin may connect or disconnect services that process data on behalf of the
               workspace.
             </li>
             <li>
@@ -149,7 +149,7 @@ export function TermsOfServicePage() {
               Service on the websites and channels where you use it;
             </li>
             <li>
-              Configuring the Service (including data retention, escalation, and integrations)
+              Configuring the Service (including data retention, escalation, and connected services)
               appropriately for your use case;
             </li>
             <li>
@@ -163,26 +163,28 @@ export function TermsOfServicePage() {
           </p>
 
           {/* 6 */}
-          <h2>6. Third-Party Integrations</h2>
+          <h2>6. Third-Party Services and Developer Connections</h2>
           <h3>6.1 Authorization</h3>
           <p>
-            The Service lets you connect third-party platforms such as WhatsApp (Meta), HubSpot,
-            Salesforce, Slack, Linear, and webhook endpoints. When you authorize an integration, you
-            grant us permission to access and exchange data with that service as needed to provide
-            the features you enable, as described in our <Link to="/privacy">Privacy Policy</Link>.
+            The Service lets you connect third-party services such as WhatsApp (Meta), Google Drive,
+            MCP endpoints, API keys, CLI automation, and webhook endpoints. When you authorize a
+            connection, you grant us permission to access and exchange data with that service as
+            needed to provide the features you enable, as described in our{' '}
+            <Link to="/privacy">Privacy Policy</Link>.
           </p>
           <h3>6.2 Third-Party Terms</h3>
           <p>
-            Your use of each integration is also subject to that provider's own terms and privacy
-            policy. We do not control and are not responsible for third-party platforms — including
-            any fees they charge. The <strong>WhatsApp Business API</strong>, for example, carries
-            per-conversation charges set by Meta that are billed in addition to your plan. It is
-            your responsibility to review and comply with the terms of each platform you connect.
+            Your use of each connected service is also subject to that provider's own terms and
+            privacy policy. We do not control and are not responsible for third-party platforms —
+            including any fees they charge. The <strong>WhatsApp Business API</strong>, for example,
+            carries per-conversation charges set by Meta that are billed in addition to your plan.
+            It is your responsibility to review and comply with the terms of each platform you
+            connect.
           </p>
           <h3>6.3 Credentials</h3>
           <p>
-            Integrations use industry-standard authentication. We store encrypted access tokens that
-            you can revoke at any time by disconnecting the integration from your workspace
+            Connected services use industry-standard authentication. We store encrypted access
+            tokens that you can revoke at any time by disconnecting the service from your workspace
             settings.
           </p>
 
@@ -291,7 +293,7 @@ export function TermsOfServicePage() {
             </li>
             <li>
               We are not responsible for the accuracy, reliability, availability, or fees of
-              third-party integrations.
+              third-party connected services.
             </li>
           </ul>
 

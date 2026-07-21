@@ -889,7 +889,7 @@ function SupportActivatePage() {
               className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 px-3 py-2 rounded-xl hover:bg-white border border-transparent hover:border-gray-200 transition-colors"
             >
               <BookOpenIcon className="h-3.5 w-3.5" />
-              Not sure what to do next? View the SDK integration guide
+              Not sure what to do next? View the SDK setup guide
             </a>
           </div>
 
@@ -1102,7 +1102,7 @@ function SupportActivatePage() {
               </div>
 
               {/* ── Hosted portal fallback removed from the activation wizard.
-                   The Web SDK is the primary integration; customers who really
+                   The Web SDK is the primary setup path; customers who really
                    need a no-code fallback can enable it later from Settings →
                    Support → Hosted. Keeping it out of the wizard keeps the
                    activation flow focused and short. ── */}
@@ -1258,7 +1258,7 @@ function SupportActivatePage() {
                       <div className="space-y-1.5">
                         <p className="text-xs font-semibold text-gray-500">What customers get:</p>
                         {[
-                          'Temporary support page while SDK integration is pending',
+                          'Temporary support page while SDK setup is pending',
                           'Submit and track support tickets',
                           'Live chat powered by the same Lira runtime',
                           'Magic-link sign in, no passwords needed',

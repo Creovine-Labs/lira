@@ -32,7 +32,7 @@ const STEPS = [
     number: '03',
     title: 'You close the deal',
     description:
-      'Speak with confidence. Lira handles the coaching, you handle the relationship. After the call, get a full summary, next-step recommendations, and CRM-ready notes.',
+      'Speak with confidence. Lira handles the coaching, you handle the relationship. After the call, get a full summary and next-step recommendations.',
   },
 ]
 
@@ -71,9 +71,8 @@ const FEATURES = [
   },
   {
     Icon: BoltIcon,
-    title: 'CRM auto-fill',
-    description:
-      'Post-call summaries, action items, and stage updates push directly to your CRM — no manual entry.',
+    title: 'Follow-up summaries',
+    description: 'Post-call summaries and action items are ready for your team to review and use.',
   },
 ]
 
@@ -84,15 +83,15 @@ export function ProductSalesPage() {
     <MarketingLayout>
       <SEO
         title="Sales Coaching — Real-Time Objection Handling & Deal Intelligence"
-        description="Lira AI listens to every sales call in real time and tells you exactly what to say. Get AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and automatic CRM updates for Salesforce and HubSpot."
-        keywords="AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, CRM auto-fill, Salesforce AI, HubSpot AI, sales intelligence, competitive selling AI, real-time sales guidance, sales enablement AI, win-rate analytics, revenue intelligence, sales call transcription, Lira AI sales"
+        description="Lira AI listens to every sales call in real time and tells you exactly what to say. Get AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and follow-up summaries."
+        keywords="AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, sales intelligence, competitive selling AI, real-time sales guidance, sales enablement AI, win-rate analytics, revenue intelligence, sales call transcription, Lira AI sales"
         path="/products/sales"
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'Product',
           name: 'Lira AI Sales Coaching',
           description:
-            'AI-powered real-time sales coaching that listens to calls, detects objections, surfaces battle cards, and auto-fills your CRM.',
+            'AI-powered real-time sales coaching that listens to calls, detects objections, surfaces battle cards, and prepares follow-up summaries.',
           brand: { '@type': 'Brand', name: 'Lira AI' },
           category: 'Sales Enablement Software',
           url: 'https://liraintelligence.com/products/sales',

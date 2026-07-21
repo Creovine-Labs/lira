@@ -78,7 +78,7 @@ export const PLAN_DETAILS: Record<
       'Recurring billing',
       'Multi-currency invoicing',
       'QuickBooks/Xero sync',
-      'Slack notifications',
+      'Email notifications',
     ],
   },
   business: {
@@ -221,7 +221,7 @@ export function createDemoProfile(rawName: string, plan: PlanTier = 'growth'): D
  *   - upgrade/downgrade plan
  *   - change payment card
  *   - cancel/reactivate subscription
- *   - toggle integrations (future)
+ *   - toggle connected workflows (future)
  */
 export function updateDemoProfile(updates: Partial<DemoProfile>): DemoProfile | null {
   const current = readDemoProfile()

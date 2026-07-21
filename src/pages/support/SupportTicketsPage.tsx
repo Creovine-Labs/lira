@@ -11,7 +11,6 @@ import {
   ArrowDownTrayIcon,
   ArrowLeftIcon,
   ArrowPathIcon,
-  ArrowTopRightOnSquareIcon,
   BugAntIcon,
   CheckCircleIcon,
   ChevronDownIcon,
@@ -22,7 +21,6 @@ import {
   FireIcon,
   InboxIcon,
   InboxStackIcon,
-  LinkIcon,
   LightBulbIcon,
   ListBulletIcon,
   MagnifyingGlassIcon,
@@ -49,9 +47,6 @@ import {
   requestCsat,
   createManualTicket,
   uploadTicketAttachment,
-  listExternalLinks,
-  createExternalLink,
-  forceSyncTicket,
   downloadTicketAudit,
   markTicketPending,
   markTicketOnHold,
@@ -78,8 +73,6 @@ import {
   type SupportTicketMessageRecord,
   type TicketAttachmentRecord,
   type ResolveTicketFeedback,
-  type ExternalLink,
-  type OutboxProvider,
   type SupportQueue,
   type TicketCategoryRecord,
   type AgentAvailabilityRecord,
@@ -1226,7 +1219,7 @@ export function SupportTicketDetailPage() {
           />
         )}
 
-        {currentOrgId && <IntegrationsPanel orgId={currentOrgId} ticketId={ticket.ticket_id} />}
+        {currentOrgId && <TicketAuditPanel orgId={currentOrgId} ticketId={ticket.ticket_id} />}
 
         <div className="space-y-3">
           {messages.map((m) => (
@@ -2457,62 +2450,8 @@ function ResolveModal({
   )
 }
 
-// ── Integrations panel (Phase 6 §4.4 + §4.5 + Phase 7 §5.5) ──────────────
-//
-// Three operator surfaces glued into one card on the ticket detail:
-//   • External links — list of Slack/Linear/webhook back-pointers + manual
-//     add form (operator pasted a Linear URL after a side-conversation).
-//   • Force sync — small button group, one per provider. Enqueues a fresh
-//     delivery (useful after fixing a Slack channel id or Linear team).
-//   • Audit export — JSON / CSV download of the immutable event timeline.
-
-const PROVIDER_OPTIONS: { value: OutboxProvider; label: string }[] = [
-  { value: 'slack', label: 'Slack' },
-  { value: 'linear', label: 'Linear' },
-  { value: 'webhook', label: 'Webhook' },
-]
-
-function IntegrationsPanel({ orgId, ticketId }: { orgId: string; ticketId: string }) {
-  const [links, setLinks] = useState<ExternalLink[]>([])
-  const [loadingLinks, setLoadingLinks] = useState(true)
-  const [adding, setAdding] = useState(false)
-  const [syncing, setSyncing] = useState<OutboxProvider | null>(null)
+function TicketAuditPanel({ orgId, ticketId }: { orgId: string; ticketId: string }) {
   const [exporting, setExporting] = useState<'json' | 'csv' | null>(null)
-
-  const loadLinks = useCallback(async () => {
-    setLoadingLinks(true)
-    try {
-      const next = await listExternalLinks(orgId, ticketId)
-      setLinks(next)
-    } catch {
-      // External links are non-critical — fail quietly. The empty-state copy
-      // covers both "none yet" and "couldn't load".
-      setLinks([])
-    } finally {
-      setLoadingLinks(false)
-    }
-  }, [orgId, ticketId])
-
-  useEffect(() => {
-    void loadLinks()
-  }, [loadLinks])
-
-  const handleSync = useCallback(
-    async (provider: OutboxProvider) => {
-      setSyncing(provider)
-      try {
-        await forceSyncTicket(orgId, ticketId, provider)
-        toast.success(`Sync to ${provider} queued`)
-        // External links may show up after the worker drains — poll once.
-        window.setTimeout(() => void loadLinks(), 1500)
-      } catch (err) {
-        toast.error(err instanceof Error ? err.message : `Failed to sync to ${provider}`)
-      } finally {
-        setSyncing(null)
-      }
-    },
-    [orgId, ticketId, loadLinks]
-  )
 
   const handleExport = useCallback(
     async (format: 'json' | 'csv') => {
@@ -2532,99 +2471,11 @@ function IntegrationsPanel({ orgId, ticketId }: { orgId: string; ticketId: strin
   return (
     <div className="rounded-2xl border border-white/60 bg-white p-4 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
-        <LinkIcon className="h-4 w-4 text-gray-500" />
-        <h2 className="text-sm font-semibold text-gray-900">Integrations &amp; audit</h2>
+        <ClipboardDocumentListIcon className="h-4 w-4 text-gray-500" />
+        <h2 className="text-sm font-semibold text-gray-900">Ticket audit</h2>
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
-            External links
-          </p>
-          <button
-            type="button"
-            onClick={() => setAdding((a) => !a)}
-            className="text-[11px] font-semibold text-[#020308] underline-offset-2 hover:underline"
-          >
-            {adding ? 'Cancel' : '+ Add link'}
-          </button>
-        </div>
-
-        {loadingLinks ? (
-          <div className="h-6 w-32 animate-pulse rounded bg-gray-100" />
-        ) : links.length === 0 ? (
-          <p className="text-[12px] text-gray-400">
-            No external links yet. Force-sync below, or paste one manually.
-          </p>
-        ) : (
-          <ul className="space-y-1.5">
-            {links.map((l, idx) => (
-              <li
-                key={`${l.provider}-${l.external_id}-${idx}`}
-                className="flex items-center gap-2 rounded-lg border border-gray-100 bg-gray-50/60 px-2.5 py-1.5"
-              >
-                <ProviderBadgeInline provider={l.provider} />
-                <code className="flex-1 truncate font-mono text-[11px] text-gray-600">
-                  {l.external_id}
-                </code>
-                <a
-                  href={l.external_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-[#020308] hover:underline"
-                >
-                  Open
-                  <ArrowTopRightOnSquareIcon className="h-3 w-3" />
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {adding && (
-          <AddExternalLinkForm
-            onSubmit={async (payload) => {
-              try {
-                const created = await createExternalLink(orgId, ticketId, payload)
-                setLinks((prev) => [...prev, created])
-                setAdding(false)
-                toast.success('Link added')
-              } catch (err) {
-                toast.error(err instanceof Error ? err.message : 'Failed to add link')
-              }
-            }}
-            onCancel={() => setAdding(false)}
-          />
-        )}
-      </div>
-
-      <div className="mt-4 border-t border-gray-100 pt-3">
-        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-gray-400">
-          Force sync
-        </p>
-        <div className="flex flex-wrap gap-1.5">
-          {PROVIDER_OPTIONS.map((p) => (
-            <button
-              key={p.value}
-              type="button"
-              onClick={() => handleSync(p.value)}
-              disabled={syncing !== null}
-              className={cn(
-                'inline-flex items-center gap-1 rounded-md border border-gray-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-900',
-                syncing === p.value && 'cursor-wait opacity-70'
-              )}
-            >
-              <ArrowPathIcon
-                className={cn('h-3 w-3', syncing === p.value && 'animate-spin')}
-                aria-hidden
-              />
-              Sync to {p.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="mt-4 border-t border-gray-100 pt-3">
+      <div className="border-t border-gray-100 pt-3">
         <div className="flex items-center justify-between gap-2">
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400">
@@ -2654,107 +2505,6 @@ function IntegrationsPanel({ orgId, ticketId }: { orgId: string; ticketId: strin
         </div>
       </div>
     </div>
-  )
-}
-
-function AddExternalLinkForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (payload: {
-    provider: OutboxProvider
-    external_id: string
-    external_url: string
-  }) => Promise<void>
-  onCancel: () => void
-}) {
-  const [provider, setProvider] = useState<OutboxProvider>('linear')
-  const [externalId, setExternalId] = useState('')
-  const [externalUrl, setExternalUrl] = useState('')
-  const [submitting, setSubmitting] = useState(false)
-
-  return (
-    <form
-      onSubmit={async (e) => {
-        e.preventDefault()
-        if (!externalId.trim() || !externalUrl.trim()) return
-        setSubmitting(true)
-        try {
-          await onSubmit({
-            provider,
-            external_id: externalId.trim(),
-            external_url: externalUrl.trim(),
-          })
-        } finally {
-          setSubmitting(false)
-        }
-      }}
-      className="mt-2 space-y-2 rounded-lg border border-gray-200 bg-gray-50/60 p-3"
-    >
-      <div className="grid grid-cols-[100px_1fr] gap-2">
-        <select
-          value={provider}
-          onChange={(e) => setProvider(e.target.value as OutboxProvider)}
-          className="rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none"
-        >
-          {PROVIDER_OPTIONS.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-        <input
-          value={externalId}
-          onChange={(e) => setExternalId(e.target.value)}
-          placeholder={
-            provider === 'linear' ? 'LIR-1234' : provider === 'slack' ? '1716895200.000123' : 'id'
-          }
-          className="rounded-md border border-gray-200 bg-white px-2 py-1 font-mono text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none"
-        />
-      </div>
-      <input
-        value={externalUrl}
-        onChange={(e) => setExternalUrl(e.target.value)}
-        placeholder="https://…"
-        type="url"
-        className="w-full rounded-md border border-gray-200 bg-white px-2 py-1 text-[12px] text-gray-700 focus:border-[#020308] focus:outline-none"
-      />
-      <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="text-[11px] text-gray-500 hover:text-gray-800"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={submitting || !externalId.trim() || !externalUrl.trim()}
-          className="rounded-md bg-[#020308] px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-gray-800 disabled:opacity-60"
-        >
-          {submitting ? 'Adding…' : 'Add link'}
-        </button>
-      </div>
-    </form>
-  )
-}
-
-const PROVIDER_INLINE_COLOR: Record<OutboxProvider, string> = {
-  slack: 'bg-[#4A154B]/10 text-[#4A154B]',
-  linear: 'bg-[#5E6AD2]/10 text-[#5E6AD2]',
-  webhook: 'bg-gray-100 text-gray-700',
-}
-
-function ProviderBadgeInline({ provider }: { provider: OutboxProvider }) {
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
-        PROVIDER_INLINE_COLOR[provider]
-      )}
-    >
-      {provider}
-    </span>
   )
 }
 

@@ -22,8 +22,6 @@ import {
   TasksPage,
   OrgTaskDetailPage,
   OrgEmailPage,
-  IntegrationsPage,
-  WebhooksPage,
   ProductSalesPage,
   ProductCustomerSupportPage,
   PricingPage,
@@ -49,7 +47,6 @@ import {
   AcceptableUsePolicyPage,
   RefundPolicyPage,
   SecurityPage,
-  LaunchDemoPage,
   VerifyEmailPage,
   ForgotPasswordPage,
   ResetPasswordPage,
@@ -78,8 +75,6 @@ import {
   SupportCustomersPage,
   SupportProactivePage,
   SupportAnalyticsPage,
-  SupportOutboxPage,
-  SupportPortalPage,
   SupportQueuesPage,
   SupportSlaPoliciesPage,
   SupportTicketsPage,
@@ -168,7 +163,7 @@ function App() {
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
-        <Route path="/launch-demo" element={<LaunchDemoPage />} />
+        <Route path="/launch-demo" element={<Navigate to="/features" replace />} />
         <Route path="/products/sales" element={<ProductSalesPage />} />
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/pricing" element={<PricingPage />} />
@@ -246,8 +241,14 @@ function App() {
             <Route path="members" element={<OrgMembersPage />} />
             <Route path="members/:userId" element={<MemberProfilePage />} />
             <Route path="email" element={<OrgEmailPage />} />
-            <Route path="integrations" element={<IntegrationsPage />} />
-            <Route path="webhooks" element={<WebhooksPage />} />
+            <Route
+              path="integrations"
+              element={<Navigate to="/org/knowledge?tab=sources" replace />}
+            />
+            <Route
+              path="webhooks"
+              element={<Navigate to="/settings?tab=support&supportTab=developers" replace />}
+            />
           </Route>
           <Route path="/support" element={<Navigate to="/support/inbox" replace />} />
           <Route path="/support/tickets" element={<SupportTicketsPage />} />
@@ -261,10 +262,16 @@ function App() {
             element={<Navigate to="/settings?tab=support&supportTab=actions" replace />}
           />
           <Route path="/support/analytics" element={<SupportAnalyticsPage />} />
-          <Route path="/support/portal" element={<SupportPortalPage />} />
+          <Route
+            path="/support/portal"
+            element={<Navigate to="/settings?tab=support&supportTab=channels" replace />}
+          />
           <Route path="/support/queues" element={<SupportQueuesPage />} />
           <Route path="/support/sla-policies" element={<SupportSlaPoliciesPage />} />
-          <Route path="/support/integrations/outbox" element={<SupportOutboxPage />} />
+          <Route
+            path="/support/integrations/outbox"
+            element={<Navigate to="/support/tickets" replace />}
+          />
           {/* Support configuration lives in one place: /settings?tab=support.
               Keep old links as redirects so bookmarks and older widget prompts
               do not open a second settings surface. */}

@@ -266,12 +266,6 @@ function SupportCustomerDetailPage() {
                       : '—'
                   }
                 />
-                {customer.hubspot_contact_id && (
-                  <Field label="HubSpot ID" value={customer.hubspot_contact_id} />
-                )}
-                {customer.salesforce_contact_id && (
-                  <Field label="Salesforce ID" value={customer.salesforce_contact_id} />
-                )}
               </div>
             )}
           </div>

@@ -939,8 +939,8 @@ function OnboardingPage() {
             )}
 
             {/* Step: surface — which deployment surface are they planning?
-                Drives the in-chat install instructions later (web embed vs
-                mobile WebView wrapper). Saved on createOrganization(). */}
+                Drives the install instructions later (web embed vs native
+                mobile API path). Saved on createOrganization(). */}
             {step === 'surface' && (
               <div className="space-y-6">
                 <div>
@@ -966,7 +966,7 @@ function OnboardingPage() {
                       {
                         id: 'mobile',
                         title: 'Mobile app only',
-                        desc: 'You only need Lira inside an iOS or Android app. Today this is a WebView wrapper; native SDKs are roadmap.',
+                        desc: 'You only need Lira inside an iOS or Android app. Use the mobile API to build a native support screen.',
                         emoji: '📱',
                       },
                       {

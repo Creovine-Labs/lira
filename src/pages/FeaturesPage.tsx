@@ -37,8 +37,8 @@ const features = [
   },
   {
     icon: PlugsConnected,
-    title: 'CRM and team integrations',
-    copy: 'Connect tools like HubSpot, Salesforce, Slack, Linear, GitHub, and Teams so support can move work forward.',
+    title: 'Developer-ready support automation',
+    copy: 'Use API keys, CLI commands, MCP tools, and SDK context so Lira can move support work forward under your own product rules.',
   },
   {
     icon: Database,
@@ -53,7 +53,7 @@ const features = [
   {
     icon: DeviceMobile,
     title: 'Mobile App Integration',
-    copy: 'Embed the Lira support portal in your iOS or Android app using a WebView, register push tokens, and send notifications through proactive triggers.',
+    copy: 'Build a native in-app support screen on Lira APIs, register push tokens, and send notifications through proactive triggers.',
   },
 ]
 
@@ -70,8 +70,8 @@ const setupSteps = [
   ],
   [
     '03',
-    'Connect systems',
-    'Add CRM, Slack, Linear, GitHub, or Teams integrations so Lira can route and act with context.',
+    'Connect your product',
+    'Add SDK context, API keys, or MCP tools so Lira can route and act with the right guardrails.',
   ],
   [
     '04',
@@ -160,7 +160,7 @@ export function FeaturesPage() {
     <BlogShell>
       <SEO
         title="Lira Features - AI Customer Support for Modern Teams"
-        description="Explore Lira's AI customer support features: chat, voice, email, portal, customer memory, workflow actions, integrations, and one-script website setup."
+        description="Explore Lira's AI customer support features: chat, voice, email, portal, customer memory, workflow actions, API access, MCP tools, and one-script website setup."
         path="/features"
       />
 
@@ -172,7 +172,7 @@ export function FeaturesPage() {
               Everything modern teams need to support customers with context.
             </h1>
             <p className="bx-subtitle">
-              Lira brings chat, voice, email, customer memory, knowledge, integrations, and smart
+              Lira brings chat, voice, email, customer memory, knowledge, API actions, and smart
               handoff into one AI support layer your team can launch quickly.
             </p>
             <div style={{ marginTop: 30 }}>
@@ -301,16 +301,16 @@ export function FeaturesPage() {
                   Mobile App Integration — Flutter &amp; React Native
                 </h2>
                 <p className="bx-section-copy">
-                  Embed the Lira support portal in your iOS or Android app using a WebView and
-                  register for push notifications. Customers get the full chat, ticket, and
-                  knowledge-base experience inside your app, and Lira can reach them through
+                  Build a native support screen in your iOS or Android app using Lira's REST and
+                  realtime APIs, then register for push notifications. Customers get chat, tickets,
+                  and knowledge-base help inside your product UI, and Lira can reach them through
                   proactive triggers.
                 </p>
                 <div className="bx-post-grid" style={{ marginTop: 28 }}>
                   {[
                     {
-                      title: 'Embed the portal',
-                      copy: 'Open a WebView pointing to your Lira support portal URL. Customers get the full chat, ticket, and knowledge-base experience inside your app.',
+                      title: 'Create a support session',
+                      copy: 'Start a signed Lira support session from your backend and render the conversation in your native mobile UI.',
                     },
                     {
                       title: 'Register push token',

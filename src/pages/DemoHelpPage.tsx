@@ -50,7 +50,7 @@ const TOPICS = [
   },
   {
     title: 'Plans & upgrades',
-    blurb: 'Compare Starter, Growth, and Business — switch plans or change billing cycle.',
+    blurb: 'Compare Free, Pro, Scale, and Enterprise — switch plans or change billing cycle.',
     query: 'plans upgrade subscription',
     icon: 'spark',
   },
@@ -65,12 +65,6 @@ const TOPICS = [
     blurb: 'Invite teammates, assign roles, and manage how many seats you pay for.',
     query: 'team seats',
     icon: 'people',
-  },
-  {
-    title: 'Integrations',
-    blurb: 'Connect QuickBooks, Stripe, and the rest of your finance and ops stack.',
-    query: 'quickbooks integration',
-    icon: 'plug',
   },
   {
     title: 'Account & security',
@@ -112,19 +106,20 @@ const KB_ARTICLES: KbArticle[] = [
   },
   {
     id: 'plan-compare',
-    title: 'Comparing Starter, Growth, and Business plans',
+    title: 'Comparing Free, Pro, Scale, and Enterprise plans',
     category: 'Plans',
     snippet: 'A side-by-side of what each plan includes and which subscription fits your team.',
-    body: 'Starter ($19/mo) covers the essentials for a small team. Growth ($49/mo) adds automation and integrations. Business ($129/mo) adds advanced controls, SSO, and priority support. You can switch subscription tiers at any time from Billing → Plan.',
+    body: 'Free is for sandbox testing. Pro adds live customer-support automation for growing teams. Scale adds WhatsApp, advanced analytics exports, API/MCP access, and higher usage. Enterprise is for custom volume, security, and support requirements. You can switch subscription tiers from Settings → Subscription.',
     tags: [
       'plan',
       'upgrade',
       'pricing',
       'compare',
       'subscription',
-      'starter',
-      'growth',
-      'business',
+      'free',
+      'pro',
+      'scale',
+      'enterprise',
     ],
   },
   {
@@ -150,14 +145,6 @@ const KB_ARTICLES: KbArticle[] = [
     snippet: 'Invite or remove teammates and understand how seats affect your subscription.',
     body: 'You are billed per seat. Inviting a teammate adds a seat and adjusts your subscription automatically; removing one frees the seat at the end of the cycle. Manage everyone from Settings → Team.',
     tags: ['seat', 'team', 'teammate', 'member', 'billing', 'subscription'],
-  },
-  {
-    id: 'quickbooks',
-    title: 'Connecting QuickBooks to Nimbus',
-    category: 'Integrations',
-    snippet: 'Link QuickBooks so invoices and payments sync both ways.',
-    body: 'Open Integrations → QuickBooks and authorize the connection. Once linked, invoices and payments sync in both directions. If a sync looks off, the assistant can re-check the connection and trigger a manual resync.',
-    tags: ['quickbooks', 'integration', 'sync', 'accounting', 'stripe'],
   },
   {
     id: 'cancel',

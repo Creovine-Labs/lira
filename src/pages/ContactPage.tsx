@@ -17,8 +17,8 @@ export function ContactPage() {
           <div>
             <h1 className="bx-title">Contact Lira.</h1>
             <p className="bx-subtitle">
-              Questions about the product, support setup, integrations, or partnerships? Reach out
-              and we will point you in the right direction.
+              Questions about the product, support setup, developer access, or partnerships? Reach
+              out and we will point you in the right direction.
             </p>
           </div>
         </div>
