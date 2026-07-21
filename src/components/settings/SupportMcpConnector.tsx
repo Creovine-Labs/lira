@@ -541,8 +541,25 @@ function McpServerForm(props: {
   const [saving, setSaving] = useState(false)
 
   async function save() {
-    if (!endpoint.trim()) {
+    const raw = endpoint.trim()
+    if (!raw) {
       toast.error('Endpoint URL is required')
+      return
+    }
+    // Block anything that isn't a reachable MCP endpoint before we save it.
+    let url: URL
+    try {
+      url = new URL(raw)
+    } catch {
+      toast.error('Enter a full URL, e.g. https://mcp.yourcompany.com/mcp')
+      return
+    }
+    if (url.protocol !== 'https:') {
+      toast.error('The endpoint must use https://')
+      return
+    }
+    if (!url.hostname.includes('.')) {
+      toast.error("That doesn't look like a reachable MCP endpoint URL.")
       return
     }
     if (authType === 'bearer' && !existing?.has_access_token && !token.trim()) {
@@ -569,19 +586,14 @@ function McpServerForm(props: {
 
   return (
     <div className="mt-3 space-y-3 border-t pt-3">
-      <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-[11px] leading-relaxed text-muted-foreground">
-        These values come from <span className="font-medium text-foreground">your MCP server</span>{' '}
-        — the one your engineering team runs. New to this?{' '}
-        <a
-          href={getDocsUrl('mcp-gateway')}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-semibold text-foreground underline"
-        >
-          Read the MCP setup guide
-        </a>
-        .
-      </div>
+      <a
+        href={getDocsUrl('mcp-gateway')}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-block text-xs font-semibold text-foreground underline"
+      >
+        Read the MCP setup guide
+      </a>
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-foreground">Label</span>
         <input
@@ -591,9 +603,6 @@ function McpServerForm(props: {
           placeholder="My MCP server"
           className={inputCls}
         />
-        <span className="mt-1 block text-[11px] text-muted-foreground">
-          A name for you to recognize this connection. Anything you like.
-        </span>
       </label>
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-foreground">Endpoint URL</span>
@@ -606,10 +615,6 @@ function McpServerForm(props: {
           placeholder="https://mcp.yourcompany.com/mcp"
           className={`${inputCls} font-mono`}
         />
-        <span className="mt-1 block text-[11px] text-muted-foreground">
-          The web address of your MCP server (it implements <code>tools/list</code> and{' '}
-          <code>tools/call</code>). Ask whoever set up your server, or see the guide above.
-        </span>
       </label>
       <div className="flex gap-3">
         <label className="block flex-1">
@@ -652,17 +657,8 @@ function McpServerForm(props: {
             placeholder="mcp_live_…"
             className={`${inputCls} font-mono`}
           />
-          <span className="mt-1 block text-[11px] text-muted-foreground">
-            The token your MCP server accepts to prove a request is from Lira. It comes from your
-            server&apos;s config — not from Lira. Stored encrypted; sent only to your endpoint.
-          </span>
         </label>
       )}
-      <p className="text-xs text-muted-foreground">
-        Credential stored encrypted, sent only to this endpoint. In production the endpoint must be
-        https and can&apos;t target a private/internal address. Connecting saves the server disabled
-        — discover and approve tools, then enable.
-      </p>
       <div className="flex gap-2">
         <button type="button" onClick={save} disabled={saving} className={primaryBtn}>
           {saving ? 'Saving…' : existing ? 'Save changes' : 'Connect'}
