@@ -301,6 +301,14 @@ export function SupportMcpConnector({
           )}
         </div>
 
+        {server && !editing && server.enabled && (server.approved_tools ?? []).length === 0 && (
+          <div className="mt-2.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
+            Connected and <strong>on</strong> — but the AI has no tools yet.{' '}
+            <strong>Discover</strong> tools below, then <strong>approve</strong> the ones you want
+            it to use. Nothing runs until you do.
+          </div>
+        )}
+
         {editing && (
           <McpServerForm
             orgId={currentOrgId}
@@ -574,6 +582,10 @@ function McpServerForm(props: {
         environment,
         auth_type: authType,
         ...(token.trim() ? { access_token: token.trim() } : {}),
+        // Turn the server on when first connecting. Safe: no tools are approved
+        // yet, so the AI still can't act until each tool is approved below.
+        // Editing an existing server preserves its current on/off state.
+        ...(existing ? {} : { enabled: true }),
       })
       toast.success(existing ? 'MCP server updated' : 'MCP server connected')
       await onSaved()
