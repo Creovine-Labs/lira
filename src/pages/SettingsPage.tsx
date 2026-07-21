@@ -2958,7 +2958,12 @@ function SupportSettingsSection() {
             </>
           )}
 
-          <SaveBar onSave={handleSave} saving={saving} />
+          {/* The sticky Save applies to editable config only. Actions / Developers
+              / Health have their own per-item actions (connect, create key, run),
+              so a global Save there is just confusing. */}
+          {(['connect', 'channels', 'behavior', 'escalation'] as SupportSettingsTabKey[]).includes(
+            activeTab
+          ) && <SaveBar onSave={handleSave} saving={saving} />}
         </div>
       </div>
     </SettingsShell>
