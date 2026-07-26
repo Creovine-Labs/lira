@@ -1,4 +1,16 @@
-import { ShieldCheck, Prohibit, Clock, BookOpen, Flask, Coins } from '@phosphor-icons/react'
+import {
+  ShieldCheck,
+  Prohibit,
+  Clock,
+  BookOpen,
+  Flask,
+  Coins,
+  IdentificationCard,
+  HardDrives,
+  Notebook,
+  Fingerprint,
+  Lock,
+} from '@phosphor-icons/react'
 import { SEO } from '@/components/SEO'
 import { BlogButton, BlogShell } from './BlogChrome'
 
@@ -35,6 +47,39 @@ const capabilities = [
   },
 ]
 
+const governance = [
+  {
+    icon: IdentificationCard,
+    title: 'Identity bound server-side',
+    copy: 'The acting customer is taken from the authenticated session, never from chat or model text. Cross-account access is impossible by construction — an IDOR met by architecture, not policy.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Actions off by default',
+    copy: 'Every action is opt-in per tool and risk-tiered. Overrides can only tighten, never loosen. Read-only and human escalation first; money-touching actions come last and stay gated.',
+  },
+  {
+    icon: HardDrives,
+    title: 'Your data stays in your infrastructure',
+    copy: 'Sensitive operations run on your own backend via MCP under your auth. Balances, KYC signals, and transaction data are never copied into Lira — only a minimal verified identity is seen.',
+  },
+  {
+    icon: Notebook,
+    title: 'Dual-side audit trail',
+    copy: "Every action is logged on Lira's side and in your own systems, with the policy decision and redacted inputs. You are never dependent on our logs to satisfy an auditor.",
+  },
+  {
+    icon: Fingerprint,
+    title: 'Step-up re-auth for sensitive actions',
+    copy: 'Higher-risk actions require a fresh PIN or biometric confirmation before they run, so a support conversation can never move money on its own.',
+  },
+  {
+    icon: Lock,
+    title: 'Encrypted end to end',
+    copy: 'AES-256 at rest via KMS. Connection secrets and OAuth credentials are encrypted, sent only to your endpoint, and never shown back in the dashboard.',
+  },
+]
+
 const steps = [
   [
     '01',
@@ -63,8 +108,19 @@ export function LiraForFintechPage() {
     <BlogShell>
       <SEO
         title="Lira for Fintech - Compliant AI Customer Support"
-        description="AI customer support built for fintech: PII redaction, no financial advice, regulator-ready complaint SLAs, grounded answers, sandbox testing, and dynamic currency."
+        description="AI customer support built for fintech: PII redaction before AI, never gives financial advice, regulator-ready complaint SLAs, actions that run on your own infrastructure via MCP, server-side identity binding, and dual-side audit."
+        keywords="AI customer support for fintech, compliant AI support, fintech customer service automation, PII redaction, CBN complaint SLA, secure AI actions, MCP fintech, server-side identity binding, financial services AI support"
         path="/for/fintech"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Product',
+          name: 'Lira for Fintech',
+          description:
+            'Compliant AI customer support for fintech: PII redaction before AI processing, no financial advice, regulator-ready complaint SLAs, and secure actions that run on your own infrastructure via MCP with server-side identity binding and dual-side audit.',
+          brand: { '@type': 'Brand', name: 'Lira AI' },
+          category: 'Customer Service Software',
+          url: 'https://liraintelligence.com/for/fintech',
+        }}
       />
 
       <section className="bx-hero">
@@ -108,6 +164,35 @@ export function LiraForFintechPage() {
                 </article>
               ))}
             </div>
+          </section>
+
+          <section style={{ marginTop: 96 }}>
+            <h2 className="bx-section-title">Security reviewers can say yes</h2>
+            <p className="bx-section-copy">
+              Support that acts near money and KYC has to be safe by architecture, not by promises.
+              Here is how Lira is built for the teams that review it.
+            </p>
+            <div className="bx-post-grid">
+              {governance.map(({ icon: Icon, title, copy }) => (
+                <article className="bx-post-card" key={title}>
+                  <div className="bx-post-surface">
+                    <span
+                      className="bx-button-icon"
+                      style={{ width: 48, height: 48, marginBottom: 28 }}
+                    >
+                      <Icon size={20} weight="duotone" />
+                    </span>
+                    <h3 className="bx-post-title">{title}</h3>
+                    <p className="bx-post-excerpt">{copy}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+            <p className="bx-section-copy" style={{ marginTop: 28, fontSize: 15, opacity: 0.8 }}>
+              A DPA, security questionnaire, and data-handling and residency documentation are
+              available on request. SOC 2 attestation and third-party penetration-test reports are
+              on our roadmap — we treat these as commitments, not checkboxes.
+            </p>
           </section>
 
           <section className="bx-split" style={{ marginTop: 96 }}>

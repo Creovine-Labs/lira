@@ -1,0 +1,61 @@
+# Lira
+
+> Lira is an AI customer support platform that learns your product and resolves
+> customer conversations across a chat widget, an embedded in-app support
+> surface, a support portal, email, voice, and WhatsApp. It grounds every answer
+> in your knowledge base (Retrieval-Augmented Generation), opens tickets with
+> full context when a human is needed, and can take secure, approved actions
+> inside your product. Built by Creovine. Website: https://liraintelligence.com
+
+## What Lira does
+
+- **Answers grounded in your knowledge**: Lira ingests your docs, help center, web pages, and Google Drive, indexes them, and answers customer questions using Retrieval-Augmented Generation (RAG) — citing your real content instead of guessing.
+- **Works across every channel**: one AI agent across a website chat widget, an embedded in-app support surface (Web SDK), a hosted branded support portal, email, inbound voice (rolling out), and the WhatsApp Business API.
+- **Resolves tickets, not just deflects**: when Lira can't resolve an issue, it opens a ticket with the full transcript, verified customer identity, and knowledge snippets attached, and keeps chatting in parallel. SLA tracking, queues, routing, and CSAT included.
+- **Hands off to humans cleanly**: any teammate reply pauses the AI (human takeover) until handback; escalation triggers on low confidence or on sensitive intents (fraud, billing disputes, account security).
+- **Takes real action in your product**: register actions Lira can run on a customer's behalf (cancel a subscription, retry a payment, resend an invoice, change a plan) with per-action approval policy — auto-confirm, require customer approval, or require human review.
+- **Proactive outreach**: event-triggered messages (failed payment, onboarding nudge, renewal) across email and the widget, with cooldowns and daily caps.
+- **Learns over time**: when Lira answers poorly it drafts knowledge-base entries for admin approval, improving future answers.
+
+## For developers
+
+- **MCP connector**: connect your own Model Context Protocol (MCP) server so Lira can call your tools (check a transaction, freeze a card, schedule a callback) under your own auth, on your infrastructure. Remote (HTTPS) transport, bearer token or OAuth 2.1, per-tool approval, per-tool/per-server rate limits, change/drift detection, config audit logging, and SSRF/DNS-rebinding protection.
+- **Developer API keys & CLI**: scoped, hashed, revocable API keys and an `@liraintelligence/support` CLI to connect MCP servers, approve tools, and mint short-lived customer session tokens.
+- **Native mobile support SDK**: build native in-app support (the way Cash App, Monzo, and Revolut do) over Lira's chat WebSocket — your backend mints a session token, your app opens the socket, with confirm-before-action, step-up re-auth for higher-risk actions, and human takeover.
+- **Chat widget install**: one `<script>` tag with your org ID; optional signed customer identity (HMAC) for verified, personalized support.
+
+## Security & governance
+
+- Actions are **off by default and opt-in per tool**; overrides can only tighten risk/scope, never loosen it.
+- The acting customer's identity is bound **server-side** from the authenticated session, never from model or chat text (IDOR / confused-deputy defense).
+- Sensitive operations run on **your own backend via MCP under your auth**, so account data and money movement never leave your infrastructure.
+- Every action is risk-tiered, human-confirmable, rate-limited, and **dual-side audited** (Lira's log plus your own MCP-server logs).
+- Encryption: AES-256 at rest via KMS; connection secrets and OAuth credentials encrypted and never shown back in the dashboard.
+- Primary reasoning model: Anthropic Claude Sonnet, with GPT-4o fallback; Amazon Nova Sonic is used only for optional voice speech I/O.
+- Compliance status (honest): the technical controls above are implemented today. A DPA, security questionnaire, and data-handling/residency documentation are available on request. SOC 2 attestation and third-party penetration-test reports are on the enterprise roadmap and are **not yet certified**.
+
+## Who it's for
+
+- Regulated fintechs and teams operating near money or KYC.
+- B2B SaaS products embedding support into a logged-in app.
+- Consumer apps that want native in-app support.
+
+## Pricing
+
+- **Free** — $0, includes a chat widget, knowledge base, lead capture, and unlimited team seats.
+- **Pro** — from $29/mo, adds conversation flows, AI read actions, more languages, and analytics.
+- **Scale** — from $99/mo, adds AI that takes approved actions with audit, the WhatsApp channel, and custom API/MCP.
+- **Enterprise** — custom, adds SSO/SAML, custom retention, and dedicated onboarding.
+- Every plan includes **unlimited team seats** — you pay for the AI's work, never per agent.
+- Details: https://liraintelligence.com/pricing
+
+## Key links
+
+- Home: https://liraintelligence.com/
+- Product — Customer Support: https://liraintelligence.com/products/customer-support
+- Features: https://liraintelligence.com/features
+- Lira for Fintech: https://liraintelligence.com/for/fintech
+- Pricing: https://liraintelligence.com/pricing
+- Documentation: https://docs.liraintelligence.com
+- Book a demo: https://liraintelligence.com/book-demo
+- Built by Creovine: https://creovine.com

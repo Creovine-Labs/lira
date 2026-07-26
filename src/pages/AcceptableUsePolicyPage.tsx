@@ -231,7 +231,7 @@ export function AcceptableUsePolicyPage() {
           <ul>
             <li>
               <strong>Email:</strong>{' '}
-              <a href="mailto:abuse@liraintelligence.com">abuse@liraintelligence.com</a>
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
           </ul>
           <p>

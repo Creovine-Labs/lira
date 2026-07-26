@@ -1378,8 +1378,17 @@ export function LandingPageV4() {
     <div className="hx-page">
       <SEO
         title="Lira - Intelligent Customer Support That Remembers and Acts"
-        description="Lira helps teams resolve customer issues across chat, email, voice, and portal with customer memory, knowledge, workflow actions, and smart escalation."
-        path="/v4"
+        description="Lira is an AI customer support platform that resolves issues across chat, email, voice, and WhatsApp, grounded in your knowledge base, with secure in-product actions and clean human handoff."
+        path="/"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map(({ q, a }) => ({
+            '@type': 'Question',
+            name: q,
+            acceptedAnswer: { '@type': 'Answer', text: a },
+          })),
+        }}
       />
       <PublicLiraWidget />
       <Styles />

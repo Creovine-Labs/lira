@@ -386,6 +386,16 @@ class LiraSupportWidget {
   } | null = null
   private pinError: string | null = null
 
+  // In-call confirmation cards (Voice V2 P4). Pushed over the voice WS during
+  // the call; the customer taps Confirm/Decline before hanging up; approved
+  // ones execute the moment the call ends. Reset per call.
+  private voiceConfirms: Array<{
+    action_id: string
+    title: string
+    body: string
+    status: 'pending' | 'sending' | 'confirmed' | 'declined' | 'send_failed'
+  }> = []
+
   // ── Storage helpers (identity-aware) ──
   // Production embeds: ephemeral=false → localStorage, scoped by identity
   // (logged-in email when known, otherwise a rotating anon chat id).
@@ -889,6 +899,34 @@ class LiraSupportWidget {
           via: 'voice',
         }
         this.render()
+        return
+      }
+      case 'confirm': {
+        // In-call confirmation card (P4). Show a modal the caller taps before
+        // hanging up; approved actions execute on hangup.
+        if (!msg.action_id) return
+        if (!this.voiceConfirms.some((c) => c.action_id === msg.action_id)) {
+          this.voiceConfirms.push({
+            action_id: msg.action_id,
+            title: msg.title ?? msg.tool_name ?? 'Confirm this action',
+            body: msg.body ?? '',
+            status: 'pending',
+          })
+          this.render()
+        }
+        return
+      }
+      case 'confirm_ack': {
+        const c = this.voiceConfirms.find((x) => x.action_id === msg.action_id)
+        if (c && msg.status) {
+          c.status =
+            msg.status === 'approved'
+              ? 'confirmed'
+              : msg.status === 'declined'
+                ? 'declined'
+                : c.status
+          this.render()
+        }
         return
       }
       case 'action_started': {
@@ -2759,6 +2797,12 @@ class LiraSupportWidget {
       win.appendChild(this.buildPinModalEl())
     }
 
+    // In-call confirmation modal (Voice V2 P4) — shown while there are cards
+    // the caller hasn't resolved yet.
+    if (this.voiceConfirms.length > 0) {
+      win.appendChild(this.buildVoiceConfirmModalEl())
+    }
+
     // Input area
     const inputArea = document.createElement('div')
     inputArea.className = 'lira-input-area'
@@ -2935,6 +2979,7 @@ class LiraSupportWidget {
 
   private startVoiceCall(): void {
     if (this.voiceCall || this.pipecatVoice) return
+    this.voiceConfirms = [] // fresh in-call confirmation state per call (P4)
 
     // ARCHITECTURE DECISION (2026-05-23): voice ALWAYS uses the legacy
     // direct-to-Nova-Sonic path, even when ?pipecat=1 is set. The Pipecat
@@ -2995,13 +3040,20 @@ class LiraSupportWidget {
         onMicLevel: (_level) => {
           // Could visualize mic level — currently unused
         },
-      }
+      },
+      // Voice inherits verified identity (P4) — enables account actions on call.
+      this.config.visitorEmail && this.config.visitorSig
+        ? { email: this.config.visitorEmail, sig: this.config.visitorSig }
+        : undefined
     )
 
     this.voiceCall.start()
   }
 
   private endVoiceCall(): void {
+    // Clear the in-call confirmation modal — approved taps were already sent;
+    // outcomes now surface in chat (P4). Untapped cards fall back to post-call.
+    this.voiceConfirms = []
     if (this.voiceCall) {
       this.voiceCall.end()
     }
@@ -4355,6 +4407,114 @@ class LiraSupportWidget {
 
     backdrop.appendChild(modal)
     return backdrop
+  }
+
+  private buildVoiceConfirmModalEl(): HTMLElement {
+    const backdrop = document.createElement('div')
+    backdrop.className = 'lira-pin-backdrop'
+    // No click-to-dismiss — the caller must resolve each card.
+
+    const modal = document.createElement('div')
+    modal.className = 'lira-pin-modal'
+    modal.addEventListener('click', (e) => e.stopPropagation())
+
+    const title = document.createElement('div')
+    title.className = 'lira-pin-title'
+    title.textContent = 'Confirm before you hang up'
+    modal.appendChild(title)
+
+    const body = document.createElement('div')
+    body.className = 'lira-pin-body'
+    body.textContent = 'Tap Confirm on each — they run the moment the call ends.'
+    modal.appendChild(body)
+
+    for (const c of this.voiceConfirms) {
+      const card = document.createElement('div')
+      card.className = 'lira-confirm'
+
+      const t = document.createElement('div')
+      t.className = 'lira-confirm-title'
+      t.textContent = c.title
+      card.appendChild(t)
+
+      if (c.body) {
+        const b = document.createElement('div')
+        b.className = 'lira-confirm-body'
+        b.textContent = c.body
+        card.appendChild(b)
+      }
+
+      if (c.status === 'pending') {
+        const row = document.createElement('div')
+        row.className = 'lira-confirm-buttons'
+        const decline = document.createElement('button')
+        decline.className = 'lira-card-btn secondary'
+        decline.textContent = 'Decline'
+        decline.onclick = () => this.resolveVoiceConfirm(c.action_id, false)
+        const confirm = document.createElement('button')
+        confirm.className = 'lira-card-btn primary'
+        confirm.textContent = 'Confirm'
+        confirm.onclick = () => this.resolveVoiceConfirm(c.action_id, true)
+        row.appendChild(decline)
+        row.appendChild(confirm)
+        card.appendChild(row)
+      } else {
+        const status = document.createElement('div')
+        const tone =
+          c.status === 'confirmed'
+            ? 'approved'
+            : c.status === 'send_failed'
+              ? 'declined'
+              : c.status === 'declined'
+                ? 'declined'
+                : ''
+        status.className = `lira-confirm-status ${tone}`
+        status.textContent =
+          c.status === 'sending'
+            ? 'Sending…'
+            : c.status === 'confirmed'
+              ? 'Confirmed — runs when the call ends'
+              : c.status === 'send_failed'
+                ? 'Call ended — please confirm in the chat instead.'
+                : 'Declined'
+        card.appendChild(status)
+      }
+      modal.appendChild(card)
+    }
+
+    // Once every card is resolved, offer a Close button.
+    if (this.voiceConfirms.every((c) => c.status !== 'pending')) {
+      const buttons = document.createElement('div')
+      buttons.className = 'lira-pin-buttons'
+      const close = document.createElement('button')
+      close.className = 'lira-card-btn primary'
+      close.textContent = 'Done'
+      close.onclick = () => {
+        this.voiceConfirms = []
+        this.render()
+      }
+      buttons.appendChild(close)
+      modal.appendChild(buttons)
+    }
+
+    backdrop.appendChild(modal)
+    return backdrop
+  }
+
+  private resolveVoiceConfirm(actionId: string, approved: boolean): void {
+    const c = this.voiceConfirms.find((x) => x.action_id === actionId)
+    if (!c) return
+    // Optimism-free: don't claim "Confirmed" until the server acknowledges. Mark
+    // sending; if the socket is already closed, tell the user to confirm in chat.
+    // The confirm_ack handler flips sending → confirmed/declined.
+    c.status = 'sending'
+    const sent = this.currentVoiceCall?.sendJson({
+      action: 'confirm_response',
+      action_id: actionId,
+      approved,
+    })
+    if (!sent) c.status = 'send_failed'
+    this.render()
   }
 
   private submitPin(pin: string): void {

@@ -2253,7 +2253,7 @@ export function LandingPage() {
                     <ArrowUpRight size={16} />
                   </span>
                 </Link>
-                <a href="mailto:hello@creovine.com" className="secondary-cta">
+                <a href="mailto:info@liraintelligence.com" className="secondary-cta">
                   Book a demo
                   <span className="cta-icon-circle">
                     <ArrowUpRight size={16} />

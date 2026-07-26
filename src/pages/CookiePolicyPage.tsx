@@ -257,7 +257,8 @@ export function CookiePolicyPage() {
           </p>
           <ul>
             <li>
-              <strong>Email:</strong> <a href="mailto:privacy@creovine.com">privacy@creovine.com</a>
+              <strong>Email:</strong>{' '}
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
           </ul>
 

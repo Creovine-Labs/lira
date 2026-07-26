@@ -613,7 +613,7 @@ export function LandingPageVariant() {
                 <Sparkles size={16} />
                 Start free
               </Link>
-              <a href="mailto:hello@creovine.com" className="v2-ghost">
+              <a href="mailto:info@liraintelligence.com" className="v2-ghost">
                 Talk to the team
                 <ArrowUpRight size={16} />
               </a>

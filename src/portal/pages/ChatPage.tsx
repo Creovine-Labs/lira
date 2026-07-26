@@ -47,7 +47,7 @@ export function ChatPage({ config }: ChatPageProps) {
     <div className="lp-page lp-chat-page">
       <div className="lp-chat-header">
         <h2>Live Chat</h2>
-        <p>Chat with our AI assistant for instant help.</p>
+        <p>Chat with Support for instant help.</p>
       </div>
       <div ref={containerRef} className="lp-chat-container">
         <p className="lp-chat-hint">

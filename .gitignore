@@ -52,3 +52,16 @@ public/dev/
 Riverly_docs/
 docs/lira-product-vision-v1.txt
 docs/platform/customer-support/RIVERLY_PILOT_PLAN.md
+docs/cartesia-api.txt
+
+# All internal docs — repo is public, keep the entire docs tree out
+docs/
+
+# Vercel / production env files — contain secrets, never commit
+.env.vercel.production
+.env.vercel*
+.env.production
+.env.production.local
+
+# Local project/infra notes — public repo, keep out
+CLAUDE.md

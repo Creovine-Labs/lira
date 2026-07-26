@@ -29,20 +29,44 @@ const ROUTES = [
       'intelligent customer support, customer support automation, support workflow automation, embedded support page, support knowledge base, customer context, support workflows, Lira',
   },
   {
-    path: '/products/sales',
-    title: 'AI Sales Coaching - Real-Time Objection Handling and Deal Intelligence',
+    path: '/products/customer-support',
+    title: 'AI Customer Support - Grounded in Your Knowledge Base',
     description:
-      'Lira AI listens to every sales call in real time and tells you exactly what to say. AI-powered objection handling, battle card suggestions, deal coaching, win-rate analytics, and follow-up summaries.',
+      'Lira resolves customer support conversations across chat, email, voice, and WhatsApp, grounded in your knowledge base. Autonomous ticket resolution, secure in-product actions, and clean human handoff.',
     keywords:
-      'AI sales coaching, sales call AI, objection handling AI, battle cards AI, deal coaching, sales intelligence, competitive selling AI, revenue intelligence',
+      'AI customer support, customer support automation, knowledge base support, support chatbot, help desk automation, AI support agent, omnichannel support, ticket automation',
   },
   {
-    path: '/products/customer-support',
-    title: 'Intelligent Customer Support - Grounded in Your Knowledge Base',
+    path: '/pricing',
+    title: 'Pricing - Lira AI Customer Support Agent',
     description:
-      'Lira handles customer support conversations with responses grounded in your documentation. Smart escalation, post-call summaries, and knowledge base gap identification.',
+      'Start free and scale as you grow. Free, Pro ($29/mo), and Scale ($99/mo) plans, plus custom Enterprise. Every plan includes unlimited team seats — you pay for the AI, never per agent.',
     keywords:
-      'intelligent customer support, customer support automation, knowledge base support, support chatbot, automated support, help desk automation, support operations',
+      'AI customer support pricing, support automation pricing, Lira pricing, Zendesk alternative, Intercom alternative, per-agent pricing',
+  },
+  {
+    path: '/for/fintech',
+    title: 'Lira for Fintech - Compliant AI Customer Support',
+    description:
+      'AI customer support built for fintech: PII redaction before AI processing, never gives financial advice, actions run on your own infrastructure via MCP, server-side identity binding, and full dual-side audit.',
+    keywords:
+      'AI customer support for fintech, compliant AI support, fintech customer service automation, PII redaction, CBN complaint SLA, secure AI actions',
+  },
+  {
+    path: '/for/hospitality',
+    title: 'Lira for Hospitality - Always-on AI Guest Support',
+    description:
+      'Always-on AI guest support across chat, email, and voice. Answer booking, check-in, and local questions instantly, on brand and grounded in your property info, with smart handoff when it matters.',
+    keywords:
+      'AI guest support, hospitality customer support, hotel AI support, always-on guest service, AI concierge support',
+  },
+  {
+    path: '/book-demo',
+    title: 'Book a Demo - Lira AI Customer Support',
+    description:
+      'Book a Lira demo and share your team size, support channels, and goals. We tailor the demo around the channels, developer access, and support workflows your team needs.',
+    keywords:
+      'Lira demo, AI customer support demo, book a support automation demo, customer support software demo',
   },
   {
     path: '/resources',
@@ -206,8 +230,9 @@ const ROUTES = [
     path: '/security',
     title: 'Security - How Lira AI Protects Your Data',
     description:
-      'TLS 1.2+ encryption, AES-256 at rest, OAuth 2.0 PKCE, SOC 2-compliant infrastructure, and OWASP Top 10 compliance. Learn how Lira AI protects your data.',
-    keywords: 'Lira AI security, data protection, encryption, SOC 2, enterprise security',
+      'AES-256 encryption at rest, TLS in transit, actions off by default with per-tool approval, server-side identity binding, and dual-side audit. Sensitive operations run on your own infrastructure via MCP.',
+    keywords:
+      'Lira AI security, data protection, encryption, secure AI actions, MCP security, enterprise security',
   },
   {
     path: '/privacy',

@@ -21,6 +21,7 @@ import {
   resolveConversation as resolveConversationApi,
   deleteConversation as deleteConversationApi,
   handbackToLira as handbackToLiraApi,
+  takeoverConversation as takeoverConversationApi,
   escalateConversation as escalateConversationApi,
   updateConversationTags as updateTagsApi,
   summarizeConversation as summarizeApi,
@@ -66,6 +67,7 @@ interface SupportSlice {
   resolveConversation: (orgId: string, convId: string) => Promise<void>
   deleteConversation: (orgId: string, convId: string) => Promise<void>
   handbackToLira: (orgId: string, convId: string) => Promise<void>
+  takeoverConversation: (orgId: string, convId: string) => Promise<void>
   escalateConversation: (orgId: string, convId: string, reason: string) => Promise<void>
   setStatusFilter: (status: ConversationStatus | null) => void
   updateTags: (orgId: string, convId: string, tags: string[]) => Promise<void>
@@ -234,11 +236,24 @@ export const useSupportStore = create<SupportSlice>()((set) => ({
     await handbackToLiraApi(orgId, convId)
     set((s) => ({
       conversations: s.conversations.map((c) =>
-        c.conv_id === convId ? { ...c, status: 'open' as const } : c
+        c.conv_id === convId ? { ...c, status: 'open' as const, handling: 'ai' as const } : c
       ),
       selectedConversation:
         s.selectedConversation?.conv_id === convId
-          ? { ...s.selectedConversation, status: 'open' as const }
+          ? { ...s.selectedConversation, status: 'open' as const, handling: 'ai' as const }
+          : s.selectedConversation,
+    }))
+  },
+
+  takeoverConversation: async (orgId, convId) => {
+    await takeoverConversationApi(orgId, convId)
+    set((s) => ({
+      conversations: s.conversations.map((c) =>
+        c.conv_id === convId ? { ...c, handling: 'human' as const } : c
+      ),
+      selectedConversation:
+        s.selectedConversation?.conv_id === convId
+          ? { ...s.selectedConversation, handling: 'human' as const }
           : s.selectedConversation,
     }))
   },

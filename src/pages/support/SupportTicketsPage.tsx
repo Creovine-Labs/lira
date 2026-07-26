@@ -191,22 +191,35 @@ export function SupportTicketsPage() {
     [viewId]
   )
 
-  const matchesTeamFilter = useCallback(
-    (ticketId: string): boolean => {
-      if (teamFilter === 'all') return true
-      const a = assignments[ticketId]
-      if (teamFilter === 'mine') return !!a && a.assignee_user_id === userId
-      if (teamFilter === 'unassigned') return !a || (!a.team_id && !a.assignee_user_id)
-      return !!a && a.team_id === teamFilter
+  // W3: real assignment comes from the SERVER ticket (team_id / assignee_user_id);
+  // fall back to the local preview map only when the server hasn't set them.
+  const assignOf = useCallback(
+    (t: SupportTicketRecord) => {
+      const a = assignments[t.ticket_id]
+      return {
+        team_id: t.team_id ?? a?.team_id,
+        assignee_user_id: t.assignee_user_id ?? a?.assignee_user_id,
+      }
     },
-    [teamFilter, assignments, userId]
+    [assignments]
+  )
+
+  const matchesTeamFilter = useCallback(
+    (t: SupportTicketRecord): boolean => {
+      if (teamFilter === 'all') return true
+      const a = assignOf(t)
+      if (teamFilter === 'mine') return a.assignee_user_id === userId
+      if (teamFilter === 'unassigned') return !a.team_id && !a.assignee_user_id
+      return a.team_id === teamFilter
+    },
+    [teamFilter, assignOf, userId]
   )
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     const subset = tickets.filter((t) => {
       if (!activeView.match(t)) return false
-      if (!matchesTeamFilter(t.ticket_id)) return false
+      if (!matchesTeamFilter(t)) return false
       if (!q) return true
       return (
         t.subject?.toLowerCase().includes(q) ||
@@ -258,13 +271,13 @@ export function SupportTicketsPage() {
     let unassigned = 0
     const perTeam: Record<string, number> = {}
     for (const t of base) {
-      const a = assignments[t.ticket_id]
-      if (a?.assignee_user_id === userId) mine++
-      if (!a || (!a.team_id && !a.assignee_user_id)) unassigned++
-      if (a?.team_id) perTeam[a.team_id] = (perTeam[a.team_id] ?? 0) + 1
+      const a = assignOf(t)
+      if (a.assignee_user_id === userId) mine++
+      if (!a.team_id && !a.assignee_user_id) unassigned++
+      if (a.team_id) perTeam[a.team_id] = (perTeam[a.team_id] ?? 0) + 1
     }
     return { mine, unassigned, perTeam }
-  }, [tickets, activeView, assignments, userId])
+  }, [tickets, activeView, assignOf, userId])
 
   // Drag-and-drop in the board view changes a ticket's status. Apply the move
   // optimistically (so the card jumps columns instantly), then persist; roll
@@ -2202,6 +2215,7 @@ function HandoffBriefCard({
   onUseSuggestion: (text: string) => void
 }) {
   const brief = ticket.handoff_brief
+  const [expanded, setExpanded] = useState(false)
 
   // No brief yet (still generating async, or generation failed) — offer to make one.
   if (!brief) {
@@ -2231,71 +2245,88 @@ function HandoffBriefCard({
   return (
     <div className="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-indigo-100 bg-indigo-50/50 px-4 py-2.5">
-        <div className="flex items-center gap-2">
-          <SparklesIcon className="h-4 w-4 text-indigo-500" />
-          <p className="text-sm font-semibold text-indigo-900">Handoff brief</p>
+        <button
+          type="button"
+          onClick={() => setExpanded((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <SparklesIcon className="h-4 w-4 shrink-0 text-indigo-500" />
+          <p className="shrink-0 text-sm font-semibold text-indigo-900">AI summary</p>
           {ticket.handoff_trigger && TRIGGER_LABELS[ticket.handoff_trigger] && (
-            <span className="rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-indigo-600">
+            <span className="shrink-0 rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-indigo-600">
               {TRIGGER_LABELS[ticket.handoff_trigger]}
             </span>
           )}
-        </div>
+          {!expanded && (
+            <span className="min-w-0 truncate text-xs text-indigo-700/70">
+              — {brief.issue_summary}
+            </span>
+          )}
+          <ChevronDownIcon
+            className={cn(
+              'ml-1 h-4 w-4 shrink-0 text-indigo-400 transition',
+              expanded && 'rotate-180'
+            )}
+          />
+        </button>
         <button
           onClick={onRegenerate}
           disabled={regenerating}
-          className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 transition hover:bg-white disabled:opacity-60"
+          className="inline-flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-semibold text-indigo-600 transition hover:bg-white disabled:opacity-60"
         >
           <ArrowPathIcon className={cn('h-3.5 w-3.5', regenerating && 'animate-spin')} />
           {regenerating ? 'Regenerating…' : 'Regenerate'}
         </button>
       </div>
 
-      <div className="space-y-4 p-4">
-        <BriefRow label="Customer">{brief.customer_summary}</BriefRow>
-        <BriefRow label="Issue">{brief.issue_summary}</BriefRow>
+      {expanded && (
+        <div className="space-y-4 p-4">
+          <BriefRow label="Customer">{brief.customer_summary}</BriefRow>
+          <BriefRow label="Issue">{brief.issue_summary}</BriefRow>
 
-        {brief.what_agent_tried.length > 0 && (
-          <div>
-            <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
-              What Lira tried
-            </p>
-            <ul className="space-y-1">
-              {brief.what_agent_tried.map((step, i) => (
-                <li key={i} className="flex gap-2 text-sm text-gray-700">
-                  <span className="text-gray-300">→</span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        <div className="rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2">
-          <p className="mb-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-700">
-            What you need to do
-          </p>
-          <p className="text-sm font-medium text-amber-900">{brief.what_human_needs_to_do}</p>
-        </div>
-
-        {brief.suggested_response && (
-          <div>
-            <div className="mb-1 flex items-center justify-between">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-                Suggested reply
+          {brief.what_agent_tried.length > 0 && (
+            <div>
+              <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                What Lira tried
               </p>
-              <button
-                onClick={() => onUseSuggestion(brief.suggested_response)}
-                className="rounded-lg bg-slate-950 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-slate-800"
-              >
-                Use this reply
-              </button>
+              <ul className="space-y-1">
+                {brief.what_agent_tried.map((step, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-gray-700">
+                    <span className="text-gray-300">→</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ul>
             </div>
-            <p className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
-              {brief.suggested_response}
+          )}
+
+          <div className="rounded-lg border border-amber-100 bg-amber-50/60 px-3 py-2">
+            <p className="mb-0.5 text-[11px] font-bold uppercase tracking-wider text-amber-700">
+              What you need to do
             </p>
+            <p className="text-sm font-medium text-amber-900">{brief.what_human_needs_to_do}</p>
           </div>
-        )}
-      </div>
+
+          {brief.suggested_response && (
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+                  Suggested reply
+                </p>
+                <button
+                  onClick={() => onUseSuggestion(brief.suggested_response)}
+                  className="rounded-lg bg-slate-950 px-2.5 py-1 text-[11px] font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Use this reply
+                </button>
+              </div>
+              <p className="whitespace-pre-wrap rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-6 text-slate-700">
+                {brief.suggested_response}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

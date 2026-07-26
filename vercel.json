@@ -4,6 +4,11 @@
   "redirects": [
     { "source": "/products/interviews", "destination": "/", "permanent": true },
     {
+      "source": "/products/sales",
+      "destination": "/products/customer-support",
+      "permanent": true
+    },
+    {
       "source": "/blog/ai-interview-process",
       "destination": "/blog/ai-customer-support-context",
       "permanent": true

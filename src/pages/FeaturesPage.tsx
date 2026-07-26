@@ -8,8 +8,11 @@ import {
   Lifebuoy,
   Microphone,
   PlugsConnected,
+  ShieldCheck,
+  Ticket,
   TreeStructure,
   UserFocus,
+  WhatsappLogo,
 } from '@phosphor-icons/react'
 import { SEO } from '@/components/SEO'
 import { BlogButton, BlogShell } from './BlogChrome'
@@ -36,9 +39,24 @@ const features = [
     copy: 'Meet customers where they already ask for help without scattering context across disconnected channels.',
   },
   {
+    icon: WhatsappLogo,
+    title: 'WhatsApp Business support',
+    copy: 'Run the same knowledge-grounded agent inside WhatsApp on your own number, so customers get help in the app they already use.',
+  },
+  {
+    icon: Ticket,
+    title: 'Autonomous tickets, SLA & CSAT',
+    copy: 'When a human is needed, Lira opens a ticket with the full transcript and identity attached. Queues, routing, SLA timers, and satisfaction scoring are built in.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Secure in-product actions',
+    copy: 'Register actions Lira can run for a customer with a per-action approval policy and full audit trail. Off by default, opt-in per tool, and re-auth gated for sensitive operations.',
+  },
+  {
     icon: PlugsConnected,
-    title: 'Developer-ready support automation',
-    copy: 'Use API keys, CLI commands, MCP tools, and SDK context so Lira can move support work forward under your own product rules.',
+    title: 'Connect your own tools with MCP',
+    copy: 'Bring your Model Context Protocol server so Lira can call your systems under your own auth — with OAuth 2.1, per-tool approval, rate limits, and drift detection. Plus scoped API keys and a CLI.',
   },
   {
     icon: Database,
@@ -52,8 +70,35 @@ const features = [
   },
   {
     icon: DeviceMobile,
-    title: 'Mobile App Integration',
-    copy: 'Build a native in-app support screen on Lira APIs, register push tokens, and send notifications through proactive triggers.',
+    title: 'Native mobile support SDK',
+    copy: "Build a native in-app support screen over Lira's chat WebSocket, with confirm-before-action, step-up re-auth, human takeover, and push notifications.",
+  },
+]
+
+const faqs = [
+  {
+    q: 'What channels does Lira support?',
+    a: 'A website chat widget, an embedded in-app support surface (Web SDK), a hosted branded support portal, email, inbound voice (rolling out), and the WhatsApp Business API — all handled by the same AI agent with shared context.',
+  },
+  {
+    q: 'Does Lira only answer questions, or can it take action?',
+    a: 'Both. Beyond answering, Lira can run approved actions in your product — cancel a subscription, retry a payment, resend an invoice — each with an approval policy and a full audit trail. Actions are off by default and opt-in per tool.',
+  },
+  {
+    q: 'How does Lira avoid making things up?',
+    a: 'Every answer is grounded in your knowledge base using retrieval-augmented generation, so Lira only responds from your real content. When its confidence is low, or the intent is sensitive, it escalates to a human instead of guessing.',
+  },
+  {
+    q: 'Can developers connect their own systems?',
+    a: 'Yes. Connect your own tools with a Model Context Protocol (MCP) server (OAuth 2.1, per-tool approval), use scoped API keys and a CLI, and build native in-app support with the mobile SDK.',
+  },
+  {
+    q: 'What happens when a human needs to take over?',
+    a: 'Lira opens a ticket with the full conversation context, and the moment a teammate replies the AI pauses (human takeover) until handback — so customers never get a dead end and agents never start from scratch.',
+  },
+  {
+    q: 'How much does Lira cost?',
+    a: 'There is a Free plan, Pro from $29/month, and Scale from $99/month, plus custom Enterprise. Every plan includes unlimited team seats — you pay for the AI’s work, never per agent.',
   },
 ]
 
@@ -160,8 +205,18 @@ export function FeaturesPage() {
     <BlogShell>
       <SEO
         title="Lira Features - AI Customer Support for Modern Teams"
-        description="Explore Lira's AI customer support features: chat, voice, email, portal, customer memory, workflow actions, API access, MCP tools, and one-script website setup."
+        description="Explore Lira's AI customer support features: chat, voice, email, portal, and WhatsApp; grounded answers; autonomous tickets with SLA and CSAT; secure in-product actions; MCP, API, CLI, and a native mobile SDK."
+        keywords="AI customer support features, support automation software, omnichannel support, WhatsApp support, autonomous ticketing, CSAT, secure AI actions, MCP connector, developer API, native mobile support SDK, knowledge base AI"
         path="/features"
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'FAQPage',
+          mainEntity: faqs.map(({ q, a }) => ({
+            '@type': 'Question',
+            name: q,
+            acceptedAnswer: { '@type': 'Answer', text: a },
+          })),
+        }}
       />
 
       <section className="bx-hero">
@@ -331,6 +386,27 @@ export function FeaturesPage() {
                 </div>
               </div>
             </article>
+          </section>
+
+          <section style={{ marginTop: 96 }}>
+            <h2 className="bx-section-title">Frequently asked questions</h2>
+            <p className="bx-section-copy">
+              The questions teams ask most when evaluating Lira for customer support.
+            </p>
+            <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
+              {faqs.map(({ q, a }) => (
+                <article className="bx-post-card" key={q}>
+                  <div className="bx-post-surface">
+                    <h3 className="bx-post-title" style={{ fontSize: 19 }}>
+                      {q}
+                    </h3>
+                    <p className="bx-post-excerpt" style={{ marginTop: 8 }}>
+                      {a}
+                    </p>
+                  </div>
+                </article>
+              ))}
+            </div>
           </section>
 
           <section style={{ marginTop: 96, textAlign: 'center' }}>

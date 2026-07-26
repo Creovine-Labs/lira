@@ -27,7 +27,8 @@ export function ContactPage() {
       <main className="bx-main">
         <div className="bx-container bx-post-grid">
           {[
-            [EnvelopeSimple, 'Email', 'lira@liraintelligence.com'],
+            [EnvelopeSimple, 'General enquiries', 'info@liraintelligence.com'],
+            [EnvelopeSimple, 'Reach Sarah directly', 'sarah@liraintelligence.com'],
             [ChatText, 'Product and demo requests', 'Book a demo or send your setup questions.'],
             [MapPin, 'Built by', 'Creovine'],
           ].map(([Icon, title, copy]) => (

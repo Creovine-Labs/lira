@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-dom'
+import { enforceHostRouting, isAppHost } from './host-routing'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'sonner'
 
@@ -22,7 +23,6 @@ import {
   TasksPage,
   OrgTaskDetailPage,
   OrgEmailPage,
-  ProductSalesPage,
   ProductCustomerSupportPage,
   PricingPage,
   DemoSitePage,
@@ -134,7 +134,24 @@ function RootRoute() {
 
   if (token) return <Navigate to="/dashboard" replace />
 
+  // On the app subdomain, the root is the product entrance — an unauthenticated
+  // visitor should land on login, not the marketing page.
+  if (isAppHost()) return <Navigate to="/login" replace />
+
   return <LandingPageV4 />
+}
+
+/**
+ * Keeps every client-side navigation on the correct host (apex = marketing,
+ * app. = product). Runs enforceHostRouting on each location change so a
+ * <Link to="/dashboard"> on the marketing site bounces to the app subdomain.
+ */
+function HostGuard() {
+  const location = useLocation()
+  useEffect(() => {
+    enforceHostRouting()
+  }, [location.pathname, location.search])
+  return null
 }
 
 function App() {
@@ -150,6 +167,7 @@ function App() {
 
   return (
     <GoogleOAuthProvider clientId={env.VITE_GOOGLE_LOGIN_CLIENT_ID}>
+      <HostGuard />
       <Routes>
         {/* Public routes — no shell */}
         <Route path="/" element={<RootRoute />} />
@@ -164,7 +182,8 @@ function App() {
         <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route path="/ui-lab" element={<UiLabPage />} />
         <Route path="/launch-demo" element={<Navigate to="/features" replace />} />
-        <Route path="/products/sales" element={<ProductSalesPage />} />
+        {/* /products/sales (deprecated sales-coaching product) is 301'd to
+            /products/customer-support at the edge via vercel.json. */}
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />

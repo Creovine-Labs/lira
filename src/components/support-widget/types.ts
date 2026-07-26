@@ -181,6 +181,7 @@ export interface IncomingWsMessage {
     | 'history'
     | 'card'
     | 'confirm'
+    | 'confirm_ack'
     | 'action_result'
     | 'navigate'
     | 'demo_action_executed'

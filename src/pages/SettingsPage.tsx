@@ -1881,6 +1881,7 @@ function SupportSettingsSection() {
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.7)
   const [forceEscalateIntents, setForceEscalateIntents] = useState('')
   const [escalationEmail, setEscalationEmail] = useState('')
+  const [escalationNotifyEnabled, setEscalationNotifyEnabled] = useState(true)
   const [greetingMessage, setGreetingMessage] = useState('Hello! How can I help you today?')
   const [slaHours, setSlaHours] = useState(4)
 
@@ -1922,6 +1923,7 @@ function SupportSettingsSection() {
     // that blanked this whole tab.
     setForceEscalateIntents((config.force_escalate_intents ?? []).join(', '))
     setEscalationEmail(config.escalation_email ?? '')
+    setEscalationNotifyEnabled(config.escalation_notify_enabled ?? true)
     setGreetingMessage(config.greeting_message ?? 'Hello! How can I help you today?')
     setSlaHours(config.sla_hours ?? 4)
   }, [config, currentOrg?.name])
@@ -1953,6 +1955,7 @@ function SupportSettingsSection() {
           .map((s) => s.trim())
           .filter(Boolean),
         escalation_email: escalationEmail.trim() || undefined,
+        escalation_notify_enabled: escalationNotifyEnabled,
         greeting_message: greetingMessage.trim() || undefined,
         sla_hours: slaHours,
       })
@@ -1983,6 +1986,7 @@ function SupportSettingsSection() {
     confidenceThreshold,
     forceEscalateIntents,
     escalationEmail,
+    escalationNotifyEnabled,
     greetingMessage,
     slaHours,
     updateConfig,
@@ -2879,15 +2883,31 @@ function SupportSettingsSection() {
                 title="When a human takes over"
                 hint="Where escalated conversations go, and how fast they should be answered."
               >
+                <div className="flex items-center justify-between pb-1">
+                  <div className="pr-4">
+                    <p className="text-[13px] font-semibold text-gray-900">
+                      Email us when a customer wants a human
+                    </p>
+                    <p className="mt-0.5 text-[11.5px] text-gray-400">
+                      On by default. We email your team whenever a ticket is opened from a chat.
+                    </p>
+                  </div>
+                  <SToggle
+                    checked={escalationNotifyEnabled}
+                    onChange={setEscalationNotifyEnabled}
+                    label=""
+                  />
+                </div>
                 <SField
-                  label="Escalation email"
-                  hint="Lira alerts this address whenever a conversation is escalated."
+                  label="Alert email (optional)"
+                  hint="Leave blank and we email the org owner’s address automatically. Set a shared inbox to override."
                 >
                   <input
                     type="email"
                     value={escalationEmail}
                     onChange={(e) => setEscalationEmail(e.target.value)}
-                    placeholder="you@company.com"
+                    placeholder="support@company.com — defaults to the owner’s email"
+                    disabled={!escalationNotifyEnabled}
                     className={fieldInputCls}
                   />
                 </SField>

@@ -104,10 +104,10 @@ export function TermsOfServicePage() {
           <h3>3.3 Account Security</h3>
           <p>
             Notify us immediately at{' '}
-            <a href="mailto:security@liraintelligence.com">security@liraintelligence.com</a> if you
-            become aware of any unauthorized use of your account or any other breach of security. We
-            are not liable for loss arising from unauthorized use of your account caused by your
-            failure to keep your credentials secure.
+            <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a> if you become
+            aware of any unauthorized use of your account or any other breach of security. We are
+            not liable for loss arising from unauthorized use of your account caused by your failure
+            to keep your credentials secure.
           </p>
 
           {/* 4 */}
@@ -335,8 +335,8 @@ export function TermsOfServicePage() {
           <p>
             You may cancel your subscription or terminate your account at any time through your
             workspace settings or by contacting{' '}
-            <a href="mailto:support@liraintelligence.com">support@liraintelligence.com</a>.
-            Cancellation takes effect as described in our <Link to="/refund">Refund Policy</Link>.
+            <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>. Cancellation
+            takes effect as described in our <Link to="/refund">Refund Policy</Link>.
           </p>
           <h3>14.2 By Us</h3>
           <p>
@@ -411,11 +411,11 @@ export function TermsOfServicePage() {
           <ul>
             <li>
               <strong>Legal:</strong>{' '}
-              <a href="mailto:legal@liraintelligence.com">legal@liraintelligence.com</a>
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
             <li>
               <strong>Support:</strong>{' '}
-              <a href="mailto:support@liraintelligence.com">support@liraintelligence.com</a>
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
             <li>
               <strong>Company:</strong> Creovine Ltd

@@ -3,17 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#020308" />
 
     <!-- Primary SEO Meta Tags -->
     <title>Lira · Intelligent Customer Support That Remembers and Acts</title>
     <meta name="title" content="Lira · Intelligent Customer Support That Remembers and Acts" />
     <meta
       name="description"
-      content="Lira is a Conversational Intelligence platform for customer support, sales calls, and meetings, grounded in your knowledge and connected to the workflows your team uses."
+      content="Lira is an AI customer support platform that learns your product, replies in your voice across chat, email, voice, and WhatsApp, resolves tickets, runs secure in-product actions, and hands off to a human only when it should."
     />
     <meta
       name="keywords"
-      content="conversational intelligence platform, intelligent customer support, customer support automation, support workflow automation, real-time sales coaching, meeting intelligence, knowledge-grounded support, conversational intelligence for SaaS, Lira Intelligence"
+      content="AI customer support, customer support automation, AI support agent, help desk automation, support chatbot, AI customer service, knowledge base AI, ticket automation, customer support software, AI support for fintech, MCP customer support, Lira Intelligence"
     />
     <meta name="author" content="Lira Intelligence" />
     <meta
@@ -38,7 +39,7 @@
     />
     <meta
       property="og:description"
-      content="One intelligent support and workflow layer across customer support, sales calls, and meetings. Grounded in your knowledge. Lira doesn't just listen, it responds and resolves."
+      content="One AI support layer across chat, email, voice, and WhatsApp. Grounded in your knowledge base. Lira doesn't just answer — it resolves tickets, takes secure action in your product, and hands off to a human when it should."
     />
     <meta
       property="og:image"
@@ -58,7 +59,7 @@
     />
     <meta
       name="twitter:description"
-      content="One intelligent support and workflow layer across customer support, sales calls, and meetings. Grounded in your knowledge."
+      content="One AI support layer across chat, email, voice, and WhatsApp. Grounded in your knowledge base. Resolves tickets, takes secure action, and hands off to a human when it should."
     />
     <meta
       name="twitter:image"
@@ -66,7 +67,8 @@
     />
 
     <!-- Favicons -->
-    <link rel="icon" type="image/png" href="/lira_black_with_white_backgound.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/lira_black_with_white_backgound.png" />
 
     <!-- Fonts -->
@@ -86,13 +88,24 @@
         "alternateName": "Lira Intelligence",
         "url": "https://liraintelligence.com",
         "logo": "https://liraintelligence.com/lira_black_with_white_backgound.png",
-        "description": "Lira is a Conversational Intelligence platform for customer support, sales calls, and meetings, grounded in your knowledge and connected to your team's workflows.",
+        "description": "Lira is an AI customer support platform that learns your product and resolves customer conversations across chat, email, voice, and WhatsApp, grounded in your knowledge base, with human handoff and secure in-product actions.",
         "foundingDate": "2026",
-        "sameAs": [],
+        "parentOrganization": {
+          "@type": "Organization",
+          "name": "Creovine Ltd",
+          "url": "https://creovine.com",
+          "foundingDate": "2026",
+          "description": "Creovine Ltd is a registered technology company (Nigeria, RC 9380814; Rwanda, RDB 156057511) building applied-AI products, of which Lira is one.",
+          "location": [
+            { "@type": "Country", "name": "Nigeria" },
+            { "@type": "Country", "name": "Rwanda" }
+          ]
+        },
+        "sameAs": ["https://creovine.com"],
         "contactPoint": {
           "@type": "ContactPoint",
           "contactType": "customer support",
-          "email": "lira@liraintelligence.com"
+          "email": "info@liraintelligence.com"
         }
       }
     </script>
@@ -104,28 +117,30 @@
         "@type": "SoftwareApplication",
         "name": "Lira",
         "applicationCategory": "BusinessApplication",
-        "applicationSubCategory": "Conversational Intelligence Platform",
+        "applicationSubCategory": "Customer Support Software",
         "operatingSystem": "Web",
-        "description": "Conversational Intelligence platform for customer support, sales calls, and meetings, grounded in your organization's knowledge.",
+        "description": "AI customer support platform that resolves customer conversations across chat, email, voice, and WhatsApp — grounded in your knowledge base, with human handoff and secure in-product actions.",
         "url": "https://liraintelligence.com",
         "offers": {
-          "@type": "Offer",
-          "price": "0",
+          "@type": "AggregateOffer",
           "priceCurrency": "USD",
-          "description": "Free early access"
+          "lowPrice": "0",
+          "highPrice": "99",
+          "offerCount": "4",
+          "description": "Free, Pro ($29/mo), Scale ($99/mo), and Enterprise (custom) plans.",
+          "url": "https://liraintelligence.com/pricing"
         },
         "featureList": [
-          "Intelligent customer support across chat, portal, and email",
-          "Knowledge-grounded responses with RAG",
-          "Autonomous ticket resolution",
-          "Real-time sales coaching with objection detection",
-          "Follow-up summaries and support action logs",
-          "AI meeting participant with live action execution",
-          "Post-call summaries and action items",
-          "Tool use: create tickets, run approved actions, send follow-ups",
+          "AI customer support across chat widget, support portal, email, voice, and WhatsApp",
+          "Knowledge-grounded answers with Retrieval-Augmented Generation (RAG)",
+          "Autonomous ticket resolution with SLA, CSAT, and analytics",
+          "Human handoff with full conversation context",
+          "Secure in-product actions with per-action approval and audit",
+          "Model Context Protocol (MCP) connector with OAuth 2.1 and per-tool approval",
+          "Developer API keys, CLI, and a native mobile support SDK",
+          "Proactive outreach and a knowledge-base learning loop",
           "Organization-wide knowledge base with semantic search",
-          "API, CLI, MCP, WhatsApp, and Google Drive support connections",
-          "Built on Amazon Nova Sonic and Nova Lite"
+          "Unlimited team seats on every plan"
         ],
         "screenshot": "https://liraintelligence.com/lira_black_with_white_backgound.png"
       }

@@ -5,21 +5,29 @@
     <loc>https://liraintelligence.com/</loc>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
-    <lastmod>2026-04-11</lastmod>
+    <lastmod>2026-07-24</lastmod>
   </url>
 
   <!-- Product Pages -->
   <url>
-    <loc>https://liraintelligence.com/products/sales</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-    <lastmod>2026-04-11</lastmod>
-  </url>
-  <url>
     <loc>https://liraintelligence.com/products/customer-support</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <lastmod>2026-04-11</lastmod>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+
+  <!-- Solutions / verticals -->
+  <url>
+    <loc>https://liraintelligence.com/for/fintech</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+  <url>
+    <loc>https://liraintelligence.com/for/hospitality</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-07-24</lastmod>
   </url>
 
   <!-- Pricing -->
@@ -27,7 +35,23 @@
     <loc>https://liraintelligence.com/pricing</loc>
     <changefreq>monthly</changefreq>
     <priority>0.9</priority>
-    <lastmod>2026-04-21</lastmod>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+
+  <!-- Features -->
+  <url>
+    <loc>https://liraintelligence.com/features</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <lastmod>2026-07-24</lastmod>
+  </url>
+
+  <!-- Book a demo -->
+  <url>
+    <loc>https://liraintelligence.com/book-demo</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+    <lastmod>2026-07-24</lastmod>
   </url>
 
   <!-- Resources & Learning -->
@@ -130,13 +154,7 @@
     <lastmod>2026-05-01</lastmod>
   </url>
 
-  <!-- Marketing Pages -->
-  <url>
-    <loc>https://liraintelligence.com/features</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.8</priority>
-    <lastmod>2026-05-09</lastmod>
-  </url>
+  <!-- Company -->
   <url>
     <loc>https://liraintelligence.com/about</loc>
     <changefreq>monthly</changefreq>

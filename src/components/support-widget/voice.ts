@@ -70,6 +70,22 @@ class PcmPlayer {
   // utterance — perceptible but not bad for a support call.
   private static readonly LEADTIME_SEC = 0.35
 
+  // ── Smoothness instrumentation (Voice V2, Phase 1) ──────────────────────
+  // Measurement-only. Pairs with the server-side metrics in
+  // lira-sonic.service.ts: if the server reports smooth gaps but the browser
+  // underruns here, the stutter is transport/playback, not Bedrock.
+  // See docs VOICE_V2_IMPLEMENTATION_PLAN.md §4.1. Always collected (cheap);
+  // only logged when debug is enabled (window.LIRA_VOICE_DEBUG === true or
+  // localStorage 'lira_voice_debug' === '1') since this widget ships on
+  // customer sites.
+  private createdAt = performance.now()
+  private firstPlayAt = 0
+  private lastPlayAt = 0
+  private chunkCount = 0
+  private arrivalGapsMs: number[] = []
+  private underruns = 0
+  private flushes = 0
+
   constructor() {
     this.ctx = new AudioContext({ sampleRate: 24000 })
     // AudioContext starts in `suspended` state on Chrome (and sometimes
@@ -86,6 +102,13 @@ class PcmPlayer {
     // PCM 16-bit requires even byte count — trim trailing odd byte if present
     const byteLen = pcmData.byteLength & ~1
     if (byteLen === 0) return
+
+    // Instrumentation: chunk arrival timing (Phase 1).
+    const arrival = performance.now()
+    if (this.firstPlayAt === 0) this.firstPlayAt = arrival
+    if (this.lastPlayAt !== 0) this.arrivalGapsMs.push(arrival - this.lastPlayAt)
+    this.lastPlayAt = arrival
+    this.chunkCount++
     const int16 = new Int16Array(pcmData, 0, byteLen / 2)
 
     const float32 = new Float32Array(int16.length)
@@ -115,12 +138,16 @@ class PcmPlayer {
     }
 
     const now = this.ctx.currentTime
+    // Instrumentation: underrun = the scheduled queue fully drained before
+    // this chunk arrived, i.e. an audible gap (Phase 1).
+    if (this.nextPlayTime > 0 && now >= this.nextPlayTime) this.underruns++
     const startTime = Math.max(now + PcmPlayer.LEADTIME_SEC, this.nextPlayTime)
     source.start(startTime)
     this.nextPlayTime = startTime + buffer.duration
   }
 
   flush(): void {
+    this.flushes++
     for (const s of this.sources) {
       try {
         s.stop()
@@ -133,7 +160,54 @@ class PcmPlayer {
     this.nextPlayTime = 0
   }
 
+  /** Snapshot of smoothness metrics for this call (Phase 1). */
+  getMetrics(): {
+    ttfpMs: number
+    chunks: number
+    gapP50: number
+    gapP95: number
+    gapP99: number
+    gapMax: number
+    underruns: number
+    flushes: number
+  } {
+    const gaps = [...this.arrivalGapsMs].sort((a, b) => a - b)
+    const pct = (p: number) =>
+      gaps.length
+        ? Math.round(gaps[Math.min(gaps.length - 1, Math.floor((p / 100) * gaps.length))])
+        : 0
+    return {
+      ttfpMs: this.firstPlayAt ? Math.round(this.firstPlayAt - this.createdAt) : -1,
+      chunks: this.chunkCount,
+      gapP50: pct(50),
+      gapP95: pct(95),
+      gapP99: pct(99),
+      gapMax: gaps.length ? Math.round(gaps[gaps.length - 1]) : 0,
+      underruns: this.underruns,
+      flushes: this.flushes,
+    }
+  }
+
+  private logMetrics(): void {
+    let debug = false
+    try {
+      debug =
+        (window as unknown as { LIRA_VOICE_DEBUG?: boolean }).LIRA_VOICE_DEBUG === true ||
+        localStorage.getItem('lira_voice_debug') === '1'
+    } catch {
+      /* storage blocked — stay silent */
+    }
+    if (!debug) return
+    const m = this.getMetrics()
+    console.log(
+      `[voice][metrics] ttfp_ms=${m.ttfpMs} chunks=${m.chunks} ` +
+        `arrival_gap_p50_ms=${m.gapP50} p95_ms=${m.gapP95} p99_ms=${m.gapP99} ` +
+        `max_ms=${m.gapMax} underruns=${m.underruns} flushes=${m.flushes}`
+    )
+  }
+
   destroy(): void {
+    this.logMetrics()
     this.flush()
     void this.ctx.close()
   }
@@ -150,18 +224,21 @@ export class WidgetVoiceCall {
   private orgId: string
   private visitorId: string
   private demoContext: Record<string, unknown> | undefined
+  private identity: { email?: string; sig?: string } | undefined
   private levelInterval: ReturnType<typeof setInterval> | null = null
 
   constructor(
     orgId: string,
     visitorId: string,
     demoContext: Record<string, unknown> | undefined,
-    callbacks: VoiceCallbacks
+    callbacks: VoiceCallbacks,
+    identity?: { email?: string; sig?: string }
   ) {
     this.orgId = orgId
     this.visitorId = visitorId
     this.demoContext = demoContext
     this.callbacks = callbacks
+    this.identity = identity
   }
 
   async start(): Promise<void> {
@@ -240,7 +317,12 @@ export class WidgetVoiceCall {
       this.player = new PcmPlayer()
 
       // 5. Connect WebSocket to backend voice endpoint
-      const wsUrl = `wss://api.creovine.com/lira/v1/support/chat/voice/${this.orgId}?visitorId=${encodeURIComponent(this.visitorId)}`
+      let wsUrl = `wss://api.creovine.com/lira/v1/support/chat/voice/${this.orgId}?visitorId=${encodeURIComponent(this.visitorId)}`
+      // Voice inherits verified identity (P4): pass email+sig so the caller gets
+      // verified_customer scope and can confirm account actions.
+      if (this.identity?.email && this.identity?.sig) {
+        wsUrl += `&email=${encodeURIComponent(this.identity.email)}&sig=${encodeURIComponent(this.identity.sig)}`
+      }
       this.ws = new WebSocket(wsUrl)
       this.ws.binaryType = 'arraybuffer'
 
@@ -293,7 +375,9 @@ export class WidgetVoiceCall {
             msg.type === 'pin_required' ||
             msg.type === 'action_started' ||
             msg.type === 'action_completed' ||
-            msg.type === 'action_failed'
+            msg.type === 'action_failed' ||
+            msg.type === 'confirm' || // in-call confirmation card (Voice V2 P4)
+            msg.type === 'confirm_ack'
           ) {
             // Voice tools (Sonic-fired tool calls) emit these on the voice
             // WS. The chat widget renders the action card + PIN modal via

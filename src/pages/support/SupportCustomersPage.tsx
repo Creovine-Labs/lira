@@ -3,12 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   BookOpenIcon,
-  BuildingOffice2Icon,
   ChatBubbleLeftRightIcon,
   ExclamationTriangleIcon,
   MagnifyingGlassIcon,
   PlusIcon,
-  StarIcon,
   TrashIcon,
   UserGroupIcon,
   UserIcon,
@@ -23,7 +21,6 @@ import {
   type CustomerTier,
 } from '@/services/api/support-api'
 import { cn } from '@/lib'
-import { Pill, type PillTone } from './Pill'
 import { ExportButton } from './ExportButton'
 
 /**
@@ -35,23 +32,11 @@ import { ExportButton } from './ExportButton'
 
 type TierFilter = 'all' | CustomerTier
 
+// Tiers (standard/VIP/enterprise) are hidden — nothing sets them without a CRM
+// integration, so they only added confusion (W1). Left as a single "All" view.
 const TIER_VIEWS: { value: TierFilter; label: string; Icon: typeof UserIcon }[] = [
   { value: 'all', label: 'All customers', Icon: UserGroupIcon },
-  { value: 'standard', label: 'Standard', Icon: UserIcon },
-  { value: 'vip', label: 'VIP', Icon: StarIcon },
-  { value: 'enterprise', label: 'Enterprise', Icon: BuildingOffice2Icon },
 ]
-
-function tierMeta(tier: CustomerTier): { tone: PillTone; label: string } {
-  switch (tier) {
-    case 'vip':
-      return { tone: 'brand', label: 'VIP' }
-    case 'enterprise':
-      return { tone: 'success', label: 'Enterprise' }
-    default:
-      return { tone: 'neutral', label: 'Standard' }
-  }
-}
 
 // ── Page wrapper (activation guard) ───────────────────────────────────────────
 
@@ -281,7 +266,6 @@ function SupportCustomersPanel() {
           ) : (
             <ul className="mx-auto max-w-4xl space-y-2">
               {filtered.map((c) => {
-                const meta = tierMeta(c.tier)
                 return (
                   <li key={c.customer_id}>
                     <button
@@ -294,9 +278,6 @@ function SupportCustomersPanel() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <p className="truncate text-sm font-semibold text-gray-900">{c.name}</p>
-                          <Pill tone={meta.tone} className="shrink-0 text-[10px]" uppercase>
-                            {meta.label}
-                          </Pill>
                         </div>
                         <p className="truncate text-xs text-gray-400">
                           {c.email}
@@ -416,7 +397,7 @@ function CreateCustomerModal({
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [company, setCompany] = useState('')
-  const [tier, setTier] = useState<CustomerTier>('standard')
+  const tier: CustomerTier = 'standard'
   const [saving, setSaving] = useState(false)
 
   const submit = async () => {
@@ -486,17 +467,6 @@ function CreateCustomerModal({
               placeholder="Acme Inc."
               className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#020308] focus:ring-1 focus:ring-[#020308]"
             />
-          </Field>
-          <Field label="Tier">
-            <select
-              value={tier}
-              onChange={(e) => setTier(e.target.value as CustomerTier)}
-              className="w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#020308] focus:ring-1 focus:ring-[#020308]"
-            >
-              <option value="standard">Standard</option>
-              <option value="vip">VIP</option>
-              <option value="enterprise">Enterprise</option>
-            </select>
           </Field>
         </div>
 

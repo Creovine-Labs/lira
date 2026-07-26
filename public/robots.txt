@@ -4,6 +4,9 @@
 User-agent: *
 Allow: /
 Allow: /products/
+Allow: /for/
+Allow: /pricing
+Allow: /book-demo
 Allow: /blog/
 Allow: /docs/
 Allow: /resources/
@@ -41,6 +44,48 @@ Disallow: /signup
 # Disallow public demo (sandbox; no SEO value; AI cost surface)
 Disallow: /demo
 Disallow: /demo/
+
+# ── AI / LLM crawlers ─────────────────────────────────────────────────────────
+# Explicitly welcome AI answer engines and training crawlers so Lira can be
+# discovered, summarised, and cited when people ask assistants (ChatGPT,
+# Perplexity, Claude, Gemini, Copilot) for AI customer-support tools. Each is
+# given the same public surface as a normal crawler. See /llms.txt for a
+# structured summary written for these systems.
+User-agent: GPTBot
+Allow: /
+Disallow: /demo/
+Disallow: /dashboard
+Disallow: /settings
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: CCBot
+Allow: /
 
 # Sitemap location
 Sitemap: https://liraintelligence.com/sitemap.xml

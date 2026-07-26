@@ -78,9 +78,7 @@ export function PortalHome({ config }: PortalHomeProps) {
               </svg>
             </div>
             <h3 className="lp-card-title">Live Chat</h3>
-            <p className="lp-card-desc">
-              Chat with our AI assistant in real time for instant answers.
-            </p>
+            <p className="lp-card-desc">Chat with Support in real time for instant answers.</p>
           </a>
         )}
 
@@ -101,7 +99,7 @@ export function PortalHome({ config }: PortalHomeProps) {
               </svg>
             </div>
             <h3 className="lp-card-title">Voice Call</h3>
-            <p className="lp-card-desc">Talk with our AI assistant over live audio.</p>
+            <p className="lp-card-desc">Talk with Support over live audio.</p>
           </a>
         )}
       </section>

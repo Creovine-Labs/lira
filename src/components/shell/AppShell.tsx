@@ -244,7 +244,7 @@ function ContactToCreateOrgModal({ open, onClose }: { open: boolean; onClose: ()
             Close
           </button>
           <a
-            href="mailto:team@liraintelligence.com?subject=New%20organization%20request"
+            href="mailto:info@liraintelligence.com?subject=New%20organization%20request"
             className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81]"
           >
             <EnvelopeIcon className="h-4 w-4" />

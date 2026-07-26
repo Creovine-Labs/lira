@@ -11,6 +11,7 @@ import {
   ExclamationTriangleIcon,
   PaperAirplaneIcon,
   TagIcon,
+  TicketIcon,
   TrashIcon,
   UserCircleIcon,
   XMarkIcon,
@@ -18,6 +19,8 @@ import {
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import { cn } from '@/lib'
+import { AssignControl } from './teams-ui'
+import { ChatMarkdown } from '@/components/support/ChatMarkdown'
 import type {
   ConversationMessage,
   ConversationStatus,
@@ -114,6 +117,7 @@ function SupportConversationPage() {
     deleteConversation,
     escalateConversation,
     handbackToLira,
+    takeoverConversation,
     updateTags,
     sendTypingIndicator,
   } = useSupportStore()
@@ -124,11 +128,6 @@ function SupportConversationPage() {
   const [escalateReason, setEscalateReason] = useState('')
   const [newTag, setNewTag] = useState('')
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  const hasHumanReply = useMemo(
-    () => conv?.messages.some((message) => message.role === 'agent') ?? false,
-    [conv?.messages]
-  )
 
   const title = useMemo(() => (conv ? getConversationTitle(conv) : 'Conversation'), [conv])
   const customerDisplay = useMemo(() => (conv ? getCustomerDisplay(conv) : null), [conv])
@@ -210,6 +209,16 @@ function SupportConversationPage() {
       toast.error(err instanceof Error ? err.message : 'Failed to hand back')
     }
   }, [currentOrgId, convId, handbackToLira])
+
+  const handleTakeover = useCallback(async () => {
+    if (!currentOrgId || !convId) return
+    try {
+      await takeoverConversation(currentOrgId, convId)
+      toast.success('You’ve taken over — Lira is paused')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to take over')
+    }
+  }, [currentOrgId, convId, takeoverConversation])
 
   const handleDelete = useCallback(async () => {
     if (!currentOrgId || !convId) return
@@ -361,22 +370,30 @@ function SupportConversationPage() {
               <UserCircleIcon className="h-4 w-4" />
               Details
             </button>
-            {conv.status === 'escalated' && (
-              <button
-                type="button"
-                onClick={handleHandback}
-                disabled={!hasHumanReply}
-                title={
-                  hasHumanReply
-                    ? 'Let Lira continue this conversation'
-                    : 'Reply to the customer first before handing back to Lira'
-                }
-                className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-900 bg-white px-3 text-xs font-semibold text-gray-950 shadow-sm transition hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
-              >
-                <img src="/lira_black.png" alt="" className="h-3.5 w-3.5 object-contain" />
-                Hand to Lira
-              </button>
+            {currentOrgId && conv.status !== 'resolved' && (
+              <AssignControl orgId={currentOrgId} itemId={conv.conv_id} kind="conversation" />
             )}
+            {conv.status !== 'resolved' &&
+              (conv.handling === 'human' ? (
+                <button
+                  type="button"
+                  onClick={handleHandback}
+                  title="Let Lira continue this conversation"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-900 bg-white px-3 text-xs font-semibold text-gray-950 shadow-sm transition hover:bg-gray-50"
+                >
+                  <img src="/lira_black.png" alt="" className="h-3.5 w-3.5 object-contain" />
+                  Hand back to Lira
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={handleTakeover}
+                  title="Take over — pauses Lira"
+                  className="inline-flex h-9 items-center gap-2 rounded-md border border-gray-200 bg-white px-3 text-xs font-semibold text-gray-700 shadow-sm transition hover:border-gray-300 hover:text-gray-950"
+                >
+                  Take over
+                </button>
+              ))}
             {conv.status !== 'resolved' && (
               <button
                 type="button"
@@ -666,13 +683,12 @@ function StatusBadge({ status }: { status: ConversationStatus }) {
 function TimelineMessage({
   message,
   customerName,
-  isLast,
   showSeen,
   seenAt,
 }: {
   message: ConversationMessage
   customerName: string
-  isLast: boolean
+  isLast?: boolean
   showSeen?: boolean
   seenAt?: string
 }) {
@@ -702,12 +718,13 @@ function TimelineMessage({
   const senderName = isCustomer ? customerName : isLira ? 'Lira' : (message.sender_name ?? 'Agent')
   const avatar = getMessageAvatar(message, senderName)
 
+  // Customer = inbound (left); Lira/agent = outbound (right) — a normal chat.
+  const outbound = !isCustomer
   return (
-    <div className="relative flex gap-3">
-      {!isLast && <div className="absolute left-4 top-10 h-[calc(100%+1rem)] w-px bg-gray-200" />}
+    <div className={cn('flex gap-2.5', outbound ? 'flex-row-reverse' : 'flex-row')}>
       <div
         className={cn(
-          'relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border text-xs font-bold shadow-sm',
+          'flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full border text-xs font-bold shadow-sm',
           isCustomer
             ? 'border-gray-200 bg-white text-gray-600'
             : isLira
@@ -717,28 +734,35 @@ function TimelineMessage({
       >
         {avatar}
       </div>
-      <article
-        className={cn(
-          'min-w-0 flex-1 rounded-lg border p-4 shadow-sm',
-          isCustomer
-            ? 'border-gray-200 bg-white'
-            : isLira
-              ? 'border-gray-200 bg-gray-50/80'
-              : 'border-amber-100 bg-amber-50/80'
-        )}
+      <div
+        className={cn('flex min-w-0 max-w-[76%] flex-col', outbound ? 'items-end' : 'items-start')}
       >
-        <div className="mb-2 flex flex-wrap items-center gap-2">
-          <span className="text-sm font-bold text-gray-950">{senderName}</span>
-          <span className="rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500 ring-1 ring-black/5">
+        <div className="mb-0.5 flex items-center gap-1.5 px-1">
+          <span className="text-[11px] font-semibold text-gray-600">{senderName}</span>
+          <span className="text-[10px] font-medium text-gray-400">
             {isCustomer ? 'Customer' : isLira ? 'Lira' : 'Agent'}
           </span>
-          <span className="ml-auto text-[11px] font-medium text-gray-400">
-            {formatLongDateTime(message.timestamp)}
-          </span>
+          <span className="text-[10px] text-gray-300">{formatLongDateTime(message.timestamp)}</span>
         </div>
-        <p className="whitespace-pre-wrap text-sm leading-6 text-gray-700">{message.body}</p>
+        <div
+          className={cn(
+            'rounded-2xl border px-3.5 py-2 text-sm leading-6 shadow-sm',
+            isCustomer
+              ? 'rounded-tl-sm border-gray-200 bg-white text-gray-800'
+              : isLira
+                ? 'rounded-tr-sm border-transparent bg-indigo-600 text-white'
+                : 'rounded-tr-sm border-transparent bg-[#020308] text-white'
+          )}
+        >
+          <ChatMarkdown body={message.body} dark={outbound} />
+        </div>
+        {message.metadata?.triggered_ticket && (
+          <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+            <TicketIcon className="h-3 w-3" /> Triggered a ticket
+          </span>
+        )}
         {showSeen && seenAt && (
-          <div className="mt-2 flex items-center gap-1 text-[11px] font-medium text-emerald-500">
+          <div className="mt-1 flex items-center gap-1 px-1 text-[11px] font-medium text-emerald-500">
             <svg
               className="h-3 w-3"
               viewBox="0 0 24 24"
@@ -754,14 +778,12 @@ function TimelineMessage({
           </div>
         )}
         {message.metadata?.grounded_in && message.metadata.grounded_in.length > 0 && (
-          <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-black/5 pt-3 text-[11px] font-medium text-gray-500">
-            <span className="inline-flex items-center gap-1">
-              <BookOpenIcon className="h-3.5 w-3.5" />
-              {message.metadata.grounded_in.length} sources
-            </span>
+          <div className="mt-1 flex items-center gap-1 px-1 text-[11px] font-medium text-gray-400">
+            <BookOpenIcon className="h-3.5 w-3.5" />
+            {message.metadata.grounded_in.length} sources
           </div>
         )}
-      </article>
+      </div>
     </div>
   )
 }

@@ -5,13 +5,18 @@ import { HelmetProvider } from 'react-helmet-async'
 
 import './index.css'
 import App from './App'
+import { enforceHostRouting } from './host-routing'
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <HelmetProvider>
-      <BrowserRouter>
-        <App />
-      </BrowserRouter>
-    </HelmetProvider>
-  </StrictMode>
-)
+// Send the request to the right host (apex = marketing, app. = product) before
+// we render anything. If a redirect fires, don't bother mounting React.
+if (!enforceHostRouting()) {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <HelmetProvider>
+        <BrowserRouter>
+          <App />
+        </BrowserRouter>
+      </HelmetProvider>
+    </StrictMode>
+  )
+}

@@ -32,7 +32,7 @@ export function AboutPage() {
       <SEO
         title="About Lira - AI Customer Support for Modern Teams"
         description="Learn why Lira exists: to help modern teams build customer support that remembers context, acts across workflows, and strengthens relationships."
-        path="/about-us"
+        path="/about"
       />
 
       <section className="bx-hero">

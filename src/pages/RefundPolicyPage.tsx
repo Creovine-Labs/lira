@@ -93,7 +93,7 @@ export function RefundPolicyPage() {
           <h2>6. How to Request a Refund</h2>
           <p>
             To request a refund covered by this policy, email{' '}
-            <a href="mailto:billing@liraintelligence.com">billing@liraintelligence.com</a> from the
+            <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a> from the
             address associated with your account, including your order or receipt reference.
             Eligible refunds are issued to the original payment method, normally within 5–10
             business days once approved (timing depends on your bank or card issuer).
@@ -129,7 +129,7 @@ export function RefundPolicyPage() {
           <h2>10. Contact Us</h2>
           <p>
             Questions about this Refund Policy? Reach us at{' '}
-            <a href="mailto:billing@liraintelligence.com">billing@liraintelligence.com</a>.
+            <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>.
           </p>
         </article>
       </div>

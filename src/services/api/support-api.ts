@@ -55,6 +55,7 @@ export interface SupportConfig {
   escalation_slack_channel?: string
   escalation_linear_team?: string
   escalation_email?: string
+  escalation_notify_enabled?: boolean
   escalation_cc_emails?: string[]
   greeting_message?: string
   sla_hours?: number
@@ -151,6 +152,10 @@ export interface ConversationMessage {
     email_message_id?: string
     confidence?: number
     grounded_in?: string[]
+    // Set on the customer message that caused a ticket to open (N6), so the
+    // thread can flag exactly which question needs a human.
+    triggered_ticket?: boolean
+    triggered_ticket_number?: string
   }
 }
 
@@ -179,6 +184,9 @@ export interface SupportConversation {
   created_at: string
   updated_at: string
   resolved_at?: string
+  // Who is answering the customer: 'ai' (Lira replies live) or 'human' (a
+  // teammate has taken over; the AI is paused until handback). (M3)
+  handling?: 'ai' | 'human'
   customer?: CustomerProfile
   // Real-time state injected by the API at fetch time
   customer_is_typing?: boolean
@@ -772,6 +780,14 @@ export async function deleteConversation(orgId: string, convId: string): Promise
 export async function handbackToLira(orgId: string, convId: string): Promise<void> {
   await supportFetch<void>(
     `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/handback`,
+    { method: 'POST' }
+  )
+}
+
+// M3: a teammate takes over the live chat — pauses the Lira AI until handback.
+export async function takeoverConversation(orgId: string, convId: string): Promise<void> {
+  await supportFetch<void>(
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/takeover`,
     { method: 'POST' }
   )
 }
@@ -1410,6 +1426,7 @@ export interface SupportTicketRecord {
     | 'merged'
     | 'snoozed'
   assignee_user_id?: string
+  team_id?: string
   escalation_reason: string
   handoff_trigger?: string
   handoff_brief?: HandoffBrief

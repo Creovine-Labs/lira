@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { ChatMarkdown } from '@/components/support/ChatMarkdown'
 import {
   ArrowTopRightOnSquareIcon,
   BarsArrowDownIcon,
@@ -19,6 +21,7 @@ import {
   PencilSquareIcon,
   PhoneIcon,
   SparklesIcon,
+  TicketIcon,
   UserCircleIcon,
   UserGroupIcon,
 } from '@heroicons/react/24/outline'
@@ -578,6 +581,10 @@ function SupportInboxPanel() {
           conv={selected}
           orgId={currentOrgId ?? null}
           onOpenFull={(id) => navigate(`/support/inbox/${id}`)}
+          onReplySent={() => {
+            if (currentOrgId)
+              loadConversations(currentOrgId, statusFilter ?? undefined, { background: true })
+          }}
         />
       </div>
 
@@ -767,12 +774,66 @@ function ReadingPane({
   conv,
   orgId,
   onOpenFull,
+  onReplySent,
 }: {
   conv: SupportConversation | null
   orgId: string | null
   onOpenFull: (id: string) => void
+  onReplySent: () => void
 }) {
   const navigate = useNavigate()
+  const { sendReply, takeoverConversation, handbackToLira, resolveConversation } = useSupportStore()
+  const [reply, setReply] = useState('')
+  const [sending, setSending] = useState(false)
+  const [switching, setSwitching] = useState(false)
+  const [resolving, setResolving] = useState(false)
+
+  const handleResolve = useCallback(async () => {
+    if (!orgId || !conv) return
+    setResolving(true)
+    try {
+      await resolveConversation(orgId, conv.conv_id)
+      toast.success('Conversation resolved')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not resolve')
+    } finally {
+      setResolving(false)
+    }
+  }, [orgId, conv, resolveConversation])
+
+  const isHuman = conv?.handling === 'human'
+
+  const handleToggleHandling = useCallback(async () => {
+    if (!orgId || !conv) return
+    setSwitching(true)
+    try {
+      if (isHuman) {
+        await handbackToLira(orgId, conv.conv_id)
+        toast.success('Handed back to Lira')
+      } else {
+        await takeoverConversation(orgId, conv.conv_id)
+        toast.success('You’ve taken over — Lira is paused')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not switch handling')
+    } finally {
+      setSwitching(false)
+    }
+  }, [orgId, conv, isHuman, takeoverConversation, handbackToLira])
+
+  const handleSend = useCallback(async () => {
+    if (!orgId || !conv || !reply.trim()) return
+    setSending(true)
+    try {
+      await sendReply(orgId, conv.conv_id, reply.trim())
+      setReply('')
+      onReplySent()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send reply')
+    } finally {
+      setSending(false)
+    }
+  }, [orgId, conv, reply, sendReply, onReplySent])
 
   if (!conv) {
     return (
@@ -823,6 +884,33 @@ function ReadingPane({
           </p>
         </div>
         {orgId && <AssignControl orgId={orgId} itemId={conv.conv_id} kind="conversation" />}
+        {conv.status !== 'resolved' && (
+          <button
+            type="button"
+            onClick={() => void handleToggleHandling()}
+            disabled={switching}
+            className={cn(
+              'inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition disabled:opacity-50',
+              isHuman
+                ? 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+                : 'border border-gray-200 text-gray-700 hover:bg-gray-50'
+            )}
+            title={isHuman ? 'Return the conversation to Lira' : 'Take over — pauses Lira'}
+          >
+            {switching ? '…' : isHuman ? 'Hand back to Lira' : 'Take over'}
+          </button>
+        )}
+        {conv.status !== 'resolved' && (
+          <button
+            type="button"
+            onClick={() => void handleResolve()}
+            disabled={resolving}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+            title="Mark this conversation resolved (closes it)"
+          >
+            {resolving ? '…' : 'Resolve'}
+          </button>
+        )}
         <button
           type="button"
           onClick={() => onOpenFull(conv.conv_id)}
@@ -835,6 +923,16 @@ function ReadingPane({
 
       {/* Context strip */}
       <div className="flex flex-wrap items-center gap-1.5 border-b border-gray-100 bg-white px-5 py-2">
+        {conv.status === 'resolved' && conv.resolved_at && (
+          <ContextChip>
+            ✓ Closed{' '}
+            {new Date(conv.resolved_at).toLocaleDateString(undefined, {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            })}
+          </ContextChip>
+        )}
         {conv.intent && <ContextChip>{conv.intent}</ContextChip>}
         {conv.sentiment && (
           <ContextChip>
@@ -866,6 +964,46 @@ function ReadingPane({
           )}
         </div>
       </div>
+
+      {/* Composer — reply directly into the conversation (reaches the customer's
+          live chat). Resolved conversations are read-only. */}
+      {conv.status === 'resolved' ? (
+        <div className="shrink-0 border-t border-gray-200 bg-white px-5 py-3 text-center text-xs text-gray-400">
+          This conversation is resolved. Reopen it from “Open full” to reply.
+        </div>
+      ) : (
+        // pr-24 on large screens keeps Send clear of the floating support widget (R10)
+        <div className="shrink-0 border-t border-gray-200 bg-white px-4 py-3 lg:pr-24">
+          <div className="flex items-end gap-2">
+            <textarea
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  e.preventDefault()
+                  void handleSend()
+                }
+              }}
+              rows={2}
+              placeholder="Reply to the customer… (⌘/Ctrl + Enter to send)"
+              className="min-h-[44px] flex-1 resize-none rounded-xl border border-gray-200 bg-[#f6f6f6] px-3 py-2 text-sm text-gray-900 outline-none placeholder:text-gray-400 focus:border-gray-300 focus:bg-white"
+            />
+            <button
+              type="button"
+              onClick={() => void handleSend()}
+              disabled={sending || !reply.trim()}
+              className="inline-flex h-[44px] shrink-0 items-center gap-1.5 rounded-xl bg-[#020308] px-4 text-sm font-semibold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {sending ? 'Sending…' : 'Send'}
+            </button>
+          </div>
+          <p className="mt-1.5 px-1 text-[11px] text-gray-400">
+            {isHuman
+              ? 'You’re handling this — Lira is paused. Replies appear instantly in the customer’s chat.'
+              : 'Replies appear instantly in the customer’s chat and pause Lira until you hand back.'}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
@@ -883,6 +1021,7 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
     return <p className="text-center text-[11px] text-gray-400">{message.body}</p>
   }
   const isInbound = message.role === 'customer'
+  const triggeredTicket = message.metadata?.triggered_ticket === true
   const senderLabel =
     message.role === 'customer'
       ? (message.sender_name ?? 'Customer')
@@ -895,10 +1034,17 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
       <div className="mb-0.5 flex items-center gap-1.5 px-1">
         <span className="text-[11px] font-semibold text-gray-500">{senderLabel}</span>
         <span className="text-[10px] text-gray-300">{timeAgo(message.timestamp)}</span>
+        {/* W4/N6: this exact message opened a ticket — flag it in the thread. */}
+        {triggeredTicket && (
+          <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-amber-700">
+            <TicketIcon className="h-3 w-3" /> Opened a ticket
+          </span>
+        )}
       </div>
       <div
         className={cn(
-          'max-w-[78%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-[13px] leading-5 shadow-sm',
+          'max-w-[78%] rounded-2xl px-3.5 py-2 text-[13px] leading-5 shadow-sm',
+          triggeredTicket && 'ring-2 ring-amber-300 ring-offset-1',
           isInbound
             ? 'rounded-bl-sm border border-gray-200 bg-white text-gray-800'
             : message.role === 'lira'
@@ -906,7 +1052,7 @@ function MessageBubble({ message }: { message: ConversationMessage }) {
               : 'rounded-br-sm bg-[#020308] text-white'
         )}
       >
-        {message.body}
+        <ChatMarkdown body={message.body} dark={!isInbound} />
       </div>
     </div>
   )

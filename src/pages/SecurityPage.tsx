@@ -70,8 +70,8 @@ export function SecurityPage() {
     <MarketingLayout>
       <SEO
         title="Security — How Lira Protects Your Data"
-        description="Lira AI is built with security at its core. TLS 1.2+ encryption, AES-256 at rest, OAuth 2.0 PKCE, SOC 2-compliant infrastructure, and OWASP Top 10 compliance. Learn how we protect your meetings, interviews, and customer data."
-        keywords="Lira AI security, data protection, encryption, SOC 2, OWASP, OAuth 2.0, secure AI platform, data privacy, enterprise security, meeting data security"
+        description="Lira AI is built with security at its core. AES-256 encryption at rest, TLS in transit, actions off by default with per-tool approval, server-side identity binding, and dual-side audit. Learn how we protect your customer data."
+        keywords="Lira AI security, data protection, encryption, secure AI actions, MCP security, OAuth 2.0, secure AI platform, data privacy, enterprise security, customer data security"
         path="/security"
       />
       <div className="legal-page">
@@ -206,7 +206,7 @@ export function SecurityPage() {
           <ul>
             <li>
               <strong>Email:</strong>{' '}
-              <a href="mailto:security@creovine.com">security@creovine.com</a>
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
           </ul>
           <p>When reporting, please include:</p>
@@ -226,11 +226,11 @@ export function SecurityPage() {
           <ul>
             <li>
               <strong>Security Team:</strong>{' '}
-              <a href="mailto:security@creovine.com">security@creovine.com</a>
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
             <li>
               <strong>Privacy Team:</strong>{' '}
-              <a href="mailto:privacy@creovine.com">privacy@creovine.com</a>
+              <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
           </ul>
 

@@ -2,13 +2,13 @@ import { Link } from 'react-router-dom'
 import { SEO } from '@/components/SEO'
 import {
   ArrowRightIcon,
-  ChatBubbleLeftIcon,
+  ChatBubbleLeftRightIcon,
   ChevronRightIcon,
   CircleStackIcon,
   ComputerDesktopIcon,
-  HeartIcon,
-  MapIcon,
-  PhoneIcon,
+  SparklesIcon,
+  TicketIcon,
+  UserGroupIcon,
   ShieldCheckIcon,
 } from '@heroicons/react/24/outline'
 import { MarketingLayout } from '@/components/marketing'
@@ -18,21 +18,21 @@ import { MarketingLayout } from '@/components/marketing'
 const STEPS = [
   {
     number: '01',
-    title: 'Upload your knowledge base',
+    title: 'Teach Lira your product',
     description:
-      "Connect your docs, website, product guides, and FAQs. Lira indexes everything and builds a semantic memory of your company's knowledge.",
+      'Connect your docs, help center, web pages, and Google Drive. Lira indexes everything and grounds every answer in your real content — no hallucinations.',
   },
   {
     number: '02',
-    title: 'Customer calls in',
+    title: 'Put Lira where customers already are',
     description:
-      'Customers call your support line or join a support meeting link. Lira answers as a natural, confident voice — not a robotic phone tree.',
+      'Drop in the chat widget with one script tag, embed the in-app support surface, publish a branded portal, forward your support email, or connect WhatsApp. One agent, every channel.',
   },
   {
     number: '03',
-    title: 'Lira handles the conversation',
+    title: 'Lira resolves — and escalates cleanly',
     description:
-      'Lira answers questions, walks through troubleshooting steps, shares relevant resources, and resolves the issue — all grounded in your exact knowledge base.',
+      'Lira answers, runs approved actions, and opens a ticket with full context when a human is needed. Your team picks up mid-conversation with nothing lost.',
   },
 ]
 
@@ -40,40 +40,40 @@ const STEPS = [
 
 const FEATURES = [
   {
-    Icon: PhoneIcon,
-    title: 'Real-time voice support',
-    description:
-      'Lira joins calls as a natural-sounding voice agent — no robotic responses, no phone tree frustration.',
-  },
-  {
     Icon: CircleStackIcon,
-    title: 'Knowledge base grounding',
+    title: 'Grounded in your knowledge',
     description:
-      "Every answer comes from your actual company docs — not hallucinated content. Lira only says what you've authorised.",
+      "Every answer comes from your actual documentation using retrieval-augmented generation — Lira only says what you've taught it, and cites your real content.",
   },
   {
-    Icon: ChatBubbleLeftIcon,
-    title: 'Handles complex Q&A',
+    Icon: ChatBubbleLeftRightIcon,
+    title: 'Every channel, one agent',
     description:
-      'Multi-step questions, policy clarifications, technical troubleshooting — Lira resolves the full conversation, not just the surface question.',
+      'A website chat widget, an embedded in-app support surface, a hosted portal, email, inbound voice (rolling out), and WhatsApp — all handled by the same AI, with shared context.',
   },
   {
-    Icon: MapIcon,
-    title: 'Smart escalation',
+    Icon: TicketIcon,
+    title: 'Tickets, SLA & CSAT',
     description:
-      "When a case exceeds Lira's confidence threshold, it routes to a human agent — with a full summary of the conversation already prepared.",
+      'When Lira escalates, it opens a ticket with the full transcript, verified identity, and knowledge snippets attached. Queues, routing, SLA tracking, and satisfaction scoring included.',
   },
   {
     Icon: ShieldCheckIcon,
-    title: 'Controlled responses',
+    title: 'Secure in-product actions',
     description:
-      "You decide what Lira can and can't say. Set guardrails, define escalation rules, and keep full control of your brand voice.",
+      'Register actions Lira can run for a customer — cancel a subscription, retry a payment, resend an invoice — each with an approval policy and a full audit trail. Off by default, opt-in per action.',
   },
   {
-    Icon: HeartIcon,
-    title: 'Post-call summaries',
+    Icon: UserGroupIcon,
+    title: 'Clean human handoff',
     description:
-      'Every support call ends with a structured summary, outcome classification, and suggested KB improvements if a gap was found.',
+      'Any teammate reply pauses the AI until handback. Escalation triggers on low confidence or sensitive intents like fraud, disputes, and account security — never a dead end.',
+  },
+  {
+    Icon: SparklesIcon,
+    title: 'Proactive & self-improving',
+    description:
+      'Send event-triggered outreach (failed payment, onboarding nudge, renewal), and when Lira answers poorly it drafts knowledge-base entries for your approval so it keeps getting better.',
   },
 ]
 
@@ -83,16 +83,16 @@ export function ProductCustomerSupportPage() {
   return (
     <MarketingLayout>
       <SEO
-        title="Customer Support — Voice Agent Grounded in Your Knowledge Base"
-        description="Lira AI handles inbound customer support calls 24/7 with a voice agent grounded in your documentation. No hallucinations, smart escalation to humans, post-call summaries, and knowledge base gap identification."
-        keywords="AI customer support, customer support automation, AI voice agent, knowledge base AI, support chatbot, AI phone support, customer service AI, automated support calls, help desk AI, support ticket automation, voice AI customer service, intelligent escalation, customer support bot, AI call center, Lira AI support"
+        title="AI Customer Support — Grounded in Your Knowledge Base"
+        description="Lira resolves customer support across chat, an in-app support surface, a portal, email, voice, and WhatsApp — grounded in your knowledge base. Autonomous ticket resolution, secure in-product actions, and clean human handoff."
+        keywords="AI customer support, customer support automation, omnichannel support, knowledge base AI, support chatbot, AI support agent, help desk automation, ticket automation, in-app support, WhatsApp support, customer service AI, intelligent escalation, Lira AI support"
         path="/products/customer-support"
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'Product',
           name: 'Lira AI Customer Support',
           description:
-            'AI voice agent for customer support calls, grounded in your knowledge base with smart escalation and post-call analytics.',
+            'AI customer support platform that resolves conversations across chat, an in-app support surface, a portal, email, voice, and WhatsApp — grounded in your knowledge base, with secure in-product actions and clean human handoff.',
           brand: { '@type': 'Brand', name: 'Lira AI' },
           category: 'Customer Service Software',
           url: 'https://liraintelligence.com/products/customer-support',
@@ -101,28 +101,28 @@ export function ProductCustomerSupportPage() {
       {/* Hero */}
       <section className="pt-32 pb-16 px-6 text-center">
         <h1 className="mx-auto max-w-2xl text-5xl sm:text-6xl font-black tracking-tight text-gray-900 leading-[1.06]">
-          AI support calls,
+          AI customer support,
           <br />
           grounded in your docs.
         </h1>
         <p className="mx-auto mt-5 max-w-lg text-base text-gray-500 leading-relaxed">
-          Lira handles inbound customer support calls — answering questions, walking through
-          troubleshooting, and resolving issues — all powered by your company's knowledge base.
-          Customers get instant, accurate help. Your team gets their time back.
+          Lira resolves customer conversations across chat, your app, a portal, email, and WhatsApp
+          — every answer grounded in your knowledge base. It opens tickets, takes approved actions
+          in your product, and hands off to a human only when it should.
         </p>
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            to="/signup"
+            to="/book-demo"
             className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
           >
             <ComputerDesktopIcon className="h-3.5 w-3.5" />
-            Get a demo
+            Book a demo
           </Link>
           <Link
-            to="/products/sales"
+            to="/features"
             className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition"
           >
-            See Sales product
+            Explore all features
             <ChevronRightIcon className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -132,10 +132,10 @@ export function ProductCustomerSupportPage() {
       <section className="py-16 px-6 border-t border-gray-200">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
-            From knowledge base to resolved call
+            From knowledge base to resolved conversation
           </h2>
           <p className="text-gray-500 mb-12 max-w-md leading-relaxed">
-            Set it up once. Lira handles every call that comes in.
+            Set it up once. Lira handles every conversation that comes in, on every channel.
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {STEPS.map(({ number, title, description }) => (
@@ -156,8 +156,8 @@ export function ProductCustomerSupportPage() {
             A support agent that never goes offline
           </h2>
           <p className="text-gray-500 mb-12 max-w-md leading-relaxed">
-            Lira is on 24/7. It never has a bad day, never puts customers on hold, and never gives
-            the wrong answer from your docs.
+            Lira is on 24/7. It never has a bad day, never puts customers on hold, and never invents
+            an answer that isn't in your docs.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {FEATURES.map(({ Icon, title, description }) => (
@@ -176,34 +176,35 @@ export function ProductCustomerSupportPage() {
         </div>
       </section>
 
-      {/* Mobile App Integration */}
+      {/* Built for developers */}
       <section className="py-16 px-6 border-t border-gray-200">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-gray-900 mb-2">
-            Mobile App Integration
+            Deep enough for your engineers
           </h2>
           <p className="text-gray-500 mb-12 max-w-md leading-relaxed">
-            Build native in-app support on Lira's mobile API, then register for push notifications.
+            Lira isn't a black box. Connect your own tools and build support directly into your
+            product and mobile apps.
           </p>
           <div className="grid md:grid-cols-3 gap-6">
             {[
               {
                 number: '01',
-                title: 'Create a support session',
+                title: 'Connect your own tools with MCP',
                 description:
-                  'Start a signed Lira support session from your backend and render chat, tickets, and knowledge search in your native app UI.',
+                  'Bring Lira your Model Context Protocol server so it can call your systems under your own auth — with per-tool approval, OAuth 2.1, rate limits, and drift detection.',
               },
               {
                 number: '02',
-                title: 'Register push token',
+                title: 'Developer API keys & CLI',
                 description:
-                  'On app start, get the FCM device token and POST it to the Lira API. Lira stores it and can send push notifications through proactive triggers.',
+                  'Scoped, revocable API keys and the @liraintelligence/support CLI to connect servers, approve tools, and mint short-lived customer session tokens.',
               },
               {
                 number: '03',
-                title: 'Receive notifications',
+                title: 'Native mobile support SDK',
                 description:
-                  "When Lira's proactive engine fires a mobile_push trigger, it sends a push notification directly to the customer's device.",
+                  "Build native in-app support over Lira's chat WebSocket — with confirm-before-action, step-up re-auth for sensitive actions, and human takeover.",
               },
             ].map(({ number, title, description }) => (
               <div key={number} className="rounded-2xl bg-white border border-gray-200 p-7">
@@ -223,22 +224,22 @@ export function ProductCustomerSupportPage() {
         </h2>
         <p className="mx-auto max-w-md text-gray-500 mb-8 leading-relaxed">
           Every question your customers ask already has an answer somewhere in your docs. Lira finds
-          it instantly — every time.
+          it instantly — on every channel, every time.
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            to="/signup"
+            to="/book-demo"
             className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-7 py-3 text-sm font-semibold text-white transition hover:bg-gray-700 shadow-sm"
           >
             <ComputerDesktopIcon className="h-3.5 w-3.5" />
-            Get a demo — it's free
+            Book a demo
           </Link>
-          <a
-            href="mailto:hello@creovine.com"
+          <Link
+            to="/pricing"
             className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition py-3"
           >
-            Talk to the team <ArrowRightIcon className="h-3.5 w-3.5" />
-          </a>
+            See pricing <ArrowRightIcon className="h-3.5 w-3.5" />
+          </Link>
         </div>
       </section>
     </MarketingLayout>

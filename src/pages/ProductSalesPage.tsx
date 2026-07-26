@@ -193,7 +193,7 @@ export function ProductSalesPage() {
             Get a demo — it's free
           </Link>
           <a
-            href="mailto:hello@creovine.com"
+            href="mailto:info@liraintelligence.com"
             className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 hover:text-gray-900 transition py-3"
           >
             Talk to the team <ArrowRightIcon className="h-3.5 w-3.5" />

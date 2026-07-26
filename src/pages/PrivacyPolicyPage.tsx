@@ -242,7 +242,7 @@ export function PrivacyPolicyPage() {
             We do <strong>not</strong> sell personal data, and we do not "share" it for
             cross-context behavioural advertising as those terms are defined under US state privacy
             laws. A current list of our sub-processors is available on request at{' '}
-            <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>.
+            <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>.
           </p>
 
           {/* 8 */}
@@ -316,8 +316,8 @@ export function PrivacyPolicyPage() {
           </ul>
           <p>
             To exercise any right, contact{' '}
-            <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>. We will
-            verify your request and respond within the timeframes required by law. You may use an
+            <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>. We will verify
+            your request and respond within the timeframes required by law. You may use an
             authorised agent where permitted. If we process your data only as a processor on behalf
             of a business customer, we will refer your request to that customer or act on their
             instructions.
@@ -379,7 +379,7 @@ export function PrivacyPolicyPage() {
           <p>For privacy questions or to exercise your rights, contact our privacy team:</p>
           <ul>
             <li>
-              Email: <a href="mailto:privacy@liraintelligence.com">privacy@liraintelligence.com</a>
+              Email: <a href="mailto:info@liraintelligence.com">info@liraintelligence.com</a>
             </li>
             <li>Controller: Creovine Ltd</li>
             <li>Registered address: 1 KN 78 St, Kigali, Rwanda</li>

@@ -149,7 +149,7 @@ const faqs = [
   },
   {
     q: 'How do I contact the support team if I need help?',
-    a: 'You can reach us from the app, email support@liraintelligence.com, or book onboarding time with our team.',
+    a: 'You can reach us from the app, email info@liraintelligence.com, or book onboarding time with our team.',
   },
   {
     q: 'Is my customer information secure?',
@@ -194,7 +194,7 @@ function Nav() {
           <a href="#features">Feature</a>
           <a href="#pricing">Pricing</a>
           <a href="#blog">Blog</a>
-          <a href="mailto:support@liraintelligence.com">Contact</a>
+          <a href="mailto:info@liraintelligence.com">Contact</a>
         </nav>
         <ButtonLink to="/signup">Book a Demo</ButtonLink>
       </div>

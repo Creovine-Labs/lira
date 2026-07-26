@@ -258,6 +258,26 @@ export async function resetPassword(
   })
 }
 
+// ── Demo requests ─────────────────────────────────────────────────────────────
+
+export interface DemoRequestInput {
+  email: string
+  name: string
+  company?: string
+  teamSize?: string
+  focus?: string
+  /** Honeypot — leave empty; only bots fill it. */
+  website?: string
+}
+
+/** Submit the marketing-site "Book a demo" form. Notifies all platform admins. */
+export async function submitDemoRequest(input: DemoRequestInput): Promise<{ ok: boolean }> {
+  return apiFetch('/v1/demo-request', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+}
+
 // ── Meetings ──────────────────────────────────────────────────────────────────
 
 export async function createMeeting(title: string, settings?: MeetingSettings): Promise<Meeting> {

@@ -35,7 +35,7 @@ export function BetaLimitModal() {
 
         <div className="flex items-center justify-center gap-3">
           <a
-            href="mailto:support@creovine.com?subject=Lira Usage Feedback"
+            href="mailto:info@liraintelligence.com?subject=Lira Usage Feedback"
             className="rounded-xl border border-gray-200 px-5 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
             Share feedback
