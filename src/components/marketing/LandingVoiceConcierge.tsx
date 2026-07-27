@@ -18,9 +18,11 @@ import { env } from '@/env'
 const API = `${env.VITE_API_URL}/lira/v1`
 const VOICE = 'openai:nova'
 const GREETING = 'Hi! How can I help you today?'
-const SILENCE_MS = 900
-const MIN_SPEECH_MS = 350
+const SILENCE_MS = 700
+const MIN_SPEECH_MS = 300
 const RMS_THRESH = 0.03
+const MAX_UTTERANCE_MS = 20000
+const IDLE_RESTART_MS = 12000
 
 type Msg = { role: 'me' | 'lira'; text: string }
 type Corner = 'bottom-center' | 'bottom-left' | 'bottom-right'
@@ -100,6 +102,8 @@ export function LandingVoiceConcierge() {
     recording: false,
     lastVoiceAt: 0,
     speechMs: 0,
+    heardSpeech: false,
+    recStartAt: 0,
     vadTimer: 0 as number | ReturnType<typeof setInterval>,
     busy: false,
     micReady: false,
@@ -253,7 +257,7 @@ export function LandingVoiceConcierge() {
   const finishTurn = useCallback(async () => {
     const blob = new Blob(R.chunks, { type: 'audio/webm' })
     R.chunks = []
-    if (R.speechMs < MIN_SPEECH_MS || blob.size < 2000) {
+    if (!R.heardSpeech || R.speechMs < MIN_SPEECH_MS || blob.size < 2000) {
       resumeListening()
       return
     }
@@ -283,7 +287,10 @@ export function LandingVoiceConcierge() {
     if (!R.micStream) return
     R.chunks = []
     R.recording = true
+    R.heardSpeech = false
     R.speechMs = 0
+    R.lastVoiceAt = performance.now()
+    R.recStartAt = performance.now()
     const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
       ? 'audio/webm;codecs=opus'
       : 'audio/webm'
@@ -294,7 +301,6 @@ export function LandingVoiceConcierge() {
     }
     rec.onstop = () => void finishTurn()
     rec.start()
-    setStatus('Listening…')
   }, [R, finishTurn])
 
   const stopRecorder = useCallback(
@@ -310,17 +316,26 @@ export function LandingVoiceConcierge() {
 
   const vadTick = useCallback(() => {
     if (!R.sessionOn || R.busy || !R.analyser) return
-    const lvl = rms()
+    // Start capturing the MOMENT we're listening (before speech) so the first
+    // word is never clipped. Silence only decides when the utterance ENDS.
     if (!R.recording) {
-      if (lvl > RMS_THRESH) {
-        startRecorder()
-        R.lastVoiceAt = performance.now()
-      }
-    } else if (lvl > RMS_THRESH) {
-      R.lastVoiceAt = performance.now()
+      startRecorder()
+      return
+    }
+    const now = performance.now()
+    const lvl = rms()
+    if (lvl > RMS_THRESH) {
+      R.lastVoiceAt = now
       R.speechMs += 60
-    } else if (performance.now() - R.lastVoiceAt > SILENCE_MS) {
-      stopRecorder(false)
+      R.heardSpeech = true
+    }
+    const dur = now - R.recStartAt
+    if (R.heardSpeech && now - R.lastVoiceAt > SILENCE_MS) {
+      stopRecorder(false) // end of speech → send
+    } else if (!R.heardSpeech && dur > IDLE_RESTART_MS) {
+      stopRecorder(true) // long silence, no speech → drop + restart next tick
+    } else if (dur > MAX_UTTERANCE_MS) {
+      stopRecorder(false) // hard cap
     }
   }, [R, rms, startRecorder, stopRecorder])
 
