@@ -437,7 +437,7 @@ export function LandingVoiceConcierge() {
       {open && (
         <div
           data-concierge-root
-          className="fixed z-[900] flex h-[400px] w-[480px] max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-3xl bg-white/55 shadow-2xl ring-1 ring-white/50 backdrop-blur-2xl"
+          className="fixed z-[900] flex h-[400px] w-[480px] max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-3xl bg-white/20 shadow-2xl ring-1 ring-white/40 backdrop-blur-xl"
           style={posStyle}
         >
           <div
@@ -492,7 +492,7 @@ export function LandingVoiceConcierge() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 border-t border-white/40 bg-white/40 p-3 backdrop-blur">
+          <div className="flex items-center gap-2 border-t border-white/30 bg-white/25 p-3 backdrop-blur">
             <button
               type="button"
               onClick={onMicTap}
