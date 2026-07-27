@@ -74,6 +74,7 @@ const PLANS: Plan[] = [
       '“Powered by Lira” branding removed',
       'Email & chat support',
     ],
+    note: 'Localized voice (natural Nigerian voice) is available starting on Scale.',
   },
   {
     id: 'scale',
@@ -86,6 +87,7 @@ const PLANS: Plan[] = [
     cta: { label: 'Speak to an expert', href: '/contact' },
     featuresLead: 'Everything in Pro, plus:',
     features: [
+      'Localized voice agent — Lira answers in a natural Nigerian voice (enabled during onboarding)',
       'AI that takes actions, not just answers — with built-in approval & audit',
       'Agent runtime: expose your app’s actions to the AI (SDK or action packs)',
       'AI agent inside WhatsApp (WhatsApp Business API)*',
@@ -107,6 +109,7 @@ const PLANS: Plan[] = [
     cta: { label: 'Talk to sales', href: '/contact' },
     featuresLead: 'Everything in Scale, plus:',
     features: [
+      'Custom brand voice — your own voice, cloned with your consent',
       'Volume conversation pricing',
       'SSO & SAML',
       'SLAs & uptime guarantees',
