@@ -21,7 +21,13 @@ const ORG = env.VITE_LIRA_PUBLIC_ORG_ID
 const VOICE_WS = `${API.replace(/^http/, 'ws')}/support/chat/voice/${ORG}`
 
 type Msg = { role: 'me' | 'lira'; text: string }
-type Corner = 'bottom-center' | 'bottom-left' | 'bottom-right'
+type Corner =
+  | 'bottom-center'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'top-center'
+  | 'top-left'
+  | 'top-right'
 
 const SOFT_NAV =
   /^\/(pricing|features?|products?|contact|book-demo|blog|about(-us)?|resources|docs|security|for\/|careers|$)/
@@ -365,16 +371,18 @@ export function LandingVoiceConcierge() {
   }, [])
   const endDrag = useCallback((e: React.PointerEvent) => {
     if (!dragRef.current) return
+    // Snap to the nearest of 6 magnets: {top,bottom} × {left,center,right}.
     const third = window.innerWidth / 3
-    setCorner(
-      e.clientX < third ? 'bottom-left' : e.clientX > 2 * third ? 'bottom-right' : 'bottom-center'
-    )
+    const xzone = e.clientX < third ? 'left' : e.clientX > 2 * third ? 'right' : 'center'
+    const vzone = e.clientY < window.innerHeight / 2 ? 'top' : 'bottom'
+    setCorner(`${vzone}-${xzone}` as Corner)
     dragRef.current = null
     setDragPos(null)
   }, [])
 
-  const posStyle: React.CSSProperties = dragPos
-    ? {
+  const posStyle: React.CSSProperties = (() => {
+    if (dragPos) {
+      return {
         left: dragPos.x,
         top: dragPos.y,
         right: 'auto',
@@ -382,29 +390,20 @@ export function LandingVoiceConcierge() {
         transform: 'none',
         transition: 'none',
       }
-    : corner === 'bottom-left'
-      ? {
-          left: 16,
-          bottom: 24,
-          right: 'auto',
-          transform: 'none',
-          transition: 'left .18s ease, bottom .18s ease',
-        }
-      : corner === 'bottom-right'
-        ? {
-            right: 16,
-            bottom: 24,
-            left: 'auto',
-            transform: 'none',
-            transition: 'right .18s ease, bottom .18s ease',
-          }
-        : {
-            left: '50%',
-            bottom: 24,
-            right: 'auto',
-            transform: 'translateX(-50%)',
-            transition: 'left .18s ease',
-          }
+    }
+    const isTop = corner.startsWith('top-')
+    const v: React.CSSProperties = isTop ? { top: 24, bottom: 'auto' } : { bottom: 24, top: 'auto' }
+    const h: React.CSSProperties = corner.endsWith('-left')
+      ? { left: 16, right: 'auto', transform: 'none' }
+      : corner.endsWith('-right')
+        ? { right: 16, left: 'auto', transform: 'none' }
+        : { left: '50%', right: 'auto', transform: 'translateX(-50%)' }
+    return {
+      ...v,
+      ...h,
+      transition: 'left .18s ease, right .18s ease, top .18s ease, bottom .18s ease',
+    }
+  })()
 
   const dragHandlers = { onPointerDown: startDrag, onPointerMove: moveDrag, onPointerUp: endDrag }
 
