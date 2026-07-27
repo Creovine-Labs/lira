@@ -348,6 +348,8 @@ export function LandingVoiceConcierge() {
     }
   }, [R, vadTick, resumeListening])
 
+  // STOP = full teardown so the browser's mic/recording indicator actually
+  // turns off (nothing is listening). Re-tapping re-acquires the mic.
   const stopAll = useCallback(() => {
     R.ttsQueue.length = 0
     R.ttsPlaying = false
@@ -361,25 +363,30 @@ export function LandingVoiceConcierge() {
     }
     setSpeaking(false)
     if (R.recording) stopRecorder(true)
+    if (R.vadTimer) {
+      clearInterval(R.vadTimer as ReturnType<typeof setInterval>)
+      R.vadTimer = 0
+    }
+    try {
+      R.micStream?.getTracks().forEach((t) => t.stop())
+      R.audioCtx?.close()
+    } catch {
+      /* noop */
+    }
+    R.micStream = null
+    R.audioCtx = null
+    R.analyser = null
     R.busy = false
     R.sessionOn = false
+    R.micReady = false
     setMicOn(false)
-    resumeListening()
-  }, [R, stopRecorder, resumeListening])
+    setStatus('Tap the mic to talk, or type')
+  }, [R, stopRecorder])
 
   const onMicTap = useCallback(() => {
-    if (!R.micReady) {
-      void startMic()
-      return
-    }
-    if (R.sessionOn || R.busy || R.ttsPlaying || R.recording) {
-      stopAll()
-    } else {
-      R.sessionOn = true
-      setMicOn(true)
-      resumeListening()
-    }
-  }, [R, startMic, stopAll, resumeListening])
+    if (R.micReady) stopAll()
+    else void startMic()
+  }, [R, startMic, stopAll])
 
   // ── Open / close (instant greeting) ───────────────────────────────────────
   const prefetchGreeting = useCallback(() => {
@@ -388,11 +395,12 @@ export function LandingVoiceConcierge() {
 
   const openPanel = useCallback(() => {
     setOpen(true)
+    void startMic() // opening the panel starts the conversation → mic on, listening
     ;(async () => {
       prefetchGreeting()
       pushMsg('lira', GREETING)
       R.history.push({ role: 'assistant', content: GREETING })
-      R.busy = true
+      R.busy = true // gate VAD so we don't record the greeting itself
       setSpeaking(true)
       setStatus('…')
       const url = await R.greetingUrl
@@ -402,7 +410,7 @@ export function LandingVoiceConcierge() {
       R.busy = false
       resumeListening()
     })()
-  }, [R, prefetchGreeting, pushMsg, playUrl, resumeListening])
+  }, [R, startMic, prefetchGreeting, pushMsg, playUrl, resumeListening])
 
   const closePanel = useCallback(() => {
     setOpen(false)
