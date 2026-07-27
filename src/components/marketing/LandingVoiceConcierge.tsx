@@ -6,18 +6,17 @@ import { env } from '@/env'
 /**
  * Landing-page voice concierge — a center-bottom launcher that opens a
  * draggable panel (magnetically snaps to bottom-left / center / right).
- * Visitors talk or type; Lira answers in a neutral voice from the public
- * marketing org's KB and can actively navigate them to pages via the
- * lira_open_site_page tool → `navigate` WS message.
+ * Visitors talk or type; Lira answers in a neutral voice and can navigate them
+ * to pages.
  *
- * The greeting is a fixed line, pre-generated on intent so it plays instantly
- * on open. Reuses the deployed voice endpoints (STT + neutral OpenAI TTS under
- * /lira/v1/voice-demo) and the support chat WS (anonymous visitor).
+ * Uses the fast single-call concierge endpoint (`/lira/v1/voice-demo/concierge`,
+ * gpt-4o-mini, facts + sitemap in the prompt → { say, navigate } in ~1-2s) plus
+ * STT + neutral OpenAI TTS. The greeting is a fixed line pre-generated on intent
+ * so it plays instantly on open.
  */
 
 const API = `${env.VITE_API_URL}/lira/v1`
-const ORG = env.VITE_LIRA_PUBLIC_ORG_ID
-const VOICE = 'openai:nova' // neutral, global English voice
+const VOICE = 'openai:nova'
 const GREETING = 'Hi! How can I help you today?'
 const SILENCE_MS = 900
 const MIN_SPEECH_MS = 350
@@ -84,9 +83,7 @@ export function LandingVoiceConcierge() {
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState<Msg[]>([])
-  const [streaming, setStreaming] = useState<string | null>(null)
   const [thinking, setThinking] = useState(false)
-  const [suggestions, setSuggestions] = useState<string[]>([])
   const [input, setInput] = useState('')
   const [status, setStatus] = useState('Tap the mic and just talk')
   const [micOn, setMicOn] = useState(false)
@@ -95,8 +92,6 @@ export function LandingVoiceConcierge() {
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
 
   const R = useRef({
-    ws: null as WebSocket | null,
-    wsOpen: null as Promise<void> | null,
     micStream: null as MediaStream | null,
     audioCtx: null as AudioContext | null,
     analyser: null as AnalyserNode | null,
@@ -112,25 +107,19 @@ export function LandingVoiceConcierge() {
     player: null as HTMLAudioElement | null,
     ttsQueue: [] as Promise<string | null>[],
     ttsPlaying: false,
-    curText: '',
-    pendingSpeech: '',
-    replyDone: true,
-    greeted: false,
     greetingUrl: null as Promise<string | null> | null,
-    replyTimer: 0 as number | ReturnType<typeof setTimeout>,
-    visitorId: `web-${Math.random().toString(36).slice(2)}`,
+    history: [] as { role: string; content: string }[],
   }).current
 
   const logRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight })
-  }, [messages, streaming, thinking, suggestions])
+  }, [messages, thinking])
 
   const pushMsg = useCallback((role: Msg['role'], text: string) => {
     setMessages((m) => [...m, { role, text }])
   }, [])
 
-  // ── TTS queue (sentence streaming, prefetch = gapless) ────────────────────
   const fetchTts = useCallback((text: string) => {
     return fetch(
       `${API}/voice-demo/tts?id=${encodeURIComponent(VOICE)}&text=${encodeURIComponent(text)}`
@@ -147,18 +136,6 @@ export function LandingVoiceConcierge() {
     }
     setStatus('Listening… just talk')
   }, [R])
-
-  // Never let the UI hang if a reply never lands (LLM/tool stall).
-  const armReplyTimeout = useCallback(() => {
-    clearTimeout(R.replyTimer as ReturnType<typeof setTimeout>)
-    R.replyTimer = setTimeout(() => {
-      setThinking(false)
-      setStreaming(null)
-      R.busy = false
-      pushMsg('lira', 'Sorry, that took too long. Please try again.')
-      resumeListening()
-    }, 22000)
-  }, [R, pushMsg, resumeListening])
 
   const playUrl = useCallback(
     (url: string | null) =>
@@ -192,10 +169,8 @@ export function LandingVoiceConcierge() {
     }
     R.ttsPlaying = false
     setSpeaking(false)
-    if (R.replyDone) {
-      R.busy = false
-      resumeListening()
-    }
+    R.busy = false
+    resumeListening()
   }, [R, playUrl, resumeListening])
 
   const enqueueSpeech = useCallback(
@@ -208,29 +183,9 @@ export function LandingVoiceConcierge() {
     [R, fetchTts, drainQueue]
   )
 
-  const flushSentences = useCallback(
-    (final: boolean) => {
-      const re = /[^.!?]*[.!?]+[\s"')\]]*/g
-      let m: RegExpExecArray | null
-      let consumed = 0
-      while ((m = re.exec(R.pendingSpeech)) !== null) {
-        enqueueSpeech(m[0])
-        consumed = re.lastIndex
-      }
-      R.pendingSpeech = R.pendingSpeech.slice(consumed)
-      if (final && R.pendingSpeech.trim()) {
-        enqueueSpeech(R.pendingSpeech)
-        R.pendingSpeech = ''
-      }
-    },
-    [R, enqueueSpeech]
-  )
-
-  // ── Navigation from the agent ─────────────────────────────────────────────
   const handleNavigate = useCallback(
-    (url: string, target?: string) => {
+    (url: string) => {
       if (!url) return
-      if (target === '_blank') return void window.open(url, '_blank', 'noopener')
       if (url.startsWith('/') && SOFT_NAV.test(url)) navigate(url)
       else if (url.startsWith('/')) window.location.assign(url)
       else window.open(url, '_blank', 'noopener')
@@ -238,100 +193,48 @@ export function LandingVoiceConcierge() {
     [navigate]
   )
 
-  // ── Chat WebSocket ────────────────────────────────────────────────────────
-  const connect = useCallback(() => {
-    if (R.ws && (R.ws.readyState === 0 || R.ws.readyState === 1)) return R.wsOpen
-    const url = `${API.replace(/^http/, 'ws')}/support/chat/ws/${ORG}?visitorId=${encodeURIComponent(
-      R.visitorId
-    )}&newCase=1`
-    const ws = new WebSocket(url)
-    R.ws = ws
-    R.wsOpen = new Promise<void>((res) => {
-      ws.onopen = () => res()
-    })
-    ws.onmessage = (ev) => {
-      let msg: Record<string, unknown>
-      try {
-        msg = JSON.parse(ev.data as string)
-      } catch {
-        return
-      }
-      switch (msg.type as string) {
-        case 'welcome':
-          // Greeting is played instantly client-side on open; ignore server one.
-          break
-        case 'reply_start':
-          R.replyDone = false
-          R.curText = ''
-          R.pendingSpeech = ''
-          setSuggestions([])
-          setThinking(true)
-          setStreaming('')
-          armReplyTimeout()
-          break
-        case 'reply_chunk': {
-          const b = (msg.body as string) || ''
-          R.curText += b
-          R.pendingSpeech += b
-          setThinking(false)
-          setStreaming(R.curText)
-          flushSentences(false)
-          armReplyTimeout()
-          break
-        }
-        case 'reply_end': {
-          clearTimeout(R.replyTimer as ReturnType<typeof setTimeout>)
-          const t = (msg.body !== undefined ? (msg.body as string) : R.curText).trim()
-          setThinking(false)
-          setStreaming(null)
-          if (t) pushMsg('lira', t)
-          flushSentences(true)
-          R.replyDone = true
-          if (!R.ttsPlaying && R.ttsQueue.length === 0) {
-            R.busy = false
-            resumeListening()
-          }
-          break
-        }
-        case 'navigate':
-          handleNavigate(msg.url as string, msg.target as string)
-          break
-        case 'suggestions':
-          if (Array.isArray(msg.suggestions))
-            setSuggestions((msg.suggestions as string[]).slice(0, 4))
-          break
-        case 'error':
-          clearTimeout(R.replyTimer as ReturnType<typeof setTimeout>)
-          setThinking(false)
-          setStreaming(null)
-          R.busy = false
-          resumeListening()
-          break
-      }
-    }
-    ws.onclose = () => setStatus('Disconnected — reopen to restart')
-    return R.wsOpen
-  }, [R, pushMsg, flushSentences, resumeListening, handleNavigate, armReplyTimeout])
-
-  const sendText = useCallback(
+  // ── Ask Lira (fast single-call endpoint) ──────────────────────────────────
+  const askLira = useCallback(
     async (text: string) => {
       const t = (text || '').trim()
       if (!t) return
-      await connect()
-      await R.wsOpen
-      setSuggestions([])
       pushMsg('me', t)
       setThinking(true)
       R.busy = true
       setStatus('Lira is thinking…')
+      R.history.push({ role: 'user', content: t })
+      const ctrl = new AbortController()
+      const to = setTimeout(() => ctrl.abort(), 20000)
       try {
-        R.ws?.send(JSON.stringify({ type: 'message', body: t }))
-        armReplyTimeout()
+        const r = await fetch(`${API}/voice-demo/concierge`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: t, history: R.history.slice(-8) }),
+          signal: ctrl.signal,
+        })
+        clearTimeout(to)
+        const j = (await r.json()) as { say?: string; navigate?: string | null }
+        setThinking(false)
+        const say = (j.say || '').trim()
+        if (say) {
+          pushMsg('lira', say)
+          R.history.push({ role: 'assistant', content: say })
+          enqueueSpeech(say)
+        }
+        if (j.navigate) handleNavigate(j.navigate)
+        if (!R.ttsPlaying && R.ttsQueue.length === 0) {
+          R.busy = false
+          resumeListening()
+        }
       } catch {
-        /* noop */
+        clearTimeout(to)
+        setThinking(false)
+        R.busy = false
+        pushMsg('lira', 'Sorry, that took too long. Please try again.')
+        resumeListening()
       }
     },
-    [R, connect, pushMsg, armReplyTimeout]
+    [R, pushMsg, enqueueSpeech, handleNavigate, resumeListening]
   )
 
   // ── Mic + VAD ─────────────────────────────────────────────────────────────
@@ -369,19 +272,12 @@ export function LandingVoiceConcierge() {
         resumeListening()
         return
       }
-      await connect()
-      await R.wsOpen
-      setSuggestions([])
-      pushMsg('me', text)
-      setThinking(true)
-      setStatus('Lira is thinking…')
-      R.ws?.send(JSON.stringify({ type: 'message', body: text }))
-      armReplyTimeout()
+      void askLira(text)
     } catch {
       R.busy = false
       resumeListening()
     }
-  }, [R, connect, pushMsg, resumeListening, armReplyTimeout])
+  }, [R, askLira, resumeListening])
 
   const startRecorder = useCallback(() => {
     if (!R.micStream) return
@@ -431,7 +327,6 @@ export function LandingVoiceConcierge() {
   const startMic = useCallback(async () => {
     setStatus('Starting…')
     try {
-      await connect()
       R.micStream = await navigator.mediaDevices.getUserMedia({
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       })
@@ -451,9 +346,8 @@ export function LandingVoiceConcierge() {
     } catch {
       setStatus('Allow the microphone to talk, or just type')
     }
-  }, [R, connect, vadTick, resumeListening])
+  }, [R, vadTick, resumeListening])
 
-  // STOP everything (mic session off, kill any playback/recording). No pause.
   const stopAll = useCallback(() => {
     R.ttsQueue.length = 0
     R.ttsPlaying = false
@@ -478,7 +372,6 @@ export function LandingVoiceConcierge() {
       void startMic()
       return
     }
-    // Active in any way (listening / speaking / recording) → STOP.
     if (R.sessionOn || R.busy || R.ttsPlaying || R.recording) {
       stopAll()
     } else {
@@ -495,12 +388,10 @@ export function LandingVoiceConcierge() {
 
   const openPanel = useCallback(() => {
     setOpen(true)
-    R.greeted = true
-    void connect()
-    // Play the pre-generated greeting immediately (user gesture → autoplay ok).
     ;(async () => {
       prefetchGreeting()
       pushMsg('lira', GREETING)
+      R.history.push({ role: 'assistant', content: GREETING })
       R.busy = true
       setSpeaking(true)
       setStatus('…')
@@ -511,7 +402,7 @@ export function LandingVoiceConcierge() {
       R.busy = false
       resumeListening()
     })()
-  }, [R, connect, prefetchGreeting, pushMsg, playUrl, resumeListening])
+  }, [R, prefetchGreeting, pushMsg, playUrl, resumeListening])
 
   const closePanel = useCallback(() => {
     setOpen(false)
@@ -522,7 +413,6 @@ export function LandingVoiceConcierge() {
     return () => {
       if (R.vadTimer) clearInterval(R.vadTimer as ReturnType<typeof setInterval>)
       try {
-        R.ws?.close()
         R.micStream?.getTracks().forEach((t) => t.stop())
         R.audioCtx?.close()
       } catch {
@@ -532,7 +422,7 @@ export function LandingVoiceConcierge() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Drag + magnetic corner snap (shared by launcher grip & panel header) ──
+  // ── Drag + magnetic corner snap ───────────────────────────────────────────
   const dragRef = useRef<{ gx: number; gy: number; w: number; h: number } | null>(null)
   const startDrag = useCallback((e: React.PointerEvent) => {
     const root = (e.currentTarget as HTMLElement).closest(
@@ -558,11 +448,11 @@ export function LandingVoiceConcierge() {
     setDragPos({ x, y })
   }, [])
   const endDrag = useCallback((e: React.PointerEvent) => {
-    const d = dragRef.current
-    if (!d) return
-    const cx = e.clientX
+    if (!dragRef.current) return
     const third = window.innerWidth / 3
-    setCorner(cx < third ? 'bottom-left' : cx > 2 * third ? 'bottom-right' : 'bottom-center')
+    setCorner(
+      e.clientX < third ? 'bottom-left' : e.clientX > 2 * third ? 'bottom-right' : 'bottom-center'
+    )
     dragRef.current = null
     setDragPos(null)
   }, [])
@@ -676,35 +566,13 @@ export function LandingVoiceConcierge() {
                 )}
               </div>
             ))}
-            {streaming !== null && (
-              <div className="flex justify-start">
-                <div
-                  className="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] leading-relaxed text-gray-900 ring-1 ring-black/5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5"
-                  dangerouslySetInnerHTML={{ __html: renderMd(streaming || '…') }}
-                />
-              </div>
-            )}
-            {thinking && streaming === null && (
+            {thinking && (
               <div className="flex justify-start">
                 <div className="flex gap-1 rounded-2xl rounded-bl-md bg-white px-4 py-3 ring-1 ring-black/5">
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:0ms]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:150ms]" />
                   <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-gray-400 [animation-delay:300ms]" />
                 </div>
-              </div>
-            )}
-            {suggestions.length > 0 && (
-              <div className="flex flex-wrap gap-2 pt-1">
-                {suggestions.map((s, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    onClick={() => void sendText(s)}
-                    className="rounded-full border border-[#111418]/20 bg-white px-3 py-1.5 text-[13px] font-medium text-[#111418] hover:bg-gray-50"
-                  >
-                    {s}
-                  </button>
-                ))}
               </div>
             )}
           </div>
@@ -726,7 +594,7 @@ export function LandingVoiceConcierge() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  void sendText(input)
+                  void askLira(input)
                   setInput('')
                 }
               }}
@@ -736,7 +604,7 @@ export function LandingVoiceConcierge() {
             <button
               type="button"
               onClick={() => {
-                void sendText(input)
+                void askLira(input)
                 setInput('')
               }}
               className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-[#111418] text-white"
