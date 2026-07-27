@@ -447,10 +447,13 @@ export function LandingVoiceConcierge() {
               className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold hover:bg-white/5"
               aria-label="Talk to Lira"
             >
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              </span>
+              <img
+                src="/lira_mark_white.png"
+                alt=""
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin"
+                style={{ animationDuration: '1.6s' }}
+              />
               Talk to Lira
               <Microphone size={17} weight="fill" />
             </button>
