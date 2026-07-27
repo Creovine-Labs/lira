@@ -1,28 +1,24 @@
-import { useEffect, useRef, useState, useCallback } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Microphone, X, PaperPlaneRight, DotsSixVertical } from '@phosphor-icons/react'
 import { env } from '@/env'
 
 /**
- * Landing-page voice concierge — a center-bottom launcher that opens a
- * draggable panel (magnetically snaps to bottom-left / center / right).
- * Visitors talk or type; Lira answers in a neutral voice and can navigate them
- * to pages.
+ * Landing-page voice concierge on Nova Sonic (Amazon speech-to-speech) — the
+ * same low-latency, natural engine the product's support voice uses. A
+ * center-bottom launcher opens a draggable panel; opening starts a live voice
+ * call. Navigation is driven by intent in the visitor's live transcript (say
+ * "show me pricing" → routes to /pricing). Typing falls back to the fast text
+ * concierge endpoint.
  *
- * Uses the fast single-call concierge endpoint (`/lira/v1/voice-demo/concierge`,
- * gpt-4o-mini, facts + sitemap in the prompt → { say, navigate } in ~1-2s) plus
- * STT + neutral OpenAI TTS. The greeting is a fixed line pre-generated on intent
- * so it plays instantly on open.
+ * Voice protocol (wss …/support/chat/voice/:orgId): send 16 kHz mono PCM (mic);
+ * receive 24 kHz PCM audio frames + JSON { type:'transcript'|'interruption'|
+ * 'call_started'|'call_ended'|'error' }.
  */
 
 const API = `${env.VITE_API_URL}/lira/v1`
-const VOICE = 'openai:nova'
-const GREETING = 'Hi! How can I help you today?'
-const SILENCE_MS = 700
-const MIN_SPEECH_MS = 300
-const RMS_THRESH = 0.03
-const MAX_UTTERANCE_MS = 20000
-const IDLE_RESTART_MS = 12000
+const ORG = env.VITE_LIRA_PUBLIC_ORG_ID
+const VOICE_WS = `${API.replace(/^http/, 'ws')}/support/chat/voice/${ORG}`
 
 type Msg = { role: 'me' | 'lira'; text: string }
 type Corner = 'bottom-center' | 'bottom-left' | 'bottom-right'
@@ -39,47 +35,65 @@ function esc(s: string): string {
 function inline(s: string): string {
   return s
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
     .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
 }
 function renderMd(md: string): string {
-  const lines = esc(md).split('\n')
-  let html = ''
-  let inList = false
-  for (const line of lines) {
-    const m = line.match(/^\s*[-*]\s+(.*)$/)
-    if (m) {
-      if (!inList) {
-        html += '<ul>'
-        inList = true
+  return esc(md)
+    .split('\n')
+    .map((l) => inline(l))
+    .join('<br>')
+}
+
+// Map what the visitor SAYS to a page (voice-intent navigation).
+function navFromText(text: string): string | null {
+  const t = text.toLowerCase()
+  if (/\b(pricing|price|prices|cost|costs|how much|plan|plans|subscription)\b/.test(t))
+    return '/pricing'
+  if (/\b(book|schedule|get|see)\b.*\bdemo\b|\bdemo\b.*\b(call|booking)\b/.test(t))
+    return '/book-demo'
+  if (/\bcontact|reach (you|someone)|talk to (a|someone|sales|human)|get in touch\b/.test(t))
+    return '/contact'
+  if (/\bfeature/.test(t)) return '/features'
+  if (/\bsecurity|secure|compliance\b/.test(t)) return '/security'
+  if (/\bblog\b/.test(t)) return '/blog'
+  if (/\babout (you|lira|the company)\b/.test(t)) return '/about'
+  if (/\bcareer|jobs?|hiring\b/.test(t)) return '/careers'
+  return null
+}
+
+// ── Audio helpers (ported from the working voice client) ─────────────────────
+function downsampleToPcm16(float32: Float32Array, fromRate: number, toRate: number): Int16Array {
+  const ratio = fromRate / toRate
+  const length = Math.round(float32.length / ratio)
+  const result = new Int16Array(length)
+  for (let i = 0; i < length; i++) {
+    const srcIdx = i * ratio
+    const low = Math.floor(srcIdx)
+    const high = Math.min(low + 1, float32.length - 1)
+    const frac = srcIdx - low
+    const s = float32[low] * (1 - frac) + float32[high] * frac
+    const c = Math.max(-1, Math.min(1, s))
+    result[i] = c < 0 ? c * 0x8000 : c * 0x7fff
+  }
+  return result
+}
+
+const WORKLET_CODE = `
+  class PcmCaptureProcessor extends AudioWorkletProcessor {
+    constructor(){ super(); this._b = new Float32Array(0); }
+    process(inputs){
+      const input = inputs[0];
+      if (input && input[0] && input[0].length > 0){
+        const nb = new Float32Array(this._b.length + input[0].length);
+        nb.set(this._b); nb.set(input[0], this._b.length); this._b = nb;
+        while (this._b.length >= 4096){ this.port.postMessage(this._b.slice(0,4096)); this._b = this._b.slice(4096); }
       }
-      html += '<li>' + inline(m[1]) + '</li>'
-    } else {
-      if (inList) {
-        html += '</ul>'
-        inList = false
-      }
-      html += (line.trim() ? inline(line) : '') + '<br>'
+      return true;
     }
   }
-  if (inList) html += '</ul>'
-  return html.replace(/(<br>)+$/, '')
-}
-function stripForSpeech(md: string): string {
-  return String(md)
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/`([^`]+)`/g, '$1')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1')
-    .replace(/^#{1,6}\s*/gm, '')
-    .replace(/^\s*[-*]\s+/gm, '')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/[–—]/g, ', ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+  registerProcessor('pcm-capture', PcmCaptureProcessor);`
 
 export function LandingVoiceConcierge() {
   const navigate = useNavigate()
@@ -87,32 +101,21 @@ export function LandingVoiceConcierge() {
   const [messages, setMessages] = useState<Msg[]>([])
   const [thinking, setThinking] = useState(false)
   const [input, setInput] = useState('')
-  const [status, setStatus] = useState('Tap the mic and just talk')
-  const [micOn, setMicOn] = useState(false)
-  const [speaking, setSpeaking] = useState(false)
+  const [status, setStatus] = useState('Tap to start talking')
+  const [live, setLive] = useState(false)
   const [corner, setCorner] = useState<Corner>('bottom-center')
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
 
   const R = useRef({
+    ws: null as WebSocket | null,
+    micCtx: null as AudioContext | null,
+    playCtx: null as AudioContext | null,
+    worklet: null as AudioWorkletNode | null,
     micStream: null as MediaStream | null,
-    audioCtx: null as AudioContext | null,
-    analyser: null as AnalyserNode | null,
-    recorder: null as MediaRecorder | null,
-    chunks: [] as Blob[],
-    recording: false,
-    lastVoiceAt: 0,
-    speechMs: 0,
-    heardSpeech: false,
-    recStartAt: 0,
-    vadTimer: 0 as number | ReturnType<typeof setInterval>,
-    busy: false,
-    micReady: false,
-    sessionOn: false,
-    player: null as HTMLAudioElement | null,
-    ttsQueue: [] as Promise<string | null>[],
-    ttsPlaying: false,
-    greetingUrl: null as Promise<string | null> | null,
+    nextPlayTime: 0,
+    lastNav: '',
     history: [] as { role: string; content: string }[],
+    visitorId: `web-${Math.random().toString(36).slice(2)}`,
   }).current
 
   const logRef = useRef<HTMLDivElement | null>(null)
@@ -124,88 +127,149 @@ export function LandingVoiceConcierge() {
     setMessages((m) => [...m, { role, text }])
   }, [])
 
-  const fetchTts = useCallback((text: string) => {
-    return fetch(
-      `${API}/voice-demo/tts?id=${encodeURIComponent(VOICE)}&text=${encodeURIComponent(text)}`
-    )
-      .then((r) => (r.ok ? r.blob() : null))
-      .then((b) => (b ? URL.createObjectURL(b) : null))
-      .catch(() => null)
-  }, [])
-
-  const resumeListening = useCallback(() => {
-    if (!R.micReady || !R.sessionOn) {
-      setStatus('Tap the mic to talk, or type')
-      return
-    }
-    setStatus('Listening… just talk')
-  }, [R])
-
-  const playUrl = useCallback(
-    (url: string | null) =>
-      new Promise<void>((res) => {
-        if (!url) return res()
-        const a = new Audio(url)
-        R.player = a
-        a.onended = () => res()
-        a.onerror = () => res()
-        a.play().catch(() => res())
-      }),
-    [R]
-  )
-
-  const drainQueue = useCallback(async () => {
-    R.ttsPlaying = true
-    R.busy = true
-    setSpeaking(true)
-    setStatus('Lira is speaking…')
-    while (R.ttsQueue.length) {
-      const url = (await R.ttsQueue.shift()) ?? null
-      await playUrl(url)
-      if (url) {
-        try {
-          URL.revokeObjectURL(url)
-        } catch {
-          /* noop */
-        }
-      }
-      R.player = null
-    }
-    R.ttsPlaying = false
-    setSpeaking(false)
-    R.busy = false
-    resumeListening()
-  }, [R, playUrl, resumeListening])
-
-  const enqueueSpeech = useCallback(
-    (text: string) => {
-      const t = stripForSpeech(text)
-      if (!t) return
-      R.ttsQueue.push(fetchTts(t))
-      if (!R.ttsPlaying) void drainQueue()
-    },
-    [R, fetchTts, drainQueue]
-  )
-
   const handleNavigate = useCallback(
     (url: string) => {
-      if (!url) return
+      if (!url || R.lastNav === url) return
+      R.lastNav = url
       if (url.startsWith('/') && SOFT_NAV.test(url)) navigate(url)
       else if (url.startsWith('/')) window.location.assign(url)
       else window.open(url, '_blank', 'noopener')
     },
-    [navigate]
+    [R, navigate]
   )
 
-  // ── Ask Lira (fast single-call endpoint) ──────────────────────────────────
-  const askLira = useCallback(
+  const playPcm = useCallback(
+    (buf: ArrayBuffer) => {
+      const ctx = R.playCtx
+      if (!ctx) return
+      const byteLen = buf.byteLength & ~1
+      if (byteLen === 0) return
+      const int16 = new Int16Array(buf, 0, byteLen / 2)
+      const f32 = new Float32Array(int16.length)
+      for (let i = 0; i < int16.length; i++)
+        f32[i] = int16[i] < 0 ? int16[i] / 0x8000 : int16[i] / 0x7fff
+      const buffer = ctx.createBuffer(1, f32.length, 24000)
+      buffer.getChannelData(0).set(f32)
+      const src = ctx.createBufferSource()
+      src.buffer = buffer
+      src.connect(ctx.destination)
+      const startAt = Math.max(ctx.currentTime + 0.25, R.nextPlayTime)
+      src.start(startAt)
+      R.nextPlayTime = startAt + buffer.duration
+    },
+    [R]
+  )
+
+  // ── Nova Sonic voice call ─────────────────────────────────────────────────
+  const endCall = useCallback(() => {
+    try {
+      if (R.ws && R.ws.readyState === WebSocket.OPEN)
+        R.ws.send(JSON.stringify({ action: 'end_call' }))
+    } catch {
+      /* noop */
+    }
+    try {
+      R.ws?.close()
+    } catch {
+      /* noop */
+    }
+    try {
+      R.worklet?.disconnect()
+      R.micStream?.getTracks().forEach((t) => t.stop())
+      R.micCtx?.close()
+      R.playCtx?.close()
+    } catch {
+      /* noop */
+    }
+    R.ws = null
+    R.worklet = null
+    R.micStream = null
+    R.micCtx = null
+    R.playCtx = null
+    R.nextPlayTime = 0
+    setLive(false)
+    setStatus('Tap the mic to talk again')
+  }, [R])
+
+  const startCall = useCallback(async () => {
+    if (R.ws) return
+    setStatus('Connecting…')
+    try {
+      const micStream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      })
+      R.micStream = micStream
+      const micCtx = new AudioContext()
+      R.micCtx = micCtx
+      const playCtx = new AudioContext({ sampleRate: 24000 })
+      R.playCtx = playCtx
+      await playCtx.resume().catch(() => {})
+      const source = micCtx.createMediaStreamSource(micStream)
+      const blobUrl = URL.createObjectURL(
+        new Blob([WORKLET_CODE], { type: 'application/javascript' })
+      )
+      await micCtx.audioWorklet.addModule(blobUrl)
+      URL.revokeObjectURL(blobUrl)
+      const worklet = new AudioWorkletNode(micCtx, 'pcm-capture')
+      R.worklet = worklet
+      source.connect(worklet)
+
+      const ws = new WebSocket(`${VOICE_WS}?visitorId=${encodeURIComponent(R.visitorId)}`)
+      ws.binaryType = 'arraybuffer'
+      R.ws = ws
+
+      worklet.port.onmessage = (e: MessageEvent) => {
+        if (!R.ws || R.ws.readyState !== WebSocket.OPEN) return
+        const pcm16 = downsampleToPcm16(e.data as Float32Array, micCtx.sampleRate, 16000)
+        R.ws.send(pcm16.buffer as ArrayBuffer)
+      }
+
+      ws.onopen = () => {
+        setLive(true)
+        setStatus('Live — just talk')
+      }
+      ws.onmessage = (event: MessageEvent) => {
+        if (event.data instanceof ArrayBuffer) {
+          playPcm(event.data)
+          return
+        }
+        try {
+          const msg = JSON.parse(event.data as string)
+          if (msg.type === 'transcript' && msg.text) {
+            const role = msg.role === 'customer' ? 'me' : 'lira'
+            pushMsg(role, msg.text)
+            if (role === 'me') {
+              const target = navFromText(msg.text)
+              if (target) handleNavigate(target)
+            }
+          } else if (msg.type === 'interruption') {
+            R.nextPlayTime = 0 // barge-in: drop queued audio
+          } else if (msg.type === 'call_ended') {
+            endCall()
+          } else if (msg.type === 'error') {
+            setStatus('Voice error — tap to retry')
+          }
+        } catch {
+          /* ignore */
+        }
+      }
+      ws.onclose = () => {
+        if (R.ws) endCall()
+      }
+      ws.onerror = () => setStatus('Connection error — tap to retry')
+    } catch {
+      setStatus('Allow the microphone to talk, or type below')
+      endCall()
+    }
+  }, [R, playPcm, pushMsg, handleNavigate, endCall])
+
+  // ── Typed fallback (fast text concierge) ──────────────────────────────────
+  const askText = useCallback(
     async (text: string) => {
       const t = (text || '').trim()
       if (!t) return
       pushMsg('me', t)
       setThinking(true)
-      R.busy = true
-      setStatus('Lira is thinking…')
       R.history.push({ role: 'user', content: t })
       const ctrl = new AbortController()
       const to = setTimeout(() => ctrl.abort(), 20000)
@@ -223,221 +287,43 @@ export function LandingVoiceConcierge() {
         if (say) {
           pushMsg('lira', say)
           R.history.push({ role: 'assistant', content: say })
-          enqueueSpeech(say)
         }
-        if (j.navigate) handleNavigate(j.navigate)
-        if (!R.ttsPlaying && R.ttsQueue.length === 0) {
-          R.busy = false
-          resumeListening()
+        if (j.navigate) {
+          R.lastNav = '' // typed nav is explicit; always honor
+          handleNavigate(j.navigate)
         }
       } catch {
         clearTimeout(to)
         setThinking(false)
-        R.busy = false
         pushMsg('lira', 'Sorry, that took too long. Please try again.')
-        resumeListening()
       }
     },
-    [R, pushMsg, enqueueSpeech, handleNavigate, resumeListening]
+    [R, pushMsg, handleNavigate]
   )
 
-  // ── Mic + VAD ─────────────────────────────────────────────────────────────
-  const rms = useCallback(() => {
-    if (!R.analyser) return 0
-    const buf = new Uint8Array(R.analyser.fftSize)
-    R.analyser.getByteTimeDomainData(buf)
-    let s = 0
-    for (let i = 0; i < buf.length; i++) {
-      const v = (buf[i] - 128) / 128
-      s += v * v
-    }
-    return Math.sqrt(s / buf.length)
-  }, [R])
-
-  const finishTurn = useCallback(async () => {
-    const blob = new Blob(R.chunks, { type: 'audio/webm' })
-    R.chunks = []
-    if (!R.heardSpeech || R.speechMs < MIN_SPEECH_MS || blob.size < 2000) {
-      resumeListening()
-      return
-    }
-    R.busy = true
-    setStatus('Transcribing…')
-    try {
-      const r = await fetch(`${API}/voice-demo/stt`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'audio/webm' },
-        body: blob,
-      })
-      const j = (await r.json()) as { text?: string }
-      const text = (j.text || '').trim()
-      if (!text) {
-        R.busy = false
-        resumeListening()
-        return
-      }
-      void askLira(text)
-    } catch {
-      R.busy = false
-      resumeListening()
-    }
-  }, [R, askLira, resumeListening])
-
-  const startRecorder = useCallback(() => {
-    if (!R.micStream) return
-    R.chunks = []
-    R.recording = true
-    R.heardSpeech = false
-    R.speechMs = 0
-    R.lastVoiceAt = performance.now()
-    R.recStartAt = performance.now()
-    const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-      ? 'audio/webm;codecs=opus'
-      : 'audio/webm'
-    const rec = new MediaRecorder(R.micStream, { mimeType: mime })
-    R.recorder = rec
-    rec.ondataavailable = (e) => {
-      if (e.data && e.data.size) R.chunks.push(e.data)
-    }
-    rec.onstop = () => void finishTurn()
-    rec.start()
-  }, [R, finishTurn])
-
-  const stopRecorder = useCallback(
-    (discard: boolean) => {
-      if (R.recorder && R.recorder.state !== 'inactive') {
-        if (discard) R.recorder.onstop = null
-        R.recorder.stop()
-      }
-      R.recording = false
-    },
-    [R]
-  )
-
-  const vadTick = useCallback(() => {
-    if (!R.sessionOn || R.busy || !R.analyser) return
-    // Start capturing the MOMENT we're listening (before speech) so the first
-    // word is never clipped. Silence only decides when the utterance ENDS.
-    if (!R.recording) {
-      startRecorder()
-      return
-    }
-    const now = performance.now()
-    const lvl = rms()
-    if (lvl > RMS_THRESH) {
-      R.lastVoiceAt = now
-      R.speechMs += 60
-      R.heardSpeech = true
-    }
-    const dur = now - R.recStartAt
-    if (R.heardSpeech && now - R.lastVoiceAt > SILENCE_MS) {
-      stopRecorder(false) // end of speech → send
-    } else if (!R.heardSpeech && dur > IDLE_RESTART_MS) {
-      stopRecorder(true) // long silence, no speech → drop + restart next tick
-    } else if (dur > MAX_UTTERANCE_MS) {
-      stopRecorder(false) // hard cap
-    }
-  }, [R, rms, startRecorder, stopRecorder])
-
-  const startMic = useCallback(async () => {
-    setStatus('Starting…')
-    try {
-      R.micStream = await navigator.mediaDevices.getUserMedia({
-        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
-      })
-      const Ctx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-      R.audioCtx = new Ctx()
-      const src = R.audioCtx.createMediaStreamSource(R.micStream)
-      R.analyser = R.audioCtx.createAnalyser()
-      R.analyser.fftSize = 1024
-      src.connect(R.analyser)
-      R.micReady = true
-      R.sessionOn = true
-      setMicOn(true)
-      if (!R.vadTimer) R.vadTimer = setInterval(vadTick, 60)
-      resumeListening()
-    } catch {
-      setStatus('Allow the microphone to talk, or just type')
-    }
-  }, [R, vadTick, resumeListening])
-
-  // STOP = full teardown so the browser's mic/recording indicator actually
-  // turns off (nothing is listening). Re-tapping re-acquires the mic.
-  const stopAll = useCallback(() => {
-    R.ttsQueue.length = 0
-    R.ttsPlaying = false
-    if (R.player) {
-      try {
-        R.player.pause()
-      } catch {
-        /* noop */
-      }
-      R.player = null
-    }
-    setSpeaking(false)
-    if (R.recording) stopRecorder(true)
-    if (R.vadTimer) {
-      clearInterval(R.vadTimer as ReturnType<typeof setInterval>)
-      R.vadTimer = 0
-    }
-    try {
-      R.micStream?.getTracks().forEach((t) => t.stop())
-      R.audioCtx?.close()
-    } catch {
-      /* noop */
-    }
-    R.micStream = null
-    R.audioCtx = null
-    R.analyser = null
-    R.busy = false
-    R.sessionOn = false
-    R.micReady = false
-    setMicOn(false)
-    setStatus('Tap the mic to talk, or type')
-  }, [R, stopRecorder])
-
-  const onMicTap = useCallback(() => {
-    if (R.micReady) stopAll()
-    else void startMic()
-  }, [R, startMic, stopAll])
-
-  // ── Open / close (instant greeting) ───────────────────────────────────────
-  const prefetchGreeting = useCallback(() => {
-    if (!R.greetingUrl) R.greetingUrl = fetchTts(GREETING)
-  }, [R, fetchTts])
-
+  // ── Open / close ──────────────────────────────────────────────────────────
   const openPanel = useCallback(() => {
     setOpen(true)
-    void startMic() // opening the panel starts the conversation → mic on, listening
-    ;(async () => {
-      prefetchGreeting()
-      pushMsg('lira', GREETING)
-      R.history.push({ role: 'assistant', content: GREETING })
-      R.busy = true // gate VAD so we don't record the greeting itself
-      setSpeaking(true)
-      setStatus('…')
-      const url = await R.greetingUrl
-      await playUrl(url)
-      R.player = null
-      setSpeaking(false)
-      R.busy = false
-      resumeListening()
-    })()
-  }, [R, startMic, prefetchGreeting, pushMsg, playUrl, resumeListening])
+    void startCall() // opening starts the live voice call
+  }, [startCall])
 
   const closePanel = useCallback(() => {
     setOpen(false)
-    stopAll()
-  }, [stopAll])
+    endCall()
+  }, [endCall])
+
+  const onMicTap = useCallback(() => {
+    if (live || R.ws) endCall()
+    else void startCall()
+  }, [R, live, startCall, endCall])
 
   useEffect(() => {
     return () => {
-      if (R.vadTimer) clearInterval(R.vadTimer as ReturnType<typeof setInterval>)
       try {
+        R.ws?.close()
         R.micStream?.getTracks().forEach((t) => t.stop())
-        R.audioCtx?.close()
+        R.micCtx?.close()
+        R.playCtx?.close()
       } catch {
         /* noop */
       }
@@ -530,8 +416,6 @@ export function LandingVoiceConcierge() {
             </button>
             <button
               type="button"
-              onPointerEnter={prefetchGreeting}
-              onPointerDown={prefetchGreeting}
               onClick={openPanel}
               className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold hover:bg-white/5"
               aria-label="Talk to Lira"
@@ -575,6 +459,11 @@ export function LandingVoiceConcierge() {
           </div>
 
           <div ref={logRef} className="flex-1 space-y-2.5 overflow-y-auto bg-[#f6f7f9] p-4">
+            {messages.length === 0 && !thinking && (
+              <div className="mt-6 text-center text-[13px] text-gray-400">
+                {live ? 'Listening… just start talking.' : 'Connecting your voice call…'}
+              </div>
+            )}
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'me' ? 'justify-end' : 'justify-start'}`}>
                 {m.role === 'me' ? (
@@ -583,7 +472,7 @@ export function LandingVoiceConcierge() {
                   </div>
                 ) : (
                   <div
-                    className="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] leading-relaxed text-gray-900 ring-1 ring-black/5 [&_a]:underline [&_code]:rounded [&_code]:bg-black/5 [&_code]:px-1 [&_li]:ml-1 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5"
+                    className="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] leading-relaxed text-gray-900 ring-1 ring-black/5 [&_strong]:font-semibold"
                     dangerouslySetInnerHTML={{ __html: renderMd(m.text) }}
                   />
                 )}
@@ -605,9 +494,9 @@ export function LandingVoiceConcierge() {
               type="button"
               onClick={onMicTap}
               className={`flex h-11 w-11 flex-none items-center justify-center rounded-full text-white transition ${
-                speaking ? 'bg-emerald-600' : micOn ? 'animate-pulse bg-red-500' : 'bg-[#111418]'
+                live ? 'animate-pulse bg-red-500' : 'bg-[#111418]'
               }`}
-              aria-label={micOn || speaking ? 'Stop' : 'Talk'}
+              aria-label={live ? 'Stop the call' : 'Start talking'}
             >
               <Microphone size={20} weight="fill" />
             </button>
@@ -617,17 +506,17 @@ export function LandingVoiceConcierge() {
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault()
-                  void askLira(input)
+                  void askText(input)
                   setInput('')
                 }
               }}
-              placeholder="Type a message…"
+              placeholder="Or type a message…"
               className="min-w-0 flex-1 rounded-full border border-gray-200 px-4 py-2.5 text-[14px] outline-none focus:border-gray-400"
             />
             <button
               type="button"
               onClick={() => {
-                void askLira(input)
+                void askText(input)
                 setInput('')
               }}
               className="flex h-11 w-11 flex-none items-center justify-center rounded-full bg-[#111418] text-white"
