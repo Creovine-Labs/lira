@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUpRight, List, X } from '@phosphor-icons/react'
 import { LiraLogo } from '@/components/LiraLogo'
+import { useAuthStore } from '@/app/store'
 
 interface MarketingNavbarProps {
   variant?: 'light' | 'overlay'
@@ -11,7 +12,7 @@ const NAV_LINKS = [
   { label: 'Home', href: '/' },
   { label: 'Features', href: '/features' },
   { label: 'Resources', href: '/resources' },
-  { label: 'Careers', href: '/careers' },
+  { label: 'Pricing', href: '/pricing' },
   { label: 'Blog', href: '/blog' },
 ]
 
@@ -53,6 +54,7 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const isOverlay = variant === 'overlay'
+  const isLoggedIn = useAuthStore((s) => !!s.token)
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8)
@@ -94,21 +96,39 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
         </ul>
 
         <div className="hidden items-center gap-4 md:flex">
-          <Link to="/login" className={`text-sm font-semibold transition ${linkClass}`}>
-            Log in
-          </Link>
-          {isOverlay && !scrolled ? (
-            <NavCta to="/book-demo" subtle>
-              Speak to an expert
-            </NavCta>
+          {isLoggedIn ? (
+            isOverlay && !scrolled ? (
+              <NavCta to="/dashboard" subtle>
+                Dashboard
+              </NavCta>
+            ) : (
+              <Link
+                to="/dashboard"
+                className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-gray-900 ring-1 ring-gray-200 transition hover:bg-gray-50"
+              >
+                Dashboard
+                <ArrowUpRight size={14} weight="bold" />
+              </Link>
+            )
           ) : (
-            <Link
-              to="/book-demo"
-              className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-gray-900 ring-1 ring-gray-200 transition hover:bg-gray-50"
-            >
-              Speak to an expert
-              <ArrowUpRight size={14} weight="bold" />
-            </Link>
+            <>
+              <Link to="/login" className={`text-sm font-semibold transition ${linkClass}`}>
+                Log in
+              </Link>
+              {isOverlay && !scrolled ? (
+                <NavCta to="/signup" subtle>
+                  Sign up
+                </NavCta>
+              ) : (
+                <Link
+                  to="/signup"
+                  className="inline-flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-white px-5 text-sm font-semibold text-gray-900 ring-1 ring-gray-200 transition hover:bg-gray-50"
+                >
+                  Sign up
+                  <ArrowUpRight size={14} weight="bold" />
+                </Link>
+              )}
+            </>
           )}
         </div>
 
@@ -150,20 +170,32 @@ export function MarketingNavbar({ variant = 'light' }: MarketingNavbarProps) {
             ))}
           </div>
           <div className="mt-4 grid gap-2 border-t border-gray-200 pt-4">
-            <Link
-              to="/login"
-              className="inline-flex justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold !text-gray-900 ring-1 ring-gray-200"
-              onClick={() => setMobileOpen(false)}
-            >
-              Log in
-            </Link>
-            <Link
-              to="/book-demo"
-              className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold !text-white"
-              onClick={() => setMobileOpen(false)}
-            >
-              Speak to an expert
-            </Link>
+            {isLoggedIn ? (
+              <Link
+                to="/dashboard"
+                className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold !text-white"
+                onClick={() => setMobileOpen(false)}
+              >
+                Dashboard
+              </Link>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="inline-flex justify-center rounded-full bg-white px-4 py-3 text-sm font-semibold !text-gray-900 ring-1 ring-gray-200"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Log in
+                </Link>
+                <Link
+                  to="/signup"
+                  className="inline-flex justify-center rounded-full bg-[#202527] px-4 py-3 text-sm font-semibold !text-white"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  Sign up
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}

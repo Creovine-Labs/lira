@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion'
 import type { Variants } from 'framer-motion'
 import { MailCheck, MessageSquareText, PlugZap, Workflow } from 'lucide-react'
 import { SEO } from '@/components/SEO'
-import { PublicLiraWidget } from '@/components/PublicLiraWidget'
 import { DemoEntryModal, MarketingFooter, MarketingNavbar } from '@/components/marketing'
 import { LiveAgentDemo } from './LiveAgentDemo'
 import {
@@ -1390,7 +1389,8 @@ export function LandingPageV4() {
           })),
         }}
       />
-      <PublicLiraWidget />
+      {/* Corner support widget replaced by the center voice concierge
+          (mounted globally in App.tsx as <ConciergeGate />). */}
       <Styles />
       <MarketingNavbar variant="overlay" />
 
@@ -1437,8 +1437,8 @@ export function LandingPageV4() {
                 <Play size={14} weight="fill" />
                 Try the live demo
               </button>
-              <Link to="/book-demo" className="eh-btn eh-btn-primary">
-                Speak to an expert
+              <Link to="/signup" className="eh-btn eh-btn-primary">
+                Sign up
                 <ArrowUpRight size={14} weight="bold" />
               </Link>
             </div>

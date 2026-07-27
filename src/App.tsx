@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate, useLocation } from 'react-router-
 import { enforceHostRouting, isAppHost } from './host-routing'
 import { GoogleOAuthProvider } from '@react-oauth/google'
 import { Toaster } from 'sonner'
+import { LandingVoiceConcierge } from '@/components/marketing/LandingVoiceConcierge'
 
 import {
   DashboardPage,
@@ -132,13 +133,28 @@ function RootRoute() {
     )
   }
 
-  if (token) return <Navigate to="/dashboard" replace />
+  // On the app subdomain, the root is the product entrance: signed-in visitors
+  // go to the dashboard, everyone else to login. The marketing page never shows
+  // on the app host.
+  if (isAppHost()) return <Navigate to={token ? '/dashboard' : '/login'} replace />
 
-  // On the app subdomain, the root is the product entrance — an unauthenticated
-  // visitor should land on login, not the marketing page.
-  if (isAppHost()) return <Navigate to="/login" replace />
-
+  // Marketing host: always show the landing page — including to signed-in
+  // visitors. The navbar swaps "Log in" for a "Dashboard" button so they can
+  // jump straight back into the product.
   return <LandingPageV4 />
+}
+
+/**
+ * Mounts the landing voice concierge on public marketing routes only. Hidden on
+ * the app subdomain and on any product/auth/portal surface.
+ */
+const CONCIERGE_HIDDEN =
+  /^\/(dashboard|admin|support|org|settings|profile|tickets|meetings?|onboarding|verify-email|reset-password|forgot-password|accept-invite|login|signup|portal|verified|ui-lab)/
+function ConciergeGate() {
+  const { pathname } = useLocation()
+  if (isAppHost()) return null
+  if (CONCIERGE_HIDDEN.test(pathname)) return null
+  return <LandingVoiceConcierge />
 }
 
 /**
@@ -174,7 +190,7 @@ function App() {
         <Route path="/v3" element={<LandingPageV3 />} />
         <Route path="/v4" element={<LandingPageV4 />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
-        <Route path="/signup" element={<HomePage defaultView="landing" />} />
+        <Route path="/signup" element={<HomePage defaultView="signup" />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -324,6 +340,7 @@ function App() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <AuthExpiryGuard />
+      <ConciergeGate />
       <Toaster position="top-right" richColors closeButton />
     </GoogleOAuthProvider>
   )
