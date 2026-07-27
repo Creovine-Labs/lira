@@ -44,6 +44,21 @@ function inline(s: string): string {
     .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(
+      /(https?:\/\/[^\s<]+)/g,
+      '<a href="$1" target="_blank" rel="noopener" style="color:#2563eb;text-decoration:underline">$1</a>'
+    )
+}
+
+// Off-site links to share in the chat (they can't be navigated to, and URLs in
+// the Nova voice prompt trip Bedrock's content filter — so the client shows them).
+function linkFromText(text: string): { label: string; url: string } | null {
+  const t = text.toLowerCase()
+  if (/\b(documentation|docs|doc site|api docs|developer docs)\b/.test(t))
+    return { label: 'Documentation', url: 'https://docs.liraintelligence.com' }
+  if (/\b(sign ?in|log ?in|the app|open the app|my account)\b/.test(t))
+    return { label: 'Sign in', url: 'https://app.liraintelligence.com' }
+  return null
 }
 function renderMd(md: string): string {
   return esc(md)
@@ -124,6 +139,7 @@ export function LandingVoiceConcierge() {
     micStream: null as MediaStream | null,
     nextPlayTime: 0,
     lastNav: '',
+    lastLink: '',
     history: [] as { role: string; content: string }[],
     visitorId: `web-${Math.random().toString(36).slice(2)}`,
   }).current
@@ -254,6 +270,11 @@ export function LandingVoiceConcierge() {
             if (role === 'me') {
               const target = navFromText(msg.text)
               if (target) handleNavigate(target)
+              const link = linkFromText(msg.text)
+              if (link && R.lastLink !== link.url) {
+                R.lastLink = link.url
+                pushMsg('lira', `${link.label}: ${link.url}`)
+              }
             }
           } else if (msg.type === 'interruption') {
             R.nextPlayTime = 0 // barge-in: drop queued audio
