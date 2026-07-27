@@ -131,6 +131,9 @@ export function LandingVoiceConcierge() {
     (url: string) => {
       if (!url || R.lastNav === url) return
       R.lastNav = url
+      // Slide out of the way (bottom-right) whenever we route the visitor.
+      setCorner('bottom-right')
+      setDragPos(null)
       if (url.startsWith('/') && SOFT_NAV.test(url)) navigate(url)
       else if (url.startsWith('/')) window.location.assign(url)
       else window.open(url, '_blank', 'noopener')
@@ -434,11 +437,11 @@ export function LandingVoiceConcierge() {
       {open && (
         <div
           data-concierge-root
-          className="fixed z-[900] flex h-[540px] w-[380px] max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
+          className="fixed z-[900] flex h-[400px] w-[480px] max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-3xl bg-white/55 shadow-2xl ring-1 ring-white/50 backdrop-blur-2xl"
           style={posStyle}
         >
           <div
-            className="flex touch-none items-center gap-2 bg-[#111418] px-3 py-3 text-white"
+            className="flex touch-none items-center gap-2 bg-[#111418]/85 px-4 py-3 text-white backdrop-blur"
             {...dragHandlers}
             style={{ cursor: 'grab' }}
           >
@@ -458,7 +461,7 @@ export function LandingVoiceConcierge() {
             </button>
           </div>
 
-          <div ref={logRef} className="flex-1 space-y-2.5 overflow-y-auto bg-[#f6f7f9] p-4">
+          <div ref={logRef} className="flex-1 space-y-2.5 overflow-y-auto p-4">
             {messages.length === 0 && !thinking && (
               <div className="mt-6 text-center text-[13px] text-gray-400">
                 {live ? 'Listening… just start talking.' : 'Connecting your voice call…'}
@@ -489,7 +492,7 @@ export function LandingVoiceConcierge() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 border-t border-black/5 bg-white p-3">
+          <div className="flex items-center gap-2 border-t border-white/40 bg-white/40 p-3 backdrop-blur">
             <button
               type="button"
               onClick={onMicTap}
@@ -511,7 +514,7 @@ export function LandingVoiceConcierge() {
                 }
               }}
               placeholder="Or type a message…"
-              className="min-w-0 flex-1 rounded-full border border-gray-200 px-4 py-2.5 text-[14px] outline-none focus:border-gray-400"
+              className="min-w-0 flex-1 rounded-full border border-white/50 bg-white/70 px-4 py-2.5 text-[14px] outline-none focus:border-gray-400"
             />
             <button
               type="button"
