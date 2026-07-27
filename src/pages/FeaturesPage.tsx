@@ -98,7 +98,7 @@ const faqs = [
   },
   {
     q: 'How much does Lira cost?',
-    a: 'There is a Free plan, Pro from $29/month, and Scale from $99/month, plus custom Enterprise. Every plan includes unlimited team seats — you pay for the AI’s work, never per agent. Localized voice (a natural Nigerian voice) is available on Scale, and Enterprise can commission a custom brand voice.',
+    a: 'There is a Free plan, Pro from $29/month, and Scale from $99/month, plus custom Enterprise. Every plan includes unlimited team seats — you pay for the AI’s work, never per agent. A localized voice agent (a natural voice matched to your market) is available on Scale, and Enterprise can commission a custom brand voice in their own voice and tone.',
   },
 ]
 
