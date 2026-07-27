@@ -2,7 +2,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Microphone, X, PaperPlaneRight, DotsSixVertical } from '@phosphor-icons/react'
 import { env } from '@/env'
-import { CONCIERGE_GREET_PCM_B64 } from './concierge-greet-pcm'
 
 /**
  * Landing-page voice concierge on Nova Sonic (Amazon speech-to-speech) — the
@@ -61,6 +60,10 @@ function navFromText(text: string): string | null {
   if (/\bblog\b/.test(t)) return '/blog'
   if (/\babout (you|lira|the company)\b/.test(t)) return '/about'
   if (/\bcareer|jobs?|hiring\b/.test(t)) return '/careers'
+  if (
+    /\b(home ?page|landing page|main page|back home|take me home|go home|the home page)\b/.test(t)
+  )
+    return '/'
   return null
 }
 
@@ -95,16 +98,6 @@ const WORKLET_CODE = `
     }
   }
   registerProcessor('pcm-capture', PcmCaptureProcessor);`
-
-// Decode the "hi" greeting clip once; sent into the call on connect so Nova
-// speaks first in its own voice (it won't talk until it hears audio).
-function b64ToArrayBuffer(b64: string): ArrayBuffer {
-  const bin = atob(b64)
-  const bytes = new Uint8Array(bin.length)
-  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-  return bytes.buffer
-}
-const GREET_PCM = b64ToArrayBuffer(CONCIERGE_GREET_PCM_B64)
 
 export function LandingVoiceConcierge() {
   const navigate = useNavigate()
@@ -240,13 +233,7 @@ export function LandingVoiceConcierge() {
 
       ws.onopen = () => {
         setLive(true)
-        setStatus('Live — just talk')
-        // Nudge Nova to greet first (in its own voice) before the visitor speaks.
-        try {
-          ws.send(GREET_PCM)
-        } catch {
-          /* noop */
-        }
+        setStatus('Listening — say or type something')
       }
       ws.onmessage = (event: MessageEvent) => {
         if (event.data instanceof ArrayBuffer) {
@@ -480,8 +467,15 @@ export function LandingVoiceConcierge() {
 
           <div ref={logRef} className="flex-1 space-y-2.5 overflow-y-auto p-4">
             {messages.length === 0 && !thinking && (
-              <div className="mt-6 text-center text-[13px] text-gray-400">
-                {live ? 'Listening… just start talking.' : 'Connecting your voice call…'}
+              <div className="mt-8 flex flex-col items-center gap-1 text-center">
+                <div className="text-[14px] font-semibold text-gray-700">
+                  {live ? 'Say something to start' : 'Connecting…'}
+                </div>
+                {live && (
+                  <div className="text-[12px] text-gray-500">
+                    Talk to Lira, or type below. She's listening.
+                  </div>
+                )}
               </div>
             )}
             {messages.map((m, i) => (
