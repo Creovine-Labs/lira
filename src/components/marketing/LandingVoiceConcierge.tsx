@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Microphone, X, PaperPlaneRight, DotsSixVertical } from '@phosphor-icons/react'
 import { env } from '@/env'
+import { CONCIERGE_GREET_PCM_B64 } from './concierge-greet-pcm'
 
 /**
  * Landing-page voice concierge on Nova Sonic (Amazon speech-to-speech) — the
@@ -94,6 +95,16 @@ const WORKLET_CODE = `
     }
   }
   registerProcessor('pcm-capture', PcmCaptureProcessor);`
+
+// Decode the "hi" greeting clip once; sent into the call on connect so Nova
+// speaks first in its own voice (it won't talk until it hears audio).
+function b64ToArrayBuffer(b64: string): ArrayBuffer {
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return bytes.buffer
+}
+const GREET_PCM = b64ToArrayBuffer(CONCIERGE_GREET_PCM_B64)
 
 export function LandingVoiceConcierge() {
   const navigate = useNavigate()
@@ -230,6 +241,12 @@ export function LandingVoiceConcierge() {
       ws.onopen = () => {
         setLive(true)
         setStatus('Live — just talk')
+        // Nudge Nova to greet first (in its own voice) before the visitor speaks.
+        try {
+          ws.send(GREET_PCM)
+        } catch {
+          /* noop */
+        }
       }
       ws.onmessage = (event: MessageEvent) => {
         if (event.data instanceof ArrayBuffer) {
