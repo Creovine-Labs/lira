@@ -4,30 +4,68 @@ import { Microphone, X, PaperPlaneRight, DotsSixVertical } from '@phosphor-icons
 import { env } from '@/env'
 
 /**
- * Landing-page voice concierge — a Cartesia-style center-bottom launcher that
- * opens a draggable panel. Visitors talk or type; Lira answers in a neutral
- * voice using the public marketing org's knowledge base and can actively
- * navigate them to pages (e.g. "what's your pricing" → routes to /pricing via
- * the lira_open_site_page tool → `navigate` WS message).
+ * Landing-page voice concierge — a center-bottom launcher that opens a
+ * draggable panel (magnetically snaps to bottom-left / center / right).
+ * Visitors talk or type; Lira answers in a neutral voice from the public
+ * marketing org's KB and can actively navigate them to pages via the
+ * lira_open_site_page tool → `navigate` WS message.
  *
- * Reuses the deployed voice endpoints: STT (Deepgram) + TTS (neutral OpenAI
- * voice) under /lira/v1/voice-demo, and the support chat WS (anonymous visitor).
+ * The greeting is a fixed line, pre-generated on intent so it plays instantly
+ * on open. Reuses the deployed voice endpoints (STT + neutral OpenAI TTS under
+ * /lira/v1/voice-demo) and the support chat WS (anonymous visitor).
  */
 
 const API = `${env.VITE_API_URL}/lira/v1`
 const ORG = env.VITE_LIRA_PUBLIC_ORG_ID
 const VOICE = 'openai:nova' // neutral, global English voice
+const GREETING = 'Hi! How can I help you today?'
 const SILENCE_MS = 900
 const MIN_SPEECH_MS = 350
 const RMS_THRESH = 0.03
 
 type Msg = { role: 'me' | 'lira'; text: string }
+type Corner = 'bottom-center' | 'bottom-left' | 'bottom-right'
 
-// Marketing paths the concierge may soft-navigate to (same-host). Anything else
-// falls back to a full-page navigation.
 const SOFT_NAV =
   /^\/(pricing|features?|products?|contact|book-demo|blog|about(-us)?|resources|docs|security|for\/|careers|$)/
 
+function esc(s: string): string {
+  return s.replace(
+    /[&<>"]/g,
+    (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c] as string
+  )
+}
+function inline(s: string): string {
+  return s
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/__([^_]+)__/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*]+)\*/g, '$1<em>$2</em>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+}
+function renderMd(md: string): string {
+  const lines = esc(md).split('\n')
+  let html = ''
+  let inList = false
+  for (const line of lines) {
+    const m = line.match(/^\s*[-*]\s+(.*)$/)
+    if (m) {
+      if (!inList) {
+        html += '<ul>'
+        inList = true
+      }
+      html += '<li>' + inline(m[1]) + '</li>'
+    } else {
+      if (inList) {
+        html += '</ul>'
+        inList = false
+      }
+      html += (line.trim() ? inline(line) : '') + '<br>'
+    }
+  }
+  if (inList) html += '</ul>'
+  return html.replace(/(<br>)+$/, '')
+}
 function stripForSpeech(md: string): string {
   return String(md)
     .replace(/```[\s\S]*?```/g, ' ')
@@ -53,9 +91,9 @@ export function LandingVoiceConcierge() {
   const [status, setStatus] = useState('Tap the mic and just talk')
   const [micOn, setMicOn] = useState(false)
   const [speaking, setSpeaking] = useState(false)
-  const [pos, setPos] = useState<{ x: number; y: number } | null>(null) // null = bottom-center
+  const [corner, setCorner] = useState<Corner>('bottom-center')
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null)
 
-  // Mutable voice-loop state (avoids re-renders).
   const R = useRef({
     ws: null as WebSocket | null,
     wsOpen: null as Promise<void> | null,
@@ -78,6 +116,8 @@ export function LandingVoiceConcierge() {
     pendingSpeech: '',
     replyDone: true,
     greeted: false,
+    greetingUrl: null as Promise<string | null> | null,
+    replyTimer: 0 as number | ReturnType<typeof setTimeout>,
     visitorId: `web-${Math.random().toString(36).slice(2)}`,
   }).current
 
@@ -100,28 +140,55 @@ export function LandingVoiceConcierge() {
       .catch(() => null)
   }, [])
 
+  const resumeListening = useCallback(() => {
+    if (!R.micReady || !R.sessionOn) {
+      setStatus('Tap the mic to talk, or type')
+      return
+    }
+    setStatus('Listening… just talk')
+  }, [R])
+
+  // Never let the UI hang if a reply never lands (LLM/tool stall).
+  const armReplyTimeout = useCallback(() => {
+    clearTimeout(R.replyTimer as ReturnType<typeof setTimeout>)
+    R.replyTimer = setTimeout(() => {
+      setThinking(false)
+      setStreaming(null)
+      R.busy = false
+      pushMsg('lira', 'Sorry, that took too long. Please try again.')
+      resumeListening()
+    }, 22000)
+  }, [R, pushMsg, resumeListening])
+
+  const playUrl = useCallback(
+    (url: string | null) =>
+      new Promise<void>((res) => {
+        if (!url) return res()
+        const a = new Audio(url)
+        R.player = a
+        a.onended = () => res()
+        a.onerror = () => res()
+        a.play().catch(() => res())
+      }),
+    [R]
+  )
+
   const drainQueue = useCallback(async () => {
     R.ttsPlaying = true
     R.busy = true
     setSpeaking(true)
     setStatus('Lira is speaking…')
     while (R.ttsQueue.length) {
-      const url = await R.ttsQueue.shift()
+      const url = (await R.ttsQueue.shift()) ?? null
+      await playUrl(url)
       if (url) {
-        await new Promise<void>((res) => {
-          const a = new Audio(url)
-          R.player = a
-          a.onended = () => res()
-          a.onerror = () => res()
-          a.play().catch(() => res())
-        })
         try {
           URL.revokeObjectURL(url)
         } catch {
           /* noop */
         }
-        R.player = null
       }
+      R.player = null
     }
     R.ttsPlaying = false
     setSpeaking(false)
@@ -129,8 +196,7 @@ export function LandingVoiceConcierge() {
       R.busy = false
       resumeListening()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [R, playUrl, resumeListening])
 
   const enqueueSpeech = useCallback(
     (text: string) => {
@@ -160,33 +226,14 @@ export function LandingVoiceConcierge() {
     [R, enqueueSpeech]
   )
 
-  const resumeListening = useCallback(() => {
-    if (!R.micReady) {
-      setStatus('Type a message, or tap the mic to talk')
-      return
-    }
-    if (!R.sessionOn) {
-      setStatus('Paused — tap the mic')
-      return
-    }
-    setStatus('Listening… just talk')
-  }, [R])
-
   // ── Navigation from the agent ─────────────────────────────────────────────
   const handleNavigate = useCallback(
     (url: string, target?: string) => {
       if (!url) return
-      if (target === '_blank') {
-        window.open(url, '_blank', 'noopener')
-        return
-      }
-      if (url.startsWith('/') && SOFT_NAV.test(url)) {
-        navigate(url)
-      } else if (url.startsWith('/')) {
-        window.location.assign(url) // cross-host (app pages) — let host routing handle it
-      } else {
-        window.open(url, '_blank', 'noopener')
-      }
+      if (target === '_blank') return void window.open(url, '_blank', 'noopener')
+      if (url.startsWith('/') && SOFT_NAV.test(url)) navigate(url)
+      else if (url.startsWith('/')) window.location.assign(url)
+      else window.open(url, '_blank', 'noopener')
     },
     [navigate]
   )
@@ -194,8 +241,9 @@ export function LandingVoiceConcierge() {
   // ── Chat WebSocket ────────────────────────────────────────────────────────
   const connect = useCallback(() => {
     if (R.ws && (R.ws.readyState === 0 || R.ws.readyState === 1)) return R.wsOpen
-    const wsBase = API.replace(/^http/, 'ws')
-    const url = `${wsBase}/support/chat/ws/${ORG}?visitorId=${encodeURIComponent(R.visitorId)}&newCase=1`
+    const url = `${API.replace(/^http/, 'ws')}/support/chat/ws/${ORG}?visitorId=${encodeURIComponent(
+      R.visitorId
+    )}&newCase=1`
     const ws = new WebSocket(url)
     R.ws = ws
     R.wsOpen = new Promise<void>((res) => {
@@ -208,20 +256,10 @@ export function LandingVoiceConcierge() {
       } catch {
         return
       }
-      const type = msg.type as string
-      switch (type) {
-        case 'welcome': {
-          const body =
-            (msg.body as string) ||
-            'Hi, I’m Lira. Ask me anything, or tell me where you’d like to go.'
-          if (!R.greeted) {
-            R.greeted = true
-            pushMsg('lira', body)
-            R.replyDone = true
-            enqueueSpeech(body)
-          }
+      switch (msg.type as string) {
+        case 'welcome':
+          // Greeting is played instantly client-side on open; ignore server one.
           break
-        }
         case 'reply_start':
           R.replyDone = false
           R.curText = ''
@@ -229,6 +267,7 @@ export function LandingVoiceConcierge() {
           setSuggestions([])
           setThinking(true)
           setStreaming('')
+          armReplyTimeout()
           break
         case 'reply_chunk': {
           const b = (msg.body as string) || ''
@@ -237,9 +276,11 @@ export function LandingVoiceConcierge() {
           setThinking(false)
           setStreaming(R.curText)
           flushSentences(false)
+          armReplyTimeout()
           break
         }
         case 'reply_end': {
+          clearTimeout(R.replyTimer as ReturnType<typeof setTimeout>)
           const t = (msg.body !== undefined ? (msg.body as string) : R.curText).trim()
           setThinking(false)
           setStreaming(null)
@@ -260,6 +301,7 @@ export function LandingVoiceConcierge() {
             setSuggestions((msg.suggestions as string[]).slice(0, 4))
           break
         case 'error':
+          clearTimeout(R.replyTimer as ReturnType<typeof setTimeout>)
           setThinking(false)
           setStreaming(null)
           R.busy = false
@@ -269,7 +311,7 @@ export function LandingVoiceConcierge() {
     }
     ws.onclose = () => setStatus('Disconnected — reopen to restart')
     return R.wsOpen
-  }, [R, pushMsg, enqueueSpeech, flushSentences, resumeListening, handleNavigate])
+  }, [R, pushMsg, flushSentences, resumeListening, handleNavigate, armReplyTimeout])
 
   const sendText = useCallback(
     async (text: string) => {
@@ -284,11 +326,12 @@ export function LandingVoiceConcierge() {
       setStatus('Lira is thinking…')
       try {
         R.ws?.send(JSON.stringify({ type: 'message', body: t }))
+        armReplyTimeout()
       } catch {
         /* noop */
       }
     },
-    [R, connect, pushMsg]
+    [R, connect, pushMsg, armReplyTimeout]
   )
 
   // ── Mic + VAD ─────────────────────────────────────────────────────────────
@@ -333,11 +376,12 @@ export function LandingVoiceConcierge() {
       setThinking(true)
       setStatus('Lira is thinking…')
       R.ws?.send(JSON.stringify({ type: 'message', body: text }))
+      armReplyTimeout()
     } catch {
       R.busy = false
       resumeListening()
     }
-  }, [R, connect, pushMsg, resumeListening])
+  }, [R, connect, pushMsg, resumeListening, armReplyTimeout])
 
   const startRecorder = useCallback(() => {
     if (!R.micStream) return
@@ -376,13 +420,11 @@ export function LandingVoiceConcierge() {
         startRecorder()
         R.lastVoiceAt = performance.now()
       }
-    } else {
-      if (lvl > RMS_THRESH) {
-        R.lastVoiceAt = performance.now()
-        R.speechMs += 60
-      } else if (performance.now() - R.lastVoiceAt > SILENCE_MS) {
-        stopRecorder(false)
-      }
+    } else if (lvl > RMS_THRESH) {
+      R.lastVoiceAt = performance.now()
+      R.speechMs += 60
+    } else if (performance.now() - R.lastVoiceAt > SILENCE_MS) {
+      stopRecorder(false)
     }
   }, [R, rms, startRecorder, stopRecorder])
 
@@ -411,70 +453,76 @@ export function LandingVoiceConcierge() {
     }
   }, [R, connect, vadTick, resumeListening])
 
-  const stopEverything = useCallback(
-    (keepListening: boolean) => {
-      R.ttsQueue.length = 0
-      R.ttsPlaying = false
-      if (R.player) {
-        try {
-          R.player.pause()
-        } catch {
-          /* noop */
-        }
-        R.player = null
+  // STOP everything (mic session off, kill any playback/recording). No pause.
+  const stopAll = useCallback(() => {
+    R.ttsQueue.length = 0
+    R.ttsPlaying = false
+    if (R.player) {
+      try {
+        R.player.pause()
+      } catch {
+        /* noop */
       }
-      setSpeaking(false)
-      if (R.recording) stopRecorder(true)
-      R.busy = false
-      R.sessionOn = keepListening
-      setMicOn(keepListening && R.micReady)
-      resumeListening()
-    },
-    [R, stopRecorder, resumeListening]
-  )
+      R.player = null
+    }
+    setSpeaking(false)
+    if (R.recording) stopRecorder(true)
+    R.busy = false
+    R.sessionOn = false
+    setMicOn(false)
+    resumeListening()
+  }, [R, stopRecorder, resumeListening])
 
   const onMicTap = useCallback(() => {
     if (!R.micReady) {
       void startMic()
       return
     }
-    if (R.busy || R.ttsPlaying) {
-      stopEverything(true) // interrupt Lira, keep listening
-    } else if (R.sessionOn) {
-      R.sessionOn = false
-      if (R.recording) stopRecorder(true)
-      setMicOn(false)
-      resumeListening()
+    // Active in any way (listening / speaking / recording) → STOP.
+    if (R.sessionOn || R.busy || R.ttsPlaying || R.recording) {
+      stopAll()
     } else {
       R.sessionOn = true
       setMicOn(true)
       resumeListening()
     }
-  }, [R, startMic, stopEverything, stopRecorder, resumeListening])
+  }, [R, startMic, stopAll, resumeListening])
 
-  // ── Open / close ──────────────────────────────────────────────────────────
+  // ── Open / close (instant greeting) ───────────────────────────────────────
+  const prefetchGreeting = useCallback(() => {
+    if (!R.greetingUrl) R.greetingUrl = fetchTts(GREETING)
+  }, [R, fetchTts])
+
   const openPanel = useCallback(() => {
     setOpen(true)
-    void connect() // greeting arrives via welcome and auto-speaks (user gesture = autoplay ok)
-  }, [connect])
+    R.greeted = true
+    void connect()
+    // Play the pre-generated greeting immediately (user gesture → autoplay ok).
+    ;(async () => {
+      prefetchGreeting()
+      pushMsg('lira', GREETING)
+      R.busy = true
+      setSpeaking(true)
+      setStatus('…')
+      const url = await R.greetingUrl
+      await playUrl(url)
+      R.player = null
+      setSpeaking(false)
+      R.busy = false
+      resumeListening()
+    })()
+  }, [R, connect, prefetchGreeting, pushMsg, playUrl, resumeListening])
 
   const closePanel = useCallback(() => {
     setOpen(false)
-    stopEverything(false)
-    R.sessionOn = false
-    setMicOn(false)
-  }, [R, stopEverything])
+    stopAll()
+  }, [stopAll])
 
-  // cleanup on unmount
   useEffect(() => {
     return () => {
       if (R.vadTimer) clearInterval(R.vadTimer as ReturnType<typeof setInterval>)
       try {
         R.ws?.close()
-      } catch {
-        /* noop */
-      }
-      try {
         R.micStream?.getTracks().forEach((t) => t.stop())
         R.audioCtx?.close()
       } catch {
@@ -484,60 +532,118 @@ export function LandingVoiceConcierge() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── Drag (move the panel to any corner) ───────────────────────────────────
-  const dragRef = useRef<{ dx: number; dy: number } | null>(null)
-  const onDragStart = useCallback(
-    (e: React.PointerEvent) => {
-      const start = pos ?? { x: window.innerWidth / 2 - 190, y: window.innerHeight - 560 }
-      dragRef.current = { dx: e.clientX - start.x, dy: e.clientY - start.y }
-      ;(e.target as HTMLElement).setPointerCapture?.(e.pointerId)
-    },
-    [pos]
-  )
-  const onDragMove = useCallback((e: React.PointerEvent) => {
-    if (!dragRef.current) return
-    const x = Math.max(8, Math.min(window.innerWidth - 388, e.clientX - dragRef.current.dx))
-    const y = Math.max(8, Math.min(window.innerHeight - 120, e.clientY - dragRef.current.dy))
-    setPos({ x, y })
+  // ── Drag + magnetic corner snap (shared by launcher grip & panel header) ──
+  const dragRef = useRef<{ gx: number; gy: number; w: number; h: number } | null>(null)
+  const startDrag = useCallback((e: React.PointerEvent) => {
+    const root = (e.currentTarget as HTMLElement).closest(
+      '[data-concierge-root]'
+    ) as HTMLElement | null
+    if (!root) return
+    const rect = root.getBoundingClientRect()
+    dragRef.current = {
+      gx: e.clientX - rect.left,
+      gy: e.clientY - rect.top,
+      w: rect.width,
+      h: rect.height,
+    }
+    setDragPos({ x: rect.left, y: rect.top })
+    ;(e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId)
+    e.preventDefault()
   }, [])
-  const onDragEnd = useCallback(() => {
+  const moveDrag = useCallback((e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d) return
+    const x = Math.max(8, Math.min(window.innerWidth - d.w - 8, e.clientX - d.gx))
+    const y = Math.max(8, Math.min(window.innerHeight - d.h - 8, e.clientY - d.gy))
+    setDragPos({ x, y })
+  }, [])
+  const endDrag = useCallback((e: React.PointerEvent) => {
+    const d = dragRef.current
+    if (!d) return
+    const cx = e.clientX
+    const third = window.innerWidth / 3
+    setCorner(cx < third ? 'bottom-left' : cx > 2 * third ? 'bottom-right' : 'bottom-center')
     dragRef.current = null
+    setDragPos(null)
   }, [])
 
-  // ── Render ────────────────────────────────────────────────────────────────
-  const panelStyle: React.CSSProperties = pos
-    ? { left: pos.x, top: pos.y, bottom: 'auto' }
-    : { left: '50%', bottom: 24, transform: 'translateX(-50%)' }
+  const posStyle: React.CSSProperties = dragPos
+    ? {
+        left: dragPos.x,
+        top: dragPos.y,
+        right: 'auto',
+        bottom: 'auto',
+        transform: 'none',
+        transition: 'none',
+      }
+    : corner === 'bottom-left'
+      ? {
+          left: 16,
+          bottom: 24,
+          right: 'auto',
+          transform: 'none',
+          transition: 'left .18s ease, bottom .18s ease',
+        }
+      : corner === 'bottom-right'
+        ? {
+            right: 16,
+            bottom: 24,
+            left: 'auto',
+            transform: 'none',
+            transition: 'right .18s ease, bottom .18s ease',
+          }
+        : {
+            left: '50%',
+            bottom: 24,
+            right: 'auto',
+            transform: 'translateX(-50%)',
+            transition: 'left .18s ease',
+          }
+
+  const dragHandlers = { onPointerDown: startDrag, onPointerMove: moveDrag, onPointerUp: endDrag }
 
   return (
-    <div className="lira-concierge">
+    <>
       {!open && (
-        <button
-          type="button"
-          onClick={openPanel}
-          className="fixed bottom-6 left-1/2 z-[900] flex -translate-x-1/2 items-center gap-2.5 rounded-full bg-[#111418] px-5 py-3.5 text-sm font-semibold text-white shadow-2xl ring-1 ring-white/10 transition hover:bg-[#1c2127]"
-          aria-label="Talk to Lira"
-        >
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
-          </span>
-          Talk to Lira
-          <Microphone size={17} weight="fill" />
-        </button>
+        <div data-concierge-root className="fixed z-[900] flex items-center" style={posStyle}>
+          <div className="flex items-center gap-1 rounded-full bg-[#111418] py-1.5 pl-1.5 pr-1 text-white shadow-2xl ring-1 ring-white/10">
+            <button
+              type="button"
+              className="flex h-8 w-6 cursor-grab touch-none items-center justify-center text-white/40 hover:text-white/70 active:cursor-grabbing"
+              aria-label="Move"
+              {...dragHandlers}
+            >
+              <DotsSixVertical size={16} weight="bold" />
+            </button>
+            <button
+              type="button"
+              onPointerEnter={prefetchGreeting}
+              onPointerDown={prefetchGreeting}
+              onClick={openPanel}
+              className="flex items-center gap-2 rounded-full px-3 py-2 text-sm font-semibold hover:bg-white/5"
+              aria-label="Talk to Lira"
+            >
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-70" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              </span>
+              Talk to Lira
+              <Microphone size={17} weight="fill" />
+            </button>
+          </div>
+        </div>
       )}
 
       {open && (
         <div
+          data-concierge-root
           className="fixed z-[900] flex h-[540px] w-[380px] max-w-[calc(100vw-16px)] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-black/10"
-          style={panelStyle}
+          style={posStyle}
         >
-          {/* header / drag handle */}
           <div
-            className="flex cursor-grab items-center gap-2 bg-[#111418] px-4 py-3 text-white active:cursor-grabbing"
-            onPointerDown={onDragStart}
-            onPointerMove={onDragMove}
-            onPointerUp={onDragEnd}
+            className="flex touch-none items-center gap-2 bg-[#111418] px-3 py-3 text-white"
+            {...dragHandlers}
+            style={{ cursor: 'grab' }}
           >
             <DotsSixVertical size={16} className="opacity-50" />
             <div className="min-w-0 flex-1">
@@ -547,6 +653,7 @@ export function LandingVoiceConcierge() {
             <button
               type="button"
               onClick={closePanel}
+              onPointerDown={(e) => e.stopPropagation()}
               className="rounded-full p-1 text-white/70 hover:bg-white/10 hover:text-white"
               aria-label="Close"
             >
@@ -554,26 +661,27 @@ export function LandingVoiceConcierge() {
             </button>
           </div>
 
-          {/* transcript */}
           <div ref={logRef} className="flex-1 space-y-2.5 overflow-y-auto bg-[#f6f7f9] p-4">
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === 'me' ? 'justify-end' : 'justify-start'}`}>
-                <div
-                  className={`max-w-[82%] whitespace-pre-wrap rounded-2xl px-3.5 py-2 text-[14px] leading-relaxed ${
-                    m.role === 'me'
-                      ? 'rounded-br-md bg-[#111418] text-white'
-                      : 'rounded-bl-md bg-white text-gray-900 ring-1 ring-black/5'
-                  }`}
-                >
-                  {m.text}
-                </div>
+                {m.role === 'me' ? (
+                  <div className="max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-br-md bg-[#111418] px-3.5 py-2 text-[14px] leading-relaxed text-white">
+                    {m.text}
+                  </div>
+                ) : (
+                  <div
+                    className="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] leading-relaxed text-gray-900 ring-1 ring-black/5 [&_a]:underline [&_code]:rounded [&_code]:bg-black/5 [&_code]:px-1 [&_li]:ml-1 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5"
+                    dangerouslySetInnerHTML={{ __html: renderMd(m.text) }}
+                  />
+                )}
               </div>
             ))}
             {streaming !== null && (
               <div className="flex justify-start">
-                <div className="max-w-[82%] whitespace-pre-wrap rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] leading-relaxed text-gray-900 ring-1 ring-black/5">
-                  {streaming || '…'}
-                </div>
+                <div
+                  className="max-w-[82%] rounded-2xl rounded-bl-md bg-white px-3.5 py-2 text-[14px] leading-relaxed text-gray-900 ring-1 ring-black/5 [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pl-5"
+                  dangerouslySetInnerHTML={{ __html: renderMd(streaming || '…') }}
+                />
               </div>
             )}
             {thinking && streaming === null && (
@@ -601,7 +709,6 @@ export function LandingVoiceConcierge() {
             )}
           </div>
 
-          {/* controls */}
           <div className="flex items-center gap-2 border-t border-black/5 bg-white p-3">
             <button
               type="button"
@@ -609,7 +716,7 @@ export function LandingVoiceConcierge() {
               className={`flex h-11 w-11 flex-none items-center justify-center rounded-full text-white transition ${
                 speaking ? 'bg-emerald-600' : micOn ? 'animate-pulse bg-red-500' : 'bg-[#111418]'
               }`}
-              aria-label="Talk"
+              aria-label={micOn || speaking ? 'Stop' : 'Talk'}
             >
               <Microphone size={20} weight="fill" />
             </button>
@@ -640,6 +747,6 @@ export function LandingVoiceConcierge() {
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }
