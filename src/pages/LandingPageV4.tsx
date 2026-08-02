@@ -126,30 +126,32 @@ const faqs = [
   },
 ]
 
+// Each card makes one claim a reader can check, not a feeling they have to
+// take on trust. If a claim here stops being true, change it here first.
 const whyChooseLira = [
   {
     icon: Headset,
-    title: 'One support experience across every channel',
+    title: 'Six channels, one agent',
     description:
-      'Lira brings chat, email, voice, portal, and team workflows into one system so your customers get one consistent experience instead of disconnected support touchpoints.',
+      'Chat widget, embedded support page, hosted portal, email, real-time voice, and WhatsApp — all answered by the same agent, from the same knowledge base, landing in the same inbox.',
   },
   {
     icon: FlowArrow,
-    title: 'It takes action, not just conversations',
+    title: 'It runs actions, with an approval policy',
     description:
-      'Lira can do more than answer a question. It can route issues, update the right systems, trigger follow-up, and move work forward so support does not stop at the reply.',
+      'Cancel a subscription, retry a payment, resend an invoice. Every action is off by default, opt-in per tool, re-auth gated where it matters, and written to an audit trail you can export.',
   },
   {
     icon: Brain,
-    title: 'Every response starts with real customer context',
+    title: 'It answers from your content, or not at all',
     description:
-      'Lira uses your knowledge, conversation history, and connected tools to respond with context. That means fewer repeated questions, cleaner handoffs, and support that feels more personal.',
+      'Lira retrieves from your crawled pages, uploaded documents and connected Drive files, and answers only from them. Below its confidence threshold it escalates to a human instead of guessing.',
   },
   {
     icon: RocketLaunch,
-    title: 'Fast to launch and built to grow with you',
+    title: 'One script tag, unlimited seats',
     description:
-      'You can get started quickly with the widget, then keep expanding with mobile support, API actions, multilingual support, voice, and smarter routing as your operation matures.',
+      'Paste one line to go live, with install guides for Next.js, Vite, Remix, Rails, Django and Express. Every plan includes unlimited team seats — you pay for conversation volume, never per agent.',
   },
 ]
 
@@ -395,8 +397,7 @@ function WhyChooseSection() {
             <span className="hx-gradient-text">Why choose Lira</span>
           </motion.h2>
           <motion.p className="hx-section-para" variants={fadeUp}>
-            Lira is built for teams that want support to feel faster, smarter, and more connected
-            from the first customer message to the final resolution.
+            Four things you can check before you talk to anyone.
           </motion.p>
         </motion.div>
 
@@ -1445,7 +1446,22 @@ export function LandingPageV4() {
           </div>
         </div>
 
-        {/* Social proof */}
+        {/*
+          Social proof — TEMPORARILY REMOVED (2026-07-29).
+
+          The logos previously shown here (Google App, Lark, Magnific, Naver MyBox) came
+          with the page template and were NOT Lira customers. Claiming them as customers
+          is false social proof and costs more trust than the strip ever bought.
+
+          RESTORE THIS BLOCK once we have at least 3-4 named customers who have given
+          written permission to use their mark. Keep the same UI (overlapping avatar row
+          + caption); just swap the four <img> sources for real customer logos in
+          /public/participants/brands/ and update the caption to name them, e.g.
+          "Trusted by <Customer A>, <Customer B> and <Customer C>".
+
+          Until then the hero ships with no social-proof strip rather than a false one.
+        */}
+        {/*
         <div className="eh-social">
           <div className="eh-avatar-row">
             <span className="eh-avatar eh-avatar-brand" style={{ zIndex: 4 }} aria-hidden="true">
@@ -1465,6 +1481,7 @@ export function LandingPageV4() {
             Trusted by <span className="eh-social-em">companies</span> scaling with AI
           </p>
         </div>
+        */}
       </section>
 
       <section id="features" className="hx-section">

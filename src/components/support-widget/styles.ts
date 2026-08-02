@@ -124,6 +124,240 @@ export function getWidgetStyles(primaryColor: string): string {
       100% { transform: scale(2.6); opacity: 0; }
     }
 
+    /* ── Concierge skin: landing-style pill launcher ─────────────
+       Only rendered when data-skin="concierge" (Lira dashboard + opt-in).
+       Faithful to the marketing-site LandingVoiceConcierge: a dark, draggable
+       pill with a six-dot grip, a spinning white mark, a label, and a mic. */
+    .lira-cx-launcher {
+      position: fixed;
+      z-index: 2147483647;
+      pointer-events: auto;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 4px 6px 6px;
+      border-radius: 999px;
+      background: #111418;
+      color: #fff;
+      box-shadow: 0 18px 40px rgba(2,3,8,0.28), 0 3px 10px rgba(2,3,8,0.20);
+      border: 1px solid rgba(255,255,255,0.10);
+      font-family: inherit;
+    }
+    .lira-cx-grip {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 34px;
+      background: transparent;
+      border: none;
+      color: rgba(255,255,255,0.42);
+      cursor: grab;
+      padding: 0;
+    }
+    .lira-cx-grip:hover { color: rgba(255,255,255,0.72); }
+    .lira-cx-grip:active { cursor: grabbing; }
+    .lira-cx-grip svg { width: 16px; height: 16px; }
+    .lira-cx-open {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 40px;
+      padding: 0 14px 0 8px;
+      border-radius: 999px;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .lira-cx-open:hover { background: rgba(255,255,255,0.06); }
+    .lira-cx-mark {
+      width: 18px;
+      height: 18px;
+      object-fit: contain;
+      flex-shrink: 0;
+      animation: lira-cx-spin 1.6s linear infinite;
+    }
+    .lira-cx-launch-mic {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255,255,255,0.9);
+    }
+    .lira-cx-launch-mic svg { width: 17px; height: 17px; }
+    @keyframes lira-cx-spin {
+      to { transform: rotate(360deg); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lira-cx-mark { animation: none; }
+    }
+
+    /* Mobile attention-getter: on phones the widget doesn't auto-open (it would
+       cover the whole app), so the launcher pill double-bounces to draw the
+       eye, rests, and repeats. Uses the independent CSS translate property (not
+       transform) so it composes with any positioning transform such as the
+       centre-snap translateX. Applied to the default bubble and concierge pill. */
+    @keyframes lira-attention-bounce {
+      0%   { translate: 0 0; }
+      6%   { translate: 0 -16px; }
+      12%  { translate: 0 0; }
+      18%  { translate: 0 -9px; }
+      24%  { translate: 0 0; }
+      100% { translate: 0 0; }
+    }
+    .lira-launcher.lira-attention,
+    .lira-cx-launcher.lira-attention {
+      animation: lira-attention-bounce 3s ease-in-out infinite;
+      will-change: translate;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .lira-launcher.lira-attention,
+      .lira-cx-launcher.lira-attention { animation: none; }
+    }
+
+    /* ── Concierge skin: frosted-glass panel + dark draggable header ──────
+       Scoped to data-skin="concierge" so the default customer widget is
+       untouched. Mirrors the landing-page LandingVoiceConcierge: a rounded,
+       frosted floating panel with a dark translucent header you can drag. */
+    :host([data-lira-skin="concierge"]) .lira-chat-window {
+      /* Landscape, like the landing concierge: wider than tall. */
+      width: 480px;
+      height: 420px;
+      max-width: calc(100vw - 24px);
+      max-height: calc(100vh - 48px);
+      border-radius: 26px;
+      background: rgba(255,255,255,0.55);
+      -webkit-backdrop-filter: blur(26px) saturate(1.6);
+      backdrop-filter: blur(26px) saturate(1.6);
+      border: 1px solid rgba(255,255,255,0.5);
+      box-shadow: 0 34px 90px rgba(2,3,8,0.32), 0 12px 28px rgba(2,3,8,0.18);
+    }
+    :host([data-lira-skin="concierge"]) .lira-messages {
+      background: transparent;
+      padding: 16px;
+    }
+    :host([data-lira-skin="concierge"]) .lira-msg.lira,
+    :host([data-lira-skin="concierge"]) .lira-msg.agent {
+      background: rgba(255,255,255,0.92);
+      border: 1px solid rgba(15,23,42,0.06);
+      box-shadow: 0 1px 2px rgba(15,23,42,0.05);
+    }
+    :host([data-lira-skin="concierge"]) .lira-msg.customer {
+      background: #111418;
+      box-shadow: none;
+    }
+    :host([data-lira-skin="concierge"]) .lira-msg-avatar.lira-avatar {
+      background: rgba(255,255,255,0.76);
+      border: 1px solid rgba(15,23,42,0.06);
+    }
+    :host([data-lira-skin="concierge"]) .lira-suggestions {
+      background: rgba(255,255,255,0.18);
+      border-top: 1px solid rgba(255,255,255,0.24);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+    }
+    :host([data-lira-skin="concierge"]) .lira-input-area {
+      align-items: center;
+      gap: 8px;
+      border-top: 1px solid rgba(255,255,255,0.30);
+      background: rgba(255,255,255,0.25);
+      padding: 12px;
+      box-shadow: none;
+      -webkit-backdrop-filter: blur(14px);
+      backdrop-filter: blur(14px);
+    }
+    :host([data-lira-skin="concierge"]) .lira-input-area textarea {
+      min-height: 44px;
+      max-height: 96px;
+      border-radius: 999px;
+      border-color: rgba(255,255,255,0.50);
+      background: rgba(255,255,255,0.72);
+      padding: 10px 15px;
+      line-height: 1.35;
+    }
+    :host([data-lira-skin="concierge"]) .lira-input-area textarea:focus {
+      border-color: rgba(17,20,24,0.32);
+      background: rgba(255,255,255,0.84);
+      box-shadow: none;
+    }
+    :host([data-lira-skin="concierge"]) .lira-mic-btn,
+    :host([data-lira-skin="concierge"]) .lira-send-btn {
+      width: 44px;
+      height: 44px;
+      border: 0;
+      background: #111418;
+      color: #ffffff;
+    }
+    :host([data-lira-skin="concierge"]) .lira-mic-btn:hover,
+    :host([data-lira-skin="concierge"]) .lira-send-btn:hover:not(:disabled) {
+      background: #1d2229;
+    }
+    :host([data-lira-skin="concierge"]) .lira-mic-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: #ffffff;
+    }
+    :host([data-lira-skin="concierge"]) .lira-send-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: #ffffff;
+    }
+    :host([data-lira-skin="concierge"]) .lira-mic-btn.lira-mic-active {
+      background: #ef4444;
+    }
+    :host([data-lira-skin="concierge"]) .lira-header {
+      background: rgba(17,20,24,0.88);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    :host([data-lira-skin="concierge"]) .lira-header:active { cursor: grabbing; }
+    /* Header buttons stay clickable (drag is guarded off them in JS) and keep a
+       normal cursor. */
+    :host([data-lira-skin="concierge"]) .lira-header button { cursor: pointer; }
+
+    /* Concierge mobile — a floating sheet, NOT a full-screen takeover, so the
+       dashboard stays visible behind it (this is the whole point of the skin on
+       mobile). Only affects the concierge skin; the default widget's mobile
+       rules below are unchanged. */
+    @media (max-width: 480px) {
+      :host([data-lira-skin="concierge"]) .lira-chat-window,
+      :host([data-lira-skin="concierge"]) .lira-chat-window.bottom-right,
+      :host([data-lira-skin="concierge"]) .lira-chat-window.bottom-left {
+        width: auto !important;
+        left: 10px !important;
+        right: 10px !important;
+        top: max(56px, env(safe-area-inset-top)) !important;
+        bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+        height: auto !important;
+        max-height: none !important;
+        border-radius: 24px !important;
+        /* The panel is full-width on mobile, so clear any center-snap
+           translateX(-50%) that would otherwise push it half a screen off the
+           left edge and make it vanish. */
+        transform: none !important;
+      }
+      :host([data-lira-skin="concierge"]) .lira-messages {
+        padding: 14px;
+      }
+      :host([data-lira-skin="concierge"]) .lira-input-area {
+        padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+      }
+      :host([data-lira-skin="concierge"]) .lira-chat-window.lira-fullscreen {
+        inset: auto !important;
+        top: auto !important; bottom: auto !important; left: auto !important; right: auto !important;
+        width: 100% !important; height: 100% !important; border-radius: 0 !important;
+      }
+    }
+
     /* ── Chat window ─────────────────────────────────────────── */
 
     .lira-chat-window {
@@ -533,6 +767,12 @@ export function getWidgetStyles(primaryColor: string): string {
       gap: 0;
       animation: lira-hero-fade-up 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
     }
+    .lira-hero-compact .lira-hero-inner {
+      max-width: 300px;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
 
     .lira-hero-avatar {
       width: 40px;
@@ -573,6 +813,12 @@ export function getWidgetStyles(primaryColor: string): string {
       color: #0f172a;
       margin: 0 0 10px;
     }
+    .lira-hero-compact .lira-hero-title {
+      margin: 0 0 20px;
+      font-size: 28px;
+      line-height: 1.12;
+      text-align: center;
+    }
     .lira-hero-subtitle {
       font-size: 14px;
       line-height: 1.55;
@@ -584,6 +830,10 @@ export function getWidgetStyles(primaryColor: string): string {
       display: flex;
       flex-direction: column;
       gap: 8px;
+    }
+    .lira-hero-compact .lira-hero-ctas {
+      width: 100%;
+      align-items: stretch;
     }
     .lira-hero-cta {
       display: inline-flex;
@@ -1731,32 +1981,55 @@ export function getWidgetStyles(primaryColor: string): string {
       color: #9ca3af;
       cursor: not-allowed;
     }
-    .lira-send-btn {
+    /* Composer buttons — mic + send are one identical, clean pair:
+       round, white background, dark hairline border, black icon. */
+    .lira-send-btn,
+    .lira-mic-btn {
       width: 36px;
       height: 36px;
       border-radius: 50%;
-      background: ${primaryColor};
-      border: none;
+      background: #ffffff;
+      border: 1.5px solid #1a1a1a;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
-      box-shadow: 0 8px 16px color-mix(in srgb, ${primaryColor} 24%, transparent);
+      color: #1a1a1a;
+      transition: background 0.15s, transform 0.1s;
     }
-    .lira-send-btn:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 10px 20px color-mix(in srgb, ${primaryColor} 30%, transparent);
+    .lira-send-btn:hover:not(:disabled),
+    .lira-mic-btn:hover {
+      background: #f3f4f6;
+    }
+    .lira-send-btn:active:not(:disabled),
+    .lira-mic-btn:active {
+      transform: scale(0.93);
     }
     .lira-send-btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
     }
-    .lira-send-btn svg {
+    .lira-send-btn svg,
+    .lira-mic-btn svg {
       width: 18px;
       height: 18px;
-      fill: white;
+      fill: #1a1a1a;
+    }
+    /* Active voice call — mic fills red to signal "tap to end". */
+    .lira-mic-btn.lira-mic-active {
+      background: #ef4444;
+      border-color: #ef4444;
+      color: #fff;
+      animation: lira-mic-pulse 1.5s infinite;
+    }
+    .lira-mic-btn.lira-mic-active svg {
+      fill: #fff;
+    }
+    @keyframes lira-mic-pulse {
+      0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      70% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
     }
 
     /* Resolved state */
@@ -2083,6 +2356,27 @@ export function getWidgetStyles(primaryColor: string): string {
     .lira-stepper-list {
       list-style: none; padding: 0; margin: 0;
       position: relative;
+    }
+    /* "View full list" — sends the visitor to the dashboard Launch Checklist. */
+    .lira-stepper-viewall {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 12px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(15,23,42,0.14);
+      background: rgba(255,255,255,0.7);
+      color: #0f172a;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .lira-stepper-viewall:hover {
+      background: #0f172a;
+      color: #fff;
+      border-color: #0f172a;
     }
     /* Vertical connector line between dots */
     .lira-stepper-list::before {

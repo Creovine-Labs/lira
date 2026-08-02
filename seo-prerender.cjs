@@ -271,6 +271,164 @@ const ROUTES = [
   },
 ]
 
+// ── Crawlable body content ───────────────────────────────────────────────────
+//
+// Meta tags alone are not enough. Before this, every prerendered page shipped
+// ~8 KB of <head> and a completely empty <body>, so anything that doesn't run
+// JavaScript — search crawlers, link unfurlers, and increasingly the AI
+// assistants buyers use to shortlist vendors — saw a title and nothing else.
+//
+// Each entry below is the plain-HTML version of what the React page renders.
+// It is injected inside #root, so React wipes it the moment it mounts, and an
+// inline script hides it before first paint for anyone running JS. Keep these
+// in sync with the real page copy: a crawler reading a stale claim here is the
+// same problem as a stale claim on the page itself.
+
+const CONTENT = {
+  '/': `
+    <h1>The Invisible Support System</h1>
+    <p>Lira works quietly behind every customer conversation — understanding context, taking action across your tools, and resolving issues before they become work for your team.</p>
+    <h2>One agent across every channel</h2>
+    <p>Website chat widget, an embedded support surface in your own product, a hosted branded portal, email, real-time voice, and the WhatsApp Business API — all answered by the same agent, grounded in the same knowledge base, landing in the same inbox.</p>
+    <h2>Answers grounded in your knowledge</h2>
+    <p>Lira retrieves from your own content — crawled website pages, uploaded documents, connected Google Drive files — and answers only from it. When confidence is low or the intent is sensitive, it escalates to a human instead of guessing.</p>
+    <h2>It takes action, not just conversation</h2>
+    <p>Register actions Lira can run for a customer — cancel a subscription, retry a payment, resend an invoice. Every action is off by default, opt-in per tool, governed by an approval policy, gated by step-up re-authentication where it matters, and written to an audit trail.</p>
+    <h2>Tickets, SLA and human handoff</h2>
+    <p>When a human is needed, Lira opens a ticket with the full transcript and verified identity attached. Queues, routing, SLA timers and CSAT are built in. The moment a teammate replies the AI pauses until handback, so customers never hit a dead end.</p>
+    <h2>Install it with one script tag</h2>
+    <pre>&lt;script src="https://widget.liraintelligence.com/v1/widget.js" data-org-id="YOUR_ORG_ID"&gt;&lt;/script&gt;</pre>
+    <p>Install guides for Next.js, Vite, Remix, Rails, Django, Express and plain HTML. Native mobile support for iOS and Android over the REST and realtime APIs.</p>
+    <h2>Built for teams that care about retention</h2>
+    <p>Financial products and fintech, e-commerce and retail, health and wellness platforms, logistics and service operations.</p>
+    <p><a href="/pricing">Pricing</a> starts free — 250 conversations a month, unlimited team seats. Pro is $29/month, Scale is $99/month. <a href="/signup">Sign up free</a> or read the <a href="https://docs.liraintelligence.com">documentation</a>.</p>
+  `,
+  '/features': `
+    <h1>Everything modern teams need to support customers with context</h1>
+    <p>Lira brings chat, voice, email, customer memory, knowledge, API actions, and smart handoff into one AI support layer your team can launch quickly.</p>
+    <h2>Chat that understands context</h2>
+    <p>Answer product, billing, onboarding, and policy questions with your knowledge base and customer history in the same conversation.</p>
+    <h2>Voice support</h2>
+    <p>Customers speak naturally and the agent replies in a natural voice matched to your market's accent. Enterprise can commission a custom brand voice, cloned with consent.</p>
+    <h2>Email, portal, and website support</h2>
+    <p>A dedicated support address per organization with inbound parsing and threaded outbound replies, a Lira-hosted branded portal with an optional custom domain, and a chat widget or full-page embed on your own site.</p>
+    <h2>WhatsApp Business support</h2>
+    <p>Run the same knowledge-grounded agent inside WhatsApp on your own number and WABA.</p>
+    <h2>Autonomous tickets, SLA and CSAT</h2>
+    <p>Lira opens a ticket with the full transcript and identity attached. Queues, routing rules, SLA timers with at-risk and breach tracking, and satisfaction scoring are built in.</p>
+    <h2>Secure in-product actions</h2>
+    <p>Register actions Lira can run for a customer with a per-action approval policy and full audit trail. Off by default, opt-in per tool, re-auth gated for sensitive operations.</p>
+    <h2>Connect your own tools with MCP</h2>
+    <p>Bring your Model Context Protocol server so Lira can call your systems under your own auth — OAuth 2.1, per-tool approval, risk tiers, rate limits, and drift detection. Plus scoped API keys and a CLI.</p>
+    <h2>Escalation destinations</h2>
+    <p>Ticket events reach your team by email, and optionally by Slack message, a Linear issue, or an HMAC-signed webhook to your own endpoint. Every delivery is queued, retried and logged.</p>
+    <h2>Proactive support signals</h2>
+    <p>Spot friction, stalled onboarding, failed payments, and urgent customer moments before they become avoidable churn.</p>
+    <h2>Native mobile SDK</h2>
+    <p>Build a native in-app support screen over Lira's chat WebSocket, with confirm-before-action, step-up re-auth, human takeover, and push notifications.</p>
+  `,
+  '/pricing': `
+    <h1>Start for free. Scale as you grow.</h1>
+    <p>One AI support agent that answers 24/7, resolves tickets, and captures leads. Every plan includes unlimited team seats — you pay for the AI, never per agent.</p>
+    <h2>Free — $0/month</h2>
+    <p>250 conversations a month, 1 website widget on 1 domain, knowledge base from your own content, English plus one language, lead capture to email, WhatsApp handoff, unlimited team seats, community support.</p>
+    <h2>Pro — $29/month</h2>
+    <p>2,000 conversations included, then $12 per additional 1,000. Everything in Free plus all conversation flows, AI read actions, 5 languages, analytics dashboard, email and webhook lead delivery, "Powered by Lira" branding removed, email and chat support.</p>
+    <h2>Scale — $99/month</h2>
+    <p>12,000 conversations included, then $8 per additional 1,000. Everything in Pro plus a localized voice agent, AI that takes actions with built-in approval and audit, the agent runtime for exposing your app's actions, the AI agent inside WhatsApp, priority support, custom API and MCP connections, advanced analytics and exports, and multiple domains.</p>
+    <h2>Enterprise — custom</h2>
+    <p>Everything in Scale plus a custom brand voice cloned with your consent, volume conversation pricing, SSO and SAML, SLAs and uptime guarantees, custom data retention, and dedicated onboarding.</p>
+    <h2>Why this is cheaper than per-seat pricing</h2>
+    <p>Zendesk Suite Team and Freshworks Pro both charge about $55 per agent per month billed yearly — $275 a month for a team of five, before any AI. Intercom Advanced plus Fin is roughly $85 per seat per month plus $0.99 for every AI resolution — $425 or more for the same team. Lira Pro is $29 a month flat with unlimited seats and 2,000 AI conversations included. Adding teammates never increases your bill; only conversation volume does.</p>
+    <h2>Billing</h2>
+    <p>Monthly or annual — choose annual and get two months free. Upgrade, downgrade or cancel anytime. Payments are processed by Paddle as Merchant of Record. Prices can be viewed in USD or NGN. A conversation is one complete chat session, not one message.</p>
+    <p>Signup is self-serve on Free, Pro and Scale. <a href="/signup">Create an account</a> — no sales call, no card on Free.</p>
+  `,
+  '/security': `
+    <h1>Security at Lira</h1>
+    <p>How Lira protects your organization's data.</p>
+    <h2>Encryption</h2>
+    <p>All data in transit is encrypted with TLS 1.2 or higher. Sensitive data at rest is encrypted with AES-256. Stored passwords use bcrypt salted hashing.</p>
+    <h2>Authentication and access control</h2>
+    <p>JWT-based authentication with secure token management, scoped OAuth or signed API credentials for connected services, and role-based access control.</p>
+    <h2>Data handling</h2>
+    <p>Minimal collection, purpose limitation, and logical isolation between organizations. Your documents, transcripts and organizational data are never used to train general-purpose AI models shared with other customers. Data export on request; deletion within 30 days.</p>
+    <h2>Compliance</h2>
+    <p>GDPR — data processing agreements, data subject rights, and Standard Contractual Clauses for international transfers. CCPA and CPRA — right to know, delete and opt out; we do not sell personal information. Our infrastructure providers maintain SOC 2 Type II; we are working toward our own SOC 2 certification.</p>
+    <h2>Practices</h2>
+    <p>Regular security assessments including dependency vulnerability scanning, code review, penetration testing, and static analysis in CI. A documented incident response plan. Production access restricted to authorized personnel with multi-factor authentication and least privilege.</p>
+    <h2>Vulnerability disclosure</h2>
+    <p>Report potential security issues to info@liraintelligence.com. We acknowledge receipt within 48 hours and provide an initial assessment within 5 business days.</p>
+  `,
+  '/products/customer-support': `
+    <h1>AI customer support, grounded in your knowledge base</h1>
+    <p>Lira resolves customer conversations across chat, email, voice and WhatsApp using retrieval over your own content, opens tickets when a human is needed, and runs approved actions inside your product.</p>
+    <h2>How it works</h2>
+    <p>Connect your knowledge — crawl your website, upload documents, or connect Google Drive. Choose your channels. Paste one script tag. The agent answers from your content only, cites what it used, and escalates when confidence is low.</p>
+    <h2>What happens when a human is needed</h2>
+    <p>Lira opens a ticket with the full transcript and verified identity attached, routes it to the right queue, starts the SLA timer, and notifies your team by email — and optionally Slack, Linear, or a signed webhook. When a teammate replies, the AI pauses until handback.</p>
+    <h2>Safety</h2>
+    <p>Actions are off by default and opt-in per tool, with an approval policy, step-up re-authentication for sensitive operations, and a full audit trail.</p>
+  `,
+  '/for/fintech': `
+    <h1>Lira for financial products and fintech</h1>
+    <p>Resolve account, payment, KYC, transfer and policy questions with the care and context high-trust products require.</p>
+    <h2>Built for regulated support</h2>
+    <p>Answers are grounded in your own approved content, so the agent cannot invent a policy or a fee. Sensitive intents escalate to a human rather than being guessed at. Actions that touch money are gated behind approval policy and step-up re-authentication, and every one is written to an audit trail.</p>
+    <h2>Local context</h2>
+    <p>Per-organization currency and locale, a voice agent in your market's accent, and WhatsApp as a first-class channel rather than an afterthought.</p>
+  `,
+  '/for/hospitality': `
+    <h1>Lira for hospitality</h1>
+    <p>Guide guests through bookings, changes, policies and on-property questions with context that survives the whole stay.</p>
+    <h2>Where guests already are</h2>
+    <p>Website chat, a hosted branded portal, email, real-time voice, and WhatsApp — one agent, one knowledge base, one inbox.</p>
+    <h2>Multilingual by default</h2>
+    <p>Automatic language detection and localized replies, so guests are understood wherever they booked from.</p>
+  `,
+  '/about': `
+    <h1>About Lira</h1>
+    <p>Lira is an AI customer support platform built by CreoVine. We build support that answers from your real knowledge, opens a ticket when it should, and hands off to a human with the full story attached.</p>
+  `,
+  '/contact': `
+    <h1>Contact Lira</h1>
+    <p>Email team@liraintelligence.com, or book a demo. Signup for Free, Pro and Scale is self-serve — you only need to talk to us for Enterprise.</p>
+  `,
+  '/book-demo': `
+    <h1>Book a Lira demo</h1>
+    <p>See Lira answer your customers' questions from your own knowledge base. You can also <a href="/signup">start free</a> without a call.</p>
+  `,
+  '/docs': `
+    <h1>Lira documentation</h1>
+    <p>Guides for installing the chat widget, verifying customer identity, forwarding email, running the hosted support portal, building your knowledge base, configuring human handoff, sending proactive outreach, and connecting tool packs. Full documentation at <a href="https://docs.liraintelligence.com">docs.liraintelligence.com</a>.</p>
+  `,
+}
+
+/**
+ * Plain-HTML body for a route. Falls back to the route's own title and
+ * description so even pages without a hand-written entry ship something
+ * readable rather than a blank document.
+ */
+function generateFallbackBody(route) {
+  const inner = CONTENT[route.path] ?? `<h1>${route.title}</h1><p>${route.description}</p>`
+
+  return `<div id="prerender-content">${inner}
+    <nav aria-label="Site">
+      <a href="/">Home</a> · <a href="/features">Features</a> · <a href="/pricing">Pricing</a> ·
+      <a href="/security">Security</a> · <a href="/blog">Blog</a> ·
+      <a href="https://docs.liraintelligence.com">Docs</a> · <a href="/signup">Sign up free</a>
+    </nav>
+  </div>
+  <script>
+    // Hide the crawler fallback before first paint for anyone running JS.
+    // React clears #root on mount anyway; this just avoids a flash.
+    (function () {
+      var el = document.getElementById('prerender-content')
+      if (el) el.style.display = 'none'
+    })()
+  </script>`
+}
+
 // ── Generate HTML for each route ─────────────────────────────────────────────
 
 function generateMeta(route) {
@@ -1122,8 +1280,22 @@ function run() {
   const demoWidgetSecret = (process.env.VITE_DEMO_WIDGET_SECRET || '').replace(/\n$/, '')
 
   for (const route of ROUTES) {
-    // Skip root – the index.html already has these tags
-    if (route.path === '/') continue
+    // Root already carries the right meta tags in index.html, but it shipped
+    // with an empty <body> — the homepage was the one page crawlers and AI
+    // assistants could read nothing from. Inject the body content and rewrite
+    // it in place, skipping the meta step.
+    if (route.path === '/') {
+      fs.writeFileSync(
+        path.join(DIST, 'index.html'),
+        indexHtml.replace(
+          '<div id="root"></div>',
+          `<div id="root">${generateFallbackBody(route)}</div>`
+        ),
+        'utf-8'
+      )
+      created++
+      continue
+    }
 
     // Demo route → write the main Nimbus page + dedicated sub-pages so the KB
     // crawler has separate focused URLs for pricing and FAQ.
@@ -1171,6 +1343,12 @@ function run() {
         return found > 1 ? '' : m
       })
     }
+
+    // Inject crawlable body content into the (otherwise empty) mount point.
+    html = html.replace(
+      '<div id="root"></div>',
+      `<div id="root">${generateFallbackBody(route)}</div>`
+    )
 
     // Create directory structure
     const routeDir = path.join(DIST, route.path)

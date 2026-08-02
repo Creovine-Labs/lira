@@ -31,6 +31,18 @@ export interface WidgetConfig {
   greeting?: string
   orgName?: string
   logoUrl?: string
+  /**
+   * Visual skin. `default` is the standard floating bubble every customer
+   * embed uses. `concierge` is Lira's landing-style shell — a draggable dark
+   * pill launcher + frosted-glass panel (+ voice) — used on the Lira dashboard
+   * and available to customers who opt in. Set via `data-skin`. Anything other
+   * than `concierge` renders the default, so unknown values fail safe.
+   */
+  skin?: 'default' | 'concierge'
+  /** Concierge pill label, e.g. "Talk to Lira". Set via `data-launcher-label`. */
+  launcherLabel?: string
+  /** Concierge pill mark — a white/mono logo shown on the dark pill. `data-launcher-mark`. */
+  launcherMark?: string
   /** Visual template for the widget home tab. */
   homeTemplate?: 'default' | 'minimal' | 'branded'
   /** Banner image rendered above the home content when homeTemplate === 'branded'. */

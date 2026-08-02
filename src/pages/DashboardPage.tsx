@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   ArrowRightIcon,
   BookOpenIcon,
@@ -179,26 +179,31 @@ function SetupChecklist({
   const steps = [
     {
       label: 'Activate customer support',
+      desc: 'Turn Lira on so it can start answering your customers.',
       done: supportActivated,
       path: '/support/activate',
     },
     {
       label: 'Install the chat widget',
+      desc: 'Add the one-line snippet to your site so visitors can chat.',
       done: widgetInstalled,
       path: '/settings?tab=support&supportTab=connect',
     },
     {
-      label: 'Connect product knowledge',
+      label: 'Teach Lira about your product',
+      desc: 'Connect docs, pages, and files so answers are grounded in your product.',
       done: knowledgeConnected,
       path: '/org/knowledge',
     },
     {
       label: 'Configure support email',
+      desc: 'Route support email through Lira for unified, tracked replies.',
       done: supportEmailConfigured,
       path: '/settings?tab=support&supportTab=channels',
     },
     {
       label: 'Invite support teammates',
+      desc: 'Bring your team in for human handoff and the shared inbox.',
       done: teammatesInvited,
       path: '/org/members',
     },
@@ -206,42 +211,79 @@ function SetupChecklist({
 
   const navigate = useNavigate()
   const completed = steps.filter((step) => step.done).length
+  const pct = Math.round((completed / steps.length) * 100)
+  // The first not-done step is the one the customer is "on" now — highlighted
+  // dark, matching the widget's compact stepper. -1 when everything is done.
+  const activeIndex = steps.findIndex((step) => !step.done)
 
   return (
-    <section className="rounded-[26px] border border-white/70 bg-white p-5 shadow-sm">
+    <section
+      id="launch-checklist"
+      className="scroll-mt-24 rounded-[26px] border border-white/70 bg-white p-5 shadow-sm"
+    >
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-widest text-gray-400">
             Launch checklist
           </p>
           <h2 className="mt-1 text-lg font-bold text-gray-950">Get support ready for customers</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            {completed === steps.length
+              ? "You're all set — support is ready for customers."
+              : `${completed} of ${steps.length} done. Finish these to go live.`}
+          </p>
         </div>
-        <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-semibold text-gray-500">
-          {completed}/{steps.length}
-        </span>
+        {/* Percent ring — matches the widget's setup-guide progress ring. */}
+        <div
+          className="relative h-14 w-14 shrink-0 rounded-full"
+          style={{ background: `conic-gradient(#10b981 ${pct}%, #e5e7eb ${pct}% 100%)` }}
+          aria-label={`${pct}% complete`}
+        >
+          <div className="absolute inset-[3px] grid place-items-center rounded-full bg-white text-sm font-bold text-gray-900 tabular-nums">
+            {pct}%
+          </div>
+        </div>
       </div>
 
-      <div className="mt-5 space-y-2">
-        {steps.map((step) => (
-          <button
-            type="button"
-            key={step.label}
-            onClick={() => navigate(step.path)}
-            className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-gray-50"
-          >
-            <span
-              className={cn(
-                'flex h-6 w-6 shrink-0 items-center justify-center rounded-full',
-                step.done ? 'bg-gray-950 text-white' : 'bg-gray-100 text-gray-400'
-              )}
-            >
-              <CheckCircleIcon className="h-4 w-4" />
-            </span>
-            <span className="min-w-0 flex-1 text-sm font-medium text-gray-800">{step.label}</span>
-            <ArrowRightIcon className="h-3.5 w-3.5 text-gray-300" />
-          </button>
-        ))}
-      </div>
+      <ol className="mt-5 space-y-1.5">
+        {steps.map((step, i) => {
+          const isActive = i === activeIndex
+          return (
+            <li key={step.label}>
+              <button
+                type="button"
+                onClick={() => navigate(step.path)}
+                className="flex w-full items-start gap-3 rounded-2xl border border-transparent px-3 py-3 text-left transition hover:border-gray-200 hover:bg-gray-50"
+              >
+                <span
+                  className={cn(
+                    'mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full text-xs font-bold',
+                    step.done
+                      ? 'bg-emerald-500 text-white'
+                      : isActive
+                        ? 'bg-gray-950 text-white'
+                        : 'bg-gray-100 text-gray-400'
+                  )}
+                >
+                  {step.done ? <CheckCircleIcon className="h-4 w-4" /> : i + 1}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={cn(
+                      'text-sm font-semibold',
+                      step.done ? 'text-gray-400' : 'text-gray-900'
+                    )}
+                  >
+                    {step.label}
+                  </span>
+                  <span className="mt-0.5 block text-xs leading-5 text-gray-500">{step.desc}</span>
+                </span>
+                <ArrowRightIcon className="mt-1.5 h-3.5 w-3.5 shrink-0 text-gray-300" />
+              </button>
+            </li>
+          )
+        })}
+      </ol>
     </section>
   )
 }
@@ -357,6 +399,7 @@ function ConversationsPanel({
 
 function DashboardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const { token, userName } = useAuthStore()
   const { currentOrgId } = useOrgStore()
   const supportConfig = useSupportStore((s) => s.config)
@@ -367,6 +410,17 @@ function DashboardPage() {
   const [knowledgePages, setKnowledgePages] = useState(0)
   const [memberCount, setMemberCount] = useState(0)
   const [loading, setLoading] = useState(true)
+
+  // The widget's "View full list" button navigates here with #launch-checklist.
+  // Scroll to the Launch Checklist once the page has content (the section only
+  // renders after the initial load).
+  useEffect(() => {
+    if (location.hash !== '#launch-checklist' || loading) return
+    const el = document.getElementById('launch-checklist')
+    if (!el) return
+    const t = setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120)
+    return () => clearTimeout(t)
+  }, [location.hash, loading])
 
   useEffect(() => {
     if (!token) {

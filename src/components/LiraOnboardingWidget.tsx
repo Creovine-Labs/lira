@@ -201,6 +201,14 @@ export function LiraOnboardingWidget() {
       if (creds.name) script.dataset.name = creds.name
       script.dataset.sig = creds.sig
       script.dataset.position = 'bottom-right'
+      // Concierge skin — Lira's own dashboard gets the landing-style shell
+      // (dark draggable pill launcher + spinning Lira mark + mic + frosted
+      // panel). Opt-in only: customer embeds never set data-skin, so they keep
+      // the default bubble widget. Voice uses the same Nova Sonic path the
+      // landing concierge uses; the mic appears because this org is voice-enabled.
+      script.dataset.skin = 'concierge'
+      script.dataset.launcherLabel = 'Ask Lira'
+      script.dataset.launcherMark = 'https://liraintelligence.com/lira_mark_white.png'
       // Match the dashboard's near-black brand color so the launcher fits
       // visually. Customers customising via the data-color attribute on
       // their own embeds keep their value (this only overrides our default

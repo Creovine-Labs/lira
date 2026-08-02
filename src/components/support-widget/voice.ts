@@ -27,7 +27,6 @@ interface CaptureContext {
   audioCtx: AudioContext
   source: MediaStreamAudioSourceNode
   workletNode: AudioWorkletNode
-  analyser: AnalyserNode
 }
 
 function downsampleToPcm16(float32: Float32Array, fromRate: number, toRate: number): Int16Array {
@@ -225,7 +224,7 @@ export class WidgetVoiceCall {
   private visitorId: string
   private demoContext: Record<string, unknown> | undefined
   private identity: { email?: string; sig?: string } | undefined
-  private levelInterval: ReturnType<typeof setInterval> | null = null
+  private connectTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
     orgId: string,
@@ -254,9 +253,6 @@ export class WidgetVoiceCall {
       // 2. Set up audio capture
       const audioCtx = new AudioContext()
       const source = audioCtx.createMediaStreamSource(stream)
-      const analyser = audioCtx.createAnalyser()
-      analyser.fftSize = 256
-      source.connect(analyser)
 
       // AudioWorklet processor — runs off the main thread (no ScriptProcessorNode deprecation)
       const processorCode = `
@@ -298,22 +294,9 @@ export class WidgetVoiceCall {
         this.ws.send(audioFrame)
       }
 
-      this.capture = { stream, audioCtx, source, workletNode, analyser }
+      this.capture = { stream, audioCtx, source, workletNode }
 
-      // 3. Start mic level polling
-      this.levelInterval = setInterval(() => {
-        if (!this.capture) return
-        const data = new Uint8Array(this.capture.analyser.frequencyBinCount)
-        this.capture.analyser.getByteTimeDomainData(data)
-        let sum = 0
-        for (let i = 0; i < data.length; i++) {
-          const v = (data[i] - 128) / 128
-          sum += v * v
-        }
-        this.callbacks.onMicLevel(Math.sqrt(sum / data.length))
-      }, 100)
-
-      // 4. Set up audio playback
+      // 3. Set up audio playback
       this.player = new PcmPlayer()
 
       // 5. Connect WebSocket to backend voice endpoint
@@ -326,7 +309,20 @@ export class WidgetVoiceCall {
       this.ws = new WebSocket(wsUrl)
       this.ws.binaryType = 'arraybuffer'
 
+      // Connect timeout — if the socket never opens (dead network, backend
+      // down), don't sit on "Connecting…" forever. Tear down and surface it.
+      this.connectTimer = setTimeout(() => {
+        if (this.state === 'connecting') {
+          this.callbacks.onError('Could not connect — please try again')
+          this.end()
+        }
+      }, 10000)
+
       this.ws.onopen = () => {
+        if (this.connectTimer) {
+          clearTimeout(this.connectTimer)
+          this.connectTimer = null
+        }
         this.setState('active')
         // Demo embeds: push the visitor's local dashboard snapshot so the AI
         // can answer account-aware questions and the demo tools have context.
@@ -449,24 +445,26 @@ export class WidgetVoiceCall {
     }
 
     this.cleanup()
+    // Synchronous, idempotent teardown — mirrors the landing-concierge flow.
+    // NO delayed idle timer: a pending setTimeout could fire on a stale call
+    // instance after a newer call had started, orphaning the new call's live
+    // mic + WebSocket (mic stays on, overlay gone). Reset immediately so the
+    // button is usable again with no dead window.
     this.setState('ended')
-
-    // Reset to idle after a moment so the button can be used again
-    setTimeout(() => this.setState('idle'), 2000)
+    this.setState('idle')
   }
 
   private cleanup(): void {
-    // Stop mic level polling
-    if (this.levelInterval) {
-      clearInterval(this.levelInterval)
-      this.levelInterval = null
+    // Cancel any pending connect timeout
+    if (this.connectTimer) {
+      clearTimeout(this.connectTimer)
+      this.connectTimer = null
     }
     // Stop mic capture
     if (this.capture) {
       this.capture.workletNode.port.close()
       this.capture.workletNode.disconnect()
       this.capture.source.disconnect()
-      this.capture.analyser.disconnect()
       this.capture.stream.getTracks().forEach((t) => t.stop())
       void this.capture.audioCtx.close()
       this.capture = null

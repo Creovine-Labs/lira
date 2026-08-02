@@ -14,8 +14,9 @@ import { MarketingLayout } from '@/components/marketing'
 /* Pricing model, Resend-style. One AI support agent, metered by conversation
    volume, with unlimited human seats. The volume selector drives the price
    shown on each paid plan (base + overage) and moves the "Recommended" badge
-   to the plan that costs least at the chosen volume. Access is invite-only, so
-   every call to action routes to "speak to an expert", never a self-serve login. */
+   to the plan that costs least at the chosen volume. Signup is self-serve on Free,
+   Pro and Scale, so those plans route straight to /signup; only Enterprise routes to
+   the team. A concierge ?invite= link still works but is no longer required. */
 
 interface Plan {
   id: 'free' | 'pro' | 'scale' | 'enterprise'
@@ -43,7 +44,7 @@ const PLANS: Plan[] = [
     included: 250,
     overagePer1000: null,
     blurb: 'Everything you need to launch an AI support agent and see it work.',
-    cta: { label: 'Speak to an expert', href: '/contact' },
+    cta: { label: 'Start free', href: '/signup' },
     features: [
       '250 conversations / mo',
       '1 website widget (1 domain)',
@@ -63,7 +64,7 @@ const PLANS: Plan[] = [
     included: 2000,
     overagePer1000: 12,
     blurb: 'For businesses that want the agent resolving and organizing real volume.',
-    cta: { label: 'Speak to an expert', href: '/contact' },
+    cta: { label: 'Start with Pro', href: '/signup' },
     featuresLead: 'Everything in Free, plus:',
     features: [
       'All conversation flows: lead qualification, intake, registration',
@@ -84,7 +85,7 @@ const PLANS: Plan[] = [
     included: 12000,
     overagePer1000: 8,
     blurb: 'For teams that want Lira on every channel, including inside WhatsApp.',
-    cta: { label: 'Speak to an expert', href: '/contact' },
+    cta: { label: 'Start with Scale', href: '/signup' },
     featuresLead: 'Everything in Pro, plus:',
     features: [
       'Localized voice agent — Lira answers in a natural voice matched to your market (enabled during onboarding)',
@@ -182,7 +183,7 @@ const FAQ: Array<{ q: string; a: string }> = [
   },
   {
     q: 'How do I get started?',
-    a: 'Lira is invite-only while we onboard businesses one at a time. Speak to our team and we’ll set up your agent, confirm the right plan, and hand over your login. There’s no self-serve signup.',
+    a: 'Sign up and start on the Free plan — no sales call, no card. You’ll create your organization, connect your knowledge sources, and get your widget snippet in the same session, and Lira’s own support agent guides you through each step. Upgrade to Pro or Scale whenever you need the volume. Enterprise is the only plan that goes through our team.',
   },
   {
     q: 'Monthly or annual?',
@@ -682,15 +683,15 @@ export function PricingPage() {
             Put Lira on your site today.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-base leading-relaxed text-gray-300 md:text-lg">
-            See it answer your customers in the live demo, then speak to our team to get set up. We
-            onboard businesses personally, so there’s no self-serve signup.
+            Create an account free, connect your knowledge, and paste one script tag. No sales call
+            and no card on the Free plan — Lira’s own support agent walks you through setup.
           </p>
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              to="/contact"
+              to="/signup"
               className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-black text-gray-900 transition-colors hover:bg-gray-100"
             >
-              Speak to an expert
+              Start free
               <ArrowRightIcon className="h-4 w-4" />
             </Link>
             <a

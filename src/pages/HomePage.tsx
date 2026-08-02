@@ -8,15 +8,18 @@ import {
   LockClosedIcon,
   UserIcon,
 } from '@heroicons/react/24/outline'
+import { GoogleLogin, type CredentialResponse } from '@react-oauth/google'
 import { useAuthStore } from '@/app/store'
 import {
   login as apiLogin,
   signup as apiSignup,
+  googleLogin as apiGoogleLogin,
   validatePlatformInvite,
   credentials,
   listOrganizations,
   sendOtp,
 } from '@/services/api'
+import { env } from '@/env'
 import { LiraLogo } from '@/components/LiraLogo'
 
 const PENDING_INVITE_ORG_NAME_KEY = 'lira:pending-invite-org-name'
@@ -184,9 +187,10 @@ function AuthSparkle() {
 
 // ── Auth view types ───────────────────────────────────────────────────────────
 
-// 'landing' is now a sign-in screen — public self-serve signup is disabled.
-// 'signup' is only reachable when arriving via a concierge ?invite=XXX link
-// (or, in future, a per-employee /accept-invite token, which uses its own page).
+// Public self-serve signup is open — anyone can create an account.
+// 'landing' is the entry chooser, 'login' and 'signup' are the two forms.
+// A concierge ?invite=XXX link still works: it pre-fills the signup form and
+// links the new account to the invited org, but an invite is no longer required.
 type AuthView = 'landing' | 'login' | 'signup'
 
 const AUTH_BACK: Partial<Record<AuthView, AuthView>> = {
@@ -199,10 +203,6 @@ const AUTH_LEFT_HEADINGS: Partial<Record<AuthView, string>> = {
   signup: "Let's get\nstarted",
 }
 
-// Public marketing site where prospects can request an account
-// ("speak to an expert"). New accounts on Lira are issued by the team
-// after a sales conversation, not self-serve.
-const SPEAK_TO_TEAM_URL = 'https://liraintelligence.com'
 // ── Auth panel ────────────────────────────────────────────────────────────────
 
 // Guards HomePage's invite-session-clearing effect. Module-level (not a
@@ -224,9 +224,9 @@ function LoginForm({
   const [searchParams] = useSearchParams()
   const inviteCode = searchParams.get('invite')?.trim() || null
 
-  // When an invite code is present we force the signup view and treat
-  // signup as gated. Without a code, signup is hidden — only login is
-  // reachable (public sign-up is disabled per concierge-onboarding model).
+  // An invite code forces the signup view (and links the new account to the
+  // invited org). Otherwise the view follows the route: /login → login,
+  // /signup → signup, everything else → the landing chooser.
   const [authView, setAuthView] = useState<AuthView>(
     inviteCode ? 'signup' : (initialView ?? 'landing')
   )
@@ -403,6 +403,69 @@ function LoginForm({
     }
   }
 
+  async function handleGoogleSuccess(response: CredentialResponse) {
+    if (!response.credential) {
+      showError('Google sign-in failed. Please try again.')
+      return
+    }
+    setLoading(true)
+    setError(null)
+    setErrorAction(null)
+    try {
+      const res = await apiGoogleLogin(response.credential, inviteCode ?? undefined)
+      // Google may have just created this account — mark the session as created
+      // on this page so HomePage's stale-session effect doesn't wipe it.
+      clearedInviteSessionRef.current = true
+      setCredentials(
+        res.token,
+        res.user.email,
+        res.user.name,
+        res.user.picture,
+        res.user.id,
+        res.user.emailVerified,
+        res.user.role
+      )
+      credentials.set(res.token)
+      if (res.user.emailVerified === false) {
+        sendOtp().catch(() => {})
+        onLogin(false, false)
+        return
+      }
+      const orgs = await listOrganizations().catch(() => [])
+      onLogin(orgs.length === 0)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Google sign-in failed. Please try again.'
+      showError(msg)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Renders Google's own sign-in button plus an "or" divider. Hidden when no
+  // Google client id is configured. `mode` tunes the button label.
+  function renderGoogleAuth(mode: 'signin_with' | 'signup_with') {
+    if (!env.VITE_GOOGLE_LOGIN_CLIENT_ID) return null
+    return (
+      <div className="space-y-4">
+        <div className="flex w-full justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={() => showError('Google sign-in failed. Please try again.')}
+            text={mode}
+            size="large"
+            width="360"
+            logo_alignment="center"
+          />
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="h-px flex-1 bg-gray-200" />
+          <span className="text-xs text-gray-400">or continue with email</span>
+          <div className="h-px flex-1 bg-gray-200" />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen overflow-hidden">
       {/* ── Left panel ── */}
@@ -438,10 +501,10 @@ function LoginForm({
         <div className="flex flex-1 flex-col justify-center px-5 py-8 sm:px-10 sm:py-12 md:px-16">
           <div className="mx-auto w-full max-w-[420px]">
             {/* ── Landing ──
-                Sign-in screen for existing accounts. New accounts are issued
-                by the Lira team — there is no self-serve signup. Users who
-                land here without an account are directed to the marketing site
-                to speak with the team. */}
+                Sign-in screen for existing accounts. Signup is self-serve: anyone
+                can create an account and stand up their own organization from
+                /signup. A concierge ?invite= link still pre-fills the form and
+                links the new account to an invited org, but is not required. */}
             {authView === 'landing' && (
               <div className="space-y-8">
                 <div>
@@ -453,8 +516,7 @@ function LoginForm({
                   </p>
                 </div>
                 <div className="space-y-3">
-                  {/* Google sign-in removed — sign-up is invite + email/password,
-                      so email is the single, consistent way in. */}
+                  {renderGoogleAuth('signin_with')}
                   <button
                     onClick={() => goTo('login')}
                     className="w-full rounded-lg bg-[#020308] px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-gray-800"
@@ -513,14 +575,12 @@ function LoginForm({
                 )}
                 <p className="text-sm text-gray-500">
                   New to Lira?{' '}
-                  <a
-                    href={SPEAK_TO_TEAM_URL}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <button
+                    onClick={() => goTo('signup')}
                     className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                   >
-                    Speak to our team →
-                  </a>
+                    Sign up
+                  </button>
                 </p>
               </div>
             )}
@@ -537,6 +597,7 @@ function LoginForm({
                   </p>
                 </div>
                 <div className="space-y-4">
+                  {renderGoogleAuth('signin_with')}
                   <form
                     id="auth-login-form"
                     onSubmit={handleLogin}
@@ -632,14 +693,12 @@ function LoginForm({
                   </form>
                   <p className="text-sm text-gray-500">
                     New to Lira?{' '}
-                    <a
-                      href={SPEAK_TO_TEAM_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                    <button
+                      onClick={() => goTo('signup')}
                       className="font-semibold text-[#3730a3] hover:text-[#312e81]"
                     >
-                      Speak to our team →
-                    </a>
+                      Sign up
+                    </button>
                   </p>
                 </div>
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
@@ -723,6 +782,7 @@ function LoginForm({
                     contact the person who sent you the link.
                   </div>
                 )}
+                {renderGoogleAuth('signup_with')}
                 <form
                   id="auth-signup-form"
                   onSubmit={handleSignup}

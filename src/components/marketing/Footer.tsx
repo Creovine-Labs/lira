@@ -7,9 +7,8 @@ const FOOTER_GROUPS = [
     title: 'Product',
     links: [
       { label: 'Features', href: '/features' },
-      { label: 'Careers', href: '/careers' },
-      { label: 'Speak to an expert', href: '/book-demo' },
-      { label: 'Contact', href: '/contact' },
+      { label: 'Pricing', href: '/pricing' },
+      { label: 'Sign up', href: '/signup' },
     ],
   },
   {

@@ -39,7 +39,9 @@
       "WebFetch(domain:aws.amazon.com)",
       "WebFetch(domain:www.daily.co)",
       "WebFetch(domain:platform.openai.com)",
-      "WebFetch(domain:openai.com)"
+      "WebFetch(domain:openai.com)",
+      "Bash(aws secretsmanager put-secret-value:*)",
+      "Bash(AWS_PROFILE=creovine aws secretsmanager put-secret-value:*)"
     ]
   }
 }

@@ -17,7 +17,7 @@ import { readDemoProfile, updateDemoProfile, type DemoProfile } from './demo-pro
  */
 
 // In `npm run dev`, load the locally-built widget bundle from /public/dev/
-// so we can test unreleased widget code (including the Pipecat path) without
+// so we can test unreleased widget code without
 // touching the production CDN bundle. Prod builds still hit the CDN.
 //
 // The `?v=${Date.now()}` suffix in dev bypasses HTTP caching — every page

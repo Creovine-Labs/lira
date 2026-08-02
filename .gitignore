@@ -65,3 +65,6 @@ docs/
 
 # Local project/infra notes — public repo, keep out
 CLAUDE.md
+.playwright-mcp/
+.mcp.json
+amber-call-app/

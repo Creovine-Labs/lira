@@ -54,6 +54,12 @@ export interface SupportConfig {
   force_escalate_intents: string[]
   escalation_slack_channel?: string
   escalation_linear_team?: string
+  /** Destinations ticket events fan out to. Empty = no outbound delivery. */
+  outbox_providers?: Array<'slack' | 'linear' | 'webhook'>
+  /** Customer-owned https endpoint that receives signed ticket events. */
+  outbox_webhook_url?: string
+  /** HMAC-SHA256 secret used to sign `outbox_webhook_url` payloads. */
+  outbox_webhook_secret?: string
   escalation_email?: string
   escalation_notify_enabled?: boolean
   escalation_cc_emails?: string[]

@@ -29,7 +29,6 @@ import { WidgetSocket } from './socket'
 import { getWidgetStyles } from './styles'
 import { WidgetVoiceCall } from './voice'
 import type { VoiceState } from './voice'
-import type { PipecatTransport } from './pipecat-transport'
 import {
   LIRA_RUNTIME_CONTEXT_EVENT,
   readLiraRuntimeContext,
@@ -42,6 +41,9 @@ const ICON_CHAT = `<svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.04 2 11c0 
 const ICON_CLOSE = `<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>`
 const ICON_ARROW_LEFT = `<svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>`
 const ICON_SEND = `<svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`
+const ICON_SEND_CONCIERGE = `<svg viewBox="0 0 256 256" fill="currentColor"><path d="M240,127.89a16,16,0,0,1-8.18,14L63.9,237.9A16.15,16.15,0,0,1,56,240a16,16,0,0,1-15-21.33l27-79.95A4,4,0,0,1,71.72,136H144a8,8,0,0,0,8-8.53,8.19,8.19,0,0,0-8.26-7.47h-72a4,4,0,0,1-3.79-2.72l-27-79.94A16,16,0,0,1,63.84,18.07l168,95.89A16,16,0,0,1,240,127.89Z"/></svg>`
+// Six-dot vertical grip — the drag handle on the concierge launcher/panel.
+const ICON_GRIP = `<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="5" r="1.6"/><circle cx="15" cy="5" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="19" r="1.6"/><circle cx="15" cy="19" r="1.6"/></svg>`
 const ICON_COPY = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>`
 const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>`
 const ICON_HANDOFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`
@@ -51,8 +53,12 @@ const ICON_LIRA = `<img src="${LIRA_LOGO_URL}" alt="Lira" style="width:100%;heig
 // Mic icons — voice mode is a real-time conversation with Lira, not a "phone
 // call". Phone iconography suggested a one-way call to a human; mic iconography
 // signals "press to talk" / "voice conversation" which matches the UX.
-const ICON_MIC = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`
-const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 005.12 2.12M15 9.34V4a3 3 0 00-5.94-.6"/><path d="M17 16.95A7 7 0 015 12v-2m14 0v2a7 7 0 01-.11 1.23"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="8" y1="22" x2="16" y2="22"/></svg>`
+// Composer voice controls. ICON_MIC — a clean, filled, rounded microphone
+// (neater than the old outline mic). ICON_MIC_OFF — a rounded "stop" square
+// shown while a call is active (tap to end).
+const ICON_MIC = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15.5a3.5 3.5 0 0 0 3.5-3.5V6.5a3.5 3.5 0 0 0-7 0V12a3.5 3.5 0 0 0 3.5 3.5Z"/><path d="M18 12a1 1 0 0 0-2 0 4 4 0 0 1-8 0 1 1 0 0 0-2 0 6 6 0 0 0 5 5.92V20H8.5a1 1 0 0 0 0 2h7a1 1 0 0 0 0-2H13v-2.08A6 6 0 0 0 18 12Z"/></svg>`
+const ICON_MIC_CONCIERGE = `<svg viewBox="0 0 256 256" fill="currentColor"><path d="M80,128V64a48,48,0,0,1,96,0v64a48,48,0,0,1-96,0Zm128,0a8,8,0,0,0-16,0,64,64,0,0,1-128,0,8,8,0,0,0-16,0,80.11,80.11,0,0,0,72,79.6V240a8,8,0,0,0,16,0V207.6A80.11,80.11,0,0,0,208,128Z"/></svg>`
+const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6.5" y="6.5" width="11" height="11" rx="3"/></svg>`
 
 // ── Feature flags ─────────────────────────────────────────────────────────────
 //
@@ -66,10 +72,16 @@ const ICON_MIC_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
 // different speech stack that emits steadier audio (Deepgram STT + Cartesia
 // TTS, see VOICE_CHOPPINESS_INVESTIGATION.md §10 option J).
 //
-// To re-enable: flip this constant to `true`, rebuild widget, redeploy. The
-// backend voice WS, transcript persistence, post-call wiring, and audio
-// playback code are all left intact so reactivation is a one-line change.
-const VOICE_FEATURE_ENABLED = false
+// RE-ENABLED 2026-07-29 (Nova Sonic only). Re-enabled after fixing the two
+// concrete client-side bugs behind the earlier instability: (1) a stale-
+// instance race in voice.ts end() whose delayed idle-timer could orphan a
+// newer call's live mic + WebSocket, and (2) a missing connect timeout that
+// hung on "Connecting…". Also dropped the idle 100ms mic-level poller. The
+// voice path now mirrors the clean landing-concierge flow. Still gated per
+// org by `config.voiceEnabled`. NOTE: upstream Nova Sonic V2 burstiness can
+// still crack VERY long answers — keep voice replies concise, or raise
+// PcmPlayer.LEADTIME_SEC in voice.ts, if that surfaces.
+const VOICE_FEATURE_ENABLED = true
 
 // ── Visitor ID persistence ────────────────────────────────────────────────────
 //
@@ -351,12 +363,6 @@ class LiraSupportWidget {
   private demoFreshCaseStarted = false
   private reNotifyCount = 0
   private socket: WidgetSocket | null = null
-  // Pipecat transport — used in place of `socket` (chat) and `voiceCall`
-  // (voice) when the LIRA_USE_PIPECAT feature flag is on. One instance per
-  // channel: chat sessions are long-lived (opened on widget open); voice
-  // sessions are spun up on mic-click and torn down on end-call.
-  private pipecatChat: PipecatTransport | null = null
-  private pipecatVoice: PipecatTransport | null = null
   private visitorId: string
   // Per-anonymous-session id used to scope localStorage. Rotated on logout
   // so the next anonymous user on a shared device gets a clean slate.
@@ -485,6 +491,9 @@ class LiraSupportWidget {
   // initial mount so subsequent re-renders don't replay the 0.25s slide-up
   // (which read as a "flicker" on every state-changing click).
   private chatAnimPlayed = false
+  /** Mobile-only: the launcher pill is double-bouncing to draw attention in
+   *  place of the (screen-hogging) auto-open. Persisted across re-renders. */
+  private attentionActive = false
 
   // Pre-chat form skip flag. Once the visitor clicks "Skip", we don't show the
   // form again — neither this session nor on reload. Persisted to localStorage
@@ -531,6 +540,17 @@ class LiraSupportWidget {
   // DOM references
   private host: HTMLElement
   private shadow: ShadowRoot
+  // Concierge skin: draggable launcher/panel corner + in-flight drag state.
+  private conciergeCorner:
+    | 'bottom-right'
+    | 'bottom-left'
+    | 'bottom-center'
+    | 'top-right'
+    | 'top-left'
+    | 'top-center'
+    | null = null
+  private conciergeDrag: { dx: number; dy: number; w: number; h: number; moved: boolean } | null =
+    null
   private messagesEl: HTMLElement | null = null
   private inputEl: HTMLTextAreaElement | null = null
   private lastCustomerPrompt = ''
@@ -644,6 +664,10 @@ class LiraSupportWidget {
     this.host = document.createElement('div')
     this.host.id = 'lira-support-widget'
     this.host.dataset.liraMode = this.isFullscreen() ? 'fullscreen' : 'bubble'
+    // Opt-in visual skin. Only 'concierge' switches to the landing-style shell;
+    // everything else (incl. unset) stays on the default bubble, so customer
+    // embeds are untouched unless they explicitly opt in.
+    this.host.dataset.liraSkin = this.config.skin === 'concierge' ? 'concierge' : 'default'
     this.shadow = this.host.attachShadow({ mode: 'closed' })
 
     // Inject styles
@@ -674,11 +698,18 @@ class LiraSupportWidget {
     // the launcher renders first; otherwise the chat panel mounts on top
     // of nothing and there's a visible jump.
     if (!this.isFullscreen() && this.config.autoOpenFirstVisit && !this.hasBeenDismissed()) {
-      // Route to Home view, not Chat. Home renders the dashboard onboarding
-      // hero AND the Home/Chat bottom nav (`buildWidgetTabs`); going to
-      // Chat would show the hero but without the nav, leaving the visitor
-      // stuck on what looks like an isolated screen with no way back.
-      setTimeout(() => this.openHome(), 0)
+      if (this.isMobileViewport()) {
+        // Mobile: an open panel covers the whole screen, so DON'T auto-open —
+        // keep the pill and double-bounce it to draw attention instead. The
+        // visitor opens the chat only when they tap.
+        setTimeout(() => this.startLauncherAttention(), 0)
+      } else {
+        // Web: enough screen to show the panel. Route to Home view, not Chat.
+        // Home renders the onboarding hero AND the Home/Chat bottom nav
+        // (`buildWidgetTabs`); going to Chat would show the hero without the
+        // nav, leaving the visitor stuck with no way back.
+        setTimeout(() => this.openHome(), 0)
+      }
     }
 
     // Listen for action lifecycle + PIN events that arrive over the VOICE
@@ -1115,9 +1146,37 @@ class LiraSupportWidget {
       }
     }
 
+    // Concierge skin: pin the open panel to the launcher's corner and make its
+    // header a drag handle — so the whole widget (launcher ⇄ panel) drags like
+    // the landing concierge. One place, after any view rendered its window.
+    this.decorateConciergeWindowIfOpen()
+
     // Persist messages to localStorage after every render that has messages
     if (this.messages.length > 0) {
       this.persistMessages()
+    }
+  }
+
+  /**
+   * Concierge skin only: after a panel view renders, position its window at the
+   * current corner and attach header-drag. No-op for the default skin and for
+   * the launcher view (no `.lira-chat-window` present).
+   */
+  private decorateConciergeWindowIfOpen(): void {
+    if (!this.isConcierge()) return
+    const win = this.shadow.querySelector<HTMLElement>('.lira-chat-window')
+    if (!win) return
+    // Panel and pill launcher are mutually exclusive in the concierge skin
+    // (the panel replaces the launcher, like the landing concierge). Drop any
+    // stray launcher so it can't sit on top of the open panel.
+    this.shadow.querySelectorAll('.lira-cx-launcher').forEach((el) => el.remove())
+    // Fullscreen SDK embeds own their own layout — never reposition those.
+    if (win.classList.contains('lira-fullscreen')) return
+    this.applyConciergePosition(win)
+    const header = win.querySelector<HTMLElement>('.lira-header')
+    if (header && header.dataset.cxDrag !== '1') {
+      header.dataset.cxDrag = '1'
+      this.attachConciergeDrag(header, win, true)
     }
   }
 
@@ -1748,9 +1807,17 @@ class LiraSupportWidget {
     return block
   }
 
+  private isConcierge(): boolean {
+    return this.config.skin === 'concierge'
+  }
+
   private renderLauncher(): void {
+    if (this.isConcierge()) {
+      this.renderConciergeLauncher()
+      return
+    }
     const btn = document.createElement('button')
-    btn.className = `lira-launcher ${this.config.position}`
+    btn.className = `lira-launcher ${this.config.position}${this.attentionActive ? ' lira-attention' : ''}`
     btn.innerHTML = ICON_CHAT
     btn.setAttribute('aria-label', 'Open chat')
     btn.onclick = () => this.openHome()
@@ -1763,7 +1830,195 @@ class LiraSupportWidget {
     this.shadow.appendChild(btn)
   }
 
+  /**
+   * Landing-style launcher — a dark, draggable pill: [grip] [spinning white
+   * mark] "Talk to Lira" [mic]. Faithful to LandingVoiceConcierge; used by the
+   * concierge skin only. Voice starts on tap of the mic (not on open), so the
+   * dashboard user can choose to type or talk.
+   */
+  private renderConciergeLauncher(): void {
+    const root = document.createElement('div')
+    root.className = `lira-cx-launcher${this.attentionActive ? ' lira-attention' : ''}`
+
+    const grip = document.createElement('button')
+    grip.className = 'lira-cx-grip'
+    grip.type = 'button'
+    grip.setAttribute('aria-label', 'Move')
+    grip.innerHTML = ICON_GRIP
+    this.attachConciergeDrag(grip, root, false)
+    root.appendChild(grip)
+
+    const open = document.createElement('button')
+    open.className = 'lira-cx-open'
+    open.type = 'button'
+    open.setAttribute('aria-label', 'Open chat')
+
+    const mark = document.createElement('img')
+    mark.className = 'lira-cx-mark'
+    mark.src = this.conciergeMarkUrl()
+    mark.alt = ''
+    open.appendChild(mark)
+
+    const label = document.createElement('span')
+    label.className = 'lira-cx-label'
+    label.textContent = this.config.launcherLabel?.trim() || 'Talk to Lira'
+    open.appendChild(label)
+
+    const mic = document.createElement('span')
+    mic.className = 'lira-cx-launch-mic'
+    mic.innerHTML = ICON_MIC_CONCIERGE
+    open.appendChild(mic)
+
+    open.onclick = () => {
+      if (this.conciergeDrag?.moved) return // swallow the click that ends a drag
+      this.openHome()
+    }
+    root.appendChild(open)
+
+    if (this.unreadCount > 0) {
+      const badge = document.createElement('span')
+      badge.className = 'lira-unread-badge'
+      badge.textContent = this.unreadCount > 9 ? '9+' : String(this.unreadCount)
+      root.appendChild(badge)
+    }
+
+    this.applyConciergePosition(root)
+    this.shadow.appendChild(root)
+  }
+
+  private conciergeMarkUrl(): string {
+    return this.config.launcherMark || 'https://liraintelligence.com/lira_mark_white.png'
+  }
+
+  /** True when the viewport is phone-sized — matches the CSS breakpoint at
+   *  which the chat panel goes (nearly) full-screen. On these screens the
+   *  widget must never auto-open on top of the whole app. */
+  private isMobileViewport(): boolean {
+    try {
+      return window.matchMedia('(max-width: 640px)').matches
+    } catch {
+      return window.innerWidth <= 640
+    }
+  }
+
+  /** Return the current launcher root in the shadow (concierge pill or the
+   *  default bubble button), whichever is mounted. */
+  private launcherEl(): HTMLElement | null {
+    return this.shadow.querySelector<HTMLElement>('.lira-cx-launcher, .lira-launcher')
+  }
+
+  /** Mobile attention-getter: start the repeating double-bounce on the pill
+   *  instead of auto-opening. Idempotent; survives re-renders via the flag. */
+  private startLauncherAttention(): void {
+    this.attentionActive = true
+    this.launcherEl()?.classList.add('lira-attention')
+  }
+
+  /** Stop the bounce — the visitor has engaged (opened or dragged the pill). */
+  private stopLauncherAttention(): void {
+    if (!this.attentionActive) return
+    this.attentionActive = false
+    this.shadow
+      .querySelectorAll('.lira-attention')
+      .forEach((el) => el.classList.remove('lira-attention'))
+  }
+
+  /** Nearest-corner (of 4) the launcher/panel is pinned to. */
+  private currentConciergeCorner(): NonNullable<LiraSupportWidget['conciergeCorner']> {
+    if (this.conciergeCorner) return this.conciergeCorner
+    return this.config.position === 'bottom-left' ? 'bottom-left' : 'bottom-right'
+  }
+
+  /** Pin a concierge element (launcher or panel) to the current magnet — one of
+   *  six: {top,bottom} × {left,center,right}. */
+  private applyConciergePosition(el: HTMLElement): void {
+    const corner = this.currentConciergeCorner()
+    const top = corner.startsWith('top')
+    el.style.position = 'fixed'
+    el.style.top = top ? '20px' : 'auto'
+    el.style.bottom = top ? 'auto' : '20px'
+    if (corner.endsWith('center')) {
+      el.style.left = '50%'
+      el.style.right = 'auto'
+      el.style.transform = 'translateX(-50%)'
+    } else if (corner.endsWith('left')) {
+      el.style.left = '20px'
+      el.style.right = 'auto'
+      el.style.transform = 'none'
+    } else {
+      el.style.left = 'auto'
+      el.style.right = '20px'
+      el.style.transform = 'none'
+    }
+  }
+
+  /**
+   * Free-drag the concierge launcher/panel by a handle, snapping to the nearest
+   * of four corners on release. `moved` guards the click that would otherwise
+   * fire at drag-end and pop the panel open.
+   */
+  private attachConciergeDrag(handle: HTMLElement, target: HTMLElement, isPanel: boolean): void {
+    handle.style.touchAction = 'none'
+    const onDown = (e: PointerEvent) => {
+      // On the panel the whole header is the drag handle, but it also holds the
+      // close/back/action buttons — a pointerdown on one of those must click,
+      // not start a drag. (The launcher grip is its own button, so this guard
+      // is panel-only.)
+      if (isPanel && (e.target as HTMLElement).closest('button, a, input, textarea')) return
+      // Any grab of the pill counts as engagement — stop the attention bounce
+      // so it doesn't fight the drag transform.
+      this.stopLauncherAttention()
+      const rect = target.getBoundingClientRect()
+      this.conciergeDrag = {
+        dx: e.clientX - rect.left,
+        dy: e.clientY - rect.top,
+        w: rect.width,
+        h: rect.height,
+        moved: false,
+      }
+      target.style.transition = 'none'
+      // A prior center snap leaves translateX(-50%) on the element; clear it so
+      // the raw left/top set during the drag isn't offset by half the width.
+      target.style.transform = 'none'
+      handle.setPointerCapture?.(e.pointerId)
+      e.preventDefault()
+    }
+    const onMove = (e: PointerEvent) => {
+      const d = this.conciergeDrag
+      if (!d) return
+      d.moved = true
+      const x = Math.max(8, Math.min(window.innerWidth - d.w - 8, e.clientX - d.dx))
+      const y = Math.max(8, Math.min(window.innerHeight - d.h - 8, e.clientY - d.dy))
+      target.style.left = `${x}px`
+      target.style.top = `${y}px`
+      target.style.right = 'auto'
+      target.style.bottom = 'auto'
+    }
+    const onUp = (e: PointerEvent) => {
+      const d = this.conciergeDrag
+      if (!d) return
+      const third = window.innerWidth / 3
+      const xzone = e.clientX < third ? 'left' : e.clientX > 2 * third ? 'right' : 'center'
+      const vzone = e.clientY < window.innerHeight / 2 ? 'top' : 'bottom'
+      this.conciergeCorner = `${vzone}-${xzone}` as NonNullable<
+        LiraSupportWidget['conciergeCorner']
+      >
+      target.style.transition = ''
+      this.applyConciergePosition(target)
+      // Keep the sibling (launcher⇄panel) pinned to the same corner next render.
+      if (!isPanel) this.applyConciergePosition(target)
+      // Clear `moved` after the click that closes the gesture has passed.
+      setTimeout(() => {
+        this.conciergeDrag = null
+      }, 0)
+    }
+    handle.addEventListener('pointerdown', onDown)
+    handle.addEventListener('pointermove', onMove)
+    handle.addEventListener('pointerup', onUp)
+  }
+
   private openHome(): void {
+    this.stopLauncherAttention()
     const fromLauncher = this.view === 'launcher'
     this.view = 'home'
     this.unreadCount = 0
@@ -1803,7 +2058,6 @@ class LiraSupportWidget {
     const summary = this.conversations.find((c) => c.convId === convId)
     this.socket?.disconnect()
     this.socket = null
-    this.pipecatChat = null
     this.convId = convId
     this.messages = summary?.messages ?? []
     this.isResolved = summary?.status === 'resolved'
@@ -2261,7 +2515,7 @@ class LiraSupportWidget {
     // is coherent across tabs. Skip the template branch entirely below.
     if (this.config.autoOpenFirstVisit === true) {
       home.className = 'lira-home lira-home-onboarding'
-      home.appendChild(this.buildHeroWelcomeEl())
+      home.appendChild(this.buildHeroWelcomeEl({ compact: true }))
       win.appendChild(home)
       win.appendChild(this.buildWidgetTabs('home'))
       this.appendPoweredBy(win)
@@ -2678,31 +2932,7 @@ class LiraSupportWidget {
     newChatBtn.onclick = () => this.confirmStartNewConversation()
     actions.appendChild(newChatBtn)
 
-    // Voice mode button (only if voice is enabled platform-wide AND org has it on).
-    // Voice is currently disabled by the VOICE_FEATURE_ENABLED feature flag —
-    // see comment near the constant for why and how to bring it back.
-    if (VOICE_FEATURE_ENABLED && this.config.voiceEnabled) {
-      const callBtn = document.createElement('button')
-      callBtn.className =
-        'lira-header-btn' + (this.voiceState === 'active' ? ' lira-call-active' : '')
-      callBtn.innerHTML = this.voiceState === 'active' ? ICON_MIC_OFF : ICON_MIC
-      callBtn.setAttribute(
-        'aria-label',
-        this.voiceState === 'active' ? 'End voice mode' : 'Talk to Lira with voice'
-      )
-      callBtn.setAttribute(
-        'title',
-        this.voiceState === 'active' ? 'End voice mode' : 'Talk with Lira'
-      )
-      callBtn.onclick = () => {
-        if (this.voiceState === 'active' || this.voiceState === 'connecting') {
-          this.endVoiceCall()
-        } else {
-          this.startVoiceCall()
-        }
-      }
-      actions.appendChild(callBtn)
-    }
+    // (Voice mic lives in the composer, beside Send — see the input area.)
 
     if (!this.isFullscreen()) {
       const closeBtn = document.createElement('button')
@@ -2738,8 +2968,10 @@ class LiraSupportWidget {
     win.appendChild(messagesDiv)
     this.messagesEl = messagesDiv
 
-    // Voice call overlay (shown when a call is active)
-    if (this.voiceState === 'connecting' || this.voiceState === 'active') {
+    // Voice call overlay (shown when a call is active). Concierge mode mirrors
+    // the landing page: keep the conversation visible and signal voice state
+    // through the composer mic instead of covering the panel.
+    if (!this.isConcierge() && (this.voiceState === 'connecting' || this.voiceState === 'active')) {
       const isWorking = this.voiceState === 'active' && this.activeVoiceActions.size > 0
       const overlay = document.createElement('div')
       overlay.className = 'lira-voice-overlay' + (isWorking ? ' lira-voice-working' : '')
@@ -2840,12 +3072,34 @@ class LiraSupportWidget {
           this.socket?.send({ type: 'typing' })
         }, 300)
       })
+      // Voice mic — sits in the composer beside Send (the conventional, easily
+      // discoverable spot). Shown only when voice is enabled platform-wide AND
+      // the org has voice_enabled on. Tap to start a Nova Sonic call; tap again
+      // (button turns red) to end.
+      if (VOICE_FEATURE_ENABLED && this.config.voiceEnabled) {
+        const inCall = this.voiceState === 'active' || this.voiceState === 'connecting'
+        const micBtn = document.createElement('button')
+        micBtn.className = 'lira-mic-btn' + (inCall ? ' lira-mic-active' : '')
+        micBtn.innerHTML = this.isConcierge()
+          ? ICON_MIC_CONCIERGE
+          : inCall
+            ? ICON_MIC_OFF
+            : ICON_MIC
+        micBtn.setAttribute('aria-label', inCall ? 'End voice call' : 'Talk to Lira with voice')
+        micBtn.setAttribute('title', inCall ? 'End voice call' : 'Talk with Lira')
+        micBtn.onclick = () => {
+          if (this.voiceState === 'active' || this.voiceState === 'connecting') this.endVoiceCall()
+          else this.startVoiceCall()
+        }
+        inputArea.appendChild(micBtn)
+      }
+
       inputArea.appendChild(textarea)
       this.inputEl = textarea
 
       const sendBtn = document.createElement('button')
       sendBtn.className = 'lira-send-btn'
-      sendBtn.innerHTML = ICON_SEND
+      sendBtn.innerHTML = this.isConcierge() ? ICON_SEND_CONCIERGE : ICON_SEND
       sendBtn.setAttribute('aria-label', 'Send message')
       sendBtn.onclick = () => this.sendMessage()
       inputArea.appendChild(sendBtn)
@@ -2978,27 +3232,23 @@ class LiraSupportWidget {
   // ── Actions ───────────────────────────────────────────────────────────────
 
   private startVoiceCall(): void {
-    if (this.voiceCall || this.pipecatVoice) return
+    if (this.voiceCall) return
     this.voiceConfirms = [] // fresh in-call confirmation state per call (P4)
 
-    // ARCHITECTURE DECISION (2026-05-23): voice ALWAYS uses the legacy
-    // direct-to-Nova-Sonic path, even when ?pipecat=1 is set. The Pipecat
-    // pipeline adds enough per-chunk CPU on a small EC2 to make voice
-    // audibly choppy, and the wrapper we built didn't give us anything
-    // we couldn't get back: tool execution is now intentionally deferred
-    // to a post-call text-LLM stage (cleaner separation of concerns,
-    // see lira-postcall-processor.service.ts). Pipecat stays in use for
-    // CHAT — that's where its abstraction pays for itself.
-    //
-    // Leaving the call to `startPipecatVoiceCall()` here was the cause
-    // of the choppy voice the user reported on 2026-05-23.
+    // Voice uses the direct Nova Sonic WebSocket path (see voice.ts) — the
+    // same clean flow as the landing concierge. Tool execution is deferred to
+    // a post-call text-LLM stage (see lira-postcall-processor.service.ts).
 
-    this.voiceCall = new WidgetVoiceCall(
+    const call: WidgetVoiceCall = new WidgetVoiceCall(
       this.config.orgId,
       this.visitorId,
       this.config.demoContext,
       {
         onStateChange: (state) => {
+          // Ignore state changes from a stale call instance that a newer call
+          // has already superseded — stops an old instance's teardown from
+          // nulling `this.voiceCall`/clearing the timer of the current call.
+          if (this.voiceCall && this.voiceCall !== call) return
           this.voiceState = state
           if (state === 'active') {
             // Start call duration timer
@@ -3047,7 +3297,8 @@ class LiraSupportWidget {
         : undefined
     )
 
-    this.voiceCall.start()
+    this.voiceCall = call
+    call.start()
   }
 
   private endVoiceCall(): void {
@@ -3056,12 +3307,6 @@ class LiraSupportWidget {
     this.voiceConfirms = []
     if (this.voiceCall) {
       this.voiceCall.end()
-    }
-    if (this.pipecatVoice) {
-      void this.pipecatVoice.stop()
-      this.pipecatVoice = null
-      this.voiceState = 'ended'
-      this.activeVoiceActions.clear()
     }
     if (this.callTimer) {
       clearInterval(this.callTimer)
@@ -3389,26 +3634,29 @@ class LiraSupportWidget {
    * The input area below it (rendered by renderChat) remains active, so
    * the user can type a free-form question instead of clicking a CTA.
    */
-  private buildHeroWelcomeEl(): HTMLElement {
+  private buildHeroWelcomeEl(options?: { compact?: boolean }): HTMLElement {
+    const compact = options?.compact === true
     const wrap = document.createElement('div')
-    wrap.className = 'lira-hero'
+    wrap.className = compact ? 'lira-hero lira-hero-compact' : 'lira-hero'
 
     const inner = document.createElement('div')
     inner.className = 'lira-hero-inner'
     wrap.appendChild(inner)
 
-    // Avatar — clean circle, no rings/halo/animation.
-    const avatar = document.createElement('div')
-    avatar.className = 'lira-hero-avatar'
-    avatar.innerHTML = ICON_LIRA
-    inner.appendChild(avatar)
+    if (!compact) {
+      // Avatar — clean circle, no rings/halo/animation.
+      const avatar = document.createElement('div')
+      avatar.className = 'lira-hero-avatar'
+      avatar.innerHTML = ICON_LIRA
+      inner.appendChild(avatar)
 
-    // Small "Lira" wordmark line under the avatar — gives the hero an
-    // identity without resorting to a fake online-status pill.
-    const eyebrow = document.createElement('div')
-    eyebrow.className = 'lira-hero-eyebrow'
-    eyebrow.textContent = 'Lira'
-    inner.appendChild(eyebrow)
+      // Small "Lira" wordmark line under the avatar — gives the hero an
+      // identity without resorting to a fake online-status pill.
+      const eyebrow = document.createElement('div')
+      eyebrow.className = 'lira-hero-eyebrow'
+      eyebrow.textContent = 'Lira'
+      inner.appendChild(eyebrow)
+    }
 
     const title = document.createElement('h2')
     title.className = 'lira-hero-title'
@@ -3416,11 +3664,13 @@ class LiraSupportWidget {
     title.textContent = firstName ? `Hi, ${firstName}.` : 'Hi.'
     inner.appendChild(title)
 
-    const subtitle = document.createElement('p')
-    subtitle.className = 'lira-hero-subtitle'
-    subtitle.textContent =
-      'I can walk you through setting up your support agent — or just answer questions while you build.'
-    inner.appendChild(subtitle)
+    if (!compact) {
+      const subtitle = document.createElement('p')
+      subtitle.className = 'lira-hero-subtitle'
+      subtitle.textContent =
+        'I can walk you through setting up your support agent — or just answer questions while you build.'
+      inner.appendChild(subtitle)
+    }
 
     const ctas = document.createElement('div')
     ctas.className = 'lira-hero-ctas'
@@ -4010,11 +4260,20 @@ class LiraSupportWidget {
     wrap.appendChild(header)
 
     // ── Steps list ───────────────────────────────────────────────────
+    // Compact by default: the widget panel is small, so show ONLY the step the
+    // visitor is on right now (the active one, else the first not-done, else the
+    // last). The whole list lives on the dashboard's Launch Checklist, reachable
+    // via the "View full list" button below.
+    const activeStep =
+      card.steps!.find((s) => s.status === 'active') ??
+      card.steps!.find((s) => s.status !== 'done') ??
+      card.steps![card.steps!.length - 1]
     const list = document.createElement('ol')
     list.className = 'lira-stepper-list'
     let stepIndex = 0
     for (const step of card.steps!) {
       stepIndex += 1
+      if (step !== activeStep) continue
       const li = document.createElement('li')
       const locked = this.isStepLocked(step)
       li.className =
@@ -4101,6 +4360,19 @@ class LiraSupportWidget {
       list.appendChild(li)
     }
     wrap.appendChild(list)
+
+    // ── "View full list" — jumps to the dashboard's Launch Checklist, which
+    // holds the complete, always-current setup guide. ───────────────────────
+    if (card.steps!.length > 1) {
+      const viewAll = document.createElement('button')
+      viewAll.className = 'lira-stepper-viewall'
+      viewAll.type = 'button'
+      const total = card.progress?.total ?? card.steps!.length
+      const done = card.progress?.done ?? card.steps!.filter((s) => s.status === 'done').length
+      viewAll.textContent = `View full list (${done}/${total}) →`
+      viewAll.addEventListener('click', () => this.hostNavigate('/dashboard#launch-checklist'))
+      wrap.appendChild(viewAll)
+    }
 
     return wrap
   }
@@ -4729,15 +5001,11 @@ class LiraSupportWidget {
     this.clearOffTabAlert()
     if (this.convId) this.startPolling()
 
-    // Chat path: legacy WidgetSocket directly to Fastify's
-    // `/lira/v1/support/chat/ws/:orgId`. The Pipecat chat experiment was
-    // deprecated on 2026-05-23 — `lira-support-agent.service.ts` already
+    // Chat path: WidgetSocket directly to Fastify's
+    // `/lira/v1/support/chat/ws/:orgId`. `lira-support-agent.service.ts`
     // does streaming, tools, HITL, history, demo mode, and escalation
-    // in-process with the chat WS, so there was no benefit to routing
-    // through a separate Python service. The `pipecatChat` field is kept
-    // only to safely tear down any historical in-memory session shape; new
-    // chat sessions always use the legacy support WS.
-    if (!this.socket && !this.pipecatChat) {
+    // in-process with the chat WS.
+    if (!this.socket) {
       this.socket = new WidgetSocket(
         this.config,
         this.visitorId,
@@ -4977,17 +5245,13 @@ class LiraSupportWidget {
       timestamp: new Date().toISOString(),
     })
 
-    // Send via the chat transport.
-    if (this.pipecatChat) {
-      void this.pipecatChat.appendUserMessage(body)
-    } else {
-      this.socket?.send({
-        type: 'message',
-        body,
-        name: this.config.visitorName,
-        email: this.config.visitorEmail,
-      })
-    }
+    // Send via the chat WebSocket.
+    this.socket?.send({
+      type: 'message',
+      body,
+      name: this.config.visitorName,
+      email: this.config.visitorEmail,
+    })
   }
 
   private handleIncoming(msg: IncomingWsMessage): void {
@@ -5086,7 +5350,18 @@ class LiraSupportWidget {
         if (typeof msg.body === 'string' && this.streamingMessageId) {
           const activeMsg = this.messages.find((m) => m.id === this.streamingMessageId)
           if (activeMsg) activeMsg.body = msg.body
-          if (this.streamingBubbleEl) this.streamingBubbleEl.textContent = msg.body
+          // Re-render through the markdown pipeline — NOT `textContent = msg.body`,
+          // which would replace the streamed rich text with raw markdown and leave
+          // literal **bold** / *italic* asterisks on screen for any Lira reply the
+          // server corrected post-stream.
+          if (this.streamingBubbleEl) {
+            this.renderMessageBody(this.streamingBubbleEl, {
+              id: this.streamingMessageId,
+              role: 'lira',
+              body: msg.body,
+              timestamp: new Date().toISOString(),
+            })
+          }
         }
         this.setTyping(false)
         this.streamingMessageId = null
@@ -5747,6 +6022,9 @@ function readConfigFromScript(el: HTMLScriptElement): WidgetConfig | null {
     greeting: el.dataset.greeting ?? 'Hi! How can we help you today?',
     orgName: el.dataset.title ?? undefined,
     logoUrl: el.dataset.logo ?? undefined,
+    skin: el.dataset.skin === 'concierge' ? 'concierge' : 'default',
+    launcherLabel: el.dataset.launcherLabel ?? undefined,
+    launcherMark: el.dataset.launcherMark ?? undefined,
     visitorEmail: el.dataset.email,
     visitorName: el.dataset.name,
     visitorSig: el.dataset.sig,

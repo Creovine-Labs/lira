@@ -88,6 +88,7 @@ import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 import { GoLiveModal } from '@/components/settings/GoLiveModal'
 import { SupportMcpConnector } from '@/components/settings/SupportMcpConnector'
 import { SupportDeveloperKeys } from '@/components/settings/SupportDeveloperKeys'
+import { SupportEscalationRouting } from '@/components/settings/SupportEscalationRouting'
 import { SupportToolPacksPanel } from '@/pages/support/SupportToolPacksPage'
 import {
   SettingsShell,
@@ -2943,6 +2944,8 @@ function SupportSettingsSection() {
                   <SupportHandoffControls orgId={currentOrgId!} initial={config.handoff_triggers} />
                 </Disclosure>
               </SCard>
+
+              <SupportEscalationRouting orgId={currentOrgId!} config={config} />
             </>
           )}
 
