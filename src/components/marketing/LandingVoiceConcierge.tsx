@@ -74,6 +74,15 @@ function linkFromText(text: string): { label: string; url: string } | null {
     return { label: 'Localized voice', url: 'https://voice.liraintelligence.com' }
   return null
 }
+// Label for a URL we've already shown, so "send it again" can re-send it.
+function labelForUrl(url: string): string {
+  if (url.includes('/mobile-frontend')) return 'Mobile integration guide'
+  if (url.includes('/integrate')) return 'Integration guide'
+  if (url.includes('voice.liraintelligence')) return 'Localized voice'
+  if (url.includes('app.liraintelligence')) return 'Sign in'
+  return 'Documentation'
+}
+
 function renderMd(md: string): string {
   return esc(md)
     .split('\n')
@@ -284,11 +293,24 @@ export function LandingVoiceConcierge() {
             if (role === 'me') {
               const target = navFromText(msg.text)
               if (target) handleNavigate(target)
-              const link = linkFromText(msg.text)
-              if (link && R.lastLink !== link.url) {
-                R.lastLink = link.url
-                pushMsg('lira', `${link.label}: ${link.url}`)
-              }
+            }
+            // Attach a link from EITHER side of the conversation: the visitor
+            // naming a topic, or Lira's own reply mentioning it. Deriving it
+            // only from the visitor's words meant "send me the link again" —
+            // which names no topic — silently produced nothing.
+            const askedAgain =
+              role === 'me' && /\b(link|url|address|send|share)\b/.test(msg.text.toLowerCase())
+            const found = linkFromText(msg.text)
+            const link =
+              found ??
+              (askedAgain && R.lastLink
+                ? { label: labelForUrl(R.lastLink), url: R.lastLink }
+                : null)
+            // An explicit re-request always re-sends; otherwise don't repeat
+            // the same link back-to-back.
+            if (link && (askedAgain || R.lastLink !== link.url)) {
+              R.lastLink = link.url
+              pushMsg('lira', `${link.label}: ${link.url}`)
             }
           } else if (msg.type === 'interruption') {
             R.nextPlayTime = 0 // barge-in: drop queued audio
