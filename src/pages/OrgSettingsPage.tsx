@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowDownOnSquareIcon,
@@ -25,6 +25,7 @@ import {
   type OrganizationProfile,
   type OrgProduct,
   type OrgTerminology,
+  uploadOrgLogo,
 } from '@/services/api'
 
 const INDUSTRIES = [
@@ -72,6 +73,29 @@ function OrgSettingsPage() {
   const [name, setName] = useState('')
   const [companyName, setCompanyName] = useState('')
   const [logoUrl, setLogoUrl] = useState('')
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const logoInputRef = useRef<HTMLInputElement>(null)
+
+  // Upload to S3 and keep only the returned URL. The old free-text field let
+  // people paste a base64 data URI, which the org record cannot hold.
+  async function handleLogoFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file || !currentOrgId) return
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error('Logo must be 2 MB or smaller.')
+      return
+    }
+    setUploadingLogo(true)
+    try {
+      setLogoUrl(await uploadOrgLogo(currentOrgId, file))
+      toast.success('Logo updated.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not upload the logo')
+    } finally {
+      setUploadingLogo(false)
+    }
+  }
   const [industry, setIndustry] = useState('')
   const [industryCustom, setIndustryCustom] = useState('')
   const [description, setDescription] = useState('')
@@ -295,15 +319,37 @@ function OrgSettingsPage() {
                     maxLength={100}
                   />
                 </Field>
-                <Field label="Organization Logo URL" span2>
-                  <input
-                    type="url"
-                    className="input-field"
-                    value={logoUrl}
-                    onChange={(e) => setLogoUrl(e.target.value)}
-                    placeholder="https://example.com/logo.png"
-                    maxLength={500}
-                  />
+                <Field label="Organization Logo" span2>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input
+                      ref={logoInputRef}
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      className="hidden"
+                      onChange={handleLogoFile}
+                    />
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      disabled={uploadingLogo}
+                      onClick={() => logoInputRef.current?.click()}
+                    >
+                      {uploadingLogo ? 'Uploading…' : logoUrl ? 'Change logo' : 'Upload logo'}
+                    </button>
+                    {logoUrl && (
+                      <button
+                        type="button"
+                        className="btn-ghost text-xs"
+                        disabled={uploadingLogo}
+                        onClick={() => setLogoUrl('')}
+                      >
+                        Remove
+                      </button>
+                    )}
+                    <span className="text-xs text-muted-foreground">
+                      PNG, JPEG, WEBP or SVG · max 2 MB
+                    </span>
+                  </div>
                   {logoUrl && (
                     <div className="mt-2 flex items-center gap-3">
                       <img

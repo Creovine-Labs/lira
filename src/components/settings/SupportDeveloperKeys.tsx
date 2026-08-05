@@ -30,8 +30,6 @@ const SCOPES: Array<{ value: DeveloperKeyScope; label: string; desc: string; dan
     label: 'MCP write',
     desc: 'Connect, approve, enable, and remove MCP tools.',
   },
-  { value: 'support:read', label: 'Support read', desc: 'Read support configuration.' },
-  { value: 'support:write', label: 'Support write', desc: 'Update support configuration.' },
   {
     value: 'sessions:mint',
     label: 'Mint sessions',
