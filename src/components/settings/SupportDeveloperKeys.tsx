@@ -31,6 +31,16 @@ const SCOPES: Array<{ value: DeveloperKeyScope; label: string; desc: string; dan
     desc: 'Connect, approve, enable, and remove MCP tools.',
   },
   {
+    value: 'support:read',
+    label: 'Support read',
+    desc: 'Read support configuration and knowledge-base status.',
+  },
+  {
+    value: 'support:write',
+    label: 'Support write',
+    desc: 'Activate support, change settings, crawl sites and upload documents.',
+  },
+  {
     value: 'sessions:mint',
     label: 'Mint sessions',
     desc: 'Start a native support session as any of your customers. High privilege — keep this key on your backend only.',
