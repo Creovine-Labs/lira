@@ -62,9 +62,9 @@ export function EnvironmentMenu() {
           "You're live — your plan's limits now apply and your billing period has started."
         )
       } else if (switched === 'test') {
-        toast.success('Showing test data — traffic from your test keys.')
+        toast.success('Viewing test — traffic from your test keys.')
       } else {
-        toast.success('Showing live data — traffic from your live keys.')
+        toast.success('Viewing live — traffic from your live keys.')
       }
     }, 300)
     return () => clearTimeout(t)
@@ -143,8 +143,8 @@ export function EnvironmentMenu() {
           aria-expanded={open}
           title={
             showingTest
-              ? 'Showing test data — traffic from your test keys. Real sends are suppressed.'
-              : 'Showing live data — traffic from your live keys.'
+              ? 'Viewing TEST data — traffic from your test keys. Real sends are suppressed.'
+              : 'Viewing LIVE data — traffic from your real customers.'
           }
           className={cn(
             'flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-bold tracking-wider transition',
@@ -153,7 +153,7 @@ export function EnvironmentMenu() {
               : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
           )}
         >
-          {showingTest ? 'TEST DATA' : 'LIVE DATA'}
+          {showingTest ? 'VIEWING: TEST' : 'VIEWING: LIVE'}
           <ChevronDownIcon
             className={cn(
               'h-3 w-3 shrink-0 transition-transform duration-200',
@@ -168,7 +168,7 @@ export function EnvironmentMenu() {
             className="absolute left-0 top-full z-50 mt-1.5 w-72 rounded-xl border border-gray-200 bg-white py-1 shadow-lg"
           >
             <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-              Viewing
+              Viewing — which data this dashboard shows
             </p>
 
             <button
@@ -178,7 +178,7 @@ export function EnvironmentMenu() {
               className="flex w-full items-start gap-2 px-3 py-2 text-left transition hover:bg-gray-50"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900">Test data</p>
+                <p className="text-sm font-medium text-gray-900">Test</p>
                 <p className="mt-0.5 text-xs text-gray-500">
                   Traffic from your <span className="font-mono">lira_*_test_</span> keys. Real
                   emails, Slack, Linear and webhooks are suppressed, and it never touches your
@@ -195,7 +195,7 @@ export function EnvironmentMenu() {
               className="flex w-full items-start gap-2 px-3 py-2 text-left transition hover:bg-gray-50"
             >
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-gray-900">Live data</p>
+                <p className="text-sm font-medium text-gray-900">Live</p>
                 <p className="mt-0.5 text-xs text-gray-500">
                   Traffic from your <span className="font-mono">lira_*_live_</span> keys — your real
                   customers.
@@ -205,6 +205,9 @@ export function EnvironmentMenu() {
             </button>
 
             <div className="my-1 border-t border-gray-100" />
+            <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-widest text-gray-400">
+              Workspace — {orgIsLive ? 'live' : 'test mode only'}
+            </p>
 
             {orgIsLive ? (
               <NavLink

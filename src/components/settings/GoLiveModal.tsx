@@ -137,7 +137,7 @@ export function GoLiveModal({
       <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
         <h3 className="text-base font-semibold text-gray-900">Go live</h3>
         <p className="mt-1 text-sm text-gray-500">
-          Switch this workspace from sandbox to production.
+          Turn on real sends for your live keys. Test keys are unaffected.
         </p>
 
         <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
@@ -160,10 +160,10 @@ export function GoLiveModal({
 
         <p className="mt-3 text-sm text-gray-700">
           {isBillingExempt
-            ? 'This is a Lira-owned internal workspace. Going live keeps it in production with unlimited internal usage and no customer billing.'
+            ? 'This is a Lira-owned internal workspace. Going live keeps it live with unlimited internal usage and no customer billing.'
             : needsPayment
-              ? "Going live on the paid plan collects payment through Paddle's secure checkout, then starts your billing period. Sandbox testing limits are replaced by your plan's volume."
-              : "Going live starts your billing period. Sandbox testing limits are replaced by your plan's volume."}
+              ? "Going live on the paid plan collects payment through Paddle's secure checkout, then starts your billing period. Your plan's volume replaces the test-mode caps for live traffic."
+              : "Going live starts your billing period. Your plan's volume replaces the test-mode caps for live traffic."}
         </p>
 
         <div className="mt-4">

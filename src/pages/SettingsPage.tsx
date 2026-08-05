@@ -1372,7 +1372,7 @@ function SupportEnvironmentCard() {
       toast.success(
         next === 'production'
           ? "You're live — your plan's limits now apply and your billing period has started."
-          : 'Back in sandbox — real sends are suppressed and testing caps apply.'
+          : 'Back in test mode — real sends are suppressed and testing caps apply.'
       )
     } catch (err) {
       // 402 SUBSCRIPTION_REQUIRED — the backend enforces billing on go-live.
@@ -1395,7 +1395,7 @@ function SupportEnvironmentCard() {
     }
     if (
       window.confirm(
-        'Return this workspace to sandbox? Real outbound sends will be suppressed and the widget will show a SANDBOX badge.'
+        'Return this workspace to test mode? All real outbound sends stop and the widget shows a TEST badge.'
       )
     ) {
       void applyEnvironment('sandbox')
@@ -1407,28 +1407,32 @@ function SupportEnvironmentCard() {
       <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">Environment</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Workspace mode</h2>
             <span
               className={cn(
                 'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider',
                 isSandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'
               )}
             >
-              {isSandbox ? 'SANDBOX' : 'LIVE'}
+              {isSandbox ? 'TEST MODE' : 'LIVE'}
             </span>
           </div>
           <p className="mt-1 text-xs text-gray-500">
             {isSandbox ? (
               <>
-                In <span className="font-medium">sandbox</span>, no real emails are sent (previewed
-                only) and the widget shows a SANDBOX badge. Going live starts your billing period
-                and applies your plan&apos;s limits.
+                This workspace is in <span className="font-medium">test mode</span>: no real emails
+                are sent (previewed only) and the widget shows a TEST badge. Going live turns on
+                real sends for your <span className="font-mono">live</span> keys, starts your
+                billing period and applies your plan&apos;s limits — your test keys keep working
+                exactly as they do now.
               </>
             ) : (
               <>
-                This workspace is <span className="font-medium">live</span>. Real outbound sends are
-                active, and your plan&apos;s usage limits and billing now apply. You can return to
-                sandbox to pause real sends and resume testing.
+                This workspace is <span className="font-medium">live</span>. Traffic from your{' '}
+                <span className="font-mono">live</span> keys reaches real customers and counts
+                against your plan; traffic from your <span className="font-mono">test</span> keys
+                stays suppressed and separately capped. You can return to test mode to pause all
+                real sends.
               </>
             )}
           </p>
@@ -1443,7 +1447,7 @@ function SupportEnvironmentCard() {
               isSandbox ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            Sandbox
+            Test mode
           </button>
           <button
             type="button"
@@ -1454,7 +1458,7 @@ function SupportEnvironmentCard() {
               !isSandbox ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            Production
+            Live
           </button>
         </div>
       </div>
@@ -2064,9 +2068,10 @@ function SupportSettingsSection() {
     },
     {
       key: 'developers',
-      label: 'Developers',
+      label: 'API keys',
       icon: KeyIcon,
-      description: 'API keys and the CLI/API for automating Lira from your own backend.',
+      description:
+        'Every credential in one place — publishable keys, secret keys, the signing secret for logged-in customers — plus the CLI and API.',
     },
     {
       key: 'escalation',
@@ -2232,16 +2237,18 @@ function SupportSettingsSection() {
                 </SField>
               </SCard>
 
-              <SCard title="Developer options">
-                <Disclosure
-                  title="Signing secret for logged-in customers"
-                  desc="Verify identified visitors with an HMAC signature so Lira can trust who they are."
+              <SCard
+                title="Identify your logged-in customers"
+                hint="Signing your users' emails lets Lira greet them by name and unlock account-scoped actions. The signing secret now lives with your other credentials."
+              >
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('developers')}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-[13px] font-semibold text-gray-700 transition hover:bg-gray-50"
                 >
-                  <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
-                </Disclosure>
-                <Disclosure title="Mobile SDKs" desc="Native iOS and Android — on the roadmap.">
-                  <SupportMobileTab />
-                </Disclosure>
+                  <KeyIcon className="h-4 w-4 text-gray-400" />
+                  Go to API keys
+                </button>
               </SCard>
             </>
           )}
@@ -2849,6 +2856,12 @@ function SupportSettingsSection() {
             <>
               <SupportDeveloperKeys />
               <SupportPublishableKeys />
+              <SCard
+                title="Signing secret"
+                hint="For logged-in customers on your website or app: sign their email with this secret so Lira can trust who they are. Server-side only — never ship it to a browser."
+              >
+                <SupportSecretTab orgId={config.org_id} secret={config.widget_secret ?? null} />
+              </SCard>
               <SCard
                 title="Quickstart"
                 hint="Once you've created a key, set it as LIRA_API_KEY and drive Lira from your terminal or CI."
@@ -3890,23 +3903,6 @@ function SupportSecretTab({
           </li>
         </ol>
       </div>
-    </div>
-  )
-}
-
-// ── Support → Mobile sub-tab ──────────────────────────────────────────────
-// Placeholder for native iOS/Android SDKs. Visible today so customers
-// know the surface is on the roadmap; the actual SDK ships later.
-
-function SupportMobileTab() {
-  return (
-    <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center">
-      <DevicePhoneMobileIcon className="mx-auto h-8 w-8 text-gray-400" />
-      <p className="mt-3 text-sm font-semibold text-gray-700">Native mobile SDKs coming soon</p>
-      <p className="mt-1 mx-auto max-w-md text-xs text-gray-500">
-        For production mobile apps, build a native support screen on Lira's REST and realtime APIs.
-        The hosted portal remains a fallback for teams that cannot ship an in-app route yet.
-      </p>
     </div>
   )
 }
