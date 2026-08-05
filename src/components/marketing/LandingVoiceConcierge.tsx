@@ -58,6 +58,20 @@ function linkFromText(text: string): { label: string; url: string } | null {
     return { label: 'Documentation', url: 'https://docs.liraintelligence.com' }
   if (/\b(sign ?in|log ?in|the app|open the app|my account)\b/.test(t))
     return { label: 'Sign in', url: 'https://app.liraintelligence.com' }
+  // Deep links for the questions people actually ask. Ordered most-specific
+  // first so "mobile integration" wins over the generic integrate page.
+  if (/\b(mobile|ios|android|flutter|react ?native|chat screen|websocket)\b/.test(t))
+    return {
+      label: 'Mobile integration guide',
+      url: 'https://docs.liraintelligence.com/platform/customer-support/mobile-frontend',
+    }
+  if (/\b(integrat|install|embed|widget|sdk|get started|set ?up)\b/.test(t))
+    return {
+      label: 'Integration guide',
+      url: 'https://docs.liraintelligence.com/platform/customer-support/integrate',
+    }
+  if (/\b(localiz|localis|accent|custom (brand )?voice|nigerian)\b/.test(t))
+    return { label: 'Localized voice', url: 'https://voice.liraintelligence.com' }
   return null
 }
 function renderMd(md: string): string {
