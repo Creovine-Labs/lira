@@ -14,7 +14,6 @@ import {
   SparklesIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline'
-import { NigerianVoiceTrialCard } from '@/components/NigerianVoiceTrialCard'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import { useSupportStore } from '@/app/store/support-store'
 import { getOrgUsage, listOrgMembers } from '@/services/api'
@@ -515,9 +514,7 @@ function DashboardPage() {
           </button>
         </header>
 
-        <div className="mb-4">
-          <NigerianVoiceTrialCard />
-        </div>
+        <div className="mb-4"></div>
 
         <section className="mb-4 overflow-hidden rounded-3xl bg-[#202527] p-6 text-white shadow-sm sm:p-7">
           <div className="grid gap-5 lg:grid-cols-[1fr_300px] lg:items-center">

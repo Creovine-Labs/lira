@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   createOrganization,
+  uploadOrgLogo,
   describeUrlPublic,
   saveAttribution,
   type AttributionSource,
@@ -405,6 +406,7 @@ function OnboardingPage() {
   const [website, setWebsite] = useState('')
   const [description, setDescription] = useState('')
   const [logoDataUrl, setLogoDataUrl] = useState<string | null>(null)
+  const [logoFile, setLogoFile] = useState<File | null>(null)
   // Deployment surface preference — captured on the 'surface' step before
   // org creation so handleCreate can persist it. Drives the in-chat
   // onboarding guide's install instructions later.
@@ -437,9 +439,19 @@ function OnboardingPage() {
         industry: resolvedIndustry || undefined,
         website: website.trim() ? normalizeUrl(website) : undefined,
         description: description.trim() || undefined,
-        logo_url: logoDataUrl ?? undefined,
         surfaces,
       })
+      // Upload the logo AFTER the org exists, so a large image can never
+      // fail workspace creation. A failed upload is not fatal.
+      if (logoFile) {
+        try {
+          await uploadOrgLogo(organization.org_id, logoFile)
+        } catch {
+          toast.error(
+            'Workspace created, but the logo could not be uploaded. You can add it in Settings.'
+          )
+        }
+      }
       addOrganization(organization)
       setCurrentOrg(organization.org_id)
       setCreatedOrgName(organization.name)
@@ -476,6 +488,7 @@ function OnboardingPage() {
     if (!file.type.startsWith('image/')) return
     const reader = new FileReader()
     reader.onload = () => setLogoDataUrl(reader.result as string)
+    setLogoFile(file)
     reader.readAsDataURL(file)
     if (logoInputRef.current) logoInputRef.current.value = ''
   }
@@ -764,7 +777,10 @@ function OnboardingPage() {
                         {logoDataUrl && (
                           <button
                             type="button"
-                            onClick={() => setLogoDataUrl(null)}
+                            onClick={() => {
+                              setLogoDataUrl(null)
+                              setLogoFile(null)
+                            }}
                             className="text-xs text-red-400 hover:text-red-600"
                           >
                             Remove

@@ -672,6 +672,29 @@ export async function createOrganization(
   })
 }
 
+/**
+ * Upload the org logo. Multipart, so it bypasses apiFetch (which forces a JSON
+ * content-type). The logo is stored in S3 and the profile keeps a stable URL —
+ * inlining it as a base64 data URI used to blow DynamoDB's 400KB item limit and
+ * fail workspace creation outright.
+ */
+export async function uploadOrgLogo(orgId: string, file: File): Promise<string> {
+  const token = credentials.getToken()
+  const form = new FormData()
+  form.append('file', file)
+  const res = await fetch(`${env.VITE_API_URL}/lira/v1/orgs/${encodeURIComponent(orgId)}/logo`, {
+    method: 'POST',
+    body: form,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) {
+    const msg = await res.json().catch(() => null)
+    throw new Error(msg?.error ?? 'Could not upload the logo')
+  }
+  const data = (await res.json()) as { logo_url: string }
+  return data.logo_url
+}
+
 export async function listOrganizations(): Promise<Organization[]> {
   const data = await apiFetch<{ organizations: Organization[] }>('/lira/v1/orgs')
   return data.organizations ?? []
