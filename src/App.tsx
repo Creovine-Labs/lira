@@ -27,6 +27,7 @@ import {
   ProductCustomerSupportPage,
   PricingPage,
   DemoSitePage,
+  VoiceLandingPage,
   DemoHelpPage,
   SupportCenterDemoPage,
   LiraForFintechPage,
@@ -179,6 +180,11 @@ function App() {
       return <DemoHelpPage />
     }
     return <DemoSitePage />
+  }
+
+  // voice subdomain — the Lira Voice (AI phone agent) marketing/waitlist page.
+  if (window.location.hostname === 'voice.liraintelligence.com') {
+    return <VoiceLandingPage />
   }
 
   return (

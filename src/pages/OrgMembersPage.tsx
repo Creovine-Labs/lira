@@ -242,8 +242,9 @@ function OrgMembersPage() {
           <div className="rounded-2xl border border-white/60 bg-white p-6 shadow-sm">
             <h2 className="mb-1 text-sm font-bold text-gray-900">Invite a teammate</h2>
             <p className="mb-4 text-sm text-gray-400">
-              Send a one-time, expiring invite link tied to a specific email address. The invitee
-              sets a password and lands directly in this organization.
+              We email the invite to the address you enter, so you don't have to send anything
+              yourself. You'll also get a copy of the link to share directly if you prefer. It
+              expires, works once, and drops the invitee straight into this organization.
             </p>
             <div className="flex flex-wrap items-end gap-2">
               <div className="min-w-[220px] flex-1">
@@ -289,7 +290,7 @@ function OrgMembersPage() {
                 disabled={creatingInvite || !inviteEmail.trim()}
                 className="rounded-xl bg-[#3730a3] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#312e81] disabled:opacity-50"
               >
-                {creatingInvite ? 'Generating…' : 'Generate invite link'}
+                {creatingInvite ? 'Sending…' : 'Send invite'}
               </button>
             </div>
 
@@ -299,7 +300,8 @@ function OrgMembersPage() {
                   Invite ready for {justCreated.email}
                 </p>
                 <p className="mt-1 text-xs text-emerald-700/80">
-                  Share this link. It expires{' '}
+                  <strong>Invite emailed to {justCreated.email}.</strong> No need to send it
+                  yourself — the link below is only if you'd rather share it directly. It expires{' '}
                   {new Date(justCreated.expires_at).toLocaleDateString()} and can only be used once.
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">

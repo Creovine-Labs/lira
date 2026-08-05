@@ -50,3 +50,5 @@ export * from './AcceptInvitePage'
 export * from './LandingPageV3'
 export * from './LandingPageV4'
 export * from './MyTicketsPage'
+
+export * from './VoiceLandingPage'

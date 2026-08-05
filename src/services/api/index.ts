@@ -145,6 +145,26 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>
 }
 
+// ── Nigerian-voice trial meter ────────────────────────────────────────────────
+
+export interface VoiceTrialStatus {
+  secondsUsed: number
+  capSeconds: number
+  remaining: number
+  exhausted: boolean
+}
+
+export const voiceTrialApi = {
+  status: () => apiFetch<VoiceTrialStatus>('/v1/voice-trial/status'),
+  canStart: () =>
+    apiFetch<{ allowed: boolean; status: VoiceTrialStatus }>('/v1/voice-trial/can-start'),
+  consume: (seconds: number) =>
+    apiFetch<VoiceTrialStatus>('/v1/voice-trial/consume', {
+      method: 'POST',
+      body: JSON.stringify({ seconds }),
+    }),
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 
 /** Google Sign-In — pass the ID token returned by @react-oauth/google */
