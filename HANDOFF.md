@@ -6,33 +6,7 @@ Written 2026-08-05. Read this first in a new chat, then delete the sections you 
 
 ## Next tasks (in priority order)
 
-### 1. Sandbox badge → switch to live from the dashboard header
-
-The **SANDBOX** badge at the top-left of the dashboard is currently display-only;
-switching to live is buried in Settings → Support → Environment. Make the badge a
-shortcut.
-
-**Wanted behaviour:** click the badge → dropdown with **Sandbox / Live**. Pick
-Live:
-
-- **No active paid subscription** → open the plan/checkout modal, then switch on
-  success.
-- **Already on a plan** → switch and refresh dashboard state so the whole
-  dashboard reflects production.
-
-**Everything needed already exists — do not rebuild it:**
-
-- Go-live call: `PUT /lira/v1/support/config/orgs/:orgId` with
-  `{ environment: 'production' }`.
-- The backend **already enforces billing**: it returns
-  **`402 SUBSCRIPTION_REQUIRED`** for PRO/SCALE without an active subscription
-  (added this session, in `lira-support-config.routes.ts`). Branch on that
-  response instead of duplicating billing rules in the frontend.
-- `GoLiveModal.tsx` already has the confirm + Paddle-checkout flow — reuse it.
-- The badge lives in the dashboard header; `SettingsPage.tsx` has the existing
-  Environment card for reference.
-
-### 2. Remaining product-feedback items
+### 1. Remaining product-feedback items
 
 From the feedback doc. Two are done (see below); these are not:
 
@@ -47,7 +21,7 @@ From the feedback doc. Two are done (see below); these are not:
   session; authentication, webhooks, and common implementation examples have not
   been reviewed end to end.
 
-### 3. Known gap worth fixing
+### 2. Known gap worth fixing
 
 `profile.logo_url` is stripped server-side if someone posts a `data:` URI. Both
 onboarding and Settings now upload properly, so this is only a safety net — but
@@ -57,6 +31,11 @@ any _other_ client still hitting the API directly would silently lose the logo.
 
 ## What shipped this session (don't redo)
 
+- **Sandbox badge is now the go-live shortcut** — the topbar pill opens a
+  Sandbox/Live menu (`src/components/shell/EnvironmentMenu.tsx`), reusing
+  `GoLiveModal`. A `402 SUBSCRIPTION_REQUIRED` from the switch flips the modal
+  into checkout mode (new `requiresPayment` prop, also wired into Settings), and
+  a successful switch reloads the app so every page reflects production.
 - **Signup 500 fixed** — onboarding inlined the logo as a base64 `data:` URI,
   blowing DynamoDB's 400KB item limit. Oversized profile values are now dropped
   on create/update, and logos upload to S3 via `POST /orgs/:orgId/logo` with a

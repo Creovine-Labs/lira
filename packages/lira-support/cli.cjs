@@ -175,15 +175,70 @@ function apiBase(flags = {}) {
   ).replace(/\/$/, '')
 }
 
+/**
+ * Which mode the CLI is acting in — 'test' or 'live'.
+ *
+ * Order: --mode flag → LIRA_MODE → saved config → 'test'. It defaults to test
+ * so a fresh shell can never fire real customer traffic by accident; going live
+ * is always something you typed.
+ */
+function activeMode(flags = {}) {
+  const raw = String(flags.mode || process.env.LIRA_MODE || readConfig().mode || 'test')
+    .trim()
+    .toLowerCase()
+  if (raw === 'live' || raw === 'production') return 'live'
+  if (raw === 'test' || raw === 'sandbox') return 'test'
+  throw new Error(`Unknown mode "${raw}". Use --mode=test or --mode=live.`)
+}
+
+/**
+ * The developer key for the active mode.
+ *
+ * Keys are stored per mode (`lira keys use --mode=live --api-key=…`), so
+ * switching modes is one command and you never hand-edit an env var — the most
+ * common way people accidentally point staging at production. An explicit
+ * --api-key or LIRA_API_KEY still wins, for CI.
+ */
 function authToken(flags = {}) {
-  return String(
+  const config = readConfig()
+  const mode = activeMode(flags)
+  const perMode = (config.keys || {})[mode]
+  const token = String(
     flags['api-key'] ||
       process.env.LIRA_API_KEY ||
       process.env.LIRA_TOKEN ||
-      readConfig().apiKey ||
-      readConfig().accessToken ||
+      perMode ||
+      config.apiKey ||
+      config.accessToken ||
       ''
   )
+  // Guard the classic footgun: a live key while the CLI says test (or vice
+  // versa). The key is authoritative server-side, so silently proceeding would
+  // do the opposite of what the operator just asked for.
+  const prefix = token.startsWith('lira_sk_live_')
+    ? 'live'
+    : token.startsWith('lira_sk_test_')
+      ? 'test'
+      : null
+  if (prefix && prefix !== mode) {
+    throw new Error(
+      `Mode mismatch: you are in ${mode.toUpperCase()} mode but the key is a ${prefix.toUpperCase()} key.\n` +
+        `Run \`lira mode ${prefix}\` to switch, or pass --mode=${prefix} for this command.`
+    )
+  }
+  return token
+}
+
+/** Developer key if present, else the stored dashboard login. */
+function authTokenOrJwt(flags = {}) {
+  try {
+    const key = authToken(flags)
+    if (key) return key
+  } catch (err) {
+    // A mode/key mismatch is worth surfacing even on dual-auth routes.
+    if (/Mode mismatch/.test(err.message)) throw err
+  }
+  return String(readConfig().accessToken || '')
 }
 
 function defaultOrgId(flags = {}) {
@@ -230,7 +285,16 @@ async function apiRequest(method, requestPath, body, flags = {}, options = {}) {
     throw new Error('This CLI requires Node.js 18+ because it uses the built-in fetch API.')
   }
   const token =
-    options.auth === false ? '' : options.auth === 'jwt' ? jwtToken(flags) : authToken(flags)
+    options.auth === false
+      ? ''
+      : options.auth === 'jwt'
+        ? jwtToken(flags)
+        : options.auth === 'any'
+          ? // Support-config routes take a dashboard JWT OR a support:*-scoped
+            // developer key. Prefer the developer key (that's what a terminal
+            // session usually has), fall back to a stored login.
+            authTokenOrJwt(flags)
+          : authToken(flags)
   if (options.auth !== false)
     requireValue(token, 'Authentication token (run `lira login` or set LIRA_API_KEY)')
   const response = await fetch(`${apiBase(flags)}${requestPath}`, {
@@ -367,9 +431,224 @@ async function runConfig(args) {
   log(`Saved config to ${CONFIG_FILE}`)
 }
 
+/**
+ * `lira mode` — show or switch the working mode.
+ *
+ * This is the terminal equivalent of the dashboard's TEST DATA / LIVE DATA
+ * switch: it changes which key subsequent commands use. It does NOT change the
+ * workspace environment — that's `lira env go-live`, which is the commercial
+ * step.
+ */
+async function runMode(args) {
+  const flags = parseFlags(args.filter((a) => a.startsWith('--')))
+  const requested = args.find((a) => !a.startsWith('--'))
+  const config = readConfig()
+
+  if (!requested) {
+    const mode = activeMode(flags)
+    const keys = config.keys || {}
+    log(`Mode: ${mode.toUpperCase()}`)
+    log(`  test key: ${keys.test ? maskKey(keys.test) : '(not set)'}`)
+    log(`  live key: ${keys.live ? maskKey(keys.live) : '(not set)'}`)
+    if (!keys[mode] && !process.env.LIRA_API_KEY) {
+      log('')
+      log(`No ${mode} key saved. Add one with:`)
+      log(`  lira keys use --mode=${mode} --api-key=lira_sk_${mode}_...`)
+    }
+    return
+  }
+
+  const mode = activeMode({ mode: requested })
+  writeConfig({ ...config, mode })
+  const key = (config.keys || {})[mode]
+  log(`Switched to ${mode.toUpperCase()} mode.`)
+  if (!key) {
+    log(`No ${mode} key saved yet — add one with:`)
+    log(`  lira keys use --mode=${mode} --api-key=lira_sk_${mode}_...`)
+  } else {
+    log(`Using ${maskKey(key)}`)
+  }
+  if (mode === 'live') {
+    log('')
+    log('⚠  LIVE mode: commands now affect real customer traffic.')
+  }
+}
+
+function maskKey(key) {
+  const str = String(key)
+  if (str.length <= 16) return str
+  return `${str.slice(0, 18)}…${str.slice(-4)}`
+}
+
+/**
+ * `lira status` — one screen answering "what will my next command do?".
+ *
+ * The single most useful guard against the mistake this whole feature exists to
+ * prevent: running a production integration against test, or worse, the
+ * reverse. Shows the workspace environment, the CLI's mode, and whether live
+ * keys are actually active yet.
+ */
+async function runStatus(args) {
+  const flags = parseFlags(args)
+  const config = readConfig()
+  const mode = activeMode(flags)
+  const orgId = defaultOrgId(flags)
+
+  log(`API        ${apiBase(flags)}`)
+  log(`Org        ${orgId || '(not set — `lira config set --org-id=...`)'}`)
+  log(`CLI mode   ${mode.toUpperCase()}`)
+  log(
+    `Key        ${(config.keys || {})[mode] ? maskKey(config.keys[mode]) : process.env.LIRA_API_KEY ? '(from LIRA_API_KEY)' : '(none)'}`
+  )
+
+  if (!orgId) return
+
+  // Workspace environment is the commercial state: it decides whether live
+  // keys do anything at all.
+  let workspace = null
+  try {
+    workspace = await apiRequest(
+      'GET',
+      `/lira/v1/support/config/orgs/${encodeURIComponent(orgId)}`,
+      undefined,
+      flags,
+      { auth: 'any' }
+    )
+  } catch (err) {
+    log(`Workspace  (could not read: ${err.message})`)
+    return
+  }
+
+  const env = workspace?.environment === 'production' ? 'LIVE' : 'SANDBOX'
+  log(`Workspace  ${env}`)
+  log('')
+
+  if (env === 'SANDBOX' && mode === 'live') {
+    log('⚠  This workspace has not gone live, so LIVE keys still behave as test keys:')
+    log('   no real emails, Slack, Linear or webhooks, and nothing is billed.')
+    log('   Run `lira env go-live` when you are ready.')
+  } else if (env === 'LIVE' && mode === 'live') {
+    log('▶  LIVE: traffic from this key reaches real customers and counts against your plan.')
+  } else {
+    log('▶  TEST: no real sends, separate quota, hidden from the live inbox.')
+  }
+}
+
+/**
+ * `lira env` — read or change the WORKSPACE environment from the terminal.
+ *
+ * Going live is a commercial event (plan limits, billing, real outbound), so it
+ * takes an explicit confirmation here exactly as it does in the dashboard. The
+ * backend is still the authority: it returns 402 when a paid plan has no
+ * subscription, and checkout has to happen in the dashboard because it needs a
+ * browser.
+ */
+async function runEnv(args) {
+  const action = args[0] && !args[0].startsWith('--') ? args[0] : 'show'
+  const flags = parseFlags(args.filter((a) => a.startsWith('--')))
+  const orgId = requireValue(defaultOrgId(flags), 'org id (`--org-id` or LIRA_ORG_ID)')
+
+  const current = await apiRequest(
+    'GET',
+    `/lira/v1/support/config/orgs/${encodeURIComponent(orgId)}`,
+    undefined,
+    flags,
+    { auth: 'any' }
+  )
+  const isLive = current?.environment === 'production'
+
+  if (action === 'show') {
+    log(`Workspace environment: ${isLive ? 'LIVE' : 'SANDBOX'}`)
+    if (!isLive) log('Live keys stay inert until you go live. Run `lira env go-live`.')
+    return
+  }
+
+  const target =
+    action === 'go-live' || action === 'live' || action === 'production'
+      ? 'production'
+      : action === 'sandbox' || action === 'test'
+        ? 'sandbox'
+        : null
+  if (!target) throw new Error(`Unknown env command: ${action}. Use show, go-live, or sandbox.`)
+
+  if ((target === 'production') === isLive) {
+    log(`Already ${isLive ? 'live' : 'in sandbox'} — nothing to do.`)
+    return
+  }
+
+  if (target === 'production') {
+    log('')
+    log('Going live starts your billing period and turns on real outbound sends')
+    log('for live-key traffic. Your test keys keep working exactly as they do now.')
+    log('')
+    const orgName = current?.org_name || ''
+    const typed =
+      flags.yes === true
+        ? orgName
+        : await prompt(
+            `Type the organization name to confirm${orgName ? ` (${orgName})` : ''}: `,
+            ''
+          )
+    if (orgName && typed.trim() !== orgName.trim()) {
+      throw new Error('Name did not match — nothing changed.')
+    }
+  } else if (flags.yes !== true) {
+    const ok = await prompt('Return this workspace to sandbox? Real sends will stop. [y/N]: ', 'N')
+    if (!/^y(es)?$/i.test(ok.trim())) {
+      log('Cancelled.')
+      return
+    }
+  }
+
+  try {
+    await apiRequest(
+      'PUT',
+      `/lira/v1/support/config/orgs/${encodeURIComponent(orgId)}`,
+      { environment: target },
+      flags,
+      { auth: 'any' }
+    )
+  } catch (err) {
+    if (String(err.message).includes('402') || /subscription/i.test(err.message)) {
+      log('')
+      log('An active subscription is required to go live on this plan.')
+      log('Checkout needs a browser, so finish it in the dashboard:')
+      log('  https://app.liraintelligence.com/settings  →  Environment  →  Go live')
+      process.exitCode = 1
+      return
+    }
+    throw err
+  }
+
+  log(
+    target === 'production'
+      ? 'You are live. Live keys are now active.'
+      : 'Back in sandbox. Real sends are suppressed.'
+  )
+}
+
 async function runKeys(args) {
   const action = args[0] || 'list'
   const flags = parseFlags(args.slice(1))
+
+  if (action === 'use') {
+    // Purely local — saves a key against a mode. Deliberately before the org-id
+    // check: pasting a key you were just given shouldn't need any other setup.
+    const key = requireValue(flags['api-key'] || args[1], 'key (`--api-key`)')
+    const mode = key.startsWith('lira_sk_live_')
+      ? 'live'
+      : key.startsWith('lira_sk_test_')
+        ? 'test'
+        : activeMode(flags)
+    const config = readConfig()
+    writeConfig({ ...config, mode, keys: { ...(config.keys || {}), [mode]: key } })
+    log(
+      `Saved ${mode.toUpperCase()} key ${maskKey(key)} and switched to ${mode.toUpperCase()} mode.`
+    )
+    if (mode === 'live') log('⚠  LIVE mode: commands now affect real customer traffic.')
+    return
+  }
+
   const orgId = requireValue(defaultOrgId(flags), 'org id (`--org-id` or LIRA_ORG_ID)')
   if (action === 'create') {
     const payload = await apiRequest(
@@ -379,6 +658,9 @@ async function runKeys(args) {
         name: flags.name || 'Lira CLI key',
         scopes: splitCsv(flags.scopes) || ['mcp:read', 'mcp:write'],
         expires_at: flags['expires-at'],
+        // Defaults to the CLI's current mode, so `lira mode live` followed by
+        // `lira keys create` does the obvious thing.
+        mode: activeMode(flags),
       },
       flags,
       { auth: 'jwt' }
@@ -398,6 +680,7 @@ async function runKeys(args) {
     printTable(payload.keys || [], [
       { label: 'KEY ID', value: (row) => row.key_id },
       { label: 'NAME', value: (row) => row.name },
+      { label: 'MODE', value: (row) => (row.mode || 'legacy').toUpperCase() },
       { label: 'STATUS', value: (row) => row.status },
       { label: 'SCOPES', value: (row) => (row.scopes || []).join(',') },
       { label: 'LAST USED', value: (row) => row.last_used_at || '-' },
@@ -543,11 +826,22 @@ function printHelp() {
   log(`Usage:
   lira init [--org-id=org-xxxx] [--org-name="My Co"]
   lira login [--email=me@example.com] [--password=...]
+  lira status                                   What will my next command do?
   lira config show
   lira config set [--org-id=org-xxxx] [--api-url=https://api.creovine.com]
 
+Test / live mode (which key your commands use):
+  lira mode                                     Show the current mode and saved keys
+  lira mode test | lira mode live               Switch mode
+  lira keys use --api-key=lira_sk_live_...      Save a key (mode detected from the prefix)
+
+Workspace environment (the commercial switch — real sends + billing):
+  lira env show
+  lira env go-live [--yes]                      Turn on real sends for LIVE-key traffic
+  lira env sandbox [--yes]                      Return to sandbox
+
 Developer keys:
-  lira keys create --org-id=org-xxxx --name="Riverly CI" --scopes=mcp:read,mcp:write,sessions:mint
+  lira keys create --org-id=org-xxxx --name="Riverly CI" --mode=test --scopes=mcp:read,mcp:write,sessions:mint
   lira keys list --org-id=org-xxxx
   lira keys revoke --org-id=org-xxxx --key-id=<key_id>
 
@@ -563,7 +857,12 @@ MCP:
 Environment:
   LIRA_API_URL       Override API base URL.
   LIRA_ORG_ID        Default org id.
-  LIRA_API_KEY       Scoped developer key for automation.
+  LIRA_API_KEY       Scoped developer key for automation (overrides the saved per-mode key).
+  LIRA_MODE          test | live — the mode for this shell.
+
+Modes vs the workspace:
+  \`lira mode\` picks which KEY you use. \`lira env\` changes the WORKSPACE.
+  A live key does nothing real until the workspace itself has gone live.
 `)
 }
 
@@ -592,6 +891,21 @@ async function main() {
   }
   if (subcommand === 'keys') {
     await runKeys(args.slice(1))
+    closeRl()
+    return
+  }
+  if (subcommand === 'mode') {
+    await runMode(args.slice(1))
+    closeRl()
+    return
+  }
+  if (subcommand === 'status') {
+    await runStatus(args.slice(1))
+    closeRl()
+    return
+  }
+  if (subcommand === 'env') {
+    await runEnv(args.slice(1))
     closeRl()
     return
   }

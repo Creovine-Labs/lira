@@ -87,7 +87,10 @@ import { OrgSettingsPage } from './OrgSettingsPage'
 import { CalendarSyncSection } from '@/components/settings/CalendarSyncSection'
 import { GoLiveModal } from '@/components/settings/GoLiveModal'
 import { SupportMcpConnector } from '@/components/settings/SupportMcpConnector'
-import { SupportDeveloperKeys } from '@/components/settings/SupportDeveloperKeys'
+import {
+  SupportDeveloperKeys,
+  SupportPublishableKeys,
+} from '@/components/settings/SupportDeveloperKeys'
 import { SupportEscalationRouting } from '@/components/settings/SupportEscalationRouting'
 import { SupportToolPacksPanel } from '@/pages/support/SupportToolPacksPage'
 import {
@@ -1353,6 +1356,7 @@ function SupportEnvironmentCard() {
   const { config, updateConfig } = useSupportStore()
   const [envBusy, setEnvBusy] = useState(false)
   const [goLiveOpen, setGoLiveOpen] = useState(false)
+  const [requiresPayment, setRequiresPayment] = useState(false)
 
   const environment = config?.environment ?? 'production'
   const isSandbox = environment === 'sandbox'
@@ -1371,7 +1375,12 @@ function SupportEnvironmentCard() {
           : 'Back in sandbox — real sends are suppressed and testing caps apply.'
       )
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to change environment')
+      // 402 SUBSCRIPTION_REQUIRED — the backend enforces billing on go-live.
+      // Keep the modal open in checkout mode instead of dead-ending on a toast.
+      if (err instanceof Error && err.message.startsWith('402')) setRequiresPayment(true)
+      toast.error(
+        err instanceof Error ? err.message.replace(/^\d+:\s*/, '') : 'Failed to change environment'
+      )
     } finally {
       setEnvBusy(false)
     }
@@ -1380,6 +1389,7 @@ function SupportEnvironmentCard() {
   const handleEnvClick = (next: 'sandbox' | 'production') => {
     if (next === environment || envBusy) return
     if (next === 'production') {
+      setRequiresPayment(false)
       setGoLiveOpen(true)
       return
     }
@@ -1454,6 +1464,7 @@ function SupportEnvironmentCard() {
           orgName={orgName}
           orgId={currentOrgId ?? undefined}
           busy={envBusy}
+          requiresPayment={requiresPayment}
           onConfirm={() => void applyEnvironment('production')}
           onClose={() => setGoLiveOpen(false)}
         />
@@ -2837,6 +2848,7 @@ function SupportSettingsSection() {
           {activeTab === 'developers' && (
             <>
               <SupportDeveloperKeys />
+              <SupportPublishableKeys />
               <SCard
                 title="Quickstart"
                 hint="Once you've created a key, set it as LIRA_API_KEY and drive Lira from your terminal or CI."

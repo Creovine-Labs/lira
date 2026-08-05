@@ -34,13 +34,21 @@ export function GoLiveModal({
   orgName,
   orgId,
   busy,
+  requiresPayment = false,
   onConfirm,
   onClose,
 }: {
   orgName: string
   orgId?: string
   busy: boolean
-  onConfirm: () => void
+  /**
+   * Forces the checkout path even when the client-side billing lookup thinks
+   * payment isn't needed. Set by callers that got a 402 SUBSCRIPTION_REQUIRED
+   * back from the go-live call — the backend is the billing authority.
+   */
+  requiresPayment?: boolean
+  /** `paid` is true when the switch follows a checkout completed just now. */
+  onConfirm: (ctx?: { paid?: boolean }) => void
   onClose: () => void
 }) {
   const [plan, setPlan] = useState<MyPlan | null>(null)
@@ -62,7 +70,10 @@ export function GoLiveModal({
   const isPaidTier = plan?.tier === 'PRO' || plan?.tier === 'SCALE'
   const isBillingExempt = Boolean(plan?.billingExempt || plan?.platformOwned)
   const needsPayment = Boolean(
-    isPaidTier && !isBillingExempt && orgId && billing?.subscriptionStatus !== 'active'
+    (isPaidTier || requiresPayment) &&
+    !isBillingExempt &&
+    orgId &&
+    billing?.subscriptionStatus !== 'active'
   )
 
   const handleConfirm = async () => {
@@ -70,7 +81,14 @@ export function GoLiveModal({
       onConfirm()
       return
     }
-    if (!orgId || !plan) return
+    if (!orgId || !plan) {
+      // Checkout needs the tier; without it the button would silently do
+      // nothing (reachable when the plan lookup failed above).
+      toast.error(
+        'Plan details are unavailable — retry in a moment or use Settings → Subscription.'
+      )
+      return
+    }
     setPaying(true)
     try {
       const interval = billing?.billingInterval ?? 'month'
@@ -81,7 +99,7 @@ export function GoLiveModal({
       })
       await openPaddleCheckout(checkout.transactionId, orgId, () => {
         toast.success('Payment received — taking your workspace live.')
-        onConfirm()
+        onConfirm({ paid: true })
       })
     } catch (err) {
       toast.error(

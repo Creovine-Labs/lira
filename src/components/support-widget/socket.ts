@@ -53,6 +53,8 @@ export class WidgetSocket {
     this.onStatus('connecting')
 
     const params = new URLSearchParams({ visitorId: this.visitorId })
+    // Selects test vs live for the conversation this socket opens.
+    if (this.config.publishableKey) params.set('pk', this.config.publishableKey)
     if (this.config.visitorEmail) params.set('email', this.config.visitorEmail)
     if (this.config.visitorName) params.set('name', this.config.visitorName)
     if (this.config.visitorSig) params.set('sig', this.config.visitorSig)

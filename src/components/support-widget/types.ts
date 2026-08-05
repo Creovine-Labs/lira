@@ -5,6 +5,17 @@
 export interface WidgetConfig {
   orgId: string
   /**
+   * Publishable key (`lira_pk_test_…` / `lira_pk_live_…`) from
+   * `data-publishable-key`. Decides whether this embed's conversations are
+   * test or live: a staging site uses the test key and its traffic gets its
+   * own quota, suppressed outbound sends, and stays out of the live inbox —
+   * while the same org's production site runs live at the same time.
+   *
+   * Optional. Without one the widget follows the org's environment field,
+   * which is what every embed did before test/live keys.
+   */
+  publishableKey?: string
+  /**
    * SDK render surface. `bubble` keeps the existing floating launcher.
    * `fullscreen` mounts the support UI directly into a customer-owned
    * container, e.g. their `/support` route.

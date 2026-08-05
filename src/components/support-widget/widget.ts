@@ -841,6 +841,19 @@ class LiraSupportWidget {
     }
   }
 
+  /**
+   * `?pk=…` / `&pk=…` for a call that reads or writes conversations.
+   *
+   * Every such endpoint is mode-scoped server-side: without the key a staging
+   * embed would be answered from the org's default mode and could resume,
+   * poll, or hide a LIVE conversation. Empty string when the embed has no key
+   * (legacy embeds, which follow the org's environment as they always did).
+   */
+  private pkParam(prefix: '?' | '&'): string {
+    const pk = this.config.publishableKey
+    return pk ? `${prefix}pk=${encodeURIComponent(pk)}` : ''
+  }
+
   private async fetchServerHistory(
     email: string,
     sig: string
@@ -848,7 +861,8 @@ class LiraSupportWidget {
     try {
       const url =
         `https://api.creovine.com/lira/v1/support/chat/history/${this.config.orgId}` +
-        `?email=${encodeURIComponent(email)}&sig=${encodeURIComponent(sig)}`
+        `?email=${encodeURIComponent(email)}&sig=${encodeURIComponent(sig)}` +
+        this.pkParam('&')
       const res = await fetch(url, { method: 'GET' })
       if (!res.ok) return null
       const data = (await res.json()) as {
@@ -1000,7 +1014,11 @@ class LiraSupportWidget {
   }
 
   private fetchWidgetConfig(): void {
-    fetch(`https://api.creovine.com/lira/v1/support/chat/widget/${this.config.orgId}`)
+    const pk = this.config.publishableKey
+    fetch(
+      `https://api.creovine.com/lira/v1/support/chat/widget/${this.config.orgId}` +
+        (pk ? `?pk=${encodeURIComponent(pk)}` : '')
+    )
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return
@@ -1198,6 +1216,9 @@ class LiraSupportWidget {
     if (this.config.visitorName) out.name = this.config.visitorName
     if (this.config.visitorSig) out.sig = this.config.visitorSig
     if (this.visitorId) out.visitorId = this.visitorId
+    // Rides along on every support-center call so a turn from a staging site
+    // is metered and stored as test, same as the WebSocket path.
+    if (this.config.publishableKey) out.pk = this.config.publishableKey
     return out
   }
 
@@ -2263,8 +2284,10 @@ class LiraSupportWidget {
       const isIdentified = Boolean(this.config.visitorEmail && this.config.visitorSig)
       const url = isIdentified
         ? `https://api.creovine.com/lira/v1/support/chat/conversation/${orgId}/${convPart}/hide` +
-          `?email=${encodeURIComponent(this.config.visitorEmail!)}&sig=${encodeURIComponent(this.config.visitorSig!)}`
-        : `https://api.creovine.com/lira/v1/support/chat/conversation/visitor/${orgId}/${encodeURIComponent(this.visitorId)}/${convPart}/hide`
+          `?email=${encodeURIComponent(this.config.visitorEmail!)}&sig=${encodeURIComponent(this.config.visitorSig!)}` +
+          this.pkParam('&')
+        : `https://api.creovine.com/lira/v1/support/chat/conversation/visitor/${orgId}/${encodeURIComponent(this.visitorId)}/${convPart}/hide` +
+          this.pkParam('?')
       await fetch(url, { method: 'POST' })
     } catch {
       /* network blip — local flag is the safety net */
@@ -2319,12 +2342,22 @@ class LiraSupportWidget {
     // in the backend route.
     const contextOrgId = this.currentDashboardContextOrgId()
     const contextParam = contextOrgId ? `&context_org_id=${encodeURIComponent(contextOrgId)}` : ''
+    // Keeps a staging embed's thread list to its own test conversations.
+    const pk = this.config.publishableKey
+    const pkParam = pk ? `&pk=${encodeURIComponent(pk)}` : ''
     const url = isIdentified
       ? `https://api.creovine.com/lira/v1/support/chat/conversations/${this.config.orgId}` +
         `?email=${encodeURIComponent(this.config.visitorEmail!)}&sig=${encodeURIComponent(this.config.visitorSig!)}` +
-        contextParam
+        contextParam +
+        pkParam
       : `https://api.creovine.com/lira/v1/support/chat/conversations/visitor/${this.config.orgId}/${encodeURIComponent(this.visitorId)}` +
-        (contextOrgId ? `?context_org_id=${encodeURIComponent(contextOrgId)}` : '')
+        (contextOrgId || pk ? '?' : '') +
+        [
+          contextOrgId ? `context_org_id=${encodeURIComponent(contextOrgId)}` : '',
+          pk ? `pk=${encodeURIComponent(pk)}` : '',
+        ]
+          .filter(Boolean)
+          .join('&')
 
     try {
       const res = await fetch(url)
@@ -2394,7 +2427,8 @@ class LiraSupportWidget {
     try {
       const url =
         `https://api.creovine.com/lira/v1/support/chat/conversation/${this.config.orgId}/${convId}` +
-        `?email=${encodeURIComponent(this.config.visitorEmail)}&sig=${encodeURIComponent(this.config.visitorSig)}`
+        `?email=${encodeURIComponent(this.config.visitorEmail)}&sig=${encodeURIComponent(this.config.visitorSig)}` +
+        this.pkParam('&')
       const res = await fetch(url)
       if (!res.ok) return null
       const data = (await res.json()) as {
@@ -3294,7 +3328,8 @@ class LiraSupportWidget {
       // Voice inherits verified identity (P4) — enables account actions on call.
       this.config.visitorEmail && this.config.visitorSig
         ? { email: this.config.visitorEmail, sig: this.config.visitorSig }
-        : undefined
+        : undefined,
+      this.config.publishableKey
     )
 
     this.voiceCall = call
@@ -5915,7 +5950,9 @@ class LiraSupportWidget {
     this.pollInterval = setInterval(async () => {
       if (!this.convId) return
       try {
-        const params = this.lastPollTime ? `?since=${encodeURIComponent(this.lastPollTime)}` : ''
+        const params =
+          (this.lastPollTime ? `?since=${encodeURIComponent(this.lastPollTime)}` : '') +
+          this.pkParam(this.lastPollTime ? '&' : '?')
         const res = await fetch(
           `https://api.creovine.com/lira/v1/support/chat/messages/${this.config.orgId}/${this.convId}${params}`
         )
@@ -6012,6 +6049,11 @@ function readConfigFromScript(el: HTMLScriptElement): WidgetConfig | null {
   if (!orgId) return null
   return {
     orgId,
+    // Publishable key — `lira_pk_test_…` on a staging site, `lira_pk_live_…`
+    // in production. It selects the mode for everything this embed produces.
+    // Optional: an embed with only data-org-id follows the org's environment,
+    // exactly as every embed did before test/live keys existed.
+    publishableKey: el.dataset.publishableKey ?? el.dataset.key ?? undefined,
     mode: el.dataset.mode === 'fullscreen' ? 'fullscreen' : 'bubble',
     // Fullscreen embeds default to the support center; explicit
     // data-layout="messenger" opts back into the legacy chat surface.

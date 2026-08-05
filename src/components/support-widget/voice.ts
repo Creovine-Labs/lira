@@ -223,7 +223,8 @@ export class WidgetVoiceCall {
   private orgId: string
   private visitorId: string
   private demoContext: Record<string, unknown> | undefined
-  private identity: { email?: string; sig?: string } | undefined
+  private identity: { email?: string; sig?: string; sessionToken?: string } | undefined
+  private publishableKey: string | undefined
   private connectTimer: ReturnType<typeof setTimeout> | null = null
 
   constructor(
@@ -231,13 +232,15 @@ export class WidgetVoiceCall {
     visitorId: string,
     demoContext: Record<string, unknown> | undefined,
     callbacks: VoiceCallbacks,
-    identity?: { email?: string; sig?: string }
+    identity?: { email?: string; sig?: string; sessionToken?: string },
+    publishableKey?: string
   ) {
     this.orgId = orgId
     this.visitorId = visitorId
     this.demoContext = demoContext
     this.callbacks = callbacks
     this.identity = identity
+    this.publishableKey = publishableKey
   }
 
   async start(): Promise<void> {
@@ -301,10 +304,16 @@ export class WidgetVoiceCall {
 
       // 5. Connect WebSocket to backend voice endpoint
       let wsUrl = `wss://api.creovine.com/lira/v1/support/chat/voice/${this.orgId}?visitorId=${encodeURIComponent(this.visitorId)}`
+      if (this.publishableKey) {
+        wsUrl += `&pk=${encodeURIComponent(this.publishableKey)}`
+      }
       // Voice inherits verified identity (P4): pass email+sig so the caller gets
       // verified_customer scope and can confirm account actions.
       if (this.identity?.email && this.identity?.sig) {
         wsUrl += `&email=${encodeURIComponent(this.identity.email)}&sig=${encodeURIComponent(this.identity.sig)}`
+      }
+      if (this.identity?.sessionToken) {
+        wsUrl += `&sessionToken=${encodeURIComponent(this.identity.sessionToken)}`
       }
       this.ws = new WebSocket(wsUrl)
       this.ws.binaryType = 'arraybuffer'

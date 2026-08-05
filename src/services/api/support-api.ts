@@ -738,11 +738,47 @@ export async function updateSupportCustomer(
 
 // ── Conversation / Inbox API ──────────────────────────────────────────────────
 
+// ── Dashboard view mode (test vs live data) ──────────────────────────────────
+//
+// One org can be running a staging integration (test) and its real product
+// (live) at the same time, so the dashboard has to say which set of data it is
+// showing. The choice lives here rather than in every page's props: the three
+// org-wide list endpoints below append it automatically, so a page that knows
+// nothing about modes still shows the right rows.
+//
+// null = no filter, which is what the API returned before test/live mode and
+// what an org that has never touched the switch keeps getting.
+
+const VIEW_MODE_KEY = 'lira:view-mode'
+
+export function getViewMode(): LiraKeyMode | null {
+  try {
+    const raw = localStorage.getItem(VIEW_MODE_KEY)
+    return raw === 'test' || raw === 'live' ? raw : null
+  } catch {
+    return null
+  }
+}
+
+export function setViewMode(mode: LiraKeyMode | null): void {
+  try {
+    if (mode) localStorage.setItem(VIEW_MODE_KEY, mode)
+    else localStorage.removeItem(VIEW_MODE_KEY)
+  } catch {
+    /* private browsing — the dashboard just falls back to "everything" */
+  }
+}
+
+function viewModeQuery(prefix: '?' | '&'): string {
+  const mode = getViewMode()
+  return mode ? `${prefix}mode=${mode}` : ''
+}
+
 export async function listConversations(
   orgId: string,
   status?: ConversationStatus
 ): Promise<SupportConversation[]> {
-  const params = status ? `?status=${status}` : ''
+  const params = status ? `?status=${status}${viewModeQuery('&')}` : viewModeQuery('?')
   const data = await supportFetch<{ conversations: SupportConversation[] }>(
     `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}${params}`
   )
@@ -753,7 +789,9 @@ export async function getConversation(orgId: string, convId: string): Promise<Su
   const data = await supportFetch<{
     conversation: SupportConversation
     customer?: CustomerProfile
-  }>(`/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}`)
+  }>(
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}${viewModeQuery('?')}`
+  )
   // Merge customer into conversation so callers get a unified object
   return data.customer ? { ...data.conversation, customer: data.customer } : data.conversation
 }
@@ -764,28 +802,28 @@ export async function sendConversationReply(
   body: string
 ): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/reply`,
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/reply${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify({ orgId, body }) }
   )
 }
 
 export async function resolveConversation(orgId: string, convId: string): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/resolve`,
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/resolve${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify({ orgId }) }
   )
 }
 
 export async function deleteConversation(orgId: string, convId: string): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}`,
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}${viewModeQuery('?')}`,
     { method: 'DELETE' }
   )
 }
 
 export async function handbackToLira(orgId: string, convId: string): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/handback`,
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/handback${viewModeQuery('?')}`,
     { method: 'POST' }
   )
 }
@@ -793,7 +831,7 @@ export async function handbackToLira(orgId: string, convId: string): Promise<voi
 // M3: a teammate takes over the live chat — pauses the Lira AI until handback.
 export async function takeoverConversation(orgId: string, convId: string): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/takeover`,
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/takeover${viewModeQuery('?')}`,
     { method: 'POST' }
   )
 }
@@ -804,7 +842,7 @@ export async function escalateConversation(
   reason: string
 ): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/escalate`,
+    `/lira/v1/support/inbox/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(convId)}/escalate${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify({ orgId, reason }) }
   )
 }
@@ -817,7 +855,7 @@ export async function getSupportStats(orgId: string): Promise<SupportStats> {
     csat_average?: number | null
   }
   const data = await supportFetch<{ stats?: SupportStats } & Partial<SupportStats>>(
-    `/lira/v1/support/analytics/orgs/${encodeURIComponent(orgId)}/stats`
+    `/lira/v1/support/analytics/orgs/${encodeURIComponent(orgId)}/stats${viewModeQuery('?')}`
   )
   const stats = (data.stats ?? data) as LegacyStats
   return {
@@ -1339,18 +1377,26 @@ export type DeveloperKeyScope =
   | 'support:write'
   | 'sessions:mint'
 
+/** Test and live keys are valid at the same time — see LiraMode on the API. */
+export type LiraKeyMode = 'test' | 'live'
+
 export interface DeveloperKey {
   org_id: string
   key_id: string
   name: string
   scopes: DeveloperKeyScope[]
+  /**
+   * Which mode this key acts in. Absent on keys minted before test/live mode —
+   * those follow the org's environment, as they always did.
+   */
+  mode?: LiraKeyMode
   status: 'active' | 'revoked'
   created_by_user_id: string
   created_at: string
   updated_at: string
   last_used_at?: string
   expires_at?: string
-  /** e.g. `lira_sk_org-xxx_abcd_` — the non-secret prefix, safe to display. */
+  /** e.g. `lira_sk_test_org-xxx_abcd_` — the non-secret prefix, safe to display. */
   token_prefix: string
 }
 
@@ -1364,7 +1410,13 @@ export async function listDeveloperKeys(orgId: string): Promise<DeveloperKey[]> 
 /** Returns the full one-time token — shown once, never retrievable again. */
 export async function createDeveloperKey(
   orgId: string,
-  body: { name?: string; scopes?: DeveloperKeyScope[]; expires_at?: string }
+  body: {
+    name?: string
+    scopes?: DeveloperKeyScope[]
+    expires_at?: string
+    /** Defaults to 'test' server-side — a key is never live by accident. */
+    mode?: LiraKeyMode
+  }
 ): Promise<{ key: DeveloperKey; token: string }> {
   return supportFetch<{ key: DeveloperKey; token: string }>(
     `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys`,
@@ -1376,6 +1428,34 @@ export async function revokeDeveloperKey(orgId: string, keyId: string): Promise<
   await supportFetch<void>(
     `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys/${encodeURIComponent(keyId)}`,
     { method: 'DELETE' }
+  )
+}
+
+// ── Publishable keys (browser / mobile embeds) ───────────────────────────────
+// Public per-mode identity — safe to paste into a customer's HTML. The embed's
+// key is what makes a staging site produce test traffic while the production
+// site stays live on the same org.
+
+export interface PublishableKeys {
+  test: string
+  live: string
+}
+
+/** Provisions the pair on first call, so no org needs a migration. */
+export async function getPublishableKeys(orgId: string): Promise<PublishableKeys> {
+  return supportFetch<PublishableKeys>(
+    `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/publishable-keys`
+  )
+}
+
+/** Rotating the live key breaks production embeds until they redeploy. */
+export async function rotatePublishableKey(
+  orgId: string,
+  mode: LiraKeyMode
+): Promise<{ mode: LiraKeyMode; key: string }> {
+  return supportFetch<{ mode: LiraKeyMode; key: string }>(
+    `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/publishable-keys/${mode}/rotate`,
+    { method: 'POST' }
   )
 }
 
@@ -1505,7 +1585,7 @@ export async function runIntegrationHealth(orgId: string): Promise<IntegrationHe
 
 export async function listTicketsForOrg(orgId: string): Promise<SupportTicketRecord[]> {
   const data = await supportFetch<{ tickets: SupportTicketRecord[] }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}${viewModeQuery('?')}`
   )
   return data.tickets
 }
@@ -1515,7 +1595,7 @@ export async function getTicketForOrg(
   ticketId: string
 ): Promise<{ ticket: SupportTicketRecord; messages: SupportTicketMessageRecord[] }> {
   return supportFetch(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}`
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}${viewModeQuery('?')}`
   )
 }
 
@@ -1526,7 +1606,7 @@ export async function replyToTicket(
   attachments?: TicketAttachmentRecord[]
 ): Promise<SupportTicketMessageRecord> {
   const data = await supportFetch<{ message: SupportTicketMessageRecord }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/reply`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/reply${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify({ body, attachments }) }
   )
   return data.message
@@ -1548,7 +1628,12 @@ export async function createManualTicket(
 ): Promise<SupportTicketRecord> {
   const data = await supportFetch<{ ticket: SupportTicketRecord }>(
     `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}`,
-    { method: 'POST', body: JSON.stringify(input) }
+    {
+      method: 'POST',
+      // File it in whichever mode the teammate is looking at, so a ticket
+      // raised while viewing test data doesn't trigger real delivery.
+      body: JSON.stringify({ ...input, mode: getViewMode() ?? undefined }),
+    }
   )
   return data.ticket
 }
@@ -1628,7 +1713,7 @@ export async function resolveTicket(
   feedback?: ResolveTicketFeedback
 ): Promise<SupportTicketRecord> {
   const data = await supportFetch<{ ticket: SupportTicketRecord }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/resolve`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/resolve${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify(feedback ?? {}) }
   )
   return data.ticket
@@ -1640,7 +1725,7 @@ export async function regenerateHandoffBrief(
   ticketId: string
 ): Promise<HandoffBrief> {
   const data = await supportFetch<{ brief: HandoffBrief }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/handoff-brief/regenerate`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/handoff-brief/regenerate${viewModeQuery('?')}`,
     { method: 'POST' }
   )
   return data.brief
@@ -1653,7 +1738,7 @@ export async function regenerateHandoffBrief(
  */
 export async function requestCsat(orgId: string, ticketId: string): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/request-csat`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/request-csat${viewModeQuery('?')}`,
     { method: 'POST' }
   )
 }
@@ -1726,7 +1811,7 @@ export async function drainOutbox(orgId: string): Promise<DrainStats> {
 /** §4.4 — list external system back-pointers for a ticket. */
 export async function listExternalLinks(orgId: string, ticketId: string): Promise<ExternalLink[]> {
   const data = await supportFetch<{ links: ExternalLink[] }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/external-links`
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/external-links${viewModeQuery('?')}`
   )
   return data.links
 }
@@ -1738,7 +1823,7 @@ export async function createExternalLink(
   payload: { provider: OutboxProvider; external_id: string; external_url: string }
 ): Promise<ExternalLink> {
   const data = await supportFetch<{ link: ExternalLink }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/external-links`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/external-links${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify(payload) }
   )
   return data.link
@@ -1751,7 +1836,7 @@ export async function forceSyncTicket(
   provider: OutboxProvider
 ): Promise<void> {
   await supportFetch<void>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/sync/${encodeURIComponent(provider)}`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/sync/${encodeURIComponent(provider)}${viewModeQuery('?')}`,
     { method: 'POST' }
   )
 }
@@ -1891,7 +1976,7 @@ export async function downloadTicketAudit(
 // status PATCH does not).
 
 function ticketActionUrl(orgId: string, ticketId: string, action: string): string {
-  return `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/${action}`
+  return `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/${action}${viewModeQuery('?')}`
 }
 
 async function postTicketAction(
@@ -1943,7 +2028,7 @@ export async function addTicketSubtask(
   label: string
 ): Promise<SupportTicketSubtask> {
   const data = await supportFetch<{ subtask: SupportTicketSubtask }>(
-    SUBTASKS_BASE(orgId, ticketId),
+    `${SUBTASKS_BASE(orgId, ticketId)}${viewModeQuery('?')}`,
     { method: 'POST', body: JSON.stringify({ label }) }
   )
   return data.subtask
@@ -1956,7 +2041,7 @@ export async function updateTicketSubtask(
   patch: { label?: string; status?: 'todo' | 'done' }
 ): Promise<SupportTicketSubtask> {
   const data = await supportFetch<{ subtask: SupportTicketSubtask }>(
-    `${SUBTASKS_BASE(orgId, ticketId)}/${encodeURIComponent(subtaskId)}`,
+    `${SUBTASKS_BASE(orgId, ticketId)}/${encodeURIComponent(subtaskId)}${viewModeQuery('?')}`,
     { method: 'PATCH', body: JSON.stringify(patch) }
   )
   return data.subtask
@@ -1968,7 +2053,7 @@ export async function deleteTicketSubtask(
   subtaskId: string
 ): Promise<void> {
   await supportFetch<{ ok: true }>(
-    `${SUBTASKS_BASE(orgId, ticketId)}/${encodeURIComponent(subtaskId)}`,
+    `${SUBTASKS_BASE(orgId, ticketId)}/${encodeURIComponent(subtaskId)}${viewModeQuery('?')}`,
     { method: 'DELETE' }
   )
 }
@@ -1979,7 +2064,7 @@ export async function reorderTicketSubtasks(
   orderedIds: string[]
 ): Promise<SupportTicketSubtask[]> {
   const data = await supportFetch<{ subtasks: SupportTicketSubtask[] }>(
-    `${SUBTASKS_BASE(orgId, ticketId)}/reorder`,
+    `${SUBTASKS_BASE(orgId, ticketId)}/reorder${viewModeQuery('?')}`,
     { method: 'PATCH', body: JSON.stringify({ ordered_ids: orderedIds }) }
   )
   return data.subtasks
@@ -2135,7 +2220,7 @@ export async function setTicketTeam(
   teamId: string | null
 ): Promise<SupportTicketRecord> {
   const data = await supportFetch<{ ticket: SupportTicketRecord }>(
-    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/team`,
+    `/lira/v1/support/tickets/orgs/${encodeURIComponent(orgId)}/${encodeURIComponent(ticketId)}/team${viewModeQuery('?')}`,
     { method: 'PATCH', body: JSON.stringify({ team_id: teamId }) }
   )
   return data.ticket

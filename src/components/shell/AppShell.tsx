@@ -51,6 +51,7 @@ import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/s
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
+import { EnvironmentMenu } from '@/components/shell/EnvironmentMenu'
 import { cn } from '@/lib'
 import { resetLiraWidgetSession } from '@/lib/lira-widget-session'
 
@@ -1381,16 +1382,9 @@ function AppShell() {
             <TopbarOrgSwitcher />
             {/* Persistent environment reminder — pilot feedback was that
                 nothing on the dashboard itself said the org was still in
-                sandbox. Links to Settings → Support, where the switch lives. */}
-            {supportConfig?.activated && supportConfig.environment === 'sandbox' && (
-              <NavLink
-                to="/settings"
-                title="This workspace is in sandbox — real sends are suppressed. Switch environments in Settings → Support."
-                className="rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold tracking-wider text-amber-800 transition hover:bg-amber-200"
-              >
-                SANDBOX
-              </NavLink>
-            )}
+                sandbox. It doubles as the go-live shortcut (the badge is a
+                Sandbox/Live menu); Settings keeps the full Environment card. */}
+            <EnvironmentMenu />
           </div>
 
           {/* Right — notifications + user. The Availability toggle was

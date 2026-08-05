@@ -13,8 +13,11 @@ import {
   listDeveloperKeys,
   createDeveloperKey,
   revokeDeveloperKey,
+  getPublishableKeys,
+  rotatePublishableKey,
   type DeveloperKey,
   type DeveloperKeyScope,
+  type LiraKeyMode,
 } from '@/services/api/support-api'
 import { SCard, Field, fieldInputCls } from './support-ui'
 import { cn } from '@/lib'
@@ -53,6 +56,143 @@ const primaryBtn =
   'rounded-lg bg-gray-900 px-4 py-2 text-[13px] font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50'
 const ghostBtn =
   'rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50'
+
+/** Test and live keys are both valid at once, so the mode is always shown. */
+function ModeBadge({ mode }: { mode?: LiraKeyMode }) {
+  if (!mode) {
+    return (
+      <span
+        title="Created before test/live keys — this key follows your workspace environment."
+        className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500"
+      >
+        Legacy
+      </span>
+    )
+  }
+  return (
+    <span
+      className={cn(
+        'rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+        mode === 'live' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+      )}
+    >
+      {mode}
+    </span>
+  )
+}
+
+function CopyRow({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+      <code className="min-w-0 flex-1 truncate font-mono text-xs text-gray-800">{value}</code>
+      <button
+        type="button"
+        onClick={() => {
+          navigator.clipboard.writeText(value)
+          toast.success(`${label} copied`)
+        }}
+        className="inline-flex shrink-0 items-center gap-1 rounded-md bg-gray-900 px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-gray-800"
+      >
+        <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+        Copy
+      </button>
+    </div>
+  )
+}
+
+/**
+ * Publishable keys — the public half of the pair, pasted into the customer's
+ * HTML. The whole point of showing both: a staging site embeds the test key
+ * and a production site embeds the live one, and the same workspace serves
+ * both at once.
+ */
+export function SupportPublishableKeys() {
+  const { currentOrgId } = useOrgStore()
+  const [keys, setKeys] = useState<{ test: string; live: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [rotating, setRotating] = useState<LiraKeyMode | null>(null)
+
+  useEffect(() => {
+    if (!currentOrgId) return
+    setLoading(true)
+    getPublishableKeys(currentOrgId)
+      .then(setKeys)
+      .catch((err) => toast.error(err instanceof Error ? err.message : 'Failed to load keys'))
+      .finally(() => setLoading(false))
+  }, [currentOrgId])
+
+  const rotate = async (mode: LiraKeyMode) => {
+    if (!currentOrgId) return
+    const warning =
+      mode === 'live'
+        ? 'Rotate the LIVE publishable key? Every production embed stops working until you redeploy with the new key.'
+        : 'Rotate the test publishable key? Staging embeds stop working until you update them.'
+    if (!confirm(warning)) return
+    setRotating(mode)
+    try {
+      const { key } = await rotatePublishableKey(currentOrgId, mode)
+      setKeys((cur) => (cur ? { ...cur, [mode]: key } : cur))
+      toast.success(`${mode === 'live' ? 'Live' : 'Test'} publishable key rotated`)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to rotate')
+    } finally {
+      setRotating(null)
+    }
+  }
+
+  if (!currentOrgId) return null
+
+  return (
+    <SCard
+      title="Publishable keys"
+      hint="Public keys for your website and mobile embeds — safe to ship in your HTML. The key decides the mode: a staging site embedding the test key produces test traffic (own quota, no real sends), while your production site runs live on the same workspace."
+    >
+      {loading ? (
+        <div className="flex justify-center py-6">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-900 border-t-transparent" />
+        </div>
+      ) : keys ? (
+        <div className="space-y-4">
+          {(['test', 'live'] as const).map((mode) => (
+            <div key={mode}>
+              <div className="mb-1.5 flex items-center gap-2">
+                <ModeBadge mode={mode} />
+                <span className="text-[13px] font-semibold text-gray-900">
+                  {mode === 'test' ? 'Staging / development' : 'Production'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => void rotate(mode)}
+                  disabled={rotating !== null}
+                  className="ml-auto text-[11px] font-semibold text-gray-500 hover:text-gray-900 disabled:opacity-50"
+                >
+                  {rotating === mode ? 'Rotating…' : 'Rotate'}
+                </button>
+              </div>
+              <CopyRow value={keys[mode]} label="Key" />
+            </div>
+          ))}
+
+          <div>
+            <p className="mb-1.5 text-[13px] font-semibold text-gray-900">Embed snippet</p>
+            <pre className="overflow-x-auto rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 font-mono text-[11px] leading-relaxed text-gray-700">
+              {`<script src="https://widget.liraintelligence.com/widget.js"
+  data-org-id="${currentOrgId}"
+  data-publishable-key="${keys.test}"
+  async></script>`}
+            </pre>
+            <p className="mt-1.5 text-xs text-gray-500">
+              Swap in the live key on your production deploy. An embed with no key keeps following
+              your workspace environment, exactly as before.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <p className="py-4 text-sm text-gray-400">Keys are unavailable right now.</p>
+      )}
+    </SCard>
+  )
+}
 
 export function SupportDeveloperKeys() {
   const { currentOrgId } = useOrgStore()
@@ -131,6 +271,7 @@ export function SupportDeveloperKeys() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-1.5">
                     <span className="text-sm font-semibold text-gray-900">{key.name}</span>
+                    <ModeBadge mode={key.mode} />
                     <code className="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[11px] text-gray-500">
                       {key.token_prefix}…
                     </code>
@@ -189,6 +330,9 @@ function CreateKeyModal(props: {
 }) {
   const { orgId, onClose, onCreated } = props
   const [name, setName] = useState('')
+  // Defaults to test — a new key is never live by accident, and it matches
+  // where an integration starts.
+  const [mode, setMode] = useState<LiraKeyMode>('test')
   const [scopes, setScopes] = useState<Set<DeveloperKeyScope>>(new Set(['mcp:read', 'mcp:write']))
   const [scopesOpen, setScopesOpen] = useState(false)
   const [expiryMode, setExpiryMode] = useState<'never' | 'date'>('never')
@@ -227,6 +371,7 @@ function CreateKeyModal(props: {
     try {
       const { token } = await createDeveloperKey(orgId, {
         name: name.trim(),
+        mode,
         scopes: Array.from(scopes),
         expires_at:
           expiryMode === 'date' && expiryDate ? new Date(expiryDate).toISOString() : undefined,
@@ -296,6 +441,51 @@ function CreateKeyModal(props: {
                   className={fieldInputCls}
                 />
               </Field>
+
+              {/* Mode — both are valid at once, so this is a property of the
+                  key, not of the workspace. */}
+              <div>
+                <p className="mb-1.5 text-[13px] font-semibold text-gray-900">Mode</p>
+                <div className="flex flex-col gap-1.5">
+                  {(
+                    [
+                      {
+                        value: 'test' as const,
+                        label: 'Test',
+                        desc: 'For staging and local development. Own quota, real emails/Slack/Linear/webhooks suppressed, and it stays out of your live inbox.',
+                      },
+                      {
+                        value: 'live' as const,
+                        label: 'Live',
+                        desc: 'For your production backend. Real sends, your plan’s limits and billing.',
+                      },
+                    ] satisfies Array<{ value: LiraKeyMode; label: string; desc: string }>
+                  ).map((option) => (
+                    <label
+                      key={option.value}
+                      className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 px-3 py-2.5 hover:bg-gray-50"
+                    >
+                      <input
+                        type="radio"
+                        name="key-mode"
+                        aria-label={`${option.label} mode`}
+                        checked={mode === option.value}
+                        onChange={() => setMode(option.value)}
+                        className="mt-0.5 h-4 w-4 border-gray-300"
+                      />
+                      <span className="min-w-0">
+                        <span className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-900">
+                          {option.label}
+                          <code className="font-mono text-[11px] text-gray-400">
+                            lira_sk_{option.value}_…
+                          </code>
+                        </span>
+                        <span className="mt-0.5 block text-xs text-gray-500">{option.desc}</span>
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </div>
 
               {/* Permissions */}
               <div>

@@ -51,3 +51,52 @@ registerAction('billing.open_checkout', async ({ payload }) => {
   return { ok: true, message: 'Checkout opened' }
 })
 ```
+
+## Test and live mode
+
+Your staging and production environments can run against the same Lira
+workspace at the same time. The key decides the mode — not the workspace.
+
+```html
+<!-- staging build -->
+<script
+  src="https://widget.liraintelligence.com/v1/widget.js"
+  data-org-id="org_123"
+  data-publishable-key="lira_pk_test_..."
+  async
+></script>
+
+<!-- production build -->
+<script
+  src="https://widget.liraintelligence.com/v1/widget.js"
+  data-org-id="org_123"
+  data-publishable-key="lira_pk_live_..."
+  async
+></script>
+```
+
+```ts
+init({ orgId: 'org_123', publishableKey: process.env.NEXT_PUBLIC_LIRA_PUBLISHABLE_KEY })
+```
+
+Test traffic has its own quota, sends no real emails/Slack/Linear/webhooks, and
+stays out of the live inbox.
+
+## CLI
+
+```bash
+lira status                         # org, mode, workspace — what will my next command do?
+lira mode                           # show the current mode and saved keys
+lira mode test | lira mode live     # switch which key your commands use
+lira keys use --api-key=lira_sk_live_...   # save a key (mode read from the prefix)
+
+lira env show                       # is the workspace live?
+lira env go-live                    # turn on real sends for live-key traffic
+lira env sandbox                    # go back
+```
+
+`lira mode` picks the **key**. `lira env` changes the **workspace** — the
+commercial switch. A live key stays inert until the workspace has gone live, so
+preparing production config early is safe.
+
+Docs: https://docs.liraintelligence.com/platform/customer-support/test-and-live-mode

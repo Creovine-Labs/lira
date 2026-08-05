@@ -1,13 +1,13 @@
 {
   "name": "@liraintelligence/support",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Lira Support Web SDK for full-page support embeds, floating widgets, identity, context, and customer actions.",
   "type": "module",
   "license": "MIT",
   "homepage": "https://docs.liraintelligence.com/platform/customer-support/web-sdk",
   "repository": {
     "type": "git",
-    "url": "https://github.com/liraintelligence/lira-ai"
+    "url": "git+https://github.com/liraintelligence/lira-ai.git"
   },
   "keywords": [
     "lira",
@@ -55,9 +55,9 @@
     }
   },
   "bin": {
-    "lira": "./cli.cjs",
-    "lira-init": "./cli.cjs",
-    "support": "./cli.cjs"
+    "lira": "cli.cjs",
+    "lira-init": "cli.cjs",
+    "support": "cli.cjs"
   },
   "publishConfig": {
     "access": "public"
