@@ -170,17 +170,19 @@ function writeConfig(config) {
 }
 
 function apiBase(flags = {}) {
-  return String(flags['api-url'] || process.env.LIRA_API_URL || readConfig().apiUrl || DEFAULT_API_URL).replace(/\/$/, '')
+  return String(
+    flags['api-url'] || process.env.LIRA_API_URL || readConfig().apiUrl || DEFAULT_API_URL
+  ).replace(/\/$/, '')
 }
 
 function authToken(flags = {}) {
   return String(
     flags['api-key'] ||
-    process.env.LIRA_API_KEY ||
-    process.env.LIRA_TOKEN ||
-    readConfig().apiKey ||
-    readConfig().accessToken ||
-    ''
+      process.env.LIRA_API_KEY ||
+      process.env.LIRA_TOKEN ||
+      readConfig().apiKey ||
+      readConfig().accessToken ||
+      ''
   )
 }
 
@@ -207,12 +209,30 @@ function asBool(value, fallback = false) {
   return ['1', 'true', 'yes', 'on'].includes(String(value).toLowerCase())
 }
 
+// Key-management endpoints are JWT-only — a lira_sk_ developer key is rejected
+// there. LIRA_API_KEY used to win over the stored login token, so anyone with
+// the key exported saw a confusing 401 from `lira keys ...`. Prefer the JWT for
+// those commands and explain the fix if it is missing.
+function jwtToken(flags = {}) {
+  const t = String(flags['token'] || readConfig().accessToken || '')
+  if (!t && String(process.env.LIRA_API_KEY || '').startsWith('lira_sk_')) {
+    throw new Error(
+      'This command needs a dashboard login, not a developer API key.\n' +
+        'LIRA_API_KEY is set but key management is JWT-only. Run `lira login` first ' +
+        '(or unset LIRA_API_KEY in this shell).'
+    )
+  }
+  return t
+}
+
 async function apiRequest(method, requestPath, body, flags = {}, options = {}) {
   if (typeof fetch !== 'function') {
     throw new Error('This CLI requires Node.js 18+ because it uses the built-in fetch API.')
   }
-  const token = options.auth === false ? '' : authToken(flags)
-  if (options.auth !== false) requireValue(token, 'Authentication token (run `lira login` or set LIRA_API_KEY)')
+  const token =
+    options.auth === false ? '' : options.auth === 'jwt' ? jwtToken(flags) : authToken(flags)
+  if (options.auth !== false)
+    requireValue(token, 'Authentication token (run `lira login` or set LIRA_API_KEY)')
   const response = await fetch(`${apiBase(flags)}${requestPath}`, {
     method,
     headers: {
@@ -225,7 +245,8 @@ async function apiRequest(method, requestPath, body, flags = {}, options = {}) {
   const text = await response.text()
   const payload = text ? safeJson(text) : {}
   if (!response.ok) {
-    const message = payload?.message || payload?.error || `Request failed with HTTP ${response.status}`
+    const message =
+      payload?.message || payload?.error || `Request failed with HTTP ${response.status}`
     throw new Error(message)
   }
   return payload
@@ -312,7 +333,9 @@ async function runLogin(args) {
   const password = flags.password || (await prompt('Password: ', ''))
   requireValue(email, 'email')
   requireValue(password, 'password')
-  const payload = await apiRequest('POST', '/v1/auth/login', { email, password }, flags, { auth: false })
+  const payload = await apiRequest('POST', '/v1/auth/login', { email, password }, flags, {
+    auth: false,
+  })
   const config = { ...readConfig(), apiUrl: apiBase(flags), accessToken: payload.accessToken }
   if (payload.user?.tenantId) config.tenantId = payload.user.tenantId
   writeConfig(config)
@@ -357,7 +380,8 @@ async function runKeys(args) {
         scopes: splitCsv(flags.scopes) || ['mcp:read', 'mcp:write'],
         expires_at: flags['expires-at'],
       },
-      flags
+      flags,
+      { auth: 'jwt' }
     )
     log('Developer key created. Copy the token now; Lira will not show it again.')
     printJson(payload)
@@ -368,7 +392,8 @@ async function runKeys(args) {
       'GET',
       `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys`,
       undefined,
-      flags
+      flags,
+      { auth: 'jwt' }
     )
     printTable(payload.keys || [], [
       { label: 'KEY ID', value: (row) => row.key_id },
@@ -385,7 +410,8 @@ async function runKeys(args) {
       'DELETE',
       `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys/${encodeURIComponent(keyId)}`,
       undefined,
-      flags
+      flags,
+      { auth: 'jwt' }
     )
     log(`Revoked developer key ${keyId}.`)
     return
@@ -404,7 +430,10 @@ async function runMcp(args) {
     return
   }
   if (action === 'connect') {
-    const endpoint = requireValue(flags.endpoint || flags['endpoint-url'], 'MCP endpoint (`--endpoint`)')
+    const endpoint = requireValue(
+      flags.endpoint || flags['endpoint-url'],
+      'MCP endpoint (`--endpoint`)'
+    )
     const serverToken = flags['server-token'] || flags['access-token']
     const payload = await apiRequest(
       'PUT',
@@ -439,7 +468,10 @@ async function runMcp(args) {
     return
   }
   if (action === 'approve') {
-    const sourceName = requireValue(flags['source-name'] || flags.source, 'source tool name (`--source-name`)')
+    const sourceName = requireValue(
+      flags['source-name'] || flags.source,
+      'source tool name (`--source-name`)'
+    )
     const current = await apiRequest('GET', serverPath, undefined, flags)
     const discovery = await apiRequest(
       'POST',
@@ -462,10 +494,7 @@ async function runMcp(args) {
       timeout_ms: parsePositiveInteger(flags['timeout-ms'], 'timeout-ms'),
       allowed_channels: splitCsv(flags.channels) || ['chat'],
     }
-    const approvedTools = [
-      ...existing.filter((tool) => tool.source_name !== sourceName),
-      nextTool,
-    ]
+    const approvedTools = [...existing.filter((tool) => tool.source_name !== sourceName), nextTool]
     const payload = await apiRequest('PUT', serverPath, { approved_tools: approvedTools }, flags)
     log(`Approved MCP tool ${sourceName}.`)
     printJson(payload)
