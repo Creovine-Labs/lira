@@ -1352,7 +1352,12 @@ function AccountSection() {
 // to sandbox is a simple confirm.
 function SupportEnvironmentCard() {
   const { currentOrgId, organizations } = useOrgStore()
-  const orgName = organizations.find((o) => o.org_id === currentOrgId)?.name ?? ''
+  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
+  const orgName = currentOrg?.name ?? ''
+  // Going live starts billing and turns on real sends, so it stays with the
+  // people who own the account — unlike the rest of support settings, which
+  // members configure.
+  const canChangeEnvironment = currentOrg?.role === 'owner' || currentOrg?.role === 'admin'
   const { config, updateConfig } = useSupportStore()
   const [envBusy, setEnvBusy] = useState(false)
   const [goLiveOpen, setGoLiveOpen] = useState(false)
@@ -1388,6 +1393,12 @@ function SupportEnvironmentCard() {
 
   const handleEnvClick = (next: 'sandbox' | 'production') => {
     if (next === environment || envBusy) return
+    if (!canChangeEnvironment) {
+      toast.error(
+        'Only an org owner or admin can move this workspace between sandbox and production.'
+      )
+      return
+    }
     if (next === 'production') {
       setRequiresPayment(false)
       setGoLiveOpen(true)
@@ -1870,10 +1881,9 @@ function SupportSettingsSection() {
   const location = useLocation()
   const { currentOrgId, organizations } = useOrgStore()
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
-  // Support config writes are owner/admin on the API. Without this the page
-  // happily let a member flip a toggle, then failed the save — which reads as
-  // "the setting won't stick" rather than "you aren't allowed to change it".
-  const canEditConfig = currentOrg?.role === 'owner' || currentOrg?.role === 'admin'
+  // Members can configure support (channels, behaviour, escalation) — the API
+  // gates on the FIELDS written, not the route, so only the commercial switch
+  // (environment / go-live) needs an owner or admin.
   const { config, loadConfig, updateConfig } = useSupportStore()
   const [saving, setSaving] = useState(false)
 
@@ -2978,21 +2988,7 @@ function SupportSettingsSection() {
               so a global Save there is just confusing. */}
           {(['connect', 'channels', 'behavior', 'escalation'] as SupportSettingsTabKey[]).includes(
             activeTab
-          ) &&
-            (canEditConfig ? (
-              <SaveBar onSave={handleSave} saving={saving} />
-            ) : (
-              <div className="sticky bottom-0 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-sm font-semibold text-amber-900">
-                  You can view these settings, but not change them
-                </p>
-                <p className="mt-0.5 text-xs text-amber-800">
-                  Changing support settings — including turning channels like Voice on or off —
-                  needs an org owner or admin. Ask one of them to make the change, or to upgrade
-                  your role in Settings → Organization → Members.
-                </p>
-              </div>
-            ))}
+          ) && <SaveBar onSave={handleSave} saving={saving} />}
         </div>
       </div>
     </SettingsShell>

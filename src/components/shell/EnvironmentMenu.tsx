@@ -38,7 +38,9 @@ export function EnvironmentMenu() {
   const [requiresPayment, setRequiresPayment] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
-  const orgName = organizations.find((o) => o.org_id === currentOrgId)?.name ?? ''
+  const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
+  const orgName = currentOrg?.name ?? ''
+  const canGoLive = currentOrg?.role === 'owner' || currentOrg?.role === 'admin'
   const workspaceIsLive = config?.environment === 'production'
   // Before go-live there is only one environment to be in, so the control
   // always reads Sandbox — no way to appear in production without paying.
@@ -74,6 +76,12 @@ export function EnvironmentMenu() {
     // Production is gated on going live. Paystack does the same: you cannot
     // switch to live until the account is activated.
     if (next === 'live' && !workspaceIsLive) {
+      // Going live starts billing, so it stays owner/admin even though members
+      // configure everything else about support.
+      if (!canGoLive) {
+        toast.error('Ask an org owner or admin to move this workspace to production.')
+        return
+      }
       setRequiresPayment(false)
       setGoLiveOpen(true)
       return
