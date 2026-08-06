@@ -138,6 +138,23 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
           .map((d) => `${d.path.join('.')}: ${d.message}`)
           .join(', ')}`
       : msg
+
+    // A server fault is not something the person at the screen can act on, and
+    // "500: Internal Server Error" in a toast reads as though they broke
+    // something. The technical text still goes to the console for debugging.
+    if (res.status >= 500) {
+      console.error(`[api] ${res.status} ${path}:`, fullMsg)
+      const friendly = new Error(
+        "We're unable to complete your request right now. Please try again in a few moments."
+      ) as Error & { status?: number; technicalMessage?: string }
+      friendly.status = res.status
+      friendly.technicalMessage = fullMsg
+      throw friendly
+    }
+
+    // 4xx keeps the `<status>: <message>` shape: those messages say what to do
+    // ("Document not found", "must be one of…"), and callers key billing and
+    // not-found handling off the prefix.
     throw new Error(`${res.status}: ${fullMsg}`)
   }
 
@@ -1075,6 +1092,22 @@ export async function updateDocumentSegments(
     }
   )
   return data.document
+}
+
+export interface PlanCatalogEntry {
+  tier: 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE'
+  recommended: boolean
+  entitlements: {
+    basePriceUsd: number | null
+    includedConversationsPerMonth: number
+    [key: string]: unknown
+  }
+}
+
+/** Every plan, for the go-live picker. */
+export async function getPlanCatalog(): Promise<PlanCatalogEntry[]> {
+  const data = await apiFetch<{ plans: PlanCatalogEntry[] }>('/v1/plan/catalog')
+  return data.plans ?? []
 }
 
 export interface KbGapGroup {

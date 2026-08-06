@@ -4,11 +4,14 @@ import {
   getMyPlan,
   getBillingStatus,
   createBillingCheckout,
+  getPlanCatalog,
   type MyPlan,
   type PlanTier,
   type BillingStatus,
+  type PlanCatalogEntry,
 } from '@/services/api'
 import { openPaddleCheckout } from '@/lib/paddle'
+import { cn } from '@/lib'
 
 const PLAN_TIER_LABELS: Record<PlanTier, string> = {
   FREE: 'Free',
@@ -54,14 +57,20 @@ export function GoLiveModal({
   const [plan, setPlan] = useState<MyPlan | null>(null)
   const [billing, setBilling] = useState<BillingStatus | null>(null)
   const [planLoading, setPlanLoading] = useState(true)
+  const [catalog, setCatalog] = useState<PlanCatalogEntry[]>([])
   const [typed, setTyped] = useState('')
   const [paying, setPaying] = useState(false)
 
   useEffect(() => {
-    Promise.all([getMyPlan(orgId).catch(() => null), getBillingStatus(orgId).catch(() => null)])
-      .then(([p, b]) => {
+    Promise.all([
+      getMyPlan(orgId).catch(() => null),
+      getBillingStatus(orgId).catch(() => null),
+      getPlanCatalog().catch(() => []),
+    ])
+      .then(([p, b, c]) => {
         setPlan(p)
         setBilling(b)
+        setCatalog(c)
       })
       .finally(() => setPlanLoading(false))
   }, [orgId])
@@ -141,20 +150,75 @@ export function GoLiveModal({
           sandbox caps. Sandbox keeps working for testing.
         </p>
 
-        <div className="mt-4 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+        {/*
+          Going live is the commercial moment, so it shows every plan rather
+          than only the one the workspace is already on. Presenting Free alone
+          made the most upgrade-relevant screen in the product silent about
+          upgrades.
+        */}
+        <div className="mt-4 space-y-2">
           {planLoading ? (
-            <p className="text-sm text-gray-400">Loading your plan…</p>
+            <p className="text-sm text-gray-400">Loading plans…</p>
+          ) : catalog.length > 0 ? (
+            catalog.map((entry) => {
+              const isCurrent = plan?.tier === entry.tier
+              const entryPrice =
+                entry.entitlements.basePriceUsd === null
+                  ? 'Custom'
+                  : `$${entry.entitlements.basePriceUsd}/mo`
+              const entryIncluded =
+                entry.entitlements.includedConversationsPerMonth === 0
+                  ? 'Unlimited conversations'
+                  : `${entry.entitlements.includedConversationsPerMonth.toLocaleString()} conversations / mo`
+              return (
+                <div
+                  key={entry.tier}
+                  className={cn(
+                    'rounded-xl border px-4 py-3 transition',
+                    entry.recommended
+                      ? 'border-[#3730a3] bg-[#3730a3]/[0.04] ring-1 ring-[#3730a3]/20'
+                      : 'border-gray-200 bg-gray-50'
+                  )}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-gray-900">
+                      {PLAN_TIER_LABELS[entry.tier] ?? entry.tier}
+                      <span className="ml-2 font-normal text-gray-500">{entryPrice}</span>
+                    </p>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      {entry.recommended && (
+                        <span className="rounded-full bg-[#3730a3] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
+                          Recommended
+                        </span>
+                      )}
+                      {isCurrent && (
+                        <span className="rounded-full bg-gray-200 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-600">
+                          Current
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <p className="mt-0.5 text-xs text-gray-500">{entryIncluded}</p>
+                </div>
+              )
+            })
           ) : plan ? (
-            <>
+            <div className="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
               <p className="text-sm font-semibold text-gray-900">
                 {PLAN_TIER_LABELS[plan.tier]} plan
                 {price ? <span className="ml-2 font-normal text-gray-500">{price}</span> : null}
               </p>
               {included && <p className="mt-0.5 text-xs text-gray-500">{included}</p>}
-            </>
+            </div>
           ) : (
             <p className="text-sm text-gray-500">
               Plan details are unavailable right now — your invited plan applies when you go live.
+            </p>
+          )}
+          {catalog.length > 0 && !isBillingExempt && (
+            <p className="pt-0.5 text-[11px] text-gray-400">
+              Going live starts you on your current plan. Change plan any time in Settings →
+              Billing.
             </p>
           )}
         </div>

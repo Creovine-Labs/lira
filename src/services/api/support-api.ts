@@ -526,6 +526,17 @@ async function supportFetch<T>(path: string, init?: RequestInit): Promise<T> {
       // ignore
     }
     const msg = errBody['message'] ?? errBody['error'] ?? res.statusText
+    // Server faults get a message the reader can act on; the detail goes to the
+    // console. See the same guard in services/api/index.ts.
+    if (res.status >= 500) {
+      console.error(`[support-api] ${res.status} ${path}:`, msg)
+      const friendly = new Error(
+        "We're unable to complete your request right now. Please try again in a few moments."
+      ) as Error & { status?: number; technicalMessage?: string }
+      friendly.status = res.status
+      friendly.technicalMessage = msg
+      throw friendly
+    }
     throw new Error(`${res.status}: ${msg}`)
   }
 
