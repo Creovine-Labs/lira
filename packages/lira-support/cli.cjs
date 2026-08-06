@@ -535,6 +535,71 @@ async function runStatus(args) {
 }
 
 /**
+ * `lira channels` — turn support surfaces on and off without the dashboard.
+ *
+ * Voice in particular was dashboard-only in practice: the API has always
+ * accepted these flags, but nothing surfaced them, so "enable voice" meant
+ * "log into the dashboard and find the toggle" — awkward when the rest of the
+ * integration is scripted.
+ */
+const CHANNELS = {
+  chat: { field: 'chat_enabled', label: 'Web chat' },
+  voice: { field: 'voice_enabled', label: 'Voice calls' },
+  email: { field: 'email_enabled', label: 'Email' },
+  portal: { field: 'portal_enabled', label: 'Hosted portal' },
+}
+
+async function runChannels(args) {
+  const action = args[0] && !args[0].startsWith('--') ? args[0] : 'show'
+  const nameArg = args[1] && !args[1].startsWith('--') ? args[1] : undefined
+  const flags = parseFlags(args.filter((a) => a.startsWith('--')))
+  const orgId = requireValue(defaultOrgId(flags), 'org id (`--org-id` or LIRA_ORG_ID)')
+
+  if (action === 'show') {
+    const config = await apiRequest(
+      'GET',
+      `/lira/v1/support/config/orgs/${encodeURIComponent(orgId)}`,
+      undefined,
+      flags,
+      { auth: 'any' }
+    )
+    printTable(
+      Object.entries(CHANNELS).map(([key, meta]) => ({
+        key,
+        label: meta.label,
+        state: config?.[meta.field] ? 'on' : 'off',
+      })),
+      [
+        { label: 'CHANNEL', value: (r) => r.key },
+        { label: 'WHAT IT IS', value: (r) => r.label },
+        { label: 'STATE', value: (r) => r.state },
+      ]
+    )
+    return
+  }
+
+  if (action !== 'enable' && action !== 'disable') {
+    throw new Error(`Unknown channels command: ${action}. Use show, enable, or disable.`)
+  }
+  const channel = CHANNELS[String(nameArg || '').toLowerCase()]
+  if (!channel) {
+    throw new Error(`Unknown channel "${nameArg}". One of: ${Object.keys(CHANNELS).join(', ')}.`)
+  }
+
+  await apiRequest(
+    'PUT',
+    `/lira/v1/support/config/orgs/${encodeURIComponent(orgId)}`,
+    { [channel.field]: action === 'enable' },
+    flags,
+    { auth: 'any' }
+  )
+  log(`${channel.label}: ${action === 'enable' ? 'on' : 'off'}`)
+  if (channel === CHANNELS.voice && action === 'enable') {
+    log('Customers can now start a voice call from the widget or your mobile app.')
+  }
+}
+
+/**
  * `lira env` — read or change the WORKSPACE environment from the terminal.
  *
  * Going live is a commercial event (plan limits, billing, real outbound), so it
@@ -840,6 +905,11 @@ Workspace environment (the commercial switch — real sends + billing):
   lira env go-live [--yes]                      Turn on real sends for LIVE-key traffic
   lira env sandbox [--yes]                      Return to sandbox
 
+Channels (web chat, voice, email, hosted portal):
+  lira channels                                 Show what is on
+  lira channels enable voice                    Turn a channel on
+  lira channels disable portal
+
 Developer keys:
   lira keys create --org-id=org-xxxx --name="Riverly CI" --mode=test --scopes=mcp:read,mcp:write,sessions:mint
   lira keys list --org-id=org-xxxx
@@ -906,6 +976,11 @@ async function main() {
   }
   if (subcommand === 'env') {
     await runEnv(args.slice(1))
+    closeRl()
+    return
+  }
+  if (subcommand === 'channels') {
+    await runChannels(args.slice(1))
     closeRl()
     return
   }

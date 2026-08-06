@@ -91,8 +91,12 @@ lira mode test | lira mode live     # switch which key your commands use
 lira keys use --api-key=lira_sk_live_...   # save a key (mode read from the prefix)
 
 lira env show                       # is the workspace live?
-lira env go-live                    # turn on real sends for live-key traffic
+lira env go-live                    # move to production (real sends + billing)
 lira env sandbox                    # go back
+
+lira channels                       # what's on: chat, voice, email, portal
+lira channels enable voice          # customers can call, on web and mobile
+lira channels disable portal
 ```
 
 `lira mode` picks the **key**. `lira env` changes the **workspace** — the
