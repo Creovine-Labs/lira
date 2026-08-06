@@ -546,6 +546,13 @@ export interface Organization {
   org_id: string
   name: string
   owner_id: string
+  /**
+   * The signed-in user's role in this org. Returned by the list endpoint and
+   * used to decide what the UI may offer — writing support config, for
+   * instance, is owner/admin on the API, and offering it to a member produced
+   * a save that always failed.
+   */
+  role?: 'owner' | 'admin' | 'member'
   /** Legacy field from the static-invite-code era — no longer set on new orgs. */
   invite_code?: string
   profile: OrganizationProfile

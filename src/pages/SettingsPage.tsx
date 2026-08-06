@@ -1870,6 +1870,10 @@ function SupportSettingsSection() {
   const location = useLocation()
   const { currentOrgId, organizations } = useOrgStore()
   const currentOrg = organizations.find((o) => o.org_id === currentOrgId)
+  // Support config writes are owner/admin on the API. Without this the page
+  // happily let a member flip a toggle, then failed the save — which reads as
+  // "the setting won't stick" rather than "you aren't allowed to change it".
+  const canEditConfig = currentOrg?.role === 'owner' || currentOrg?.role === 'admin'
   const { config, loadConfig, updateConfig } = useSupportStore()
   const [saving, setSaving] = useState(false)
 
@@ -2974,7 +2978,21 @@ function SupportSettingsSection() {
               so a global Save there is just confusing. */}
           {(['connect', 'channels', 'behavior', 'escalation'] as SupportSettingsTabKey[]).includes(
             activeTab
-          ) && <SaveBar onSave={handleSave} saving={saving} />}
+          ) &&
+            (canEditConfig ? (
+              <SaveBar onSave={handleSave} saving={saving} />
+            ) : (
+              <div className="sticky bottom-0 mt-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-sm font-semibold text-amber-900">
+                  You can view these settings, but not change them
+                </p>
+                <p className="mt-0.5 text-xs text-amber-800">
+                  Changing support settings — including turning channels like Voice on or off —
+                  needs an org owner or admin. Ask one of them to make the change, or to upgrade
+                  your role in Settings → Organization → Members.
+                </p>
+              </div>
+            ))}
         </div>
       </div>
     </SettingsShell>
