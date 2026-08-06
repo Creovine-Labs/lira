@@ -1424,6 +1424,22 @@ export async function createDeveloperKey(
   )
 }
 
+/**
+ * Change a key's name, scopes or expiry in place. The mode is immutable (it is
+ * baked into the token the customer deployed) and the secret is never re-issued.
+ */
+export async function updateDeveloperKey(
+  orgId: string,
+  keyId: string,
+  body: { name?: string; scopes?: DeveloperKeyScope[]; expires_at?: string | null }
+): Promise<DeveloperKey> {
+  const data = await supportFetch<{ key: DeveloperKey }>(
+    `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys/${encodeURIComponent(keyId)}`,
+    { method: 'PATCH', body: JSON.stringify(body) }
+  )
+  return data.key
+}
+
 export async function revokeDeveloperKey(orgId: string, keyId: string): Promise<void> {
   await supportFetch<void>(
     `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys/${encodeURIComponent(keyId)}`,

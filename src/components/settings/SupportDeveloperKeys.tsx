@@ -13,6 +13,7 @@ import {
   listDeveloperKeys,
   createDeveloperKey,
   revokeDeveloperKey,
+  updateDeveloperKey,
   getPublishableKeys,
   rotatePublishableKey,
   type DeveloperKey,
@@ -205,6 +206,7 @@ export function SupportDeveloperKeys() {
   const [keys, setKeys] = useState<DeveloperKey[]>([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [editing, setEditing] = useState<DeveloperKey | null>(null)
 
   const refresh = useCallback(async (orgId: string) => {
     setLoading(true)
@@ -305,13 +307,22 @@ export function SupportDeveloperKeys() {
                       ` · expires ${new Date(key.expires_at).toLocaleDateString()}`}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => revoke(key)}
-                  className="shrink-0 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
-                >
-                  Revoke
-                </button>
+                <div className="flex shrink-0 items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setEditing(key)}
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:bg-gray-100"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => revoke(key)}
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                  >
+                    Revoke
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -325,7 +336,152 @@ export function SupportDeveloperKeys() {
           onCreated={() => refresh(currentOrgId)}
         />
       )}
+
+      {editing && (
+        <EditKeyModal
+          orgId={currentOrgId}
+          keyRecord={editing}
+          onClose={() => setEditing(null)}
+          onSaved={() => refresh(currentOrgId)}
+        />
+      )}
     </>
+  )
+}
+
+/**
+ * Edit an existing key: name, scopes, expiry.
+ *
+ * Mode and the secret are not editable — the mode is baked into the token the
+ * customer already deployed, and the secret is never shown again. Everything
+ * else can change in place, so tightening an over-scoped key does not mean
+ * re-issuing it and redeploying every service that holds it.
+ */
+function EditKeyModal(props: {
+  orgId: string
+  keyRecord: DeveloperKey
+  onClose: () => void
+  onSaved: () => void | Promise<void>
+}) {
+  const { orgId, keyRecord, onClose, onSaved } = props
+  const [name, setName] = useState(keyRecord.name)
+  const [scopes, setScopes] = useState<Set<DeveloperKeyScope>>(new Set(keyRecord.scopes))
+  const [saving, setSaving] = useState(false)
+
+  function toggleScope(scope: DeveloperKeyScope) {
+    setScopes((cur) => {
+      const next = new Set(cur)
+      if (next.has(scope)) next.delete(scope)
+      else next.add(scope)
+      return next
+    })
+  }
+
+  async function save() {
+    if (!name.trim()) {
+      toast.error('Give the key a name')
+      return
+    }
+    if (scopes.size === 0) {
+      toast.error('A key needs at least one permission — revoke it instead')
+      return
+    }
+    setSaving(true)
+    try {
+      await updateDeveloperKey(orgId, keyRecord.key_id, {
+        name: name.trim(),
+        scopes: Array.from(scopes),
+      })
+      toast.success('Key updated — the change applies to the next request it makes.')
+      await onSaved()
+      onClose()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update key')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={() => !saving && onClose()} />
+      <div className="relative flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3.5">
+          <p className="text-[15px] font-bold text-gray-900">Edit key</p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Close"
+          >
+            <XMarkIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="space-y-4 overflow-y-auto px-5 py-4">
+          <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2">
+            <ModeBadge mode={keyRecord.mode} />
+            <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-gray-500">
+              {keyRecord.token_prefix}…
+            </code>
+          </div>
+
+          <Field label="Name">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={fieldInputCls}
+            />
+          </Field>
+
+          <div>
+            <p className="mb-1.5 text-[13px] font-semibold text-gray-900">Permissions</p>
+            <div className="space-y-1.5">
+              {SCOPES.map((scope) => (
+                <label
+                  key={scope.value}
+                  className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-gray-200 px-3 py-2 hover:bg-gray-50"
+                >
+                  <input
+                    type="checkbox"
+                    aria-label={scope.value}
+                    checked={scopes.has(scope.value)}
+                    onChange={() => toggleScope(scope.value)}
+                    className="mt-0.5 h-4 w-4 rounded border-gray-300"
+                  />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 text-[13px] font-semibold text-gray-900">
+                      <code className="font-mono text-xs">{scope.value}</code>
+                      {scope.danger && (
+                        <span className="rounded bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700">
+                          High privilege
+                        </span>
+                      )}
+                    </span>
+                    <span className="mt-0.5 block text-xs text-gray-500">{scope.desc}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-gray-500">
+              Takes effect on the key&apos;s next request — the key itself does not change, so
+              nothing needs redeploying. The environment ({keyRecord.mode ?? 'legacy'}) is fixed:
+              create a new key to switch.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-gray-100 px-5 py-3.5">
+          <button type="button" onClick={onClose} className={ghostBtn}>
+            Cancel
+          </button>
+          <button type="button" onClick={save} disabled={saving} className={primaryBtn}>
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
+        </div>
+      </div>
+    </div>
   )
 }
 

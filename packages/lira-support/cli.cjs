@@ -752,6 +752,50 @@ async function runKeys(args) {
     ])
     return
   }
+  if (action === 'show') {
+    // Answers "what is this key actually allowed to do?" without the dashboard.
+    const keyId = requireValue(flags['key-id'] || args[1], 'key id (`--key-id`)')
+    const payload = await apiRequest(
+      'GET',
+      `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys`,
+      undefined,
+      flags,
+      { auth: 'jwt' }
+    )
+    const key = (payload.keys || []).find((k) => k.key_id === keyId)
+    if (!key) throw new Error(`No key ${keyId} on org ${orgId}`)
+    printJson({
+      key_id: key.key_id,
+      name: key.name,
+      environment: key.mode === 'live' ? 'production' : key.mode === 'test' ? 'sandbox' : 'legacy',
+      scopes: key.scopes,
+      status: key.status,
+      last_used_at: key.last_used_at ?? null,
+      expires_at: key.expires_at ?? null,
+      token_prefix: key.token_prefix,
+    })
+    return
+  }
+  if (action === 'update') {
+    // Tighten or widen an existing key in place — the token does not change, so
+    // nothing needs redeploying.
+    const keyId = requireValue(flags['key-id'] || args[1], 'key id (`--key-id`)')
+    const body = {}
+    if (flags.name) body.name = String(flags.name)
+    if (flags.scopes) body.scopes = splitCsv(flags.scopes)
+    if (Object.keys(body).length === 0) {
+      throw new Error('Nothing to change. Pass --scopes=… and/or --name=…')
+    }
+    const payload = await apiRequest(
+      'PATCH',
+      `/lira/v1/support/developer-keys/orgs/${encodeURIComponent(orgId)}/keys/${encodeURIComponent(keyId)}`,
+      body,
+      flags,
+      { auth: 'jwt' }
+    )
+    log(`Updated ${keyId}. Scopes: ${(payload.key?.scopes || []).join(', ')}`)
+    return
+  }
   if (action === 'revoke') {
     const keyId = requireValue(flags['key-id'] || args[1], 'key id (`--key-id`)')
     await apiRequest(
@@ -913,6 +957,8 @@ Channels (web chat, voice, email, hosted portal):
 Developer keys:
   lira keys create --org-id=org-xxxx --name="Riverly CI" --mode=test --scopes=mcp:read,mcp:write,sessions:mint
   lira keys list --org-id=org-xxxx
+  lira keys show --key-id=<key_id>              What is this key allowed to do?
+  lira keys update --key-id=<key_id> --scopes=support:read,support:write
   lira keys revoke --org-id=org-xxxx --key-id=<key_id>
 
 Native sessions:

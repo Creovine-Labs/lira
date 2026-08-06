@@ -89,6 +89,8 @@ lira status                         # org, mode, workspace — what will my next
 lira mode                           # show the current mode and saved keys
 lira mode test | lira mode live     # switch which key your commands use
 lira keys use --api-key=lira_sk_live_...   # save a key (mode read from the prefix)
+lira keys show --key-id=<id>               # what is this key allowed to do?
+lira keys update --key-id=<id> --scopes=support:read,support:write
 
 lira env show                       # is the workspace live?
 lira env go-live                    # move to production (real sends + billing)
