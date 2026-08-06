@@ -39,6 +39,12 @@ export interface SupportConfig {
   email_verified: boolean
   chat_enabled: boolean
   voice_enabled: boolean
+  /**
+   * When true, knowledge-base sources with no product/segment tags are ignored
+   * for any customer whose session names a product. Off by default so tagging
+   * is additive — see the Knowledge Base → Documents panel.
+   */
+  kb_segment_strict?: boolean
   portal_enabled?: boolean
   portal_slug?: string
   custom_domain?: string

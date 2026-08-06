@@ -15,6 +15,7 @@ import {
 import { toast } from 'sonner'
 
 import { useOrgStore, useDocumentStore } from '@/app/store'
+import { useSupportStore } from '@/app/store/support-store'
 import {
   listDocuments,
   uploadDocument,
@@ -73,6 +74,9 @@ function DocumentsPanel() {
     setLoading,
   } = useDocumentStore()
 
+  const config = useSupportStore((s) => s.config)
+  const updateSupportConfig = useSupportStore((s) => s.updateConfig)
+
   const [uploading, setUploading] = useState(false)
   const [dragging, setDragging] = useState(false)
   const [connectionLost, setConnectionLost] = useState(false)
@@ -82,6 +86,7 @@ function DocumentsPanel() {
   const [noteSaving, setNoteSaving] = useState(false)
   const [newSourceSegments, setNewSourceSegments] = useState('all')
   const [segmentEdits, setSegmentEdits] = useState<Record<string, string>>({})
+  const [savingStrict, setSavingStrict] = useState(false)
   const [savingSegments, setSavingSegments] = useState<Record<string, boolean>>({})
   const pollErrorCount = useRef(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -211,6 +216,25 @@ function DocumentsPanel() {
       toast.error(`Failed to save note: ${err instanceof Error ? err.message : 'Unknown error'}`)
     } finally {
       setNoteSaving(false)
+    }
+  }
+
+  async function handleToggleStrict(next: boolean) {
+    if (!currentOrgId) return
+    setSavingStrict(true)
+    try {
+      await updateSupportConfig(currentOrgId, { kb_segment_strict: next })
+      toast.success(
+        next
+          ? 'Only tagged documents will answer customers on a known product.'
+          : 'Untagged documents answer every product again.'
+      )
+    } catch (err) {
+      toast.error(
+        `Could not change this setting: ${err instanceof Error ? err.message : 'Unknown error'}`
+      )
+    } finally {
+      setSavingStrict(false)
     }
   }
 
@@ -376,6 +400,29 @@ function DocumentsPanel() {
           <p className="mt-1 text-xs text-gray-400">
             Use all for shared content. Use comma-separated tags for product-specific documents.
           </p>
+          {/*
+            The strictness switch belongs here, next to the tags it governs —
+            an operator only asks "what about the files I never tagged?" while
+            looking at tagging. Off by default: turning it on hides every
+            untagged source at once, so it is the last step after tagging, not
+            the first.
+          */}
+          <label className="mt-2.5 flex cursor-pointer items-start gap-2 border-t border-gray-200 pt-2.5">
+            <input
+              type="checkbox"
+              checked={Boolean(config?.kb_segment_strict)}
+              disabled={savingStrict}
+              onChange={(e) => void handleToggleStrict(e.target.checked)}
+              className="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-gray-300 text-[#3730a3] focus:ring-[#3730a3]/30 disabled:opacity-50"
+            />
+            <span className="text-xs text-gray-500">
+              <span className="font-medium text-gray-700">Only answer from tagged documents</span>
+              <br />
+              {config?.kb_segment_strict
+                ? 'Untagged documents are ignored for customers on a known product. Anything you forget to tag will not be used at all.'
+                : 'Untagged documents answer every product. Turn this on once everything is tagged.'}
+            </span>
+          </label>
         </div>
         <div
           onDragOver={(e) => {
