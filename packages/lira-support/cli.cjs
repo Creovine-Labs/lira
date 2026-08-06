@@ -1346,6 +1346,71 @@ async function runDocs(args) {
     return
   }
 
+  if (action === 'gaps') {
+    // Lira records every question it could not answer. This is the shortlist of
+    // content worth writing next, in the customers' own words and ranked by how
+    // many people asked — which is a far better guide than guessing.
+    const sub = positional && !positional.startsWith('--') ? positional : 'list'
+    const gapsBase = `/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/gaps`
+
+    if (sub === 'resolve' || sub === 'ack') {
+      const question = requireValue(
+        flags.question,
+        'the question to close (`lira docs gaps resolve --question="..."`)'
+      )
+      const listing = await apiRequest(
+        'GET',
+        `${gapsBase}?status=open&limit=200`,
+        undefined,
+        flags,
+        { auth: 'any' }
+      )
+      const needle = String(question).toLowerCase()
+      const target = (listing?.gaps ?? []).find((g) =>
+        String(g.question ?? '')
+          .toLowerCase()
+          .includes(needle)
+      )
+      if (!target) throw new Error(`No open question matched "${question}".`)
+      const payload = await apiRequest(
+        'PATCH',
+        gapsBase,
+        { gap_ids: target.gap_ids, status: sub === 'ack' ? 'acknowledged' : 'resolved' },
+        flags,
+        { auth: 'any' }
+      )
+      log(`"${target.question}" marked ${payload?.status} (${payload?.updated} record(s)).`)
+      return
+    }
+
+    if (sub !== 'list') throw new Error(`Unknown gaps command: ${sub}. Use list or resolve.`)
+
+    const query = [
+      `status=${encodeURIComponent(String(flags.status ?? 'open'))}`,
+      `limit=${encodeURIComponent(String(flags.limit ?? 25))}`,
+      `mode=${encodeURIComponent(activeMode(flags))}`,
+    ].join('&')
+    const payload = await apiRequest('GET', `${gapsBase}?${query}`, undefined, flags, {
+      auth: 'any',
+    })
+    const gaps = payload?.gaps ?? []
+    if (gaps.length === 0) {
+      log('No unanswered questions recorded in this mode.')
+      log('Lira logs these automatically whenever it cannot answer from your knowledge base.')
+      return
+    }
+    printTable(gaps, [
+      { label: 'ASKED', value: (r) => r.count },
+      { label: 'QUESTION', value: (r) => String(r.question ?? '').slice(0, 60) },
+      { label: 'LAST', value: (r) => String(r.last_asked ?? '').slice(0, 10) },
+      { label: 'WHY LIRA MISSED IT', value: (r) => String(r.why_missing ?? '—').slice(0, 34) },
+    ])
+    log('')
+    log('Write content for the top rows first — they are ranked by how many people asked.')
+    log('Then: lira docs gaps resolve --question="<part of the question>"')
+    return
+  }
+
   if (action === 'prune') {
     // Deleting a crawled page used to leave its chunks in the index, so every
     // page ever deleted kept answering customers while appearing in no list.
@@ -1401,7 +1466,7 @@ async function runDocs(args) {
   }
 
   throw new Error(
-    `Unknown docs command: ${action}. Use list, add, tag, authority, rm, prune, or ask.`
+    `Unknown docs command: ${action}. Use list, add, tag, authority, gaps, rm, prune, or ask.`
   )
 }
 
@@ -1476,6 +1541,8 @@ Knowledge base (needs a key with support:read / support:write):
   lira docs authority <id> --level=primary      Answer from this ahead of everything else
   lira docs authority --sources --all --level=background
                                                 Crawled pages answer only as a fallback
+  lira docs gaps                                What customers asked that Lira couldn't answer
+  lira docs gaps resolve --question="fees"      Close it once you've written the content
   lira docs prune                               Find chunks of deleted pages still answering
   lira docs prune --yes                         Remove them
 

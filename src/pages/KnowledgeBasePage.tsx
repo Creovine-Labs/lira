@@ -4,6 +4,7 @@ import {
   DocumentTextIcon,
   GlobeAltIcon,
   LinkIcon,
+  QuestionMarkCircleIcon,
   SparklesIcon,
   BuildingOfficeIcon,
   PencilSquareIcon,
@@ -12,6 +13,7 @@ import { cn } from '@/lib'
 import { useOrgStore } from '@/app/store'
 
 import { DocumentsPanel } from './kb/DocumentsPanel'
+import { GapsPanel } from './kb/GapsPanel'
 import { ConnectedSourcesPanel } from './kb/ConnectedSourcesPanel'
 import { CrawlPanel } from './kb/CrawlPanel'
 import { QueryPanel } from './kb/QueryPanel'
@@ -34,6 +36,12 @@ const TABS = [
     label: 'Web Sources',
     icon: GlobeAltIcon,
     docsUrl: 'https://docs.liraintelligence.com/knowledge-base/web-sources',
+  },
+  {
+    key: 'gaps',
+    label: 'Unanswered',
+    icon: QuestionMarkCircleIcon,
+    docsUrl: 'https://docs.liraintelligence.com/knowledge-base/documents',
   },
   {
     key: 'query',
@@ -144,6 +152,7 @@ function KnowledgeBasePage() {
         {activeTab === 'documents' && <DocumentsPanel />}
         {activeTab === 'sources' && <ConnectedSourcesPanel />}
         {activeTab === 'web' && <CrawlPanel />}
+        {activeTab === 'gaps' && <GapsPanel />}
         {activeTab === 'query' && <QueryPanel />}
       </div>
     </div>

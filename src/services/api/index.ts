@@ -1077,6 +1077,45 @@ export async function updateDocumentSegments(
   return data.document
 }
 
+export interface KbGapGroup {
+  question: string
+  count: number
+  first_asked: string
+  last_asked: string
+  gap_ids: string[]
+  conv_ids: string[]
+  suggested_answer?: string
+  why_missing?: string
+  status: 'open' | 'acknowledged' | 'resolved'
+}
+
+/** Questions customers asked that the knowledge base could not answer. */
+export async function listKbGaps(
+  orgId: string,
+  status: 'open' | 'all' = 'open'
+): Promise<KbGapGroup[]> {
+  const data = await apiFetch<{ gaps: KbGapGroup[] }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/gaps?status=${status}&limit=100`
+  )
+  return data.gaps ?? []
+}
+
+export async function updateKbGapStatus(
+  orgId: string,
+  gapIds: string[],
+  status: 'open' | 'acknowledged' | 'resolved'
+): Promise<number> {
+  const data = await apiFetch<{ updated: number }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/gaps`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ gap_ids: gapIds, status }),
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
+  return data.updated ?? 0
+}
+
 export async function updateDocumentAuthority(
   orgId: string,
   docId: string,
