@@ -931,6 +931,35 @@ async function runSessions(args) {
   printJson(payload)
 }
 
+/**
+ * `--segments=personal,all` → ['personal','all'].
+ *
+ * Normalized the same way the server and dashboard do, so "SME & Business"
+ * typed in three places lands on one tag instead of three near-misses that
+ * silently never match.
+ */
+function parseSegmentsFlag(flags) {
+  const raw = flags.segments ?? flags.segment ?? flags['product-type'] ?? flags.products
+  if (raw === undefined || raw === true) return []
+  return Array.from(
+    new Set(
+      String(raw)
+        .split(',')
+        .map((part) =>
+          part
+            .trim()
+            .toLowerCase()
+            .replace(/&/g, ' and ')
+            .replace(/[^a-z0-9]+/g, '_')
+            .replace(/^_+|_+$/g, '')
+            .replace(/_+/g, '_')
+            .slice(0, 64)
+        )
+        .filter(Boolean)
+    )
+  ).slice(0, 20)
+}
+
 /** Extensions the backend can extract text from (PDF is deliberately absent). */
 const DOC_MIME = {
   '.md': 'text/markdown',
@@ -959,12 +988,26 @@ async function runDocs(args) {
 
   if (action === 'list') {
     const payload = await apiRequest('GET', base, undefined, flags, { auth: 'any' })
-    printTable(payload?.documents ?? [], [
+    const docs = payload?.documents ?? []
+    printTable(docs, [
       { label: 'DOC ID', value: (r) => r.doc_id ?? r.id },
       { label: 'NAME', value: (r) => r.file_name ?? r.filename ?? '—' },
       { label: 'STATUS', value: (r) => r.status ?? '—' },
       { label: 'CHUNKS', value: (r) => r.chunk_count ?? 0 },
+      // "every product" is the honest rendering of an empty tag list: it is
+      // what retrieval actually does, and reading a dash as "not in use yet"
+      // is how a workspace ships an untagged file into every product.
+      {
+        label: 'PRODUCTS',
+        value: (r) => (r.segments?.length ? r.segments.join(',') : 'every product'),
+      },
     ])
+    const untagged = docs.filter((d) => !d.segments?.length).length
+    if (untagged > 0 && docs.length > untagged) {
+      log('')
+      log(`${untagged} of ${docs.length} documents carry no tags, so they answer every product.`)
+      log('Tag them with `lira docs tag <doc_id> --segments=…` (or `--all` / `--untagged`).')
+    }
     return
   }
 
@@ -1005,12 +1048,89 @@ async function runDocs(args) {
       mime = 'text/markdown'
     }
 
-    const payload = await apiUpload(base, buffer, filename, mime, flags)
+    const segments = parseSegmentsFlag(flags)
+    const payload = await apiUpload(base, buffer, filename, mime, flags, segments)
     const doc = payload?.document ?? payload
     log(
       `Uploaded ${filename} — doc id ${doc?.doc_id ?? doc?.id}, status ${doc?.status ?? 'uploaded'}.`
     )
+    log(
+      segments.length > 0
+        ? `Scoped to: ${segments.join(', ')}.`
+        : 'No product tags, so this answers every product. Add --segments=… to scope it.'
+    )
     log('Indexing runs in the background; `lira docs list` shows when it is done.')
+    return
+  }
+
+  if (action === 'tag') {
+    const segments = parseSegmentsFlag(flags)
+    const all = asBool(flags.all, false)
+    const untaggedOnly = asBool(flags.untagged, false)
+    const match = typeof flags.match === 'string' ? flags.match.toLowerCase() : null
+
+    // Bulk: `--all`, `--untagged`, or `--match=<text in the filename>`. A
+    // knowledge base is tagged in one pass or not at all — doing it one id at a
+    // time is how half of it stays untagged, which is the failure this feature
+    // exists to prevent.
+    let targets
+    if (all || untaggedOnly || match) {
+      const listing = await apiRequest('GET', base, undefined, flags, { auth: 'any' })
+      targets = (listing?.documents ?? [])
+        .filter((d) => (untaggedOnly ? !d.segments?.length : true))
+        .filter((d) =>
+          match
+            ? String(d.file_name ?? '')
+                .toLowerCase()
+                .includes(match)
+            : true
+        )
+        .map((d) => ({ id: d.doc_id ?? d.id, name: d.file_name ?? d.doc_id ?? d.id }))
+      if (targets.length === 0) {
+        log('No documents matched, so nothing was changed.')
+        return
+      }
+      log(`Tagging ${targets.length} document${targets.length === 1 ? '' : 's'}…`)
+    } else {
+      const docId = requireValue(
+        positional || flags['doc-id'],
+        'document id (`lira docs tag <doc_id> --segments=personal,all`), or --all / --untagged / --match='
+      )
+      targets = [{ id: docId, name: docId }]
+    }
+
+    // No --segments clears the tags rather than doing nothing: putting a
+    // document back in front of every product should be as explicit as scoping
+    // it was, and it is the only way to undo a mistaken bulk run.
+    let failed = 0
+    for (const target of targets) {
+      try {
+        await apiRequest(
+          'PATCH',
+          `${base}/${encodeURIComponent(target.id)}/segments`,
+          { segments },
+          flags,
+          { auth: 'any' }
+        )
+        if (targets.length > 1) log(`  ${target.name} → ${segments.join(', ') || 'every product'}`)
+      } catch (err) {
+        failed++
+        log(`  ${target.name} FAILED: ${err instanceof Error ? err.message : 'unknown error'}`)
+      }
+    }
+
+    const done = targets.length - failed
+    log(
+      segments.length > 0
+        ? `${done} document${done === 1 ? '' : 's'} now ${done === 1 ? 'answers' : 'answer'}: ${segments.join(', ')}.`
+        : `${done} document${done === 1 ? '' : 's'} now ${done === 1 ? 'has' : 'have'} no tags, so ${done === 1 ? 'it answers' : 'they answer'} every product.`
+    )
+    // A partial bulk run is the dangerous outcome — some documents scoped and
+    // some not — so it exits non-zero and CI stops instead of reporting success.
+    if (failed > 0) {
+      log(`${failed} failed and were left unchanged.`)
+      process.exitCode = 1
+    }
     return
   }
 
@@ -1028,10 +1148,14 @@ async function runDocs(args) {
 
   if (action === 'ask') {
     const question = requireValue(positional || flags.query, 'a question (`lira docs ask "..."`)')
+    // Asking AS a product is the whole point of a smoke test here: it answers
+    // "what would a Personal customer actually be told?" without minting a
+    // session or opening the widget.
+    const askSegments = parseSegmentsFlag(flags)
     const payload = await apiRequest(
       'POST',
       `/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/query`,
-      { query: question },
+      askSegments.length > 0 ? { query: question, segments: askSegments } : { query: question },
       flags,
       { auth: 'any' }
     )
@@ -1047,20 +1171,23 @@ async function runDocs(args) {
     return
   }
 
-  throw new Error(`Unknown docs command: ${action}. Use list, add, rm, or ask.`)
+  throw new Error(`Unknown docs command: ${action}. Use list, add, tag, rm, or ask.`)
 }
 
 /**
  * Multipart upload. Kept separate from apiRequest because that one always sends
  * JSON, and the documents route reads a file part.
  */
-async function apiUpload(requestPath, buffer, filename, mime, flags) {
+async function apiUpload(requestPath, buffer, filename, mime, flags, segments = []) {
   if (typeof fetch !== 'function' || typeof FormData !== 'function') {
     throw new Error('This CLI requires Node.js 18+ because it uses the built-in fetch API.')
   }
   const token = authTokenOrJwt(flags)
   requireValue(token, 'Authentication token (run `lira login` or set LIRA_API_KEY)')
   const form = new FormData()
+  // Fields first, file last: the server reads the file part and the fields
+  // parsed alongside it, so a tag sent after the file can arrive too late.
+  if (segments.length > 0) form.append('segments', segments.join(','))
   form.append('file', new Blob([buffer], { type: mime }), filename)
   const response = await fetch(`${apiBase(flags)}${requestPath}`, {
     method: 'POST',
@@ -1108,11 +1235,21 @@ Developer keys:
   lira keys revoke --org-id=org-xxxx --key-id=<key_id>
 
 Knowledge base (needs a key with support:read / support:write):
-  lira docs list                                What Lira knows, and whether it finished indexing
+  lira docs list                                What Lira knows, its tags, and whether it indexed
   lira docs add --file=./handbook.docx          Upload a file (DOCX, TXT, MD, CSV, XLSX — not PDF)
   lira docs add --text="Refunds take 14 days." --title="Refunds"
   lira docs ask "How long do refunds take?"     Ask what a customer would ask
   lira docs rm <doc_id>                         Delete and free the slot
+
+One workspace, several products (Personal / Business / Corporate, brands, regions):
+  lira docs add --file=./personal-faq.md --segments=personal
+  lira docs add --file=./pin-reset.md --segments=all      Shared content, tagged once
+  lira docs tag <doc_id> --segments=personal,all          Re-tag one document
+  lira docs tag --untagged --segments=all                 Bulk: everything still untagged
+  lira docs tag --match=corporate --segments=corporate    Bulk: by filename
+  lira docs tag --all --segments=all                      Bulk: every document
+  lira docs ask "What do I need to open an account?" --segments=personal
+                                                Answer as a Personal customer would get it
 
 Native sessions:
   LIRA_API_KEY=lira_sk_... lira sessions mint --org-id=org-xxxx --email=customer@example.com --external-customer-id=cus_123 --context='{"product":"personal","platform":"ios"}'
