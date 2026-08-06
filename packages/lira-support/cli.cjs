@@ -932,6 +932,29 @@ async function runSessions(args) {
 }
 
 /**
+ * Crawled website pages. Kept beside documents everywhere tags are concerned:
+ * they are a separate record type but the SAME segment filter applies, and
+ * treating them separately is how half a knowledge base ends up untagged.
+ *
+ * Best-effort — a workspace that has never crawled anything should see no table
+ * rather than an error.
+ */
+async function listWebSources(orgId, flags) {
+  try {
+    const payload = await apiRequest(
+      'GET',
+      `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base`,
+      undefined,
+      flags,
+      { auth: 'any' }
+    )
+    return payload?.entries ?? []
+  } catch {
+    return []
+  }
+}
+
+/**
  * `--segments=personal,all` → ['personal','all'].
  *
  * Normalized the same way the server and dashboard do, so "SME & Business"
@@ -1002,11 +1025,36 @@ async function runDocs(args) {
         value: (r) => (r.segments?.length ? r.segments.join(',') : 'every product'),
       },
     ])
-    const untagged = docs.filter((d) => !d.segments?.length).length
-    if (untagged > 0 && docs.length > untagged) {
+    // Crawled pages are filtered by the SAME tags as documents, so counting only
+    // documents here is how a workspace reaches "0 untagged", turns on strict
+    // mode, and silently loses every page it ever crawled.
+    const pages = await listWebSources(orgId, flags)
+    if (pages.length > 0) {
       log('')
-      log(`${untagged} of ${docs.length} documents carry no tags, so they answer every product.`)
-      log('Tag them with `lira docs tag <doc_id> --segments=…` (or `--all` / `--untagged`).')
+      printTable(pages, [
+        { label: 'PAGE ID', value: (r) => r.page_id ?? r.id },
+        { label: 'TITLE', value: (r) => String(r.title ?? r.url ?? '—').slice(0, 44) },
+        {
+          label: 'PRODUCTS',
+          value: (r) => (r.segments?.length ? r.segments.join(',') : 'every product'),
+        },
+      ])
+    }
+
+    const untaggedDocs = docs.filter((d) => !d.segments?.length).length
+    const untaggedPages = pages.filter((p) => !p.segments?.length).length
+    const untagged = untaggedDocs + untaggedPages
+    const total = docs.length + pages.length
+    if (untagged > 0 && total > untagged) {
+      log('')
+      log(
+        `${untagged} of ${total} sources carry no tags (${untaggedDocs} document${untaggedDocs === 1 ? '' : 's'}, ` +
+          `${untaggedPages} crawled page${untaggedPages === 1 ? '' : 's'}), so they answer every product.`
+      )
+      log(
+        'Tag them with `lira docs tag --untagged --segments=…` (add --sources for crawled pages).'
+      )
+      log('Drive this to zero BEFORE turning on "Only answer from tagged documents".')
     }
     return
   }
@@ -1073,28 +1121,46 @@ async function runDocs(args) {
     // knowledge base is tagged in one pass or not at all — doing it one id at a
     // time is how half of it stays untagged, which is the failure this feature
     // exists to prevent.
+    // --sources switches the target set to crawled pages. Same tags, same
+    // filter, different record type — and the one people forget.
+    const onSources = asBool(flags.sources, false) || asBool(flags['web-sources'], false)
+    const patchPath = (id) =>
+      onSources
+        ? `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base/${encodeURIComponent(id)}/segments`
+        : `${base}/${encodeURIComponent(id)}/segments`
+
     let targets
     if (all || untaggedOnly || match) {
-      const listing = await apiRequest('GET', base, undefined, flags, { auth: 'any' })
-      targets = (listing?.documents ?? [])
+      const items = onSources
+        ? (await listWebSources(orgId, flags)).map((p) => ({
+            id: p.page_id ?? p.id,
+            name: p.title ?? p.url ?? p.page_id,
+            haystack: `${p.title ?? ''} ${p.url ?? ''}`,
+            segments: p.segments,
+          }))
+        : ((await apiRequest('GET', base, undefined, flags, { auth: 'any' }))?.documents ?? []).map(
+            (d) => ({
+              id: d.doc_id ?? d.id,
+              name: d.file_name ?? d.doc_id ?? d.id,
+              haystack: String(d.file_name ?? ''),
+              segments: d.segments,
+            })
+          )
+      targets = items
         .filter((d) => (untaggedOnly ? !d.segments?.length : true))
-        .filter((d) =>
-          match
-            ? String(d.file_name ?? '')
-                .toLowerCase()
-                .includes(match)
-            : true
-        )
-        .map((d) => ({ id: d.doc_id ?? d.id, name: d.file_name ?? d.doc_id ?? d.id }))
+        .filter((d) => (match ? d.haystack.toLowerCase().includes(match) : true))
+        .map((d) => ({ id: d.id, name: d.name }))
       if (targets.length === 0) {
         log('No documents matched, so nothing was changed.')
         return
       }
-      log(`Tagging ${targets.length} document${targets.length === 1 ? '' : 's'}…`)
+      log(
+        `Tagging ${targets.length} ${onSources ? 'crawled page' : 'document'}${targets.length === 1 ? '' : 's'}…`
+      )
     } else {
       const docId = requireValue(
-        positional || flags['doc-id'],
-        'document id (`lira docs tag <doc_id> --segments=personal,all`), or --all / --untagged / --match='
+        positional || flags['doc-id'] || flags['page-id'],
+        'a document id (`lira docs tag <doc_id> --segments=personal,all`), or --all / --untagged / --match= (add --sources for crawled pages)'
       )
       targets = [{ id: docId, name: docId }]
     }
@@ -1105,13 +1171,7 @@ async function runDocs(args) {
     let failed = 0
     for (const target of targets) {
       try {
-        await apiRequest(
-          'PATCH',
-          `${base}/${encodeURIComponent(target.id)}/segments`,
-          { segments },
-          flags,
-          { auth: 'any' }
-        )
+        await apiRequest('PATCH', patchPath(target.id), { segments }, flags, { auth: 'any' })
         if (targets.length > 1) log(`  ${target.name} → ${segments.join(', ') || 'every product'}`)
       } catch (err) {
         failed++
@@ -1120,10 +1180,11 @@ async function runDocs(args) {
     }
 
     const done = targets.length - failed
+    const noun = onSources ? 'crawled page' : 'document'
     log(
       segments.length > 0
-        ? `${done} document${done === 1 ? '' : 's'} now ${done === 1 ? 'answers' : 'answer'}: ${segments.join(', ')}.`
-        : `${done} document${done === 1 ? '' : 's'} now ${done === 1 ? 'has' : 'have'} no tags, so ${done === 1 ? 'it answers' : 'they answer'} every product.`
+        ? `${done} ${noun}${done === 1 ? '' : 's'} now ${done === 1 ? 'answers' : 'answer'}: ${segments.join(', ')}.`
+        : `${done} ${noun}${done === 1 ? '' : 's'} now ${done === 1 ? 'has' : 'have'} no tags, so ${done === 1 ? 'it answers' : 'they answer'} every product.`
     )
     // A partial bulk run is the dangerous outcome — some documents scoped and
     // some not — so it exits non-zero and CI stops instead of reporting success.
@@ -1248,8 +1309,12 @@ One workspace, several products (Personal / Business / Corporate, brands, region
   lira docs tag --untagged --segments=all                 Bulk: everything still untagged
   lira docs tag --match=corporate --segments=corporate    Bulk: by filename
   lira docs tag --all --segments=all                      Bulk: every document
+  lira docs tag --sources --untagged --segments=all       Bulk: crawled website pages
   lira docs ask "What do I need to open an account?" --segments=personal
                                                 Answer as a Personal customer would get it
+
+  Crawled pages obey the SAME tags as documents. \`lira docs list\` counts both —
+  drive that count to zero before turning on "Only answer from tagged documents".
 
 Native sessions:
   LIRA_API_KEY=lira_sk_... lira sessions mint --org-id=org-xxxx --email=customer@example.com --external-customer-id=cus_123 --context='{"product":"personal","platform":"ios"}'

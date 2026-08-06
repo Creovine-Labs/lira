@@ -419,8 +419,8 @@ function DocumentsPanel() {
               <span className="font-medium text-gray-700">Only answer from tagged documents</span>
               <br />
               {config?.kb_segment_strict
-                ? 'Untagged documents are ignored for customers on a known product. Anything you forget to tag will not be used at all.'
-                : 'Untagged documents answer every product. Turn this on once everything is tagged.'}
+                ? 'Untagged documents and crawled pages are ignored for customers on a known product. Anything you forget to tag will not be used at all.'
+                : 'Untagged documents answer every product. Turn this on once everything is tagged — including your Web Sources, which use the same tags.'}
             </span>
           </label>
         </div>
