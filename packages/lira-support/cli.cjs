@@ -931,6 +931,152 @@ async function runSessions(args) {
   printJson(payload)
 }
 
+/** Extensions the backend can extract text from (PDF is deliberately absent). */
+const DOC_MIME = {
+  '.md': 'text/markdown',
+  '.markdown': 'text/markdown',
+  '.txt': 'text/plain',
+  '.csv': 'text/csv',
+  '.json': 'application/json',
+  '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+}
+
+/**
+ * `lira docs` — knowledge base from the terminal.
+ *
+ * The dashboard's "Write a note directly" is a compose affordance, not a
+ * separate kind of object: it wraps the text in Markdown and uploads it as a
+ * document. `docs add --text` does exactly the same thing, so a note written
+ * here and a note written in the dashboard are the same record.
+ */
+async function runDocs(args) {
+  const action = args[0] && !args[0].startsWith('--') ? args[0] : 'list'
+  const positional = args[1] && !args[1].startsWith('--') ? args[1] : undefined
+  const flags = parseFlags(args.filter((a) => a.startsWith('--')))
+  const orgId = requireValue(defaultOrgId(flags), 'org id (`--org-id` or LIRA_ORG_ID)')
+  const base = `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents`
+
+  if (action === 'list') {
+    const payload = await apiRequest('GET', base, undefined, flags, { auth: 'any' })
+    printTable(payload?.documents ?? [], [
+      { label: 'DOC ID', value: (r) => r.doc_id ?? r.id },
+      { label: 'NAME', value: (r) => r.file_name ?? r.filename ?? '—' },
+      { label: 'STATUS', value: (r) => r.status ?? '—' },
+      { label: 'CHUNKS', value: (r) => r.chunk_count ?? 0 },
+    ])
+    return
+  }
+
+  if (action === 'add') {
+    const filePath = flags.file
+    const text = flags.text
+    if (!filePath && !text) {
+      throw new Error('Pass --file=<path> to upload a file, or --text="..." to write a note.')
+    }
+    if (filePath && text) {
+      throw new Error('Use either --file or --text, not both.')
+    }
+
+    let buffer
+    let filename
+    let mime
+    if (filePath) {
+      const resolved = path.resolve(process.cwd(), filePath)
+      if (!fs.existsSync(resolved)) throw new Error(`No such file: ${resolved}`)
+      buffer = fs.readFileSync(resolved)
+      filename = path.basename(resolved)
+      const ext = path.extname(filename).toLowerCase()
+      if (ext === '.pdf') {
+        throw new Error(
+          'PDFs are not supported — they are often image-based and extract badly. ' +
+            'Export to DOCX, TXT or Markdown first.'
+        )
+      }
+      mime = DOC_MIME[ext] || 'application/octet-stream'
+    } else {
+      // Same shape the dashboard produces: an optional title becomes an H1 so
+      // the heading is part of what gets embedded and cited.
+      const title = (flags.title || '').trim()
+      const body = String(text).trim()
+      if (!body) throw new Error('--text is empty.')
+      buffer = Buffer.from(title ? `# ${title}\n\n${body}\n` : `${body}\n`, 'utf8')
+      filename = `${(title || 'note').replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`
+      mime = 'text/markdown'
+    }
+
+    const payload = await apiUpload(base, buffer, filename, mime, flags)
+    const doc = payload?.document ?? payload
+    log(
+      `Uploaded ${filename} — doc id ${doc?.doc_id ?? doc?.id}, status ${doc?.status ?? 'uploaded'}.`
+    )
+    log('Indexing runs in the background; `lira docs list` shows when it is done.')
+    return
+  }
+
+  if (action === 'rm' || action === 'remove' || action === 'delete') {
+    const docId = requireValue(
+      positional || flags['doc-id'],
+      'document id (`lira docs rm <doc_id>`)'
+    )
+    await apiRequest('DELETE', `${base}/${encodeURIComponent(docId)}`, undefined, flags, {
+      auth: 'any',
+    })
+    log(`Deleted ${docId}. The slot it used is free again.`)
+    return
+  }
+
+  if (action === 'ask') {
+    const question = requireValue(positional || flags.query, 'a question (`lira docs ask "..."`)')
+    const payload = await apiRequest(
+      'POST',
+      `/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/query`,
+      { query: question },
+      flags,
+      { auth: 'any' }
+    )
+    log('')
+    log(payload?.answer ?? '(no answer)')
+    // One document usually contributes several chunks; showing it once is what
+    // answers "which document did this come from?".
+    const names = [...new Set((payload?.sources ?? []).map((s) => s.name).filter(Boolean))]
+    if (names.length) {
+      log('')
+      log(`Sources: ${names.join(', ')}`)
+    }
+    return
+  }
+
+  throw new Error(`Unknown docs command: ${action}. Use list, add, rm, or ask.`)
+}
+
+/**
+ * Multipart upload. Kept separate from apiRequest because that one always sends
+ * JSON, and the documents route reads a file part.
+ */
+async function apiUpload(requestPath, buffer, filename, mime, flags) {
+  if (typeof fetch !== 'function' || typeof FormData !== 'function') {
+    throw new Error('This CLI requires Node.js 18+ because it uses the built-in fetch API.')
+  }
+  const token = authTokenOrJwt(flags)
+  requireValue(token, 'Authentication token (run `lira login` or set LIRA_API_KEY)')
+  const form = new FormData()
+  form.append('file', new Blob([buffer], { type: mime }), filename)
+  const response = await fetch(`${apiBase(flags)}${requestPath}`, {
+    method: 'POST',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    body: form,
+  })
+  const text = await response.text()
+  const payload = text ? safeJson(text) : {}
+  if (!response.ok) {
+    throw new Error(
+      payload?.message || payload?.error || `Upload failed with HTTP ${response.status}`
+    )
+  }
+  return payload
+}
+
 function printHelp() {
   log(`Usage:
   lira init [--org-id=org-xxxx] [--org-name="My Co"]
@@ -960,6 +1106,13 @@ Developer keys:
   lira keys show --key-id=<key_id>              What is this key allowed to do?
   lira keys update --key-id=<key_id> --scopes=support:read,support:write
   lira keys revoke --org-id=org-xxxx --key-id=<key_id>
+
+Knowledge base (needs a key with support:read / support:write):
+  lira docs list                                What Lira knows, and whether it finished indexing
+  lira docs add --file=./handbook.docx          Upload a file (DOCX, TXT, MD, CSV, XLSX — not PDF)
+  lira docs add --text="Refunds take 14 days." --title="Refunds"
+  lira docs ask "How long do refunds take?"     Ask what a customer would ask
+  lira docs rm <doc_id>                         Delete and free the slot
 
 Native sessions:
   LIRA_API_KEY=lira_sk_... lira sessions mint --org-id=org-xxxx --email=customer@example.com --external-customer-id=cus_123 --context='{"product":"personal","platform":"ios"}'
@@ -1037,6 +1190,11 @@ async function main() {
   }
   if (subcommand === 'sessions') {
     await runSessions(args.slice(1))
+    closeRl()
+    return
+  }
+  if (subcommand === 'docs' || subcommand === 'kb') {
+    await runDocs(args.slice(1))
     closeRl()
     return
   }
