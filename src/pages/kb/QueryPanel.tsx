@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import { useOrgStore, useDocumentStore, useKBStore } from '@/app/store'
 import { queryKnowledgeBase, type KBQueryMessage, type KBQuerySource } from '@/services/api'
 import { cn } from '@/lib'
+import { parseKbSegments } from '@/lib/kbSegments'
 
 interface ChatMessage {
   role: 'user' | 'assistant'
@@ -24,6 +25,7 @@ function QueryPanel() {
 
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [input, setInput] = useState('')
+  const [segments, setSegments] = useState('')
   const [loading, setLoading] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -50,7 +52,12 @@ function QueryPanel() {
     }))
 
     try {
-      const res = await queryKnowledgeBase(currentOrgId, trimmed, history)
+      const res = await queryKnowledgeBase(
+        currentOrgId,
+        trimmed,
+        history,
+        parseKbSegments(segments)
+      )
       setMessages((prev) => [
         ...prev,
         { role: 'assistant', content: res.answer, sources: res.sources },
@@ -93,6 +100,21 @@ function QueryPanel() {
   // ── Chat interface ──────────────────────────────────────────────────────
   return (
     <div className="flex flex-col" style={{ height: 'calc(100vh - 280px)', minHeight: '400px' }}>
+      <div className="mb-3 rounded-2xl border border-white/60 bg-white px-4 py-3 shadow-sm">
+        <label
+          htmlFor="kb-query-segments"
+          className="text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+        >
+          Test segment
+        </label>
+        <input
+          id="kb-query-segments"
+          value={segments}
+          onChange={(e) => setSegments(e.target.value)}
+          placeholder="personal, business, corporate"
+          className="mt-1 w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+        />
+      </div>
       {/* Messages */}
       <div
         ref={scrollRef}

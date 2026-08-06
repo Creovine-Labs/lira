@@ -579,6 +579,7 @@ export interface KBEntry {
   title: string
   summary?: string
   keywords?: string[]
+  segments?: string[]
   category: 'about' | 'product' | 'docs' | 'blog' | 'other'
   crawled_at: string
   embedding_count: number
@@ -608,6 +609,7 @@ export interface DocumentRecord {
   page_count?: number
   summary?: string
   keywords?: string[]
+  segments?: string[]
   uploaded_by: string
   created_at: string
   updated_at: string
@@ -941,7 +943,7 @@ export async function getDashboardStats(orgId: string): Promise<DashboardStats> 
 export async function triggerCrawl(
   orgId: string,
   url: string,
-  options?: { max_pages?: number; include_urls?: string[] }
+  options?: { max_pages?: number; include_urls?: string[]; segments?: string[] }
 ): Promise<void> {
   await apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}/crawl`, {
     method: 'POST',
@@ -984,10 +986,15 @@ export async function clearKnowledgeBase(orgId: string): Promise<void> {
 
 // ── Document API ──────────────────────────────────────────────────────────────
 
-export async function uploadDocument(orgId: string, file: File): Promise<DocumentRecord> {
+export async function uploadDocument(
+  orgId: string,
+  file: File,
+  segments?: string[]
+): Promise<DocumentRecord> {
   const token = credentials.getToken()
   const formData = new FormData()
   formData.append('file', file)
+  if (segments && segments.length > 0) formData.append('segments', segments.join(','))
 
   const res = await fetch(
     `${env.VITE_API_URL}/lira/v1/orgs/${encodeURIComponent(orgId)}/documents`,
@@ -1050,6 +1057,38 @@ export async function reprocessDocument(orgId: string, docId: string): Promise<v
   )
 }
 
+export async function updateDocumentSegments(
+  orgId: string,
+  docId: string,
+  segments: string[]
+): Promise<DocumentRecord> {
+  const data = await apiFetch<{ document: DocumentRecord }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents/${encodeURIComponent(docId)}/segments`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ segments }),
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
+  return data.document
+}
+
+export async function updateKBEntrySegments(
+  orgId: string,
+  entryId: string,
+  segments: string[]
+): Promise<KBEntry> {
+  const data = await apiFetch<{ entry: KBEntry }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base/${encodeURIComponent(entryId)}/segments`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ segments }),
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
+  return data.entry
+}
+
 // ── Connected Documents API ───────────────────────────────────────────────────
 
 export interface ConnectedFile {
@@ -1092,13 +1131,15 @@ export async function importConnectedDocument(
   mimeType?: string,
   repo?: string,
   path?: string,
-  ref?: string
+  ref?: string,
+  segments?: string[]
 ): Promise<DocumentRecord> {
-  const body: Record<string, string> = { source, file_id: fileId, file_name: fileName }
+  const body: Record<string, string | string[]> = { source, file_id: fileId, file_name: fileName }
   if (mimeType) body.mime_type = mimeType
   if (repo) body.repo = repo
   if (path) body.path = path
   if (ref) body.ref = ref
+  if (segments && segments.length > 0) body.segments = segments
 
   const data = await apiFetch<{ document: DocumentRecord }>(
     `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents/import`,
@@ -2526,13 +2567,15 @@ export interface KBQueryResponse {
 export async function queryKnowledgeBase(
   orgId: string,
   query: string,
-  conversationHistory?: KBQueryMessage[]
+  conversationHistory?: KBQueryMessage[],
+  segments?: string[]
 ): Promise<KBQueryResponse> {
   return apiFetch(`/lira/v1/orgs/${encodeURIComponent(orgId)}/kb/query`, {
     method: 'POST',
     body: JSON.stringify({
       query,
       ...(conversationHistory?.length ? { conversation_history: conversationHistory } : {}),
+      ...(segments?.length ? { segments } : {}),
     }),
   })
 }

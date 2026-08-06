@@ -288,6 +288,7 @@ interface KBSlice {
   setCrawlStatus: (status: CrawlStatus | null) => void
   setLoading: (v: boolean) => void
   removeEntry: (id: string) => void
+  updateEntry: (id: string, updates: Partial<KBEntry>) => void
   clear: () => void
 }
 
@@ -299,6 +300,8 @@ export const useKBStore = create<KBSlice>()((set) => ({
   setCrawlStatus: (crawlStatus) => set({ crawlStatus }),
   setLoading: (loading) => set({ loading }),
   removeEntry: (id) => set((s) => ({ entries: s.entries.filter((e) => e.id !== id) })),
+  updateEntry: (id, updates) =>
+    set((s) => ({ entries: s.entries.map((e) => (e.id === id ? { ...e, ...updates } : e)) })),
   clear: () => set({ entries: [], crawlStatus: null }),
 }))
 

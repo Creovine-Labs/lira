@@ -21,9 +21,11 @@ import {
   deleteDocument,
   getDocumentDownloadUrl,
   reprocessDocument,
+  updateDocumentSegments,
   type DocumentRecord,
 } from '@/services/api'
 import { cn } from '@/lib'
+import { formatKbSegments, parseKbSegments } from '@/lib/kbSegments'
 
 const STATUS_CONFIG: Record<
   DocumentRecord['status'],
@@ -67,6 +69,7 @@ function DocumentsPanel() {
     setDocuments,
     addDocument,
     removeDocument: removeDocFromStore,
+    updateDocument,
     setLoading,
   } = useDocumentStore()
 
@@ -77,6 +80,9 @@ function DocumentsPanel() {
   const [noteTitle, setNoteTitle] = useState('')
   const [noteBody, setNoteBody] = useState('')
   const [noteSaving, setNoteSaving] = useState(false)
+  const [newSourceSegments, setNewSourceSegments] = useState('all')
+  const [segmentEdits, setSegmentEdits] = useState<Record<string, string>>({})
+  const [savingSegments, setSavingSegments] = useState<Record<string, boolean>>({})
   const pollErrorCount = useRef(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
@@ -138,7 +144,7 @@ function DocumentsPanel() {
     let successCount = 0
     for (const file of validFiles) {
       try {
-        const doc = await uploadDocument(currentOrgId, file)
+        const doc = await uploadDocument(currentOrgId, file, parseKbSegments(newSourceSegments))
         addDocument(doc)
         successCount++
       } catch (err) {
@@ -195,7 +201,7 @@ function DocumentsPanel() {
       const file = new File([blob], `${title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}.md`, {
         type: 'text/markdown',
       })
-      const doc = await uploadDocument(currentOrgId, file)
+      const doc = await uploadDocument(currentOrgId, file, parseKbSegments(newSourceSegments))
       addDocument(doc)
       toast.success('Note saved and indexing')
       setNoteTitle('')
@@ -213,6 +219,30 @@ function DocumentsPanel() {
     setDragging(false)
     if (e.dataTransfer.files.length > 0) {
       handleUpload(e.dataTransfer.files)
+    }
+  }
+
+  async function handleSaveSegments(doc: DocumentRecord) {
+    if (!currentOrgId) return
+    const next = parseKbSegments(segmentEdits[doc.doc_id] ?? formatKbSegments(doc.segments))
+    setSavingSegments((prev) => ({ ...prev, [doc.doc_id]: true }))
+    try {
+      const updated = await updateDocumentSegments(currentOrgId, doc.doc_id, next)
+      updateDocument(doc.doc_id, {
+        segments: updated.segments ?? next,
+        updated_at: updated.updated_at,
+      })
+      setSegmentEdits((prev) => ({
+        ...prev,
+        [doc.doc_id]: formatKbSegments(updated.segments ?? next),
+      }))
+      toast.success('Document segments updated')
+    } catch (err) {
+      toast.error(
+        `Failed to update segments: ${err instanceof Error ? err.message : 'Unknown error'}`
+      )
+    } finally {
+      setSavingSegments((prev) => ({ ...prev, [doc.doc_id]: false }))
     }
   }
 
@@ -329,6 +359,24 @@ function DocumentsPanel() {
             Write a note directly
           </button>
         )}
+        <div className="mb-3 rounded-xl border border-gray-100 bg-gray-50 px-3 py-2.5">
+          <label
+            htmlFor="kb-document-segments"
+            className="text-[11px] font-semibold uppercase tracking-wide text-gray-500"
+          >
+            Product / segment tags
+          </label>
+          <input
+            id="kb-document-segments"
+            value={newSourceSegments}
+            onChange={(e) => setNewSourceSegments(e.target.value)}
+            placeholder="all, personal, business, corporate"
+            className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+          />
+          <p className="mt-1 text-xs text-gray-400">
+            Use all for shared content. Use comma-separated tags for product-specific documents.
+          </p>
+        </div>
         <div
           onDragOver={(e) => {
             e.preventDefault()
@@ -419,6 +467,40 @@ function DocumentsPanel() {
                     {doc.summary && (
                       <p className="mt-1 text-xs text-gray-400 line-clamp-1">{doc.summary}</p>
                     )}
+                    <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                      <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                        {(doc.segments?.length ? doc.segments : ['untagged']).map((segment) => (
+                          <span
+                            key={segment}
+                            className={cn(
+                              'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                              segment === 'untagged'
+                                ? 'bg-red-50 text-red-500'
+                                : 'bg-slate-100 text-slate-600'
+                            )}
+                          >
+                            {segment}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex w-full gap-2 sm:w-72">
+                        <input
+                          value={segmentEdits[doc.doc_id] ?? formatKbSegments(doc.segments)}
+                          onChange={(e) =>
+                            setSegmentEdits((prev) => ({ ...prev, [doc.doc_id]: e.target.value }))
+                          }
+                          placeholder="all, personal"
+                          className="min-w-0 flex-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                        />
+                        <button
+                          onClick={() => handleSaveSegments(doc)}
+                          disabled={savingSegments[doc.doc_id]}
+                          className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:border-[#3730a3]/40 hover:text-[#3730a3] disabled:opacity-40"
+                        >
+                          Save
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   <span

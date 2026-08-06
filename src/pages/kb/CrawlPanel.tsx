@@ -18,9 +18,11 @@ import {
   deleteKBEntry,
   clearKnowledgeBase,
   getOrganization,
+  updateKBEntrySegments,
 } from '@/services/api'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { cn } from '@/lib'
+import { formatKbSegments, parseKbSegments } from '@/lib/kbSegments'
 
 const CATEGORY_COLORS: Record<string, string> = {
   about: 'bg-[#3730a3]/10 text-[#3730a3]',
@@ -32,10 +34,19 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 function CrawlPanel() {
   const { currentOrgId } = useOrgStore()
-  const { entries, crawlStatus, loading, setEntries, setCrawlStatus, setLoading, removeEntry } =
-    useKBStore()
+  const {
+    entries,
+    crawlStatus,
+    loading,
+    setEntries,
+    setCrawlStatus,
+    setLoading,
+    removeEntry,
+    updateEntry,
+  } = useKBStore()
 
   const [crawlUrl, setCrawlUrl] = useState('')
+  const [crawlSegments, setCrawlSegments] = useState('all')
   const [crawling, setCrawling] = useState(false)
   const [crawlError, setCrawlError] = useState<string | null>(null)
   const [clearing, setClearing] = useState(false)
@@ -46,6 +57,8 @@ function CrawlPanel() {
     confirmLabel: string
     onConfirm: () => Promise<void>
   } | null>(null)
+  const [segmentEdits, setSegmentEdits] = useState<Record<string, string>>({})
+  const [savingSegments, setSavingSegments] = useState<Record<string, boolean>>({})
 
   const loadData = useCallback(async () => {
     if (!currentOrgId) return
@@ -105,7 +118,10 @@ function CrawlPanel() {
     setCrawling(true)
     setCrawlError(null)
     try {
-      await triggerCrawl(currentOrgId, crawlUrl.trim(), { max_pages: 100 })
+      await triggerCrawl(currentOrgId, crawlUrl.trim(), {
+        max_pages: 100,
+        segments: parseKbSegments(crawlSegments),
+      })
       setCrawlStatus({ status: 'crawling', pages_crawled: 0 })
       toast.success('Crawl started!')
       startStatusPolling()
@@ -155,6 +171,27 @@ function CrawlPanel() {
         }
       },
     })
+  }
+
+  async function handleSaveSegments(entryId: string, currentSegments?: string[]) {
+    if (!currentOrgId) return
+    const next = parseKbSegments(segmentEdits[entryId] ?? formatKbSegments(currentSegments))
+    setSavingSegments((prev) => ({ ...prev, [entryId]: true }))
+    try {
+      const updated = await updateKBEntrySegments(currentOrgId, entryId, next)
+      updateEntry(entryId, { segments: updated.segments ?? next })
+      setSegmentEdits((prev) => ({
+        ...prev,
+        [entryId]: formatKbSegments(updated.segments ?? next),
+      }))
+      toast.success('Page segments updated')
+    } catch (err) {
+      toast.error(
+        `Failed to update segments: ${err instanceof Error ? err.message : 'Unknown error'}`
+      )
+    } finally {
+      setSavingSegments((prev) => ({ ...prev, [entryId]: false }))
+    }
   }
 
   const isCrawling = crawlStatus?.status === 'crawling'
@@ -283,6 +320,25 @@ function CrawlPanel() {
               Crawl
             </button>
           </div>
+          <div className="mt-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+            <label
+              htmlFor="kb-crawl-segments"
+              className="text-[11px] font-semibold uppercase tracking-wide text-white/45"
+            >
+              Product / segment tags
+            </label>
+            <input
+              id="kb-crawl-segments"
+              value={crawlSegments}
+              onChange={(e) => setCrawlSegments(e.target.value)}
+              placeholder="all, personal, business, corporate"
+              disabled={isCrawling}
+              className="mt-1 w-full rounded-lg border border-white/15 bg-white px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/30 disabled:opacity-40"
+            />
+            <p className="mt-1 text-xs text-white/35">
+              Use all for shared pages. Product-specific crawls only answer matching sessions.
+            </p>
+          </div>
           {crawlError && (
             <p className="mt-2 flex items-center gap-1.5 text-xs text-red-400">
               <ExclamationCircleIcon className="h-3 w-3 shrink-0" />
@@ -365,6 +421,40 @@ function CrawlPanel() {
                   {entry.summary && (
                     <p className="mt-1 line-clamp-2 text-xs text-gray-400">{entry.summary}</p>
                   )}
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <div className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                      {(entry.segments?.length ? entry.segments : ['untagged']).map((segment) => (
+                        <span
+                          key={segment}
+                          className={cn(
+                            'rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide',
+                            segment === 'untagged'
+                              ? 'bg-red-50 text-red-500'
+                              : 'bg-slate-100 text-slate-600'
+                          )}
+                        >
+                          {segment}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="flex w-full gap-2 sm:w-72">
+                      <input
+                        value={segmentEdits[entry.id] ?? formatKbSegments(entry.segments)}
+                        onChange={(e) =>
+                          setSegmentEdits((prev) => ({ ...prev, [entry.id]: e.target.value }))
+                        }
+                        placeholder="all, personal"
+                        className="min-w-0 flex-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-900 outline-none focus:border-[#3730a3] focus:ring-2 focus:ring-[#3730a3]/20"
+                      />
+                      <button
+                        onClick={() => handleSaveSegments(entry.id, entry.segments)}
+                        disabled={savingSegments[entry.id]}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-600 transition hover:border-[#3730a3]/40 hover:text-[#3730a3] disabled:opacity-40"
+                      >
+                        Save
+                      </button>
+                    </div>
+                  </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
                     <a
                       href={entry.source_url}
