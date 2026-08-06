@@ -1372,7 +1372,7 @@ function SupportEnvironmentCard() {
       toast.success(
         next === 'production'
           ? "You're live — your plan's limits now apply and your billing period has started."
-          : 'Back in test mode — real sends are suppressed and testing caps apply.'
+          : 'Back in sandbox — real sends are suppressed and sandbox caps apply.'
       )
     } catch (err) {
       // 402 SUBSCRIPTION_REQUIRED — the backend enforces billing on go-live.
@@ -1395,7 +1395,7 @@ function SupportEnvironmentCard() {
     }
     if (
       window.confirm(
-        'Return this workspace to test mode? All real outbound sends stop and the widget shows a TEST badge.'
+        'Return this workspace to sandbox? All real outbound sends stop and the widget shows a SANDBOX badge.'
       )
     ) {
       void applyEnvironment('sandbox')
@@ -1407,32 +1407,27 @@ function SupportEnvironmentCard() {
       <div className="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="text-sm font-semibold text-gray-900">Workspace mode</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Environment</h2>
             <span
               className={cn(
                 'rounded-full px-2 py-0.5 text-[10px] font-bold tracking-wider',
                 isSandbox ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-700'
               )}
             >
-              {isSandbox ? 'TEST MODE' : 'LIVE'}
+              {isSandbox ? 'SANDBOX' : 'PRODUCTION'}
             </span>
           </div>
           <p className="mt-1 text-xs text-gray-500">
             {isSandbox ? (
               <>
-                This workspace is in <span className="font-medium">test mode</span>: no real emails
-                are sent (previewed only) and the widget shows a TEST badge. Going live turns on
-                real sends for your <span className="font-mono">live</span> keys, starts your
-                billing period and applies your plan&apos;s limits — your test keys keep working
-                exactly as they do now.
+                Try everything for free. No real emails are sent (previewed only) and the widget
+                shows a SANDBOX badge. Moving to production turns on real sends and starts billing.
               </>
             ) : (
               <>
-                This workspace is <span className="font-medium">live</span>. Traffic from your{' '}
-                <span className="font-mono">live</span> keys reaches real customers and counts
-                against your plan; traffic from your <span className="font-mono">test</span> keys
-                stays suppressed and separately capped. You can return to test mode to pause all
-                real sends.
+                This workspace is in <span className="font-medium">production</span> — real sends
+                are on and your plan&apos;s limits and billing apply. Sandbox stays available for
+                testing.
               </>
             )}
           </p>
@@ -1447,7 +1442,7 @@ function SupportEnvironmentCard() {
               isSandbox ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            Test mode
+            Sandbox
           </button>
           <button
             type="button"
@@ -1458,7 +1453,7 @@ function SupportEnvironmentCard() {
               !isSandbox ? 'bg-white text-[#1A1A1A] shadow-sm' : 'text-gray-400 hover:text-gray-600'
             )}
           >
-            Live
+            Production
           </button>
         </div>
       </div>

@@ -902,12 +902,12 @@ class LiraSupportWidget {
     return this.isFullscreen() && this.config.layout !== 'messenger'
   }
 
-  /** Append a TEST pill to a bubble-widget header when this embed is in test mode. */
+  /** Append a SANDBOX pill to a bubble-widget header when the embed is in sandbox. */
   private maybeAppendSandboxBadge(header: HTMLElement): void {
     if (this.config.environment !== 'sandbox') return
     const badge = document.createElement('span')
     badge.className = 'lira-header-sandbox'
-    badge.textContent = 'TEST'
+    badge.textContent = 'SANDBOX'
     header.appendChild(badge)
   }
 
@@ -1389,7 +1389,7 @@ class LiraSupportWidget {
     if (this.config.environment === 'sandbox') {
       const badge = document.createElement('span')
       badge.className = 'lira-sc-sandbox'
-      badge.textContent = 'TEST'
+      badge.textContent = 'SANDBOX'
       brand.appendChild(badge)
     }
     if (greetName) {

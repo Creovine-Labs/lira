@@ -57,12 +57,18 @@ const primaryBtn =
 const ghostBtn =
   'rounded-lg border px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50'
 
-/** Test and live keys are both valid at once, so the mode is always shown. */
+/**
+ * Sandbox and production keys are both valid at once, so every key shows which
+ * environment it belongs to. The badge says sandbox/production — the words used
+ * everywhere else in the dashboard — while the key itself keeps its
+ * `_test_` / `_live_` prefix, which is the convention developers expect and
+ * what is already deployed in customers' backends.
+ */
 function ModeBadge({ mode }: { mode?: LiraKeyMode }) {
   if (!mode) {
     return (
       <span
-        title="Created before test/live keys — this key follows your workspace environment."
+        title="Created before per-environment keys — this key follows your workspace environment."
         className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-gray-500"
       >
         Legacy
@@ -76,7 +82,7 @@ function ModeBadge({ mode }: { mode?: LiraKeyMode }) {
         mode === 'live' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
       )}
     >
-      {mode}
+      {mode === 'live' ? 'production' : 'sandbox'}
     </span>
   )
 }
@@ -125,14 +131,14 @@ export function SupportPublishableKeys() {
     if (!currentOrgId) return
     const warning =
       mode === 'live'
-        ? 'Rotate the LIVE publishable key? Every production embed stops working until you redeploy with the new key.'
-        : 'Rotate the test publishable key? Staging embeds stop working until you update them.'
+        ? 'Rotate the PRODUCTION publishable key? Every live embed stops working until you redeploy with the new key.'
+        : 'Rotate the sandbox publishable key? Staging embeds stop working until you update them.'
     if (!confirm(warning)) return
     setRotating(mode)
     try {
       const { key } = await rotatePublishableKey(currentOrgId, mode)
       setKeys((cur) => (cur ? { ...cur, [mode]: key } : cur))
-      toast.success(`${mode === 'live' ? 'Live' : 'Test'} publishable key rotated`)
+      toast.success(`${mode === 'live' ? 'Production' : 'Sandbox'} publishable key rotated`)
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to rotate')
     } finally {
@@ -145,7 +151,7 @@ export function SupportPublishableKeys() {
   return (
     <SCard
       title="Publishable keys"
-      hint="Public keys for your website and mobile embeds — safe to ship in your HTML. The key decides the mode: a staging site embedding the test key produces test traffic (own quota, no real sends), while your production site runs live on the same workspace."
+      hint="Public keys for your website and mobile embeds — safe to ship in your HTML. The key decides the environment: your staging site embeds the sandbox key, your live site embeds the production key, and both work at the same time."
     >
       {loading ? (
         <div className="flex justify-center py-6">
@@ -158,7 +164,7 @@ export function SupportPublishableKeys() {
               <div className="mb-1.5 flex items-center gap-2">
                 <ModeBadge mode={mode} />
                 <span className="text-[13px] font-semibold text-gray-900">
-                  {mode === 'test' ? 'Staging / development' : 'Production'}
+                  {mode === 'test' ? 'Sandbox' : 'Production'}
                 </span>
                 <button
                   type="button"
@@ -182,7 +188,7 @@ export function SupportPublishableKeys() {
   async></script>`}
             </pre>
             <p className="mt-1.5 text-xs text-gray-500">
-              Swap in the live key on your production deploy. An embed with no key keeps following
+              Swap in the production key on your live deploy. An embed with no key keeps following
               your workspace environment, exactly as before.
             </p>
           </div>
@@ -451,12 +457,12 @@ function CreateKeyModal(props: {
                     [
                       {
                         value: 'test' as const,
-                        label: 'Test',
-                        desc: 'For staging and local development. Own quota, real emails/Slack/Linear/webhooks suppressed, and it stays out of your live inbox.',
+                        label: 'Sandbox',
+                        desc: 'For staging and local development. Its own quota, no real emails, Slack, Linear or webhooks, and it stays out of your production inbox.',
                       },
                       {
                         value: 'live' as const,
-                        label: 'Live',
+                        label: 'Production',
                         desc: 'For your production backend. Real sends, your plan’s limits and billing.',
                       },
                     ] satisfies Array<{ value: LiraKeyMode; label: string; desc: string }>
