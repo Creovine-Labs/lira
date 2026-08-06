@@ -4,7 +4,6 @@ import {
   KeyIcon,
   ExclamationTriangleIcon,
   ClipboardDocumentIcon,
-  ChevronRightIcon,
   XMarkIcon,
   CheckCircleIcon,
 } from '@heroicons/react/24/outline'
@@ -495,8 +494,9 @@ function CreateKeyModal(props: {
   // Defaults to test — a new key is never live by accident, and it matches
   // where an integration starts.
   const [mode, setMode] = useState<LiraKeyMode>('test')
-  const [scopes, setScopes] = useState<Set<DeveloperKeyScope>>(new Set(['mcp:read', 'mcp:write']))
-  const [scopesOpen, setScopesOpen] = useState(false)
+  // Deliberately empty: pre-ticking scopes is how a key ends up with more than
+  // its owner intended. `create()` refuses to submit with none selected.
+  const [scopes, setScopes] = useState<Set<DeveloperKeyScope>>(new Set())
   const [expiryMode, setExpiryMode] = useState<'never' | 'date'>('never')
   const [expiryDate, setExpiryDate] = useState('')
   const [saving, setSaving] = useState(false)
@@ -651,34 +651,30 @@ function CreateKeyModal(props: {
 
               {/* Permissions */}
               <div>
-                <p className="mb-1.5 text-[13px] font-semibold text-gray-900">Permissions</p>
-                <label className="flex cursor-pointer items-center gap-2.5 rounded-lg border border-gray-200 px-3 py-2.5 hover:bg-gray-50">
-                  <input
-                    type="checkbox"
-                    aria-label="All permissions"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    className="h-4 w-4 rounded border-gray-300"
-                  />
-                  <span className="text-[13px] font-semibold text-gray-900">All permissions</span>
-                  <span className="ml-auto text-[11px] text-gray-400">{scopes.size} selected</span>
-                </label>
+                <div className="mb-1.5 flex items-center gap-2">
+                  <p className="text-[13px] font-semibold text-gray-900">Permissions</p>
+                  <span className="text-[11px] text-gray-400">
+                    {scopes.size === 0 ? 'none selected' : `${scopes.size} selected`}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={toggleAll}
+                    className="ml-auto text-[11px] font-semibold text-gray-500 hover:text-gray-900"
+                  >
+                    {allSelected ? 'Clear all' : 'Select all'}
+                  </button>
+                </div>
+                <p className="mb-2 text-xs text-gray-500">
+                  Grant only what this key needs — a key that mints sessions rarely needs anything
+                  else. You can change these later without re-issuing the key.
+                </p>
 
-                <button
-                  type="button"
-                  onClick={() => setScopesOpen((o) => !o)}
-                  className="mt-2 flex w-full items-center gap-1.5 text-[13px] font-semibold text-gray-600 hover:text-gray-900"
-                >
-                  <ChevronRightIcon
-                    className={cn(
-                      'h-4 w-4 text-gray-400 transition-transform',
-                      scopesOpen && 'rotate-90'
-                    )}
-                  />
-                  Choose specific permissions
-                </button>
-
-                {scopesOpen && (
+                {/* Always visible. This list used to be collapsed behind a
+                    disclosure with an "All permissions" checkbox on top, which
+                    read as a section header — a customer selecting one scope
+                    ended up with all five and only found out when a support
+                    engineer asked. What you grant must be what you can see. */}
+                {
                   <div className="mt-2 space-y-1.5">
                     {SCOPES.map((s) => {
                       const checked = scopes.has(s.value)
@@ -709,7 +705,7 @@ function CreateKeyModal(props: {
                       )
                     })}
                   </div>
-                )}
+                }
 
                 {scopes.has('sessions:mint') && (
                   <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
