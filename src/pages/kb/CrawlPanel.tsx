@@ -19,6 +19,8 @@ import {
   clearKnowledgeBase,
   getOrganization,
   updateKBEntrySegments,
+  updateKBEntryAuthority,
+  type KBEntry,
 } from '@/services/api'
 import { ConfirmDialog } from '@/components/common/ConfirmDialog'
 import { cn } from '@/lib'
@@ -59,6 +61,7 @@ function CrawlPanel() {
   } | null>(null)
   const [segmentEdits, setSegmentEdits] = useState<Record<string, string>>({})
   const [savingSegments, setSavingSegments] = useState<Record<string, boolean>>({})
+  const [savingAuthority, setSavingAuthority] = useState<Record<string, boolean>>({})
 
   const loadData = useCallback(async () => {
     if (!currentOrgId) return
@@ -171,6 +174,28 @@ function CrawlPanel() {
         }
       },
     })
+  }
+
+  async function handleSaveAuthority(entryId: string, level: KBEntry['authority']) {
+    if (!currentOrgId || !level) return
+    setSavingAuthority((prev) => ({ ...prev, [entryId]: true }))
+    try {
+      const updated = await updateKBEntryAuthority(currentOrgId, entryId, level)
+      updateEntry(entryId, { authority: updated.authority ?? level })
+      toast.success(
+        level === 'primary'
+          ? 'Lira will answer from this page ahead of your documents.'
+          : level === 'background'
+            ? 'This page is used only when nothing else matches.'
+            : 'This page now ranks alongside your documents.'
+      )
+    } catch (err) {
+      toast.error(
+        `Could not change priority: ${err instanceof Error ? err.message : 'Unknown error'}`
+      )
+    } finally {
+      setSavingAuthority((prev) => ({ ...prev, [entryId]: false }))
+    }
   }
 
   async function handleSaveSegments(entryId: string, currentSegments?: string[]) {
@@ -454,6 +479,24 @@ function CrawlPanel() {
                         Save
                       </button>
                     </div>
+                    {/*
+                      Crawled pages default to "only if nothing else matches" —
+                      a marketing page should not outrank a written policy just
+                      because it repeats more of the customer's words. Raise it
+                      when the site IS the authority (a real help centre).
+                    */}
+                    <select
+                      value={entry.authority ?? 'background'}
+                      disabled={savingAuthority[entry.id]}
+                      onChange={(e) =>
+                        void handleSaveAuthority(entry.id, e.target.value as KBEntry['authority'])
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-[#3730a3] disabled:opacity-40 sm:w-64"
+                    >
+                      <option value="primary">Answer from this first</option>
+                      <option value="normal">Same priority as documents</option>
+                      <option value="background">Only if nothing else matches</option>
+                    </select>
                   </div>
                   <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-gray-400">
                     <a

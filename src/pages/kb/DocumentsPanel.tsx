@@ -23,6 +23,7 @@ import {
   getDocumentDownloadUrl,
   reprocessDocument,
   updateDocumentSegments,
+  updateDocumentAuthority,
   type DocumentRecord,
 } from '@/services/api'
 import { cn } from '@/lib'
@@ -87,6 +88,7 @@ function DocumentsPanel() {
   const [newSourceSegments, setNewSourceSegments] = useState('all')
   const [segmentEdits, setSegmentEdits] = useState<Record<string, string>>({})
   const [savingStrict, setSavingStrict] = useState(false)
+  const [savingAuthority, setSavingAuthority] = useState<Record<string, boolean>>({})
   const [savingSegments, setSavingSegments] = useState<Record<string, boolean>>({})
   const pollErrorCount = useRef(0)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -243,6 +245,31 @@ function DocumentsPanel() {
     setDragging(false)
     if (e.dataTransfer.files.length > 0) {
       handleUpload(e.dataTransfer.files)
+    }
+  }
+
+  async function handleSaveAuthority(doc: DocumentRecord, level: DocumentRecord['authority']) {
+    if (!currentOrgId || !level) return
+    setSavingAuthority((prev) => ({ ...prev, [doc.doc_id]: true }))
+    try {
+      const updated = await updateDocumentAuthority(currentOrgId, doc.doc_id, level)
+      updateDocument(doc.doc_id, {
+        authority: updated.authority ?? level,
+        updated_at: updated.updated_at,
+      })
+      toast.success(
+        level === 'primary'
+          ? 'Lira will answer from this ahead of everything else.'
+          : level === 'background'
+            ? 'Used only when nothing else matches.'
+            : 'Back to normal priority.'
+      )
+    } catch (err) {
+      toast.error(
+        `Could not change priority: ${err instanceof Error ? err.message : 'Unknown error'}`
+      )
+    } finally {
+      setSavingAuthority((prev) => ({ ...prev, [doc.doc_id]: false }))
     }
   }
 
@@ -547,6 +574,28 @@ function DocumentsPanel() {
                           Save
                         </button>
                       </div>
+                      {/*
+                        Precedence, not a score nudge: the highest tier with a
+                        relevant match answers and the rest are not consulted.
+                        Labelled by what it DOES, because "primary/normal/
+                        background" means nothing to someone deciding where a
+                        refunds policy belongs.
+                      */}
+                      <select
+                        value={doc.authority ?? 'normal'}
+                        disabled={savingAuthority[doc.doc_id]}
+                        onChange={(e) =>
+                          void handleSaveAuthority(
+                            doc,
+                            e.target.value as DocumentRecord['authority']
+                          )
+                        }
+                        className="w-full rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 outline-none focus:border-[#3730a3] disabled:opacity-40 sm:w-72"
+                      >
+                        <option value="primary">Answer from this first</option>
+                        <option value="normal">Normal</option>
+                        <option value="background">Only if nothing else matches</option>
+                      </select>
                     </div>
                   </div>
 

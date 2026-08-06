@@ -1024,6 +1024,7 @@ async function runDocs(args) {
         label: 'PRODUCTS',
         value: (r) => (r.segments?.length ? r.segments.join(',') : 'every product'),
       },
+      { label: 'PRIORITY', value: (r) => r.authority ?? 'normal' },
     ])
     // Crawled pages are filtered by the SAME tags as documents, so counting only
     // documents here is how a workspace reaches "0 untagged", turns on strict
@@ -1038,6 +1039,7 @@ async function runDocs(args) {
           label: 'PRODUCTS',
           value: (r) => (r.segments?.length ? r.segments.join(',') : 'every product'),
         },
+        { label: 'PRIORITY', value: (r) => r.authority ?? 'background' },
       ])
     }
 
@@ -1196,14 +1198,180 @@ async function runDocs(args) {
   }
 
   if (action === 'rm' || action === 'remove' || action === 'delete') {
-    const docId = requireValue(
-      positional || flags['doc-id'],
-      'document id (`lira docs rm <doc_id>`)'
+    const onSources = asBool(flags.sources, false) || asBool(flags['web-sources'], false)
+    const noun = onSources ? 'crawled page' : 'document'
+    const kbBase = `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base`
+    const deletePath = (id) =>
+      onSources ? `${kbBase}/${encodeURIComponent(id)}` : `${base}/${encodeURIComponent(id)}`
+
+    const untaggedOnly = asBool(flags.untagged, false)
+    const match = typeof flags.match === 'string' ? flags.match.toLowerCase() : null
+
+    // Bulk delete is opt-in per selector and never implied by a bare `rm`.
+    // Deleting knowledge is not undoable from here — a re-crawl can bring pages
+    // back but not the tags applied to them since.
+    let targets
+    if (untaggedOnly || match) {
+      const items = onSources
+        ? (await listWebSources(orgId, flags)).map((p) => ({
+            id: p.page_id ?? p.id,
+            name: p.title ?? p.url ?? p.page_id,
+            haystack: `${p.title ?? ''} ${p.url ?? ''}`,
+            segments: p.segments,
+          }))
+        : ((await apiRequest('GET', base, undefined, flags, { auth: 'any' }))?.documents ?? []).map(
+            (d) => ({
+              id: d.doc_id ?? d.id,
+              name: d.file_name ?? d.doc_id ?? d.id,
+              haystack: String(d.file_name ?? ''),
+              segments: d.segments,
+            })
+          )
+      targets = items
+        .filter((d) => (untaggedOnly ? !d.segments?.length : true))
+        .filter((d) => (match ? d.haystack.toLowerCase().includes(match) : true))
+      if (targets.length === 0) {
+        log('No sources matched, so nothing was deleted.')
+        return
+      }
+      if (!asBool(flags.yes, false)) {
+        log(`This would delete ${targets.length} ${noun}${targets.length === 1 ? '' : 's'}:`)
+        for (const t of targets) log(`  ${t.name}`)
+        log('')
+        log('Re-run with --yes to delete them.')
+        return
+      }
+    } else {
+      const id = requireValue(
+        positional || flags['doc-id'] || flags['page-id'],
+        `${noun} id (\`lira docs rm <id>\`${onSources ? '' : ', or --sources for crawled pages'}), or --untagged / --match= for bulk`
+      )
+      targets = [{ id, name: id }]
+    }
+
+    let failed = 0
+    for (const target of targets) {
+      try {
+        await apiRequest('DELETE', deletePath(target.id), undefined, flags, { auth: 'any' })
+        if (targets.length > 1) log(`  deleted ${target.name}`)
+      } catch (err) {
+        failed++
+        log(`  ${target.name} FAILED: ${err instanceof Error ? err.message : 'unknown error'}`)
+      }
+    }
+    const done = targets.length - failed
+    log(
+      `Deleted ${done} ${noun}${done === 1 ? '' : 's'}. The slot${done === 1 ? '' : 's'} they used ${done === 1 ? 'is' : 'are'} free again.`
     )
-    await apiRequest('DELETE', `${base}/${encodeURIComponent(docId)}`, undefined, flags, {
-      auth: 'any',
-    })
-    log(`Deleted ${docId}. The slot it used is free again.`)
+    if (failed > 0) {
+      log(`${failed} failed and still exist.`)
+      process.exitCode = 1
+    }
+    return
+  }
+
+  if (action === 'authority' || action === 'priority') {
+    const level = String(flags.level ?? flags.authority ?? flags.tier ?? '')
+      .trim()
+      .toLowerCase()
+    if (!['primary', 'normal', 'background'].includes(level)) {
+      throw new Error(
+        'Pass --level=primary, --level=normal or --level=background.\n' +
+          '  primary     answers whenever it is relevant, ahead of everything else\n' +
+          '  normal      the default for uploaded documents\n' +
+          '  background  answers only when nothing above it matched (default for crawled pages)'
+      )
+    }
+    const onSources = asBool(flags.sources, false) || asBool(flags['web-sources'], false)
+    const noun = onSources ? 'crawled page' : 'document'
+    const kbBase = `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base`
+    const authorityPath = (id) =>
+      onSources
+        ? `${kbBase}/${encodeURIComponent(id)}/authority`
+        : `${base}/${encodeURIComponent(id)}/authority`
+
+    const all = asBool(flags.all, false)
+    const match = typeof flags.match === 'string' ? flags.match.toLowerCase() : null
+
+    let targets
+    if (all || match) {
+      const items = onSources
+        ? (await listWebSources(orgId, flags)).map((p) => ({
+            id: p.page_id ?? p.id,
+            name: p.title ?? p.url ?? p.page_id,
+            haystack: `${p.title ?? ''} ${p.url ?? ''}`,
+          }))
+        : ((await apiRequest('GET', base, undefined, flags, { auth: 'any' }))?.documents ?? []).map(
+            (d) => ({
+              id: d.doc_id ?? d.id,
+              name: d.file_name ?? d.doc_id ?? d.id,
+              haystack: String(d.file_name ?? ''),
+            })
+          )
+      targets = items.filter((d) => (match ? d.haystack.toLowerCase().includes(match) : true))
+      if (targets.length === 0) {
+        log('Nothing matched, so nothing was changed.')
+        return
+      }
+      log(`Setting ${targets.length} ${noun}${targets.length === 1 ? '' : 's'} to ${level}…`)
+    } else {
+      const id = requireValue(
+        positional || flags['doc-id'] || flags['page-id'],
+        `${noun} id (\`lira docs authority <id> --level=primary\`), or --all / --match=`
+      )
+      targets = [{ id, name: id }]
+    }
+
+    let failed = 0
+    for (const target of targets) {
+      try {
+        await apiRequest('PATCH', authorityPath(target.id), { authority: level }, flags, {
+          auth: 'any',
+        })
+        if (targets.length > 1) log(`  ${target.name} → ${level}`)
+      } catch (err) {
+        failed++
+        log(`  ${target.name} FAILED: ${err instanceof Error ? err.message : 'unknown error'}`)
+      }
+    }
+    const done = targets.length - failed
+    log(`${done} ${noun}${done === 1 ? '' : 's'} set to ${level}.`)
+    if (level === 'primary') {
+      log('Primary sources answer ahead of everything else whenever they are relevant.')
+    }
+    if (failed > 0) {
+      log(`${failed} failed and were left unchanged.`)
+      process.exitCode = 1
+    }
+    return
+  }
+
+  if (action === 'prune') {
+    // Deleting a crawled page used to leave its chunks in the index, so every
+    // page ever deleted kept answering customers while appearing in no list.
+    // Dry-run first: this deletes content nothing else can show you.
+    const apply = asBool(flags.yes, false) || asBool(flags.apply, false)
+    const payload = await apiRequest(
+      'POST',
+      `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base/prune`,
+      { apply },
+      flags,
+      { auth: 'any' }
+    )
+    const orphaned = payload?.orphaned ?? []
+    if (!apply) {
+      log(`${orphaned.length} orphaned source${orphaned.length === 1 ? '' : 's'} in the index.`)
+      log(`${payload?.live ?? 0} crawled page${payload?.live === 1 ? '' : 's'} are real and stay.`)
+      if (orphaned.length > 0) {
+        log('')
+        log('These are chunks of pages that were deleted but never left the search index —')
+        log('they still answer customers and appear in no list. Re-run with --yes to remove them.')
+      }
+      return
+    }
+    log(
+      `Removed ${payload?.deleted ?? 0} orphaned source${payload?.deleted === 1 ? '' : 's'} from the index.`
+    )
     return
   }
 
@@ -1232,7 +1400,9 @@ async function runDocs(args) {
     return
   }
 
-  throw new Error(`Unknown docs command: ${action}. Use list, add, tag, rm, or ask.`)
+  throw new Error(
+    `Unknown docs command: ${action}. Use list, add, tag, authority, rm, prune, or ask.`
+  )
 }
 
 /**
@@ -1301,6 +1471,13 @@ Knowledge base (needs a key with support:read / support:write):
   lira docs add --text="Refunds take 14 days." --title="Refunds"
   lira docs ask "How long do refunds take?"     Ask what a customer would ask
   lira docs rm <doc_id>                         Delete and free the slot
+  lira docs rm <page_id> --sources              Delete a crawled page (removes its chunks)
+  lira docs rm --sources --untagged --yes       Bulk delete; dry-runs without --yes
+  lira docs authority <id> --level=primary      Answer from this ahead of everything else
+  lira docs authority --sources --all --level=background
+                                                Crawled pages answer only as a fallback
+  lira docs prune                               Find chunks of deleted pages still answering
+  lira docs prune --yes                         Remove them
 
 One workspace, several products (Personal / Business / Corporate, brands, regions):
   lira docs add --file=./personal-faq.md --segments=personal

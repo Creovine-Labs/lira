@@ -580,6 +580,8 @@ export interface KBEntry {
   summary?: string
   keywords?: string[]
   segments?: string[]
+  /** Retrieval precedence: primary | normal | background. */
+  authority?: 'primary' | 'normal' | 'background'
   category: 'about' | 'product' | 'docs' | 'blog' | 'other'
   crawled_at: string
   embedding_count: number
@@ -610,6 +612,8 @@ export interface DocumentRecord {
   summary?: string
   keywords?: string[]
   segments?: string[]
+  /** Retrieval precedence: primary | normal | background. */
+  authority?: 'primary' | 'normal' | 'background'
   uploaded_by: string
   created_at: string
   updated_at: string
@@ -1071,6 +1075,38 @@ export async function updateDocumentSegments(
     }
   )
   return data.document
+}
+
+export async function updateDocumentAuthority(
+  orgId: string,
+  docId: string,
+  authority: 'primary' | 'normal' | 'background'
+): Promise<DocumentRecord> {
+  const data = await apiFetch<{ document: DocumentRecord }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/documents/${encodeURIComponent(docId)}/authority`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ authority }),
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
+  return data.document
+}
+
+export async function updateKBEntryAuthority(
+  orgId: string,
+  entryId: string,
+  authority: 'primary' | 'normal' | 'background'
+): Promise<KBEntry> {
+  const data = await apiFetch<{ entry: KBEntry }>(
+    `/lira/v1/orgs/${encodeURIComponent(orgId)}/knowledge-base/${encodeURIComponent(entryId)}/authority`,
+    {
+      method: 'PATCH',
+      body: JSON.stringify({ authority }),
+      headers: { 'Content-Type': 'application/json' },
+    }
+  )
+  return data.entry
 }
 
 export async function updateKBEntrySegments(
