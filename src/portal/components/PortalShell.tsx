@@ -64,21 +64,27 @@ export function PortalShell({ config, session, onLogout, children }: PortalShell
       {/* Main content */}
       <main className="lp-main">{children}</main>
 
-      {/* Footer */}
-      <footer className="lp-footer">
-        <p>
-          Powered by{' '}
-          <a
-            href="https://liraintelligence.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="lp-footer-link"
-          >
-            <img src={LIRA_LOGO} alt="Lira" className="lp-footer-lira" />
-            Lira
-          </a>
-        </p>
-      </footer>
+      {/*
+        Footer — omitted for a paid plan in production. This used to render
+        unconditionally, so a paying customer could not remove it from the one
+        surface their own customers visit under their own domain.
+      */}
+      {config.poweredBy?.show !== false && (
+        <footer className="lp-footer">
+          <p>
+            Powered by{' '}
+            <a
+              href={config.poweredBy?.url ?? 'https://liraintelligence.com'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="lp-footer-link"
+            >
+              <img src={LIRA_LOGO} alt="Lira" className="lp-footer-lira" />
+              Lira
+            </a>
+          </p>
+        </footer>
+      )}
     </div>
   )
 }

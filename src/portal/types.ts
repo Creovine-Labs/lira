@@ -14,6 +14,17 @@ export interface PortalConfig {
   ticketsEnabled: boolean
   trackEnabled: boolean
   wsUrl: string
+  /**
+   * Whether to show the "Powered by Lira" footer. Off for a paid plan in
+   * production; on everywhere else. Absent on older responses — treated as on,
+   * so a stale cache never silently removes it.
+   */
+  poweredBy?: {
+    show: boolean
+    label: string
+    url: string
+    reason: 'sandbox' | 'free_plan' | 'entitled_to_remove'
+  }
 }
 
 export interface PortalTicket {
