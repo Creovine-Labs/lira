@@ -264,6 +264,47 @@ function entitlementLines(e: PlanEntitlements): string[] {
   ]
 }
 
+/**
+ * Current state of the "Powered by Lira" attribution, and why.
+ *
+ * It comes off only on a PAID plan in PRODUCTION — sandbox always shows it,
+ * because a sandbox integration is what gets demoed to other people, and free
+ * production shows it as the trade for the free tier.
+ */
+function PoweredByStatus({
+  environment,
+  entitled,
+}: {
+  environment: 'sandbox' | 'production'
+  entitled: boolean
+}) {
+  const hidden = entitled && environment === 'production'
+  const reason = hidden
+    ? 'Your plan includes branding removal, and this workspace is in production.'
+    : environment !== 'production'
+      ? 'Sandbox always shows it, whatever your plan. It comes off in production on a paid plan.'
+      : 'Free plans show it. Upgrade to remove it — it disappears automatically, nothing to switch off.'
+
+  return (
+    <div className="mb-4 rounded-xl border border-border bg-muted/30 px-4 py-3">
+      <div className="flex items-center gap-2">
+        <span
+          className={cn(
+            'rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide',
+            hidden ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-200 text-gray-600'
+          )}
+        >
+          {hidden ? 'Hidden' : 'Showing'}
+        </span>
+        <p className="text-sm font-medium text-foreground">
+          &ldquo;Powered by Lira&rdquo; in your chat
+        </p>
+      </div>
+      <p className="mt-1 text-xs text-muted-foreground">{reason}</p>
+    </div>
+  )
+}
+
 function PlanUsageBar({ used, limit, label }: { used: number; limit: number; label: string }) {
   const unlimited = limit === 0
   const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(limit, 1)) * 100))
@@ -2175,6 +2216,16 @@ function SupportSettingsSection() {
           {/* ── Get connected: Web SDK ── */}
           {activeTab === 'connect' && (
             <>
+              {/*
+                People ask "why does my chat say Powered by Lira?" and go
+                hunting through settings for a switch that does not exist. Say
+                the state and the reason where the embed code is, which is
+                where they are looking.
+              */}
+              <PoweredByStatus
+                environment={config?.environment === 'production' ? 'production' : 'sandbox'}
+                entitled={config?.branding_removal === true}
+              />
               <SCard
                 title="Install Lira"
                 hint="Add Lira to your product — pick the method that fits your stack."

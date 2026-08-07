@@ -2790,6 +2790,9 @@ export function getWidgetStyles(primaryColor: string): string {
     /* Footer */
     .lira-sc-footer { flex: none; display: flex; align-items: center; justify-content: center; gap: 7px; padding: 16px; font-size: 12px; font-weight: 600; color: var(--sc-faint); border-top: 1px solid var(--sc-line); }
     .lira-sc-footer img { width: 15px; height: 15px; object-fit: contain; }
+    /* The footer is a link now; keep it looking like the label it was. */
+    .lira-sc-footer a { display: flex; align-items: center; gap: 7px; color: inherit; text-decoration: none; }
+    .lira-sc-footer a:hover strong { text-decoration: underline; }
     .lira-sc-footer strong { color: var(--sc-ink-soft); }
 
     @media (max-width: 960px) {

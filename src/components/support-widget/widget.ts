@@ -49,6 +49,8 @@ const ICON_CHECK = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" s
 const ICON_HANDOFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>`
 // Lira logo for the bot avatar — hosted on the main frontend
 const LIRA_LOGO_URL = 'https://liraintelligence.com/lira_black.png'
+/** Where the "Powered by Lira" attribution leads. Server can override it via config. */
+const LIRA_LANDING_URL = 'https://liraintelligence.com'
 const ICON_LIRA = `<img src="${LIRA_LOGO_URL}" alt="Lira" style="width:100%;height:100%;object-fit:contain;border-radius:50%;" />`
 // Mic icons — voice mode is a real-time conversation with Lira, not a "phone
 // call". Phone iconography suggested a one-way call to a human; mic iconography
@@ -1107,8 +1109,11 @@ class LiraSupportWidget {
     if (this.config.brandingRemoval) return
     const powered = document.createElement('div')
     powered.className = 'lira-powered'
-    powered.innerHTML =
-      'Powered by <a href="https://creovine.com" target="_blank" rel="noopener">Creovine</a>'
+    // One wording and one destination everywhere. This used to read "Powered
+    // by Creovine" and point at creovine.com while the support-centre footer
+    // said "Powered by Lira" and was not a link at all — so the attribution
+    // named the wrong product in one place and led nowhere in the other.
+    powered.innerHTML = `Powered by <a href="${LIRA_LANDING_URL}" target="_blank" rel="noopener">Lira</a>`
     win.appendChild(powered)
   }
 
@@ -1544,7 +1549,7 @@ class LiraSupportWidget {
     if (!this.config.brandingRemoval) {
       const footer = document.createElement('div')
       footer.className = 'lira-sc-footer'
-      footer.innerHTML = `<img src="${LIRA_LOGO_URL}" alt="" /> Powered by <strong>Lira</strong>`
+      footer.innerHTML = `<a href="${LIRA_LANDING_URL}" target="_blank" rel="noopener"><img src="${LIRA_LOGO_URL}" alt="" /> Powered by <strong>Lira</strong></a>`
       root.appendChild(footer)
     }
 
