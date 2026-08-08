@@ -1374,6 +1374,24 @@ function Styles() {
 
 export function LandingPageV4() {
   const [demoEntryOpen, setDemoEntryOpen] = useState(false)
+  // Read once during initialisation rather than in an effect: an effect would
+  // render the banner and then hide it, which is a visible flash for anyone
+  // who already dismissed it. Defaults to hidden if localStorage is
+  // unavailable (private mode, SSR) — showing a dismissed banner is worse than
+  // not showing it.
+  const [voiceBannerHidden, setVoiceBannerHidden] = useState(() => {
+    try {
+      return localStorage.getItem('lira-voice-banner-hidden') === '1'
+    } catch {
+      return true
+    }
+  })
+
+  function dismissVoiceBanner() {
+    localStorage.setItem('lira-voice-banner-hidden', '1')
+    setVoiceBannerHidden(true)
+  }
+
   return (
     <div className="hx-page">
       <SEO
@@ -1393,7 +1411,38 @@ export function LandingPageV4() {
       {/* Corner support widget replaced by the center voice concierge
           (mounted globally in App.tsx as <ConciergeGate />). */}
       <Styles />
-      <MarketingNavbar variant="overlay" />
+      {/* Thin, full-width announcement bar pinned to the very top, above the
+          header. Nigeria stays out of the pitch — it's only in the demo. */}
+      {!voiceBannerHidden && (
+        <div className="fixed inset-x-0 top-0 z-[780] bg-[#15181a] text-white">
+          <div className="relative mx-auto flex max-w-6xl items-center justify-center px-10 py-2 text-center">
+            <p className="text-[12px] font-medium leading-snug text-white/85 sm:text-[13px]">
+              <span className="mr-2 rounded-full bg-[#66f2d5] px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide text-[#04231f]">
+                New
+              </span>
+              <span className="hidden sm:inline">
+                Lira Voice — an AI that answers your business calls in a natural local voice.{' '}
+              </span>
+              <Link
+                to="/voice"
+                className="font-bold !text-[#66f2d5] hover:underline"
+                aria-label="Meet Lira Voice"
+              >
+                Meet Lira Voice →
+              </Link>
+            </p>
+            <button
+              type="button"
+              onClick={dismissVoiceBanner}
+              className="absolute right-2 top-1/2 grid h-6 w-6 -translate-y-1/2 place-items-center rounded-full text-white/55 transition hover:bg-white/10 hover:text-white"
+              aria-label="Dismiss Voice announcement"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+      <MarketingNavbar variant="overlay" topOffset={voiceBannerHidden ? 0 : 40} />
 
       {/* ───── EDITORIAL HERO ───── */}
       <section className="eh-hero">

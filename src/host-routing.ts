@@ -14,16 +14,21 @@
 const APEX = 'liraintelligence.com'
 const WWW = 'www.liraintelligence.com'
 const APP = 'app.liraintelligence.com'
+const VOICE = 'voice.liraintelligence.com'
 
 /** True when we're on the product subdomain. */
 export function isAppHost(): boolean {
   return typeof window !== 'undefined' && window.location.hostname === APP
 }
 
+export function isVoiceHost(): boolean {
+  return typeof window !== 'undefined' && window.location.hostname === VOICE
+}
+
 /** Public marketing paths — these belong on the apex. Everything else is the app. */
 function isMarketingPath(pathname: string): boolean {
   if (pathname === '/') return true
-  return /^\/(v3|v4|pricing|products|demo|for|resources|docs|tutorials|blog|about|about-us|features?|careers|book-demo|contact|privacy|terms|cookies|acceptable-use|refund|security|ui-lab|launch-demo)(\/|$)/.test(
+  return /^\/(v3|v4|voice|pricing|products|demo|for|resources|docs|tutorials|blog|about|about-us|features?|careers|book-demo|contact|privacy|terms|cookies|acceptable-use|refund|security|ui-lab|launch-demo)(\/|$)/.test(
     pathname
   )
 }
@@ -41,8 +46,8 @@ export function enforceHostRouting(): boolean {
   if (typeof window === 'undefined') return false
   const { hostname, pathname, search, hash } = window.location
 
-  // Only the two real hosts participate. Anything else (localhost, previews,
-  // demo.liraintelligence.com) is untouched.
+  // Only the real marketing/app hosts participate. Voice has its own app
+  // surface and must not be bounced back to apex/app by this guard.
   if (hostname !== APEX && hostname !== WWW && hostname !== APP) return false
   if (isNeutralPath(pathname)) return false
 

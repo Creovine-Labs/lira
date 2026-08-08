@@ -48,7 +48,7 @@ import {
   type TaskRecord,
 } from '@/services/api'
 import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/support-api'
-import { credentials } from '@/services/api'
+import { credentials, getCurrentUser } from '@/services/api'
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
@@ -434,10 +434,26 @@ function TopbarOrgSwitcher() {
 // ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
   const { userName, userEmail, userPicture, userRole } = useAuthStore()
-  // Prefer the token's claim over the stored value: the store is written once
-  // at login and goes stale, the token is what the server authorizes against.
-  const tokenRole = credentials.getRole()
-  const effectiveRole = tokenRole ?? userRole
+  // Three sources, most authoritative first. The store is written once at
+  // login and goes stale; the token can predate the role claim existing at
+  // all; the server is always right. A platform admin lost the Admin Dashboard
+  // entry with no way back short of signing out, so this self-heals on load.
+  const [serverRole, setServerRole] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    getCurrentUser()
+      .then((me) => {
+        if (!cancelled && me?.role) setServerRole(me.role)
+      })
+      .catch(() => {
+        /* offline or expired — fall back to the token/store below */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const effectiveRole = serverRole ?? credentials.getRole() ?? userRole
   const isPlatformAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'SUPER_ADMIN'
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)

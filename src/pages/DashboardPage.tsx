@@ -11,6 +11,7 @@ import {
   ExclamationTriangleIcon,
   InboxIcon,
   LifebuoyIcon,
+  PhoneIcon,
   SparklesIcon,
   UsersIcon,
 } from '@heroicons/react/24/outline'
@@ -639,6 +640,15 @@ function DashboardPage() {
                     navigate(supportActivated ? '/support/inbox' : '/support/activate')
                   }
                   primary
+                />
+                <QuickAction
+                  icon={PhoneIcon}
+                  label="Add a phone line"
+                  description="Set up Lira Voice for inbound calls"
+                  onClick={() => {
+                    const target = 'https://voice.liraintelligence.com/'
+                    window.open(target, '_blank', 'noopener,noreferrer')
+                  }}
                 />
                 <QuickAction
                   icon={BookOpenIcon}

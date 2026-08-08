@@ -52,3 +52,5 @@ export * from './LandingPageV4'
 export * from './MyTicketsPage'
 
 export * from './VoiceLandingPage'
+export * from './VoiceAppPage'
+export * from './VoiceSsoBridgePage'

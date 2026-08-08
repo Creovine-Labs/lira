@@ -36,6 +36,11 @@ export default defineConfig([
       ],
       'jsx-a11y/click-events-have-key-events': 'warn',
       'jsx-a11y/no-static-element-interactions': 'warn',
+      // The default depth of 2 flags a label whose text sits inside a styling
+      // wrapper — `<label><input/><span><span>Name</span>…</span></label>` —
+      // which is correct markup and a screen reader reads it fine. Depth 3
+      // covers one wrapper; anything deeper is worth a second look.
+      'jsx-a11y/label-has-associated-control': ['error', { depth: 3 }],
     },
   },
 ])

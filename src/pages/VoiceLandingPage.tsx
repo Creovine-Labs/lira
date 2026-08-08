@@ -1,10 +1,8 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import type { Variants } from 'framer-motion'
 import {
   Play,
   ArrowUpRight,
-  PhoneCall,
   ClockCounterClockwise,
   Waveform,
   ShieldCheck,
@@ -14,16 +12,14 @@ import {
   Bank,
   ForkKnife,
   GraduationCap,
-  CheckCircle,
 } from '@phosphor-icons/react'
 
 import { SEO } from '@/components/SEO'
 import { MarketingNavbar, MarketingFooter } from '@/components/marketing'
-import { submitDemoRequest } from '@/services/api'
+import { VoicePhoneDemo } from '@/components/voice/VoicePhoneDemo'
 import { Styles } from './voiceLandingStyles'
 
-const ENGINE_URL = 'https://widget.liraintelligence.com/amber-engine-v1.html?idleMs=90000'
-const DEMO_CAP_SECONDS = 90
+const VOICE_APP_URL = 'https://voice.liraintelligence.com/'
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 26 },
@@ -41,246 +37,12 @@ const reveal = {
   animate: 'show' as const,
 }
 
-/* ------------------------------------------------------------------ */
-/* Live "talk to Amber" demo — light card, matches the cream page      */
-/* ------------------------------------------------------------------ */
+/* The live "test the AI" demo is now the shared <VoicePhoneDemo /> component
+   (phone-call UI + hardened engine wiring). See components/voice/VoicePhoneDemo. */
 
-type DemoPhase = 'idle' | 'connecting' | 'live' | 'ended'
-
-function AmberLiveDemo() {
-  const [phase, setPhase] = useState<DemoPhase>('idle')
-  const [speaking, setSpeaking] = useState(false)
-  const [left, setLeft] = useState(DEMO_CAP_SECONDS)
-  const iframeRef = useRef<HTMLIFrameElement | null>(null)
-  const timerRef = useRef<number | null>(null)
-  const startRef = useRef(0)
-
-  const post = (type: string) =>
-    iframeRef.current?.contentWindow?.postMessage({ source: 'lira-call', type, payload: {} }, '*')
-
-  const clearTimer = () => {
-    if (timerRef.current) {
-      window.clearInterval(timerRef.current)
-      timerRef.current = null
-    }
-  }
-
-  const stop = useCallback(() => {
-    clearTimer()
-    post('disconnect')
-    startRef.current = 0
-    setSpeaking(false)
-    setPhase('ended')
-  }, [])
-
-  useEffect(() => {
-    const onMsg = (e: MessageEvent) => {
-      const d = e.data as { source?: string; type?: string } | null
-      if (!d || d.source !== 'amber-engine') return
-      if (d.type === 'ready') {
-        post('connect')
-      } else if (d.type === 'connected') {
-        if (startRef.current) return
-        startRef.current = Date.now()
-        setPhase('live')
-        setLeft(DEMO_CAP_SECONDS)
-        timerRef.current = window.setInterval(() => {
-          const elapsed = Math.round((Date.now() - startRef.current) / 1000)
-          const rem = Math.max(0, DEMO_CAP_SECONDS - elapsed)
-          setLeft(rem)
-          if (rem <= 0) stop()
-        }, 1000)
-      } else if (d.type === 'bot-started-speaking') {
-        setSpeaking(true)
-      } else if (d.type === 'bot-stopped-speaking') {
-        setSpeaking(false)
-      } else if (d.type === 'closed') {
-        stop()
-      }
-    }
-    window.addEventListener('message', onMsg)
-    return () => {
-      window.removeEventListener('message', onMsg)
-      clearTimer()
-    }
-  }, [stop])
-
-  const inCall = phase === 'connecting' || phase === 'live'
-
-  return (
-    <div className="vx-demo-card">
-      <div className="vx-demo-badges">
-        <span className="vx-badge vx-badge-live">Live demo</span>
-        <span className="vx-badge-note">no signup</span>
-      </div>
-      <h3 className="vx-demo-title">Hear Amber answer — in a real Nigerian voice</h3>
-      <p className="vx-demo-sub">
-        Amber runs a Lagos restaurant. Call her, ask about the menu, place an order — she talks back
-        naturally. The same engine that answers your customers.
-      </p>
-
-      <div className="vx-demo-row">
-        <div className={`vx-avatar${speaking ? ' is-speaking' : ''}`}>A</div>
-        <div className="vx-demo-meta">
-          <strong>Amber · Nigerian voice</strong>
-          <span>
-            {phase === 'idle' && 'Tap to start a live call'}
-            {phase === 'connecting' && 'Connecting…'}
-            {phase === 'live' && `Live · ${left}s left`}
-            {phase === 'ended' && 'Call ended — start again anytime'}
-          </span>
-        </div>
-        {!inCall ? (
-          <button className="vx-demo-btn" onClick={() => setPhase('connecting')}>
-            <PhoneCall size={18} weight="fill" />
-            {phase === 'ended' ? 'Call again' : 'Talk to Amber'}
-          </button>
-        ) : (
-          <button className="vx-demo-btn vx-demo-btn-end" onClick={stop}>
-            End call
-          </button>
-        )}
-      </div>
-      <p className="vx-demo-fine">
-        Uses your microphone · demo calls capped at {DEMO_CAP_SECONDS}s
-      </p>
-
-      {inCall && (
-        <iframe
-          ref={iframeRef}
-          src={ENGINE_URL}
-          title="Amber Nigerian voice engine"
-          allow="microphone; autoplay"
-          style={{
-            position: 'absolute',
-            width: 1,
-            height: 1,
-            opacity: 0.01,
-            border: 0,
-            pointerEvents: 'none',
-          }}
-        />
-      )}
-    </div>
-  )
-}
-
-/* ------------------------------------------------------------------ */
-/* Waitlist                                                            */
-/* ------------------------------------------------------------------ */
-
-function Waitlist() {
-  const [name, setName] = useState('')
-  const [email, setEmail] = useState('')
-  const [business, setBusiness] = useState('')
-  const [vertical, setVertical] = useState('')
-  const [website, setWebsite] = useState('')
-  const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!name.trim() || !email.trim()) return
-    setState('sending')
-    try {
-      await submitDemoRequest({
-        name: name.trim(),
-        email: email.trim(),
-        company: business.trim() || undefined,
-        focus: `Lira Voice waitlist${vertical ? ` — ${vertical}` : ''}`,
-        website,
-      })
-      setState('done')
-    } catch {
-      setState('error')
-    }
-  }
-
-  if (state === 'done') {
-    return (
-      <div className="vx-form vx-form-done">
-        <CheckCircle size={44} weight="fill" />
-        <h3>You&apos;re on the list</h3>
-        <p>
-          Thanks — we&apos;ll reach out at <b>{email}</b> as we open early access.
-        </p>
-      </div>
-    )
-  }
-
-  return (
-    <form className="vx-form" onSubmit={submit}>
-      <input
-        type="text"
-        value={website}
-        onChange={(e) => setWebsite(e.target.value)}
-        name="website"
-        tabIndex={-1}
-        autoComplete="off"
-        aria-hidden="true"
-        style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }}
-      />
-      <div className="vx-form-grid">
-        <label>
-          Your name
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            placeholder="Ada Obi"
-          />
-        </label>
-        <label>
-          Work email
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            placeholder="you@business.com"
-          />
-        </label>
-        <label>
-          Business name
-          <input
-            value={business}
-            onChange={(e) => setBusiness(e.target.value)}
-            placeholder="Amber Kitchen"
-          />
-        </label>
-        <label>
-          Business type
-          <select value={vertical} onChange={(e) => setVertical(e.target.value)}>
-            <option value="">Select…</option>
-            <option>Restaurant / food</option>
-            <option>Clinic / health</option>
-            <option>Hotel / hospitality</option>
-            <option>Logistics / delivery</option>
-            <option>Ecommerce / retail</option>
-            <option>Fintech / lender</option>
-            <option>School / education</option>
-            <option>Other</option>
-          </select>
-        </label>
-      </div>
-      <button
-        type="submit"
-        className="hx-button"
-        disabled={state === 'sending'}
-        style={{ marginTop: 20 }}
-      >
-        <span className="hx-button-label">
-          {state === 'sending' ? 'Sending…' : 'Join the waitlist'}
-        </span>
-        <span className="hx-button-icon">
-          <ArrowUpRight size={16} weight="bold" />
-        </span>
-      </button>
-      {state === 'error' && (
-        <p className="vx-form-error">Something went wrong — please try again.</p>
-      )}
-    </form>
-  )
-}
+/* The waitlist is gone: the Voice setup app on voice.liraintelligence.com is
+   the single entry point (it captures the business profile, line and plan
+   intent without charging), so the page funnels everyone to "Start setup". */
 
 /* ------------------------------------------------------------------ */
 /* Content data                                                        */
@@ -290,17 +52,17 @@ const STEPS = [
   {
     n: '01',
     t: 'Connect your number',
-    d: 'Keep your existing line — calls forward to your Lira number, or we give you a new Nigerian number.',
+    d: 'Keep your existing line. Calls forward to your Lira number, or we set you up with a new local number.',
   },
   {
     n: '02',
     t: 'Pick a voice & describe your business',
-    d: 'Choose a natural Nigerian voice and tell Lira your menu, prices, hours and policies.',
+    d: 'Choose a natural local voice and tell Lira your offerings, prices, hours and policies.',
   },
   {
     n: '03',
     t: 'Lira answers every call',
-    d: 'Your AI picks up 24/7 — takes orders, answers questions, handles complaints, logs every call.',
+    d: 'Lira picks up 24/7, taking orders, answering questions, handling complaints, and logging every call.',
   },
 ]
 
@@ -308,17 +70,17 @@ const VALUE = [
   {
     icon: ClockCounterClockwise,
     t: 'Never miss a call again',
-    d: 'Every ring answered instantly — after hours, during rush, when the line is busy. No missed orders, no lost customers.',
+    d: 'Every ring answered instantly, after hours, during rush, when the line is busy. No missed orders, no lost customers.',
   },
   {
     icon: Waveform,
-    t: 'Genuinely Nigerian',
-    d: 'Not a robotic foreign accent. A warm, natural Nigerian voice your customers actually connect with.',
+    t: 'Sounds genuinely local',
+    d: 'Not a robotic foreign accent, but a warm, natural voice in the accent your customers actually connect with.',
   },
   {
     icon: ShieldCheck,
     t: 'Every call captured',
-    d: 'Transcripts, orders and outcomes land on a simple dashboard — nothing said on the phone is ever lost.',
+    d: 'Transcripts, orders and outcomes land on a simple dashboard, so nothing said on the phone is ever lost.',
   },
 ]
 
@@ -342,100 +104,88 @@ export function VoiceLandingPage() {
   return (
     <div className="hx-page">
       <SEO
-        title="Lira Voice — an AI that answers your business phone in a Nigerian voice"
-        description="Lira Voice answers your business calls 24/7 in a natural Nigerian voice — takes orders, handles enquiries and complaints, and logs every call. Join the early-access waitlist."
+        title="Lira Voice: answer every business call in a natural local voice"
+        description="Lira Voice answers your business calls 24/7 in a natural, local voice. It takes orders, handles enquiries and complaints, and logs every call. Test it in a Nigerian voice, then start your setup."
         path="/"
-        keywords="AI phone agent Nigeria, Nigerian voice AI, AI receptionist Lagos, answer business calls, voice AI Nigeria"
+        keywords="AI phone agent, AI receptionist, answer business calls, local voice AI, Nigerian voice AI, customized voice agent"
       />
       <Styles />
       <VoiceExtraStyles />
       <MarketingNavbar variant="overlay" />
 
-      {/* ───── Editorial hero ───── */}
-      <section className="eh-hero">
-        <img
-          src="/landing/hero-4.jpg"
-          alt=""
-          className="eh-hero-bg-img"
-          fetchPriority="high"
-          decoding="async"
-        />
-        <div className="eh-overlay eh-overlay-right" />
-        <div className="eh-overlay eh-overlay-top" />
-        <div className="eh-overlay eh-overlay-bottom" />
-
-        <div className="eh-content">
+      {/* ───── Voice hero — bespoke, dark, with the live call panel as the
+              interactive centrepiece (the pattern the leading voice-AI products
+              use). Keeps the brand type + editorial headline. ───── */}
+      <section className="vh-hero">
+        <div className="vh-glow" aria-hidden="true" />
+        <div className="vh-grid" aria-hidden="true" />
+        <div className="vh-inner">
           <motion.div
-            className="eh-left"
+            className="vh-left"
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
             <span className="vx-hero-tag">
-              <span className="vx-hero-dot" /> Lira Voice · coming soon
+              <span className="vx-hero-dot" /> Lira Voice · early access
             </span>
-            <h1 className="eh-headline">
+            <h1 className="eh-headline vh-headline">
               Answer every call
               <br />
-              in a real
+              in a natural
               <br />
-              <em>Nigerian voice</em>
+              <em>local voice</em>
             </h1>
+            <p className="vh-body">
+              Lira Voice picks up your business line 24/7, taking orders, answering questions, and
+              handling complaints in a warm voice your customers recognise. No missed calls, no
+              missed money.
+            </p>
+            <div className="vh-cta-row">
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = VOICE_APP_URL
+                }}
+                className="vh-btn vh-btn-primary"
+              >
+                Start setup
+                <ArrowUpRight size={15} weight="bold" />
+              </button>
+              <button type="button" onClick={() => scrollTo('how')} className="vh-btn vh-btn-ghost">
+                <Play size={13} weight="fill" />
+                How it works
+              </button>
+            </div>
+            <div className="vh-trust">
+              <span>Live 24/7</span>
+              <span>Answers in seconds</span>
+              <span>Every call logged</span>
+            </div>
           </motion.div>
 
           <motion.div
-            className="eh-right"
-            initial={{ opacity: 0, y: 24 }}
+            className="vh-right"
+            initial={{ opacity: 0, y: 26 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
-            <p className="eh-body">
-              Lira Voice picks up your business line 24/7 — takes orders, answers questions, and
-              handles complaints in a warm Nigerian voice. No missed calls, no missed money.
-            </p>
-            <div className="eh-cta-row">
-              <button
-                type="button"
-                onClick={() => scrollTo('demo')}
-                className="eh-btn eh-btn-secondary"
-              >
-                <Play size={14} weight="fill" />
-                Hear it live
-              </button>
-              <button
-                type="button"
-                onClick={() => scrollTo('waitlist')}
-                className="eh-btn eh-btn-primary"
-              >
-                Join the waitlist
-                <ArrowUpRight size={14} weight="bold" />
-              </button>
-            </div>
+            <span className="vh-panel-label">
+              <span className="vx-hero-dot" /> Live demo · call it, no signup
+            </span>
+            <VoicePhoneDemo />
           </motion.div>
         </div>
-      </section>
 
-      {/* ───── Demo ───── */}
-      <section id="demo" className="hx-section">
-        <div className="hx-container">
-          <motion.div className="hx-section-details" variants={stagger} {...reveal}>
-            <motion.h2 className="hx-section-title" variants={fadeUp}>
-              <span className="hx-gradient-text">Don&apos;t take our word for it.</span>
-              <br />
-              Talk to the AI yourself.
-            </motion.h2>
-            <motion.p className="hx-section-para" variants={fadeUp}>
-              A live call to Amber, a sample Lagos restaurant — right here, no signup.
-            </motion.p>
-          </motion.div>
-          <motion.div variants={fadeUp} {...reveal} style={{ maxWidth: 720, margin: '0 auto' }}>
-            <AmberLiveDemo />
-          </motion.div>
+        <div className="vh-wave" aria-hidden="true">
+          {Array.from({ length: 44 }).map((_, i) => (
+            <i key={i} style={{ animationDelay: `${(i % 11) * 0.09}s` }} />
+          ))}
         </div>
       </section>
 
       {/* ───── How it works ───── */}
-      <section className="hx-section">
+      <section id="how" className="hx-section">
         <div className="hx-container">
           <motion.div className="hx-section-details" variants={stagger} {...reveal}>
             <motion.h2 className="hx-section-title" variants={fadeUp}>
@@ -487,7 +237,7 @@ export function VoiceLandingPage() {
               Built for businesses where a missed call is lost money
             </motion.h2>
             <motion.p className="hx-section-para" variants={fadeUp}>
-              Lira Voice is for serious, call-heavy operations — the ones that live and die by the
+              Lira Voice is for serious, call-heavy operations, the ones that live and die by the
               phone.
             </motion.p>
           </motion.div>
@@ -502,36 +252,41 @@ export function VoiceLandingPage() {
         </div>
       </section>
 
-      {/* ───── Waitlist ───── */}
-      <section id="waitlist" className="hx-section hx-section-pad-bottom">
+      {/* ───── Get started ───── */}
+      <section id="get-started" className="hx-section hx-section-pad-bottom">
         <div className="hx-container">
-          <div className="vx-waitlist">
-            <motion.div
-              className="vx-waitlist-copy"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7 }}
-            >
-              <h2 className="hx-section-title" style={{ textAlign: 'left' }}>
-                Early access is opening soon
-              </h2>
-              <p>
-                We&apos;re onboarding a small group of call-heavy Nigerian businesses first,
-                hands-on. Join the waitlist and we&apos;ll reach out when it&apos;s your turn.
-              </p>
-              <p className="vx-waitlist-note">
-                Part of <a href="https://liraintelligence.com">Lira Intelligence</a> — the AI
-                customer-support platform.
-              </p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.7, delay: 0.1 }}
-            >
-              <Waitlist />
-            </motion.div>
-          </div>
+          <motion.div
+            className="vh-cta"
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7 }}
+          >
+            <div className="vh-cta-glow" aria-hidden="true" />
+            <h2 className="vh-cta-title">Ready to give your line a voice?</h2>
+            <p className="vh-cta-sub">
+              Set up your business profile, pick a voice, and choose how calls route, all in one
+              place. Nothing is charged until your line is live.
+            </p>
+            <div className="vh-cta-actions">
+              <button
+                type="button"
+                className="vh-btn vh-btn-primary"
+                onClick={() => {
+                  window.location.href = VOICE_APP_URL
+                }}
+              >
+                Start setup
+                <ArrowUpRight size={15} weight="bold" />
+              </button>
+              <button type="button" className="vh-btn vh-btn-ghost" onClick={() => scrollTo('how')}>
+                See how it works
+              </button>
+            </div>
+            <p className="vh-cta-note">
+              Part of <a href="https://liraintelligence.com">Lira Intelligence</a>, the intelligent
+              customer-support platform.
+            </p>
+          </motion.div>
         </div>
       </section>
 
@@ -547,6 +302,72 @@ export function VoiceLandingPage() {
 function VoiceExtraStyles() {
   return (
     <style>{`
+      /* ── Bespoke voice hero: dark, premium, voice-native. Keeps the brand
+         editorial headline (eh-headline) but on a dark stage with a teal glow,
+         a faint grid, an animated waveform floor, and the live call panel. ── */
+      .vh-hero {
+        position: relative; overflow: hidden; color: #eef7f4;
+        padding: 148px 0 96px;
+        background: radial-gradient(125% 95% at 12% -5%, #163029 0%, #0c1618 42%, #080c0d 100%);
+      }
+      .vh-glow { position: absolute; top: -18%; right: -8%; width: 62%; height: 85%; pointer-events: none;
+        background: radial-gradient(circle, rgba(16,178,140,0.24), transparent 62%); filter: blur(14px); }
+      .vh-grid { position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
+        background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+        background-size: 46px 46px;
+        -webkit-mask-image: radial-gradient(circle at 28% 18%, #000, transparent 72%);
+        mask-image: radial-gradient(circle at 28% 18%, #000, transparent 72%); }
+      .vh-inner { position: relative; z-index: 2; max-width: 1160px; margin: 0 auto; padding: 0 28px;
+        display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 52px; align-items: center; }
+      .vh-headline { color: #ffffff; margin: 18px 0 0; }
+      .vh-headline em { color: #6ef2d5; }
+      .vh-body { margin: 22px 0 0; max-width: 460px; font-size: 16px; line-height: 1.62; color: rgba(255,255,255,0.72); }
+      .vh-cta-row { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
+      .vh-btn { display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 24px; border: 0; border-radius: 999px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.15s ease, filter 0.15s ease; }
+      .vh-btn:hover { transform: translateY(-2px); }
+      .vh-btn-primary { background: #ffffff; color: #0c1517; }
+      .vh-btn-primary:hover { filter: brightness(0.94); }
+      .vh-btn-ghost { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.20); }
+      .vh-btn-ghost:hover { background: rgba(255,255,255,0.14); }
+      .vh-trust { margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,0.55); }
+      .vh-trust span { display: inline-flex; align-items: center; gap: 7px; }
+      .vh-trust span::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #34d399; }
+      .vh-right { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; }
+      .vh-panel-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #8ff6de; }
+      .vh-wave { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; z-index: 1; pointer-events: none;
+        display: flex; align-items: flex-end; gap: 3px; padding: 0 10px; opacity: 0.15; }
+      .vh-wave i { flex: 1; height: 10px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #6ef2d5, transparent); animation: vhWave 1.5s ease-in-out infinite; }
+      @keyframes vhWave { 0%, 100% { height: 9px; } 50% { height: 54px; } }
+      @media (prefers-reduced-motion: reduce) { .vh-wave i { animation: none; } }
+      @media (max-width: 920px) {
+        .vh-hero { padding: 116px 0 72px; }
+        .vh-inner { grid-template-columns: 1fr; gap: 34px; }
+        .vh-body { max-width: none; }
+      }
+
+      /* Get-started CTA band — dark, matches the hero, single "Start setup" path. */
+      .vh-cta { position: relative; overflow: hidden; max-width: 900px; margin: 0 auto; text-align: center;
+        padding: 56px 32px; border-radius: 28px; color: #eef7f4;
+        background: radial-gradient(120% 130% at 50% -12%, #163029 0%, #0c1618 46%, #080c0d 100%);
+        border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 100px rgba(2,3,8,0.26); }
+      .vh-cta-glow { position: absolute; top: -42%; left: 50%; transform: translateX(-50%); width: 70%; height: 100%;
+        background: radial-gradient(circle, rgba(16,178,140,0.28), transparent 60%); filter: blur(10px); pointer-events: none; }
+      .vh-cta-title { position: relative; margin: 0; font-size: clamp(26px, 4vw, 40px); font-weight: 800; letter-spacing: -0.02em; color: #fff; }
+      .vh-cta-sub { position: relative; margin: 14px auto 0; max-width: 520px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.72); }
+      .vh-cta-actions { position: relative; margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+      .vh-cta-note { position: relative; margin: 22px 0 0; font-size: 12.5px; color: rgba(255,255,255,0.5); }
+      .vh-cta-note a { color: #6ef2d5; text-decoration: none; }
+      .vh-cta-note a:hover { text-decoration: underline; }
+
+      /* Step cards — force a light card with a bold, high-contrast teal number
+         badge so the "1 · 2 · 3" always read clearly (never dark-on-dark). */
+      .vx-grid-3 .hx-why-card { background: #ffffff; border-color: rgba(2,3,8,0.10); }
+      .vx-grid-3 .hx-why-icon { background: #10b28c; color: #ffffff; font-size: 18px; font-weight: 800; }
+      .vx-grid-3 .hx-why-icon svg { color: #ffffff; }
+      .vx-grid-3 .hx-why-step { color: rgba(2,3,8,0.32); }
+      .vx-grid-3 .hx-why-card h3 { color: #10161a; }
+      .vx-grid-3 .hx-why-card p { color: rgba(2,3,8,0.66); }
+
       .vx-hero-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: #ffffff; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; backdrop-filter: blur(8px); }
       .vx-hero-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 12px #34d399; }
       .eh-left .vx-hero-tag { margin-bottom: 18px; }

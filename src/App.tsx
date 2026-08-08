@@ -28,6 +28,8 @@ import {
   PricingPage,
   DemoSitePage,
   VoiceLandingPage,
+  VoiceAppPage,
+  VoiceSsoBridgePage,
   DemoHelpPage,
   SupportCenterDemoPage,
   LiraForFintechPage,
@@ -182,9 +184,9 @@ function App() {
     return <DemoSitePage />
   }
 
-  // voice subdomain — the Lira Voice (AI phone agent) marketing/waitlist page.
+  // voice subdomain — the real Lira Voice app.
   if (window.location.hostname === 'voice.liraintelligence.com') {
-    return <VoiceLandingPage />
+    return <VoiceAppPage />
   }
 
   return (
@@ -197,6 +199,7 @@ function App() {
         <Route path="/v4" element={<LandingPageV4 />} />
         <Route path="/login" element={<HomePage defaultView="login" />} />
         <Route path="/signup" element={<HomePage defaultView="signup" />} />
+        <Route path="/voice-sso" element={<VoiceSsoBridgePage />} />
         <Route path="/onboarding" element={<OnboardingPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -208,6 +211,7 @@ function App() {
             /products/customer-support at the edge via vercel.json. */}
         <Route path="/products/customer-support" element={<ProductCustomerSupportPage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/voice" element={<VoiceLandingPage />} />
         <Route path="/demo" element={<DemoSitePage />} />
         <Route path="/demo/help" element={<DemoHelpPage />} />
         <Route path="/demo/support-center" element={<SupportCenterDemoPage />} />

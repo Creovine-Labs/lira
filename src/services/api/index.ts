@@ -542,6 +542,28 @@ export async function listMeetings(orgId?: string): Promise<Meeting[]> {
   return Array.isArray(data) ? data : (data.meetings ?? [])
 }
 
+export interface CurrentUser {
+  id: string
+  email: string
+  name?: string | null
+  role: string
+  emailVerified?: boolean
+  planTier?: string | null
+}
+
+/**
+ * The signed-in user as the SERVER sees them right now.
+ *
+ * The auth store captures the role once at login and never refreshes it, and a
+ * long-lived session can hold a token issued before the role claim existed at
+ * all — so a platform admin could lose the Admin Dashboard entry with no way
+ * back short of signing out. This is the authority; call it on app load.
+ */
+export async function getCurrentUser(): Promise<CurrentUser> {
+  const data = await apiFetch<{ user?: CurrentUser } & CurrentUser>('/v1/auth/me')
+  return (data.user ?? data) as CurrentUser
+}
+
 export async function getMeeting(id: string): Promise<Meeting> {
   type Resp = { meeting: Meeting } | Meeting
   const data = await apiFetch<Resp>(`/lira/v1/meetings/${id}`)
