@@ -120,28 +120,25 @@ function AuthPanel() {
   }
 
   return (
-    <section className="grid min-h-screen bg-[#f4f0e8] text-[#171412] lg:grid-cols-[1.05fr_0.95fr]">
+    <section className="grid min-h-screen bg-[#171412] text-[#f4f0e8] lg:grid-cols-[1.05fr_0.95fr]">
       <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10">
         <div className="flex items-center gap-3">
-          <img src="/lira_black.png" alt="Lira" className="h-9 w-9" />
+          <img src="/lira_mark_white.png" alt="Lira" className="h-9 w-9" />
           <span className="text-sm font-semibold">Lira Voice</span>
         </div>
 
         <div className="flex flex-1 items-center">
           <div className="w-full max-w-lg">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-black/45">
-              AI phone support
-            </p>
-            <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-6xl">
+            <h1 className="text-4xl font-semibold tracking-tight sm:text-6xl">
               Add a Nigerian voice to your customer line.
             </h1>
-            <p className="mt-5 max-w-md text-base leading-7 text-black/60">
+            <p className="mt-5 max-w-md text-base leading-7 text-white/60">
               Save your business profile, pick the support voice, choose how calls should route, and
               track setup from one app.
             </p>
             <a
               href={appBridgeUrl()}
-              className="mt-7 inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
+              className="mt-7 inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-[#171412]"
             >
               Continue from dashboard
               <ArrowRight className="h-4 w-4" />
@@ -150,12 +147,12 @@ function AuthPanel() {
         </div>
       </div>
 
-      <div className="flex min-h-screen items-center justify-center bg-[#171412] px-6 py-10 text-white">
+      <div className="flex min-h-screen items-center justify-center bg-[#f4f0e8] px-6 py-10 text-[#171412]">
         <form
           onSubmit={submit}
-          className="w-full max-w-md rounded-lg border border-white/10 bg-white/[0.06] p-5"
+          className="w-full max-w-md rounded-lg border border-black/10 bg-white p-5 shadow-sm"
         >
-          <div className="flex rounded-full bg-white/10 p-1">
+          <div className="flex rounded-full bg-black/[0.06] p-1">
             {(['login', 'signup'] as const).map((item) => (
               <button
                 key={item}
@@ -163,7 +160,7 @@ function AuthPanel() {
                 onClick={() => setMode(item)}
                 className={cn(
                   'flex-1 rounded-full px-4 py-2 text-sm font-semibold transition',
-                  mode === item ? 'bg-white text-black' : 'text-white/60 hover:text-white'
+                  mode === item ? 'bg-[#171412] text-white' : 'text-black/55 hover:text-black'
                 )}
               >
                 {item === 'login' ? 'Log in' : 'Create account'}
@@ -173,38 +170,38 @@ function AuthPanel() {
 
           {mode === 'signup' && (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <label className="text-xs font-semibold text-white/55">
+              <label className="text-xs font-semibold text-black/55">
                 Your name
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   required
-                  className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-white/35"
+                  className="mt-1 w-full rounded-md border border-black/12 bg-white px-3 py-2.5 text-sm text-[#171412] outline-none focus:border-black/40"
                 />
               </label>
-              <label className="text-xs font-semibold text-white/55">
+              <label className="text-xs font-semibold text-black/55">
                 Company
                 <input
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-white/35"
+                  className="mt-1 w-full rounded-md border border-black/12 bg-white px-3 py-2.5 text-sm text-[#171412] outline-none focus:border-black/40"
                 />
               </label>
             </div>
           )}
 
           <div className="mt-5 space-y-3">
-            <label className="block text-xs font-semibold text-white/55">
+            <label className="block text-xs font-semibold text-black/55">
               Email
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-white/35"
+                className="mt-1 w-full rounded-md border border-black/12 bg-white px-3 py-2.5 text-sm text-[#171412] outline-none focus:border-black/40"
               />
             </label>
-            <label className="block text-xs font-semibold text-white/55">
+            <label className="block text-xs font-semibold text-black/55">
               Password
               <input
                 type="password"
@@ -212,19 +209,19 @@ function AuthPanel() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 minLength={8}
-                className="mt-1 w-full rounded-md border border-white/10 bg-black/30 px-3 py-2.5 text-sm text-white outline-none focus:border-white/35"
+                className="mt-1 w-full rounded-md border border-black/12 bg-white px-3 py-2.5 text-sm text-[#171412] outline-none focus:border-black/40"
               />
             </label>
           </div>
 
           {error && (
-            <p className="mt-4 rounded-md bg-red-500/10 px-3 py-2 text-sm text-red-100">{error}</p>
+            <p className="mt-4 rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-semibold text-black disabled:opacity-60"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#171412] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
           >
             {loading && <Loader2 className="h-4 w-4 animate-spin" />}
             {mode === 'login' ? 'Log in to Voice' : 'Create Voice account'}

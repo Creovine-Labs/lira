@@ -55,6 +55,18 @@ function storeLead(lead: Lead): void {
 function looksLikeEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
 }
+/**
+ * Per-dot base opacity for the 5×5 matrix at the centre of the orb.
+ *
+ * Brightest through the middle, falling off to the corners — the reference
+ * reads as a speaker grille catching light, not a uniform grid. Each dot
+ * animates from its own base so the pattern stays legible while it moves.
+ */
+const MATRIX = [
+  0.1, 0.16, 0.22, 0.16, 0.1, 0.16, 0.34, 0.52, 0.34, 0.16, 0.22, 0.52, 0.95, 0.52, 0.22, 0.16,
+  0.34, 0.52, 0.34, 0.16, 0.1, 0.16, 0.22, 0.16, 0.1,
+]
+
 const CAP_SECONDS = 90
 const BRAND = 'Lira Voice'
 
@@ -274,13 +286,27 @@ export function VoicePhoneDemo() {
         </div>
 
         <div className="vc-stage">
+          {/*
+            Concentric rings + a dot matrix, per the reference design. The rings
+            sit OUTSIDE the orb rather than being drawn on it, so they can pulse
+            outward on ring/connect without disturbing the metal.
+          */}
           <div className={orbClass} aria-hidden="true">
-            <span className="vc-bars">
+            <span className="vc-rings">
               <i />
               <i />
               <i />
               <i />
               <i />
+              <i />
+            </span>
+            <span className="vc-face">
+              <span className="vc-sheen" />
+              <span className="vc-matrix">
+                {MATRIX.map((weight, i) => (
+                  <i key={i} style={{ '--w': weight } as React.CSSProperties} />
+                ))}
+              </span>
             </span>
           </div>
           <div className="vc-state">{state}</div>
@@ -459,43 +485,109 @@ function VcStyles() {
       .vc-wrap { width: 100%; max-width: 380px; margin: 0 auto; }
       .vc-panel {
         position: relative; border-radius: 22px; padding: 20px 20px 16px;
-        background: linear-gradient(180deg, rgba(20,26,28,0.96), rgba(10,14,15,0.98));
+        background: linear-gradient(180deg, #101011 0%, #050506 100%);
         border: 1px solid rgba(255,255,255,0.10);
         box-shadow: 0 30px 80px rgba(2,3,8,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
-        color: #eef7f4; overflow: hidden;
+        color: #f2f2f3; overflow: hidden;
       }
       .vc-panel::before {
         content: ''; position: absolute; inset: 0; pointer-events: none;
-        background: radial-gradient(90% 60% at 50% -10%, rgba(16,178,140,0.28), transparent 60%);
+        background: radial-gradient(90% 60% at 50% -10%, rgba(255,255,255,0.08), transparent 62%);
       }
       .vc-head { position: relative; display: flex; align-items: center; justify-content: space-between; }
       .vc-brand { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; letter-spacing: -0.01em; }
-      .vc-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 0 0 rgba(52,211,153,0.6); animation: vcDot 1.8s infinite; }
+      .vc-dot { width: 7px; height: 7px; border-radius: 50%; background: #e6e6e6; box-shadow: 0 0 0 0 rgba(255,255,255,0.55); animation: vcDot 2.2s infinite; }
       .vc-tag { font-size: 11px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: rgba(255,255,255,0.55); font-variant-numeric: tabular-nums; }
 
-      .vc-stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 18px 0 12px; }
-      .vc-orb {
-        position: relative; width: 116px; height: 116px; border-radius: 50%; display: grid; place-items: center;
-        background: radial-gradient(circle at 50% 35%, #21d0a8 0%, #10b28c 42%, #0b5f52 100%);
-        box-shadow: 0 0 0 8px rgba(16,178,140,0.10), 0 18px 50px rgba(16,178,140,0.28);
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-      }
-      .vc-orb.is-listening { box-shadow: 0 0 0 6px rgba(16,178,140,0.10), 0 12px 40px rgba(16,178,140,0.22); }
-      .vc-orb.is-speaking { box-shadow: 0 0 0 12px rgba(16,178,140,0.14), 0 22px 60px rgba(16,178,140,0.40); }
-      .vc-orb.is-ringing::before, .vc-orb.is-ringing::after {
-        content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(52,211,153,0.5);
-        animation: vcRing 1.6s ease-out infinite;
-      }
-      .vc-orb.is-ringing::after { animation-delay: 0.8s; }
+      .vc-stage { position: relative; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 22px 0 12px; }
 
-      .vc-bars { display: flex; align-items: center; gap: 4px; height: 34px; }
-      .vc-bars i { width: 4px; height: 8px; border-radius: 4px; background: rgba(255,255,255,0.92); }
-      .vc-orb.is-speaking .vc-bars i { animation: vcBar 0.7s ease-in-out infinite; }
-      .vc-orb.is-speaking .vc-bars i:nth-child(1) { animation-delay: 0s; }
-      .vc-orb.is-speaking .vc-bars i:nth-child(2) { animation-delay: 0.12s; }
-      .vc-orb.is-speaking .vc-bars i:nth-child(3) { animation-delay: 0.06s; }
-      .vc-orb.is-speaking .vc-bars i:nth-child(4) { animation-delay: 0.18s; }
-      .vc-orb.is-speaking .vc-bars i:nth-child(5) { animation-delay: 0.09s; }
+      /* ── The orb ──────────────────────────────────────────────────────────
+         Brushed metal, not a colour. The look comes from three stacked layers:
+         a conic sheen that rotates (what reads as "metal"), a radial body that
+         gives it a light source, and a specular highlight up top. Colour is
+         deliberately absent — greys only, so it sits on black without
+         competing with anything else on the page. */
+      .vc-orb {
+        position: relative; width: 168px; height: 168px; border-radius: 50%;
+        display: grid; place-items: center;
+        transition: transform 0.4s cubic-bezier(0.22,1,0.36,1), filter 0.4s ease;
+      }
+
+      /* Concentric rings, outside the metal so they can pulse without
+         disturbing it. Opacity falls off outward — the reference reads as
+         ripples rather than a target. */
+      .vc-rings { position: absolute; inset: 0; display: grid; place-items: center; }
+      .vc-rings i {
+        position: absolute; border-radius: 50%; border: 1px solid rgba(255,255,255,0.14);
+      }
+      .vc-rings i:nth-child(1) { width: 106%; height: 106%; }
+      .vc-rings i:nth-child(2) { width: 116%; height: 116%; border-color: rgba(255,255,255,0.115); }
+      .vc-rings i:nth-child(3) { width: 127%; height: 127%; border-color: rgba(255,255,255,0.09); }
+      .vc-rings i:nth-child(4) { width: 139%; height: 139%; border-color: rgba(255,255,255,0.065); }
+      .vc-rings i:nth-child(5) { width: 152%; height: 152%; border-color: rgba(255,255,255,0.045); }
+      .vc-rings i:nth-child(6) { width: 166%; height: 166%; border-color: rgba(255,255,255,0.028); }
+
+      .vc-face {
+        position: relative; width: 100%; height: 100%; border-radius: 50%;
+        display: grid; place-items: center; overflow: hidden;
+        background:
+          radial-gradient(circle at 50% 118%, rgba(255,255,255,0.10), transparent 46%),
+          radial-gradient(circle at 34% 24%, #d8d8d8 0%, #8e8e8e 26%, #4a4a4a 56%, #1c1c1c 100%);
+        box-shadow:
+          inset 0 1px 0 rgba(255,255,255,0.34),
+          inset 0 -18px 34px rgba(0,0,0,0.55),
+          0 0 0 1px rgba(255,255,255,0.07),
+          0 26px 60px rgba(0,0,0,0.62);
+      }
+
+      /* The rotating conic pass is what sells brushed metal — a fixed gradient
+         reads as plastic. Slow enough to be ambient, not a spinner. */
+      .vc-sheen {
+        position: absolute; inset: -30%; border-radius: 50%; pointer-events: none;
+        background: conic-gradient(from 0deg,
+          rgba(255,255,255,0) 0deg, rgba(255,255,255,0.16) 42deg, rgba(255,255,255,0) 96deg,
+          rgba(255,255,255,0) 190deg, rgba(255,255,255,0.10) 232deg, rgba(255,255,255,0) 286deg);
+        animation: vcSheen 9s linear infinite;
+      }
+
+      .vc-matrix {
+        position: relative; display: grid; grid-template-columns: repeat(5, 6px);
+        gap: 7px; place-items: center;
+      }
+      .vc-matrix i {
+        width: 6px; height: 6px; border-radius: 50%;
+        background: #fff; opacity: var(--w);
+        box-shadow: 0 0 6px rgba(255,255,255,0.35);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+      }
+
+      /* Idle: a slow breath, so the thing looks alive before anyone clicks. */
+      .vc-orb { animation: vcBreathe 5.5s ease-in-out infinite; }
+
+      /* Connecting: rings travel outward. */
+      .vc-orb.is-ringing .vc-rings i { animation: vcRipple 2.2s ease-out infinite; }
+      .vc-orb.is-ringing .vc-rings i:nth-child(2) { animation-delay: 0.18s; }
+      .vc-orb.is-ringing .vc-rings i:nth-child(3) { animation-delay: 0.36s; }
+      .vc-orb.is-ringing .vc-rings i:nth-child(4) { animation-delay: 0.54s; }
+      .vc-orb.is-ringing .vc-rings i:nth-child(5) { animation-delay: 0.72s; }
+      .vc-orb.is-ringing .vc-rings i:nth-child(6) { animation-delay: 0.90s; }
+
+      /* Listening: the metal brightens a touch and the sheen slows — present,
+         waiting, not performing. */
+      .vc-orb.is-listening { filter: brightness(1.06); }
+      .vc-orb.is-listening .vc-sheen { animation-duration: 14s; }
+
+      /* Speaking: the matrix drives, the sheen quickens, the orb lifts. This is
+         the only loud state, which is what makes it read as speech. */
+      .vc-orb.is-speaking { transform: scale(1.035); filter: brightness(1.12); animation: none; }
+      .vc-orb.is-speaking .vc-sheen { animation-duration: 3.4s; }
+      .vc-orb.is-speaking .vc-matrix i { animation: vcPulse 0.62s ease-in-out infinite; }
+      .vc-orb.is-speaking .vc-matrix i:nth-child(5n+1) { animation-delay: 0s; }
+      .vc-orb.is-speaking .vc-matrix i:nth-child(5n+2) { animation-delay: 0.09s; }
+      .vc-orb.is-speaking .vc-matrix i:nth-child(5n+3) { animation-delay: 0.18s; }
+      .vc-orb.is-speaking .vc-matrix i:nth-child(5n+4) { animation-delay: 0.09s; }
+      .vc-orb.is-speaking .vc-matrix i:nth-child(5n+5) { animation-delay: 0s; }
+
       .vc-state { position: relative; font-size: 13.5px; font-weight: 600; color: rgba(255,255,255,0.9); min-height: 18px; text-align: center; }
 
       .vc-transcript {
@@ -515,7 +607,7 @@ function VcStyles() {
       .vc-btn { display: inline-flex; align-items: center; gap: 8px; height: 46px; padding: 0 22px; border: 0; border-radius: 999px; font-size: 14px; font-weight: 800; cursor: pointer; transition: transform 0.15s ease, filter 0.15s ease; color: #fff; }
       .vc-btn:hover { transform: translateY(-1px); filter: brightness(1.06); }
       .vc-btn:active { transform: scale(0.98); }
-      .vc-btn-call { background: #16b26a; box-shadow: 0 12px 30px rgba(22,178,106,0.35); }
+      .vc-btn-call { background: linear-gradient(180deg, #2c2c2e, #171719); color: #fff; box-shadow: 0 12px 30px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.14); }
       .vc-btn-end { background: #ef4444; box-shadow: 0 12px 30px rgba(239,68,68,0.30); }
       .vc-btn-mute { background: rgba(255,255,255,0.12); color: #eef7f4; }
       .vc-btn-mute.is-on { background: rgba(255,255,255,0.24); }
@@ -530,18 +622,21 @@ function VcStyles() {
       .vc-gate-sub { margin: 0 0 14px; font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.6); }
       .vc-gate-label { margin: 0 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); }
       .vc-gate-input { width: 100%; height: 42px; margin: 0 0 12px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 10px; background: rgba(255,255,255,0.06); color: #f2fbf8; font-size: 14px; outline: none; }
-      .vc-gate-input:focus { border-color: #16b26a; background: rgba(255,255,255,0.09); }
+      .vc-gate-input:focus { border-color: rgba(255,255,255,0.42); background: rgba(255,255,255,0.09); }
       .vc-gate-input::placeholder { color: rgba(255,255,255,0.32); }
       .vc-gate-error { margin: -4px 0 10px; font-size: 12px; color: #fca5a5; }
       .vc-gate-actions { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
       .vc-gate-cancel { flex: none; height: 42px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(255,255,255,0.10); color: #eef7f4; font-size: 13px; font-weight: 700; cursor: pointer; }
       .vc-gate-submit { flex: 1; height: 42px; justify-content: center; }
 
-      @keyframes vcDot { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.6);} 70% { box-shadow: 0 0 0 7px rgba(52,211,153,0);} 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0);} }
-      @keyframes vcRing { 0% { transform: scale(1); opacity: 0.7;} 100% { transform: scale(1.45); opacity: 0;} }
-      @keyframes vcBar { 0%,100% { height: 8px;} 50% { height: 30px;} }
+      @keyframes vcDot { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5);} 70% { box-shadow: 0 0 0 7px rgba(255,255,255,0);} 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0);} }
+      @keyframes vcSheen { to { transform: rotate(360deg); } }
+      @keyframes vcBreathe { 0%,100% { transform: scale(1);} 50% { transform: scale(1.018);} }
+      @keyframes vcRipple { 0% { transform: scale(0.92); opacity: 0.55;} 100% { transform: scale(1.18); opacity: 0;} }
+      @keyframes vcPulse { 0%,100% { opacity: var(--w); transform: scale(1);} 50% { opacity: 1; transform: scale(1.5);} }
+      
       @media (prefers-reduced-motion: reduce) {
-        .vc-dot, .vc-orb::before, .vc-orb::after, .vc-orb.is-speaking .vc-bars i { animation: none !important; }
+        .vc-dot, .vc-orb, .vc-sheen, .vc-rings i, .vc-matrix i { animation: none !important; }
       }
     `}</style>
   )
