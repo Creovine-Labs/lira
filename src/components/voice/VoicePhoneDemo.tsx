@@ -18,6 +18,43 @@ import { startVoiceDemoSession, endVoiceDemoSession } from '@/services/api'
  */
 
 const ENGINE_BASE = 'https://widget.liraintelligence.com/amber-engine-v1.html'
+
+const LEAD_KEY = 'lira-voice-demo-lead'
+
+interface Lead {
+  name: string
+  email: string
+}
+
+/**
+ * Remembered so a returning visitor is not asked twice. Convenience only — the
+ * server requires name and email on every start, so clearing this changes what
+ * the visitor is asked, never whether the details are needed.
+ */
+function readStoredLead(): Lead | null {
+  try {
+    const raw = localStorage.getItem(LEAD_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as Partial<Lead>
+    if (!parsed.name?.trim() || !parsed.email?.trim()) return null
+    return { name: parsed.name.trim(), email: parsed.email.trim() }
+  } catch {
+    return null
+  }
+}
+
+function storeLead(lead: Lead): void {
+  try {
+    localStorage.setItem(LEAD_KEY, JSON.stringify(lead))
+  } catch {
+    /* private mode — the visitor is simply asked again next time */
+  }
+}
+
+/** Deliberately permissive: this is a lead form, not an auth boundary. */
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value.trim())
+}
 const CAP_SECONDS = 90
 const BRAND = 'Lira Voice'
 
@@ -33,6 +70,23 @@ export function VoicePhoneDemo() {
   const [lines, setLines] = useState<Line[]>([])
   const [engineSrc, setEngineSrc] = useState<string | null>(null)
   const [errMsg, setErrMsg] = useState<string | null>(null)
+  // Identity gate. Trying the voice is the strongest buying signal on the
+  // site, so an anonymous visitor gives a name and email first. Remembered
+  // locally so a returning visitor is not asked twice — the server still
+  // requires it on every start, we just fill it from here.
+  const [lead, setLead] = useState<Lead | null>(() => readStoredLead())
+  const [askOpen, setAskOpen] = useState(false)
+  const [askName, setAskName] = useState('')
+  const [askEmail, setAskEmail] = useState('')
+  const [askError, setAskError] = useState<string | null>(null)
+  const nameInputRef = useRef<HTMLInputElement | null>(null)
+
+  // Move focus into the dialog when it opens. Done with a ref rather than
+  // autoFocus so it also fires when the dialog is reopened, and so focus
+  // lands only on a deliberate open.
+  useEffect(() => {
+    if (askOpen) nameInputRef.current?.focus()
+  }, [askOpen])
 
   const iframeRef = useRef<HTMLIFrameElement | null>(null)
   const sessionKeyRef = useRef<string | null>(null)
@@ -155,14 +209,18 @@ export function VoicePhoneDemo() {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight
   }, [lines])
 
-  const call = useCallback(async () => {
+  const call = useCallback(async (who: Lead) => {
     setLines([])
     setMuted(false)
     setErrMsg(null)
     setPhase('connecting')
     setEngineSrc(null)
     try {
-      const s = await startVoiceDemoSession({ voiceId: 'professional_ng_female' })
+      const s = await startVoiceDemoSession({
+        voiceId: 'professional_ng_female',
+        leadName: who.name,
+        leadEmail: who.email,
+      })
       sessionKeyRef.current = s.sessionKey
       setEngineSrc(
         `${ENGINE_BASE}?idleMs=90000&orgId=${encodeURIComponent(s.demoOrgId)}` +
@@ -245,7 +303,20 @@ export function VoicePhoneDemo() {
 
         <div className="vc-controls">
           {!inCall ? (
-            <button type="button" className="vc-btn vc-btn-call" onClick={call}>
+            <button
+              type="button"
+              className="vc-btn vc-btn-call"
+              onClick={() => {
+                if (lead) {
+                  void call(lead)
+                  return
+                }
+                setAskName('')
+                setAskEmail('')
+                setAskError(null)
+                setAskOpen(true)
+              }}
+            >
               <PhoneIcon />
               {phase === 'ended' || phase === 'error' ? 'Call again' : 'Call & test the voice'}
             </button>
@@ -273,6 +344,78 @@ export function VoicePhoneDemo() {
             </>
           )}
         </div>
+
+        {askOpen && (
+          <div className="vc-gate" role="dialog" aria-modal="true" aria-labelledby="vc-gate-title">
+            <form
+              className="vc-gate-card"
+              onSubmit={(e) => {
+                e.preventDefault()
+                const name = askName.trim()
+                const email = askEmail.trim()
+                if (!name) return setAskError('Please enter your name.')
+                if (!looksLikeEmail(email))
+                  return setAskError('Please enter a valid email address.')
+                const who = { name, email }
+                setLead(who)
+                storeLead(who)
+                setAskOpen(false)
+                void call(who)
+              }}
+            >
+              <h3 id="vc-gate-title" className="vc-gate-title">
+                Who are we speaking to?
+              </h3>
+              <p className="vc-gate-sub">
+                Lira will greet you by name. We use your email to follow up — nothing else.
+              </p>
+
+              <label className="vc-gate-label" htmlFor="vc-gate-name">
+                Name
+              </label>
+              <input
+                id="vc-gate-name"
+                className="vc-gate-input"
+                value={askName}
+                onChange={(e) => {
+                  setAskName(e.target.value)
+                  setAskError(null)
+                }}
+                placeholder="Ada Okafor"
+                autoComplete="name"
+                ref={nameInputRef}
+              />
+
+              <label className="vc-gate-label" htmlFor="vc-gate-email">
+                Work email
+              </label>
+              <input
+                id="vc-gate-email"
+                className="vc-gate-input"
+                type="email"
+                value={askEmail}
+                onChange={(e) => {
+                  setAskEmail(e.target.value)
+                  setAskError(null)
+                }}
+                placeholder="ada@company.com"
+                autoComplete="email"
+              />
+
+              {askError && <p className="vc-gate-error">{askError}</p>}
+
+              <div className="vc-gate-actions">
+                <button type="button" className="vc-gate-cancel" onClick={() => setAskOpen(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="vc-btn vc-btn-call vc-gate-submit">
+                  <PhoneIcon />
+                  Start the call
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
 
         <p className="vc-fine">
           Automated demo · capped at {CAP_SECONDS}s · no real actions · answered in a Nigerian voice
@@ -378,6 +521,21 @@ function VcStyles() {
       .vc-btn-mute.is-on { background: rgba(255,255,255,0.24); }
 
       .vc-fine { position: relative; margin: 12px 0 0; text-align: center; font-size: 11.5px; line-height: 1.5; color: rgba(255,255,255,0.5); }
+
+      /* Identity gate — sits inside the phone frame so it reads as part of the
+         call flow rather than a site-wide interruption. */
+      .vc-gate { position: absolute; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: 18px; background: rgba(4,12,10,0.82); backdrop-filter: blur(6px); border-radius: inherit; }
+      .vc-gate-card { width: 100%; max-width: 320px; display: flex; flex-direction: column; text-align: left; }
+      .vc-gate-title { margin: 0 0 4px; font-size: 17px; font-weight: 800; color: #f2fbf8; }
+      .vc-gate-sub { margin: 0 0 14px; font-size: 12px; line-height: 1.5; color: rgba(255,255,255,0.6); }
+      .vc-gate-label { margin: 0 0 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: rgba(255,255,255,0.5); }
+      .vc-gate-input { width: 100%; height: 42px; margin: 0 0 12px; padding: 0 12px; border: 1px solid rgba(255,255,255,0.16); border-radius: 10px; background: rgba(255,255,255,0.06); color: #f2fbf8; font-size: 14px; outline: none; }
+      .vc-gate-input:focus { border-color: #16b26a; background: rgba(255,255,255,0.09); }
+      .vc-gate-input::placeholder { color: rgba(255,255,255,0.32); }
+      .vc-gate-error { margin: -4px 0 10px; font-size: 12px; color: #fca5a5; }
+      .vc-gate-actions { display: flex; align-items: center; gap: 10px; margin-top: 2px; }
+      .vc-gate-cancel { flex: none; height: 42px; padding: 0 14px; border: 0; border-radius: 999px; background: rgba(255,255,255,0.10); color: #eef7f4; font-size: 13px; font-weight: 700; cursor: pointer; }
+      .vc-gate-submit { flex: 1; height: 42px; justify-content: center; }
 
       @keyframes vcDot { 0% { box-shadow: 0 0 0 0 rgba(52,211,153,0.6);} 70% { box-shadow: 0 0 0 7px rgba(52,211,153,0);} 100% { box-shadow: 0 0 0 0 rgba(52,211,153,0);} }
       @keyframes vcRing { 0% { transform: scale(1); opacity: 0.7;} 100% { transform: scale(1.45); opacity: 0;} }

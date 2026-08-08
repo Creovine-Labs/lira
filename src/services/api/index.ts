@@ -441,7 +441,13 @@ export async function saveVoicePlanIntent(
   return data.planIntent
 }
 
-export async function startVoiceDemoSession(input?: { voiceId?: string; orgId?: string }): Promise<{
+export async function startVoiceDemoSession(input?: {
+  voiceId?: string
+  orgId?: string
+  /** Required for anonymous callers — the server rejects a start without them. */
+  leadName?: string
+  leadEmail?: string
+}): Promise<{
   sessionKey: string
   capSeconds: number
   concurrentCap: number
