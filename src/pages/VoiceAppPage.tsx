@@ -1,71 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  ArrowRight,
-  Building2,
-  Check,
-  Loader2,
-  LogOut,
-  Mic,
-  PhoneCall,
-  Plus,
-  ShieldCheck,
-  Sparkles,
-} from 'lucide-react'
+import { ArrowRight, Building2, Check, Loader2, LogOut, Mic, Plus } from 'lucide-react'
 
 import { useAuthStore, useOrgStore } from '@/app/store'
 import {
   createOrganization,
-  createVoiceLineRequest,
   credentials,
   exchangeVoiceSso,
   getAuthMe,
   getVoiceOnboarding,
   listOrganizations,
   login,
-  saveVoiceBusinessProfile,
-  saveVoicePlanIntent,
   signup,
   type Organization,
   type VoiceOnboardingState,
 } from '@/services/api'
 import { VoicePhoneDemo } from '@/components/voice/VoicePhoneDemo'
+import { toast } from 'sonner'
+import { VoiceOnboardingPage } from '@/pages/VoiceOnboardingPage'
 import { cn } from '@/lib'
 
-const VOICES = [
-  {
-    id: 'professional_ng_female',
-    name: 'Professional Nigerian',
-    detail: 'Best for finance, healthcare, logistics, and high-trust support.',
-  },
-  {
-    id: 'conversational_ng_female',
-    name: 'Conversational Nigerian',
-    detail: 'Warm, natural and relaxed for hospitality, restaurants, retail, and services.',
-  },
-  {
-    id: 'custom_clone_pending',
-    name: 'Custom brand voice',
-    detail: 'For teams with a consented actor recording and approved clone profile.',
-  },
-]
-
-const PLANS = [
-  { tier: 'starter', label: 'Starter', usd: 4900, ngn: 7900000 },
-  { tier: 'growth', label: 'Growth', usd: 9900, ngn: 15500000 },
-  { tier: 'business', label: 'Business', usd: 19900, ngn: 31500000 },
-  { tier: 'enterprise', label: 'Enterprise', usd: undefined, ngn: undefined },
-] as const
-
 type AuthMode = 'login' | 'signup'
-type BusinessTextField =
-  | 'businessName'
-  | 'industry'
-  | 'businessCategory'
-  | 'offerings'
-  | 'hours'
-  | 'prices'
-  | 'policies'
-  | 'personality'
 
 function setSession(
   auth: ReturnType<typeof useAuthStore.getState>,
@@ -253,35 +207,20 @@ function VoiceAppShell() {
   const orgStore = useOrgStore()
   const [organizations, setOrganizations] = useState<Organization[]>([])
   const [selectedOrgId, setSelectedOrgId] = useState<string | null>(null)
+  /**
+   * Set once the visitor finishes (or already finished) onboarding.
+   *
+   * The three setup forms used to live on this dashboard, so a brand-new
+   * account was met with data entry instead of the product. They now run in
+   * front of it — but only once: an account that already has a business
+   * profile goes straight through.
+   */
+  const [onboarded, setOnboarded] = useState(false)
   const [state, setState] = useState<VoiceOnboardingState | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [newOrgName, setNewOrgName] = useState('')
-  const [currency, setCurrency] = useState<'USD' | 'NGN'>('NGN')
-  const [business, setBusiness] = useState({
-    businessName: '',
-    industry: '',
-    businessCategory: '',
-    inboundCallsPerDay: '',
-    decisionMaker: false,
-    canStartWithinDays: '30',
-    willingnessToPay: false,
-    offerings: '',
-    hours: '',
-    prices: '',
-    policies: '',
-    personality: '',
-    chosenVoice: 'professional_ng_female',
-  })
-  const [line, setLine] = useState({
-    option: 'forward_existing' as 'forward_existing' | 'request_number',
-    existingNumber: '',
-    preferredCountry: 'Nigeria',
-    preferredCity: 'Lagos',
-    forwardingReadiness: '',
-    notes: '',
-  })
 
   const selectedOrg = useMemo(
     () => organizations.find((org) => org.org_id === selectedOrgId) ?? null,
@@ -339,29 +278,16 @@ function VoiceAppShell() {
     }
     let cancelled = false
     setLoading(true)
+    // Per-org, not per-session: switching to a workspace that has never been
+    // set up must show onboarding again, even if the previous one was done.
+    setOnboarded(false)
     getVoiceOnboarding(selectedOrgId)
       .then((next) => {
         if (cancelled) return
         setState(next)
-        if (next.businessProfile) {
-          setBusiness({
-            businessName: next.businessProfile.businessName,
-            industry: next.businessProfile.industry ?? '',
-            businessCategory: next.businessProfile.businessCategory ?? '',
-            inboundCallsPerDay: String(next.businessProfile.inboundCallsPerDay ?? ''),
-            decisionMaker: Boolean(next.businessProfile.decisionMaker),
-            canStartWithinDays: String(next.businessProfile.canStartWithinDays ?? '30'),
-            willingnessToPay: Boolean(next.businessProfile.willingnessToPay),
-            offerings: next.businessProfile.offerings ?? '',
-            hours: next.businessProfile.hours ?? '',
-            prices: next.businessProfile.prices ?? '',
-            policies: next.businessProfile.policies ?? '',
-            personality: next.businessProfile.personality ?? '',
-            chosenVoice: next.businessProfile.chosenVoice,
-          })
-        } else if (selectedOrg) {
-          setBusiness((prev) => ({ ...prev, businessName: selectedOrg.name }))
-        }
+        // A saved business name is the marker that setup has been done —
+        // it is the one required field of the first step.
+        if (next.businessProfile?.businessName) setOnboarded(true)
       })
       .catch((err) => setError(err instanceof Error ? err.message : 'Could not load Voice setup'))
       .finally(() => {
@@ -392,59 +318,24 @@ function VoiceAppShell() {
     }
   }
 
-  async function saveBusiness(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedOrgId) return
-    setSaving('business')
-    try {
-      await saveVoiceBusinessProfile(selectedOrgId, {
-        ...business,
-        inboundCallsPerDay: business.inboundCallsPerDay
-          ? Number(business.inboundCallsPerDay)
-          : undefined,
-        canStartWithinDays: business.canStartWithinDays
-          ? Number(business.canStartWithinDays)
-          : undefined,
-      })
-      setState(await getVoiceOnboarding(selectedOrgId))
-    } finally {
-      setSaving(null)
-    }
-  }
-
-  async function saveLine(e: React.FormEvent) {
-    e.preventDefault()
-    if (!selectedOrgId) return
-    setSaving('line')
-    try {
-      await createVoiceLineRequest(selectedOrgId, line)
-      setState(await getVoiceOnboarding(selectedOrgId))
-    } finally {
-      setSaving(null)
-    }
-  }
-
-  async function choosePlan(tier: (typeof PLANS)[number]['tier'], amount?: number) {
-    if (!selectedOrgId) return
-    setSaving(`plan:${tier}`)
-    try {
-      await saveVoicePlanIntent(selectedOrgId, {
-        tier,
-        currency,
-        interval: 'monthly',
-        quotedAmountCents: amount,
-      })
-      setState(await getVoiceOnboarding(selectedOrgId))
-    } finally {
-      setSaving(null)
-    }
-  }
-
   function signOut() {
     credentials.clear()
     auth.clearCredentials()
     orgStore.clear()
     window.location.reload()
+  }
+
+  // Setup runs in front of the dashboard, not on it.
+  if (selectedOrgId && !loading && !onboarded) {
+    return (
+      <VoiceOnboardingPage
+        orgId={selectedOrgId}
+        onDone={() => {
+          setOnboarded(true)
+          toast.success('You are all set — try the demo below.')
+        }}
+      />
+    )
   }
 
   return (
@@ -557,306 +448,20 @@ function VoiceAppShell() {
               </p>
             </section>
           ) : (
-            <div className="grid gap-5 xl:grid-cols-2">
-              <form
-                onSubmit={saveBusiness}
-                className="rounded-lg border border-black/10 bg-white p-4"
-              >
-                <div className="flex items-center gap-2">
-                  <Sparkles className="h-5 w-5" />
-                  <h2 className="text-lg font-semibold">Describe your business</h2>
-                </div>
-                <div className="mt-4 grid gap-3">
-                  {(
-                    [
-                      ['businessName', 'Business name'],
-                      ['industry', 'Industry'],
-                      ['businessCategory', 'Business category'],
-                      ['offerings', 'Offerings'],
-                      ['hours', 'Hours'],
-                      ['prices', 'Prices'],
-                      ['policies', 'Policies'],
-                      ['personality', 'Personality instructions'],
-                    ] as Array<[BusinessTextField, string]>
-                  ).map(([key, label]) => (
-                    <label key={key} className="text-xs font-semibold text-black/50">
-                      {label}
-                      {key === 'offerings' ||
-                      key === 'prices' ||
-                      key === 'policies' ||
-                      key === 'personality' ? (
-                        <textarea
-                          value={String(business[key] ?? '')}
-                          onChange={(e) =>
-                            setBusiness((prev) => ({ ...prev, [key]: e.target.value }))
-                          }
-                          rows={3}
-                          className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm text-black outline-none focus:border-black/35"
-                        />
-                      ) : (
-                        <input
-                          value={String(business[key] ?? '')}
-                          onChange={(e) =>
-                            setBusiness((prev) => ({ ...prev, [key]: e.target.value }))
-                          }
-                          required={key === 'businessName'}
-                          className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm text-black outline-none focus:border-black/35"
-                        />
-                      )}
-                    </label>
-                  ))}
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  <label className="text-xs font-semibold text-black/50">
-                    Calls per day
-                    <input
-                      type="number"
-                      min={0}
-                      value={business.inboundCallsPerDay}
-                      onChange={(e) =>
-                        setBusiness((prev) => ({ ...prev, inboundCallsPerDay: e.target.value }))
-                      }
-                      className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm text-black outline-none focus:border-black/35"
-                    />
-                  </label>
-                  <label className="text-xs font-semibold text-black/50">
-                    Start timeline
-                    <select
-                      value={business.canStartWithinDays}
-                      onChange={(e) =>
-                        setBusiness((prev) => ({ ...prev, canStartWithinDays: e.target.value }))
-                      }
-                      className="mt-1 w-full rounded-md border border-black/10 bg-white px-3 py-2 text-sm text-black outline-none focus:border-black/35"
-                    >
-                      <option value="7">Within 7 days</option>
-                      <option value="30">Within 30 days</option>
-                      <option value="90">Within 90 days</option>
-                      <option value="365">Later</option>
-                    </select>
-                  </label>
-                  <div className="grid gap-2 pt-5">
-                    <label className="flex items-center gap-2 text-xs font-semibold text-black/65">
-                      <input
-                        type="checkbox"
-                        checked={business.decisionMaker}
-                        onChange={(e) =>
-                          setBusiness((prev) => ({ ...prev, decisionMaker: e.target.checked }))
-                        }
-                      />
-                      I can approve spend
-                    </label>
-                    <label className="flex items-center gap-2 text-xs font-semibold text-black/65">
-                      <input
-                        type="checkbox"
-                        checked={business.willingnessToPay}
-                        onChange={(e) =>
-                          setBusiness((prev) => ({ ...prev, willingnessToPay: e.target.checked }))
-                        }
-                      />
-                      Shown pricing works
-                    </label>
-                  </div>
-                </div>
-                <div className="mt-4 grid gap-2">
-                  {VOICES.map((voice) => (
-                    <label
-                      key={voice.id}
-                      htmlFor={`voice-${voice.id}`}
-                      className={cn(
-                        'flex cursor-pointer gap-3 rounded-md border p-3',
-                        business.chosenVoice === voice.id
-                          ? 'border-black bg-black text-white'
-                          : 'border-black/10'
-                      )}
-                    >
-                      <input
-                        id={`voice-${voice.id}`}
-                        type="radio"
-                        name="voice"
-                        value={voice.id}
-                        checked={business.chosenVoice === voice.id}
-                        onChange={(e) =>
-                          setBusiness((prev) => ({ ...prev, chosenVoice: e.target.value }))
-                        }
-                        className="mt-1"
-                      />
-                      <span>
-                        <span className="block text-sm font-semibold">{voice.name}</span>
-                        <span className="mt-0.5 block text-xs opacity-65">{voice.detail}</span>
-                      </span>
-                    </label>
-                  ))}
-                </div>
-                <button
-                  type="submit"
-                  disabled={saving === 'business'}
-                  className="mt-4 inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
-                >
-                  {saving === 'business' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Save profile
-                </button>
-              </form>
-
-              <div className="space-y-5">
-                <form
-                  onSubmit={saveLine}
-                  className="rounded-lg border border-black/10 bg-white p-4"
-                >
-                  <div className="flex items-center gap-2">
-                    <PhoneCall className="h-5 w-5" />
-                    <h2 className="text-lg font-semibold">Line option</h2>
-                  </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    {[
-                      ['forward_existing', 'Forward existing line'],
-                      ['request_number', 'Request a number'],
-                    ].map(([value, label]) => (
-                      <button
-                        key={value}
-                        type="button"
-                        onClick={() =>
-                          setLine((prev) => ({ ...prev, option: value as typeof line.option }))
-                        }
-                        className={cn(
-                          'rounded-md border px-3 py-3 text-left text-sm font-semibold',
-                          line.option === value
-                            ? 'border-black bg-black text-white'
-                            : 'border-black/10'
-                        )}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                    <label className="text-xs font-semibold text-black/50">
-                      Existing number
-                      <input
-                        value={line.existingNumber}
-                        onChange={(e) =>
-                          setLine((prev) => ({ ...prev, existingNumber: e.target.value }))
-                        }
-                        placeholder="+234..."
-                        className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <label className="text-xs font-semibold text-black/50">
-                      Preferred country
-                      <input
-                        value={line.preferredCountry}
-                        onChange={(e) =>
-                          setLine((prev) => ({ ...prev, preferredCountry: e.target.value }))
-                        }
-                        className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <label className="text-xs font-semibold text-black/50">
-                      City / region
-                      <input
-                        value={line.preferredCity}
-                        onChange={(e) =>
-                          setLine((prev) => ({ ...prev, preferredCity: e.target.value }))
-                        }
-                        className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm"
-                      />
-                    </label>
-                    <label className="text-xs font-semibold text-black/50">
-                      Forwarding readiness
-                      <input
-                        value={line.forwardingReadiness}
-                        onChange={(e) =>
-                          setLine((prev) => ({ ...prev, forwardingReadiness: e.target.value }))
-                        }
-                        placeholder="Can forward calls now / needs help"
-                        className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm"
-                      />
-                    </label>
-                  </div>
-                  <label className="mt-3 block text-xs font-semibold text-black/50">
-                    Notes
-                    <textarea
-                      value={line.notes}
-                      onChange={(e) => setLine((prev) => ({ ...prev, notes: e.target.value }))}
-                      rows={3}
-                      className="mt-1 w-full rounded-md border border-black/10 px-3 py-2 text-sm"
-                    />
-                  </label>
-                  <button
-                    type="submit"
-                    disabled={saving === 'line'}
-                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-black px-5 py-3 text-sm font-semibold text-white"
-                  >
-                    {saving === 'line' && <Loader2 className="h-4 w-4 animate-spin" />}
-                    Save line request
-                  </button>
-                </form>
-
-                <section className="rounded-lg border border-black/10 bg-white p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <ShieldCheck className="h-5 w-5" />
-                      <h2 className="text-lg font-semibold">Plan intent</h2>
-                    </div>
-                    <div className="flex rounded-full bg-black/5 p-1">
-                      {(['NGN', 'USD'] as const).map((item) => (
-                        <button
-                          key={item}
-                          type="button"
-                          onClick={() => setCurrency(item)}
-                          className={cn(
-                            'rounded-full px-3 py-1 text-xs font-bold',
-                            currency === item ? 'bg-black text-white' : 'text-black/55'
-                          )}
-                        >
-                          {item}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                    {PLANS.map((plan) => {
-                      const amount = currency === 'USD' ? plan.usd : plan.ngn
-                      const selected =
-                        state?.planIntent?.tier === plan.tier &&
-                        state.planIntent.currency === currency
-                      return (
-                        <button
-                          key={plan.tier}
-                          type="button"
-                          onClick={() => choosePlan(plan.tier, amount)}
-                          className={cn(
-                            'rounded-md border p-3 text-left',
-                            selected ? 'border-black bg-black text-white' : 'border-black/10'
-                          )}
-                        >
-                          <span className="block text-sm font-semibold">{plan.label}</span>
-                          <span className="mt-1 block text-xs opacity-60">
-                            {amount
-                              ? `${currency === 'USD' ? '$' : '₦'}${(amount / 100).toLocaleString()}/mo`
-                              : 'Custom'}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <p className="mt-3 text-xs leading-5 text-black/50">
-                    Plan intent is saved for setup planning only. No customer is charged until a
-                    line is deliverable and billing is explicitly activated.
-                  </p>
-                </section>
-
-                <section className="rounded-lg border border-black/10 bg-white p-4">
-                  <div className="flex items-center gap-2">
-                    <Mic className="h-5 w-5" />
-                    <h2 className="text-lg font-semibold">Calls and transcripts</h2>
-                  </div>
-                  <div className="mt-4 rounded-md border border-dashed border-black/15 p-5 text-sm text-black/55">
-                    Calls will appear here after a phone line is live. Transcripts, summaries, and
-                    handoff events will stay tied to {selectedOrg?.name ?? 'this workspace'}.
-                  </div>
-                </section>
+            // Setup forms used to sit here — describe your business, line option
+            // and plan intent. They are an onboarding job, not a dashboard:
+            // someone arriving here should meet the product, not a form.
+            // See VoiceOnboardingPage.
+            <section className="rounded-lg border border-black/10 bg-white p-4">
+              <div className="flex items-center gap-2">
+                <Mic className="h-5 w-5" />
+                <h2 className="text-lg font-semibold">Calls and transcripts</h2>
               </div>
-            </div>
+              <div className="mt-4 rounded-md border border-dashed border-black/15 p-5 text-sm text-black/55">
+                Calls will appear here after a phone line is live. Transcripts, summaries, and
+                handoff events will stay tied to {selectedOrg?.name ?? 'this workspace'}.
+              </div>
+            </section>
           )}
         </div>
       </div>

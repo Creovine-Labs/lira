@@ -301,6 +301,11 @@ export function VoicePhoneDemo() {
               <i />
             </span>
             <span className="vc-face">
+              <span className="vc-blobs">
+                <i />
+                <i />
+                <i />
+              </span>
               <span className="vc-sheen" />
               <span className="vc-matrix">
                 {MATRIX.map((weight, i) => (
@@ -527,17 +532,44 @@ function VcStyles() {
       .vc-rings i:nth-child(5) { width: 152%; height: 152%; border-color: rgba(255,255,255,0.045); }
       .vc-rings i:nth-child(6) { width: 166%; height: 166%; border-color: rgba(255,255,255,0.028); }
 
+      /* The body. Two things make this read as Siri rather than a ball:
+         the border-radius is animated so the SHAPE morphs, and three
+         translucent blobs drift across it at different speeds and directions.
+         A rigid circle with effects on top always reads as a button. */
       .vc-face {
-        position: relative; width: 100%; height: 100%; border-radius: 50%;
+        position: relative; width: 100%; height: 100%;
         display: grid; place-items: center; overflow: hidden;
+        border-radius: 46% 54% 52% 48% / 48% 46% 54% 52%;
+        animation: vcMorph 9s ease-in-out infinite;
         background:
           radial-gradient(circle at 50% 118%, rgba(255,255,255,0.10), transparent 46%),
           radial-gradient(circle at 34% 24%, #d8d8d8 0%, #8e8e8e 26%, #4a4a4a 56%, #1c1c1c 100%);
         box-shadow:
-          inset 0 1px 0 rgba(255,255,255,0.34),
+          inset 0 1px 0 rgba(255,255,255,0.30),
           inset 0 -18px 34px rgba(0,0,0,0.55),
           0 0 0 1px rgba(255,255,255,0.07),
           0 26px 60px rgba(0,0,0,0.62);
+      }
+
+      /* Drifting highlights — the liquid part. Each is a soft radial blob on
+         its own path and duration, so they cross and separate rather than
+         moving as one mass. */
+      .vc-blobs { position: absolute; inset: -10%; pointer-events: none; }
+      .vc-blobs i { position: absolute; border-radius: 50%; filter: blur(14px); }
+      .vc-blobs i:nth-child(1) {
+        width: 62%; height: 62%; left: 6%; top: 4%;
+        background: radial-gradient(circle, rgba(255,255,255,0.42), rgba(255,255,255,0) 68%);
+        animation: vcDrift1 11s ease-in-out infinite;
+      }
+      .vc-blobs i:nth-child(2) {
+        width: 54%; height: 54%; right: 4%; top: 22%;
+        background: radial-gradient(circle, rgba(255,255,255,0.24), rgba(255,255,255,0) 70%);
+        animation: vcDrift2 14s ease-in-out infinite;
+      }
+      .vc-blobs i:nth-child(3) {
+        width: 70%; height: 70%; left: 12%; bottom: 0%;
+        background: radial-gradient(circle, rgba(0,0,0,0.45), rgba(0,0,0,0) 68%);
+        animation: vcDrift3 17s ease-in-out infinite;
       }
 
       /* The rotating conic pass is what sells brushed metal — a fixed gradient
@@ -574,13 +606,22 @@ function VcStyles() {
 
       /* Listening: the metal brightens a touch and the sheen slows — present,
          waiting, not performing. */
+      /* Listening: everything slows and settles — attentive, not performing. */
       .vc-orb.is-listening { filter: brightness(1.06); }
       .vc-orb.is-listening .vc-sheen { animation-duration: 14s; }
+      .vc-orb.is-listening .vc-face { animation-duration: 13s; }
+      .vc-orb.is-listening .vc-blobs i { animation-duration: 16s, 20s, 24s; }
 
       /* Speaking: the matrix drives, the sheen quickens, the orb lifts. This is
          the only loud state, which is what makes it read as speech. */
       .vc-orb.is-speaking { transform: scale(1.035); filter: brightness(1.12); animation: none; }
       .vc-orb.is-speaking .vc-sheen { animation-duration: 3.4s; }
+      /* Speaking: the shape works harder — faster morph, blobs surging. This is
+         what makes it look like it is forming words rather than glowing. */
+      .vc-orb.is-speaking .vc-face { animation: vcMorphFast 2.4s ease-in-out infinite; }
+      .vc-orb.is-speaking .vc-blobs i:nth-child(1) { animation-duration: 4.2s; }
+      .vc-orb.is-speaking .vc-blobs i:nth-child(2) { animation-duration: 5.1s; }
+      .vc-orb.is-speaking .vc-blobs i:nth-child(3) { animation-duration: 6.3s; }
       .vc-orb.is-speaking .vc-matrix i { animation: vcPulse 0.62s ease-in-out infinite; }
       .vc-orb.is-speaking .vc-matrix i:nth-child(5n+1) { animation-delay: 0s; }
       .vc-orb.is-speaking .vc-matrix i:nth-child(5n+2) { animation-delay: 0.09s; }
@@ -631,12 +672,40 @@ function VcStyles() {
 
       @keyframes vcDot { 0% { box-shadow: 0 0 0 0 rgba(255,255,255,0.5);} 70% { box-shadow: 0 0 0 7px rgba(255,255,255,0);} 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0);} }
       @keyframes vcSheen { to { transform: rotate(360deg); } }
+      /* The morph: four radii travelling independently, which is what stops it
+         looking like a pulsing circle. */
+      @keyframes vcMorph {
+        0%,100% { border-radius: 46% 54% 52% 48% / 48% 46% 54% 52%; }
+        25%     { border-radius: 56% 44% 47% 53% / 53% 55% 45% 47%; }
+        50%     { border-radius: 51% 49% 57% 43% / 44% 52% 48% 56%; }
+        75%     { border-radius: 44% 56% 46% 54% / 55% 43% 57% 45%; }
+      }
+      @keyframes vcMorphFast {
+        0%,100% { border-radius: 42% 58% 55% 45% / 52% 42% 58% 48%; }
+        30%     { border-radius: 60% 40% 44% 56% / 44% 60% 40% 56%; }
+        60%     { border-radius: 48% 52% 62% 38% / 40% 56% 44% 60%; }
+      }
+      @keyframes vcDrift1 {
+        0%,100% { transform: translate(0,0) scale(1); }
+        33%     { transform: translate(16%, 12%) scale(1.14); }
+        66%     { transform: translate(-10%, 18%) scale(0.92); }
+      }
+      @keyframes vcDrift2 {
+        0%,100% { transform: translate(0,0) scale(1); }
+        40%     { transform: translate(-18%, 14%) scale(1.2); }
+        70%     { transform: translate(8%, -12%) scale(0.9); }
+      }
+      @keyframes vcDrift3 {
+        0%,100% { transform: translate(0,0) scale(1); }
+        35%     { transform: translate(14%, -16%) scale(1.1); }
+        75%     { transform: translate(-16%, -6%) scale(0.94); }
+      }
       @keyframes vcBreathe { 0%,100% { transform: scale(1);} 50% { transform: scale(1.018);} }
       @keyframes vcRipple { 0% { transform: scale(0.92); opacity: 0.55;} 100% { transform: scale(1.18); opacity: 0;} }
       @keyframes vcPulse { 0%,100% { opacity: var(--w); transform: scale(1);} 50% { opacity: 1; transform: scale(1.5);} }
       
       @media (prefers-reduced-motion: reduce) {
-        .vc-dot, .vc-orb, .vc-sheen, .vc-rings i, .vc-matrix i { animation: none !important; }
+        .vc-dot, .vc-orb, .vc-face, .vc-sheen, .vc-rings i, .vc-matrix i, .vc-blobs i { animation: none !important; }
       }
     `}</style>
   )
