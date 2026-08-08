@@ -71,6 +71,7 @@ export interface LoginResponse {
     tenantId: string
     role: string
     emailVerified?: boolean
+    planTier?: 'FREE' | 'PRO' | 'SCALE' | 'ENTERPRISE'
   }
 }
 
@@ -87,6 +88,32 @@ export const credentials = {
     localStorage.removeItem(TOKEN_KEY)
   },
   isConfigured: () => Boolean(localStorage.getItem(TOKEN_KEY)),
+  /**
+   * The role the SERVER will actually authorize this session as.
+   *
+   * The auth store captures `userRole` once, at login, and never refreshes it —
+   * so a session that predates a role change (or any login path that did not
+   * pass the role) leaves the UI acting on a stale value. A platform admin
+   * simply lost the Admin Dashboard entry with no way to get it back short of
+   * signing out. The token is the authority the backend checks, so read it
+   * from there.
+   *
+   * Returns null on a malformed or missing token rather than throwing — a
+   * decode failure must degrade to "not an admin", never to a crashed shell.
+   */
+  getRole: (): string | null => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    if (!token) return null
+    try {
+      const payload = token.split('.')[1]
+      if (!payload) return null
+      const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
+      const claims = JSON.parse(json) as { role?: string }
+      return claims.role ?? null
+    } catch {
+      return null
+    }
+  },
 }
 
 // ── Fetch wrapper ─────────────────────────────────────────────────────────────
@@ -254,6 +281,188 @@ export async function login(email: string, password: string): Promise<LoginRespo
   }
   const data = (await res.json()) as { accessToken: string; user: LoginResponse['user'] }
   return { token: data.accessToken, user: data.user }
+}
+
+// ── Voice app / SSO ──────────────────────────────────────────────────────────
+
+export interface VoiceBusinessProfile {
+  id: string
+  tenantId: string
+  orgId: string
+  businessName: string
+  industry?: string | null
+  businessCategory?: string | null
+  inboundCallsPerDay?: number | null
+  decisionMaker?: boolean | null
+  canStartWithinDays?: number | null
+  willingnessToPay?: boolean | null
+  offerings?: string | null
+  hours?: string | null
+  prices?: string | null
+  policies?: string | null
+  personality?: string | null
+  chosenVoice: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface VoiceLineRequest {
+  id: string
+  tenantId: string
+  orgId: string
+  option: 'forward_existing' | 'request_number'
+  existingNumber?: string | null
+  preferredCountry?: string | null
+  preferredCity?: string | null
+  forwardingReadiness?: string | null
+  state: string
+  notes?: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface VoiceSetupStatus {
+  id?: string
+  orgId: string
+  status: string
+  statusMessage?: string | null
+  checklist: Array<{ key: string; label: string; done: boolean }>
+  blockedReason?: string | null
+}
+
+export interface VoicePlanIntent {
+  id: string
+  tenantId: string
+  orgId: string
+  tier: 'starter' | 'growth' | 'business' | 'enterprise'
+  currency: 'USD' | 'NGN'
+  interval: 'monthly' | 'annual'
+  quotedAmountCents?: number | null
+  chargeState: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface VoiceOnboardingState {
+  businessProfile: VoiceBusinessProfile | null
+  lineRequests: VoiceLineRequest[]
+  setupStatus: VoiceSetupStatus
+  planIntent: VoicePlanIntent | null
+  calls: Array<unknown>
+  telephonyReady: boolean
+}
+
+export async function mintVoiceSso(
+  returnTo: string
+): Promise<{ redirectUrl: string; expiresAt: string }> {
+  return apiFetch('/v1/auth/voice-sso/mint', {
+    method: 'POST',
+    body: JSON.stringify({ returnTo }),
+  })
+}
+
+export async function exchangeVoiceSso(token: string): Promise<LoginResponse> {
+  const res = await fetch(`${env.VITE_API_URL}/v1/auth/voice-sso/exchange`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ token }),
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => null)
+    throw new Error(body?.error ?? 'Voice sign-in failed')
+  }
+  const data = (await res.json()) as { accessToken: string; user: LoginResponse['user'] }
+  return { token: data.accessToken, user: data.user }
+}
+
+export async function getVoiceOnboarding(orgId: string): Promise<VoiceOnboardingState> {
+  const data = await apiFetch<{ ok: boolean } & VoiceOnboardingState>(
+    `/lira/v1/voice/orgs/${encodeURIComponent(orgId)}/onboarding`
+  )
+  return data
+}
+
+export async function saveVoiceBusinessProfile(
+  orgId: string,
+  input: {
+    businessName: string
+    industry?: string
+    businessCategory?: string
+    inboundCallsPerDay?: number
+    decisionMaker?: boolean
+    canStartWithinDays?: number
+    willingnessToPay?: boolean
+    offerings?: string
+    hours?: string
+    prices?: string
+    policies?: string
+    personality?: string
+    chosenVoice?: string
+  }
+): Promise<VoiceBusinessProfile> {
+  const data = await apiFetch<{ businessProfile: VoiceBusinessProfile }>(
+    `/lira/v1/voice/orgs/${encodeURIComponent(orgId)}/business-profile`,
+    { method: 'PUT', body: JSON.stringify(input) }
+  )
+  return data.businessProfile
+}
+
+export async function createVoiceLineRequest(
+  orgId: string,
+  input: {
+    option: 'forward_existing' | 'request_number'
+    existingNumber?: string
+    preferredCountry?: string
+    preferredCity?: string
+    forwardingReadiness?: string
+    notes?: string
+  }
+): Promise<VoiceLineRequest> {
+  const data = await apiFetch<{ lineRequest: VoiceLineRequest }>(
+    `/lira/v1/voice/orgs/${encodeURIComponent(orgId)}/line-requests`,
+    { method: 'POST', body: JSON.stringify(input) }
+  )
+  return data.lineRequest
+}
+
+export async function saveVoicePlanIntent(
+  orgId: string,
+  input: {
+    tier: 'starter' | 'growth' | 'business' | 'enterprise'
+    currency: 'USD' | 'NGN'
+    interval: 'monthly' | 'annual'
+    quotedAmountCents?: number
+  }
+): Promise<VoicePlanIntent> {
+  const data = await apiFetch<{ planIntent: VoicePlanIntent }>(
+    `/lira/v1/voice/orgs/${encodeURIComponent(orgId)}/plan-intent`,
+    { method: 'PUT', body: JSON.stringify(input) }
+  )
+  return data.planIntent
+}
+
+export async function startVoiceDemoSession(input?: { voiceId?: string; orgId?: string }): Promise<{
+  sessionKey: string
+  capSeconds: number
+  concurrentCap: number
+  demoToken: string
+  demoOrgId: string
+}> {
+  return apiFetch('/lira/v1/voice/demo-sessions/start', {
+    method: 'POST',
+    body: JSON.stringify(input ?? {}),
+  })
+}
+
+export async function endVoiceDemoSession(input: {
+  sessionKey: string
+  secondsUsed: number
+  outcome?: string
+}): Promise<void> {
+  await apiFetch('/lira/v1/voice/demo-sessions/end', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
 }
 
 // ── OTP / Email verification ──────────────────────────────────────────────────

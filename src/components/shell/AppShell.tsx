@@ -48,6 +48,7 @@ import {
   type TaskRecord,
 } from '@/services/api'
 import { listEscalationAlerts, markEscalationAlertsRead } from '@/services/api/support-api'
+import { credentials } from '@/services/api'
 import { BetaLimitModal } from '@/components/common/BetaLimitModal'
 import { LiraLogo } from '@/components/LiraLogo'
 import { LiraOnboardingWidget } from '@/components/LiraOnboardingWidget'
@@ -433,6 +434,11 @@ function TopbarOrgSwitcher() {
 // ── UserIcon profile dropdown ─────────────────────────────────────────────────────
 function UserMenu({ onSignOut }: { onSignOut: () => void }) {
   const { userName, userEmail, userPicture, userRole } = useAuthStore()
+  // Prefer the token's claim over the stored value: the store is written once
+  // at login and goes stale, the token is what the server authorizes against.
+  const tokenRole = credentials.getRole()
+  const effectiveRole = tokenRole ?? userRole
+  const isPlatformAdmin = effectiveRole === 'ADMIN' || effectiveRole === 'SUPER_ADMIN'
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -503,7 +509,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             <TicketIcon className="h-4 w-4 text-gray-400" />
             My Tickets
           </button>
-          {(userRole === 'ADMIN' || userRole === 'SUPER_ADMIN') && (
+          {isPlatformAdmin && (
             <button
               onClick={() => {
                 setOpen(false)
