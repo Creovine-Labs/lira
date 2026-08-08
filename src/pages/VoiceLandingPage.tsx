@@ -42,7 +42,7 @@ const reveal = {
 
 /* The waitlist is gone: the Voice setup app on voice.liraintelligence.com is
    the single entry point (it captures the business profile, line and plan
-   intent without charging), so the page funnels everyone to "Start setup". */
+   intent without charging), so the page funnels everyone to "Get started". */
 
 /* ------------------------------------------------------------------ */
 /* Content data                                                        */
@@ -111,7 +111,9 @@ export function VoiceLandingPage() {
       />
       <Styles />
       <VoiceExtraStyles />
-      <MarketingNavbar variant="overlay" />
+      {/* light, not overlay: overlay renders white text for a dark hero, and
+          this hero is now the same cream as the rest of the site. */}
+      <MarketingNavbar variant="light" />
 
       {/* ───── Voice hero — bespoke, dark, with the live call panel as the
               interactive centrepiece (the pattern the leading voice-AI products
@@ -126,9 +128,6 @@ export function VoiceLandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="vx-hero-tag">
-              <span className="vx-hero-dot" /> Lira Voice · early access
-            </span>
             <h1 className="eh-headline vh-headline">
               Answer every call
               <br />
@@ -149,18 +148,13 @@ export function VoiceLandingPage() {
                 }}
                 className="vh-btn vh-btn-primary"
               >
-                Start setup
+                Get started
                 <ArrowUpRight size={15} weight="bold" />
               </button>
               <button type="button" onClick={() => scrollTo('how')} className="vh-btn vh-btn-ghost">
                 <Play size={13} weight="fill" />
                 How it works
               </button>
-            </div>
-            <div className="vh-trust">
-              <span>Live 24/7</span>
-              <span>Answers in seconds</span>
-              <span>Every call logged</span>
             </div>
           </motion.div>
 
@@ -170,9 +164,6 @@ export function VoiceLandingPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
           >
-            <span className="vh-panel-label">
-              <span className="vx-hero-dot" /> Live demo · call it, no signup
-            </span>
             <VoicePhoneDemo />
           </motion.div>
         </div>
@@ -275,7 +266,7 @@ export function VoiceLandingPage() {
                   window.location.href = VOICE_APP_URL
                 }}
               >
-                Start setup
+                Get started
                 <ArrowUpRight size={15} weight="bold" />
               </button>
               <button type="button" className="vh-btn vh-btn-ghost" onClick={() => scrollTo('how')}>
@@ -302,33 +293,34 @@ export function VoiceLandingPage() {
 function VoiceExtraStyles() {
   return (
     <style>{`
-      /* ── Bespoke voice hero: dark, premium, voice-native. Keeps the brand
-         editorial headline (eh-headline) but on a dark stage with a teal glow,
-         a faint grid, an animated waveform floor, and the live call panel. ── */
+      /* ── Voice hero. Same ground as every other page: the dark teal stage
+         made this the one page that looked like a different product. The call
+         panel is the only dark object, which is the point — it reads as a
+         device sitting on the page. ── */
       .vh-hero {
-        position: relative; overflow: hidden; color: #eef7f4;
+        position: relative; overflow: hidden; color: var(--ink);
         padding: 148px 0 96px;
-        background: radial-gradient(125% 95% at 12% -5%, #163029 0%, #0c1618 42%, #080c0d 100%);
+        background: var(--bg);
       }
       .vh-glow { position: absolute; top: -18%; right: -8%; width: 62%; height: 85%; pointer-events: none;
-        background: radial-gradient(circle, rgba(16,178,140,0.24), transparent 62%); filter: blur(14px); }
+        background: radial-gradient(circle, rgba(2,3,8,0.05), transparent 62%); filter: blur(14px); }
       .vh-grid { position: absolute; inset: 0; pointer-events: none; opacity: 0.5;
-        background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+        background-image: linear-gradient(rgba(2,3,8,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(2,3,8,0.035) 1px, transparent 1px);
         background-size: 46px 46px;
         -webkit-mask-image: radial-gradient(circle at 28% 18%, #000, transparent 72%);
         mask-image: radial-gradient(circle at 28% 18%, #000, transparent 72%); }
       .vh-inner { position: relative; z-index: 2; max-width: 1160px; margin: 0 auto; padding: 0 28px;
         display: grid; grid-template-columns: 1.02fr 0.98fr; gap: 52px; align-items: center; }
-      .vh-headline { color: #ffffff; margin: 18px 0 0; }
-      .vh-headline em { color: #6ef2d5; }
-      .vh-body { margin: 22px 0 0; max-width: 460px; font-size: 16px; line-height: 1.62; color: rgba(255,255,255,0.72); }
+      .vh-headline { color: var(--ink); margin: 18px 0 0; }
+      .vh-headline em { color: var(--ink); font-style: italic; }
+      .vh-body { margin: 22px 0 0; max-width: 460px; font-size: 16px; line-height: 1.62; color: rgba(2,3,8,0.66); }
       .vh-cta-row { margin-top: 28px; display: flex; gap: 12px; flex-wrap: wrap; }
       .vh-btn { display: inline-flex; align-items: center; gap: 8px; height: 50px; padding: 0 24px; border: 0; border-radius: 999px; font-size: 15px; font-weight: 800; cursor: pointer; transition: transform 0.15s ease, filter 0.15s ease; }
       .vh-btn:hover { transform: translateY(-2px); }
-      .vh-btn-primary { background: #ffffff; color: #0c1517; }
+      .vh-btn-primary { background: #020308; color: #ffffff; }
       .vh-btn-primary:hover { filter: brightness(0.94); }
-      .vh-btn-ghost { background: rgba(255,255,255,0.08); color: #fff; border: 1px solid rgba(255,255,255,0.20); }
-      .vh-btn-ghost:hover { background: rgba(255,255,255,0.14); }
+      .vh-btn-ghost { background: transparent; color: #020308; border: 1px solid rgba(2,3,8,0.16); }
+      .vh-btn-ghost:hover { background: rgba(2,3,8,0.05); }
       .vh-trust { margin-top: 28px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 12.5px; font-weight: 600; color: rgba(255,255,255,0.55); }
       .vh-trust span { display: inline-flex; align-items: center; gap: 7px; }
       .vh-trust span::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: #34d399; }
@@ -336,7 +328,7 @@ function VoiceExtraStyles() {
       .vh-panel-label { display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em; color: #8ff6de; }
       .vh-wave { position: absolute; left: 0; right: 0; bottom: 0; height: 84px; z-index: 1; pointer-events: none;
         display: flex; align-items: flex-end; gap: 3px; padding: 0 10px; opacity: 0.15; }
-      .vh-wave i { flex: 1; height: 10px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, #6ef2d5, transparent); animation: vhWave 1.5s ease-in-out infinite; }
+      .vh-wave i { flex: 1; height: 10px; border-radius: 3px 3px 0 0; background: linear-gradient(180deg, rgba(2,3,8,0.55), transparent); animation: vhWave 1.5s ease-in-out infinite; }
       @keyframes vhWave { 0%, 100% { height: 9px; } 50% { height: 54px; } }
       @media (prefers-reduced-motion: reduce) { .vh-wave i { animation: none; } }
       @media (max-width: 920px) {
@@ -345,10 +337,10 @@ function VoiceExtraStyles() {
         .vh-body { max-width: none; }
       }
 
-      /* Get-started CTA band — dark, matches the hero, single "Start setup" path. */
+      /* Get-started CTA band — dark, matches the hero, single "Get started" path. */
       .vh-cta { position: relative; overflow: hidden; max-width: 900px; margin: 0 auto; text-align: center;
         padding: 56px 32px; border-radius: 28px; color: #eef7f4;
-        background: radial-gradient(120% 130% at 50% -12%, #163029 0%, #0c1618 46%, #080c0d 100%);
+        background: radial-gradient(120% 130% at 50% -12%, #14181a 0%, #0b0e0f 46%, #050708 100%);
         border: 1px solid rgba(255,255,255,0.08); box-shadow: 0 40px 100px rgba(2,3,8,0.26); }
       .vh-cta-glow { position: absolute; top: -42%; left: 50%; transform: translateX(-50%); width: 70%; height: 100%;
         background: radial-gradient(circle, rgba(16,178,140,0.28), transparent 60%); filter: blur(10px); pointer-events: none; }
@@ -356,20 +348,20 @@ function VoiceExtraStyles() {
       .vh-cta-sub { position: relative; margin: 14px auto 0; max-width: 520px; font-size: 15.5px; line-height: 1.6; color: rgba(255,255,255,0.72); }
       .vh-cta-actions { position: relative; margin-top: 26px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
       .vh-cta-note { position: relative; margin: 22px 0 0; font-size: 12.5px; color: rgba(255,255,255,0.5); }
-      .vh-cta-note a { color: #6ef2d5; text-decoration: none; }
+      .vh-cta-note a { color: #ffffff; text-decoration: underline; text-underline-offset: 3px; }
       .vh-cta-note a:hover { text-decoration: underline; }
 
       /* Step cards — force a light card with a bold, high-contrast teal number
          badge so the "1 · 2 · 3" always read clearly (never dark-on-dark). */
       .vx-grid-3 .hx-why-card { background: #ffffff; border-color: rgba(2,3,8,0.10); }
-      .vx-grid-3 .hx-why-icon { background: #10b28c; color: #ffffff; font-size: 18px; font-weight: 800; }
+      .vx-grid-3 .hx-why-icon { background: #020308; color: #ffffff; font-size: 18px; font-weight: 800; }
       .vx-grid-3 .hx-why-icon svg { color: #ffffff; }
       .vx-grid-3 .hx-why-step { color: rgba(2,3,8,0.32); }
       .vx-grid-3 .hx-why-card h3 { color: #10161a; }
       .vx-grid-3 .hx-why-card p { color: rgba(2,3,8,0.66); }
 
       .vx-hero-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22); color: #ffffff; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; backdrop-filter: blur(8px); }
-      .vx-hero-dot { width: 7px; height: 7px; border-radius: 50%; background: #34d399; box-shadow: 0 0 12px #34d399; }
+      .vx-hero-dot { width: 7px; height: 7px; border-radius: 50%; background: #020308; }
       .eh-left .vx-hero-tag { margin-bottom: 18px; }
 
       .vx-grid-3 { grid-template-columns: repeat(3, minmax(0,1fr)); }

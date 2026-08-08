@@ -75,7 +75,7 @@ function AuthPanel() {
 
   return (
     <section className="grid min-h-screen bg-[#171412] text-[#f4f0e8] lg:grid-cols-[1.05fr_0.95fr]">
-      <div className="flex min-h-screen flex-col px-6 py-6 sm:px-10">
+      <div className="hidden min-h-screen flex-col px-6 py-6 sm:px-10 lg:flex">
         <div className="flex items-center gap-3">
           <img src="/lira_mark_white.png" alt="Lira" className="h-9 w-9" />
           <span className="text-sm font-semibold">Lira Voice</span>
@@ -101,10 +101,25 @@ function AuthPanel() {
         </div>
       </div>
 
-      <div className="flex min-h-screen items-center justify-center bg-[#f4f0e8] px-6 py-10 text-[#171412]">
+      <div className="flex min-h-screen flex-col justify-center bg-[#f4f0e8] px-5 py-10 text-[#171412] sm:px-6">
+        {/* Mobile only: the story column is hidden, so the page still needs to
+            say where you are and what happens next. */}
+        <div className="mx-auto mb-6 w-full max-w-md lg:hidden">
+          <div className="flex items-center gap-2.5">
+            <img src="/lira_black.png" alt="Lira" className="h-8 w-8" />
+            <span className="text-sm font-semibold">Lira Voice</span>
+          </div>
+          <h1 className="mt-5 text-2xl font-semibold tracking-tight">
+            Add a Nigerian voice to your customer line.
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-black/55">
+            Create your account, then set up your line in a few short steps.
+          </p>
+        </div>
+
         <form
           onSubmit={submit}
-          className="w-full max-w-md rounded-lg border border-black/10 bg-white p-5 shadow-sm"
+          className="mx-auto w-full max-w-md rounded-lg border border-black/10 bg-white p-5 shadow-sm sm:p-6"
         >
           <div className="flex rounded-full bg-black/[0.06] p-1">
             {(['login', 'signup'] as const).map((item) => (
@@ -410,7 +425,7 @@ function VoiceAppShell() {
                   <span
                     className={cn(
                       'grid h-5 w-5 place-items-center rounded-full',
-                      item.done ? 'bg-emerald-600 text-white' : 'bg-black/10 text-black/35'
+                      item.done ? 'bg-[#171412] text-white' : 'bg-black/10 text-black/35'
                     )}
                   >
                     {item.done && <Check className="h-3 w-3" />}

@@ -71,6 +71,14 @@ const HOURS = [
   'Varies — I will set this later',
 ]
 
+const PERSONALITIES = [
+  'Warm and friendly — chatty, puts callers at ease',
+  'Professional and concise — straight to the point',
+  'Calm and reassuring — good for complaints and sensitive calls',
+  'Upbeat and energetic — good for retail and hospitality',
+  'Formal and precise — good for finance, legal and healthcare',
+]
+
 const CALL_VOLUMES = [
   { label: 'Under 10 calls a day', value: 10 },
   { label: '10 – 30 calls a day', value: 30 },
@@ -294,7 +302,7 @@ export function VoiceOnboardingPage({ orgId, onDone }: { orgId: string; onDone: 
 
                   <div className="space-y-1.5">
                     <label htmlFor="vo-hours" className="text-sm font-medium text-gray-700">
-                      Working hours
+                      Working hours <span className="text-red-500">*</span>
                     </label>
                     <select
                       id="vo-hours"
@@ -313,7 +321,7 @@ export function VoiceOnboardingPage({ orgId, onDone }: { orgId: string; onDone: 
 
                   <div className="space-y-1.5">
                     <label htmlFor="vo-prices" className="text-sm font-medium text-gray-700">
-                      Prices <span className="text-gray-400">(optional)</span>
+                      Prices <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="vo-prices"
@@ -324,7 +332,7 @@ export function VoiceOnboardingPage({ orgId, onDone }: { orgId: string; onDone: 
                       onChange={(e) => setPrices(e.target.value)}
                     />
                     <p className="text-xs text-gray-400">
-                      A rough list is fine — you can upload a full price list later from the
+                      A few examples is enough — you can add a full price list later from the
                       dashboard.
                     </p>
                   </div>
@@ -333,7 +341,7 @@ export function VoiceOnboardingPage({ orgId, onDone }: { orgId: string; onDone: 
                 <StepActions
                   onBack={back}
                   saving={saving}
-                  disabled={!offerings.trim()}
+                  disabled={!offerings.trim() || !hours || !prices.trim()}
                   onNext={() => void advance(saveProfile({ offerings, hours, prices }), 'policies')}
                 />
               </div>
@@ -347,14 +355,15 @@ export function VoiceOnboardingPage({ orgId, onDone }: { orgId: string; onDone: 
                     Your policies and how Lira should sound
                   </h1>
                   <p className="mt-2 text-sm text-gray-500">
-                    Both are optional and easy to change later.
+                    This is what Lira falls back on when a caller asks something specific. You can
+                    change both later.
                   </p>
                 </div>
 
                 <div className="space-y-5">
                   <div className="space-y-1.5">
                     <label htmlFor="vo-policies" className="text-sm font-medium text-gray-700">
-                      Business policies <span className="text-gray-400">(optional)</span>
+                      Business policies <span className="text-red-500">*</span>
                     </label>
                     <textarea
                       id="vo-policies"
@@ -368,24 +377,28 @@ export function VoiceOnboardingPage({ orgId, onDone }: { orgId: string; onDone: 
 
                   <div className="space-y-1.5">
                     <label htmlFor="vo-personality" className="text-sm font-medium text-gray-700">
-                      Personality instructions <span className="text-gray-400">(optional)</span>
+                      How should Lira sound? <span className="text-red-500">*</span>
                     </label>
-                    <textarea
+                    <select
                       id="vo-personality"
-                      rows={3}
                       className={inputClass}
-                      placeholder="Warm and brief. Always offer to take a reservation before ending the call."
                       value={personality}
                       onChange={(e) => setPersonality(e.target.value)}
-                    />
+                    >
+                      <option value="">Select a personality</option>
+                      {PERSONALITIES.map((p) => (
+                        <option key={p} value={p}>
+                          {p}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
 
                 <StepActions
                   onBack={back}
                   saving={saving}
-                  skipLabel="Skip & continue"
-                  onSkip={() => setStep('volume')}
+                  disabled={!policies.trim() || !personality}
                   onNext={() => void advance(saveProfile({ policies, personality }), 'volume')}
                 />
               </div>
